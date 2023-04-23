@@ -1,5 +1,5 @@
 // UNCOMMENT TO RUN
-getLogin()
+// getLogin()
 
 const form = document.querySelector("#gradeform");
 form.style.display = "none";
@@ -12,11 +12,12 @@ const tbody = form.querySelector('tbody'); // Get the tbody element inside the f
 
 
 // UNCOMMENT TO RUN
-enter_button.addEventListener("click", () => {
-  form.style.display = "block";
-});
+// enter_button.addEventListener("click", () => {
+//   form.style.display = "block";
+// });
 
 open_button.addEventListener("click", () => {
+  
   getGrades();
 });
 
@@ -120,6 +121,7 @@ if (response.ok) {
     grades.push(data[i])
   
   }
+  
   processGrades(grades);
 } else {
   alert('Failed to read data from SheetDB');
@@ -203,7 +205,7 @@ function calculateGrade(time, data) {
   for (let i = 0; i < data.length; i++) {
     const datum = data[i];
     if (datum.date >= time) continue;
-    num_data++;
+    
     if (!categories[datum.class]) categories[datum.class] = {};
     if (!categories[datum.class][datum.category]) {
       categories[datum.class][datum.category] = {
