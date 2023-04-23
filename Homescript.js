@@ -1,4 +1,4 @@
-
+// to push, type "git push origin main" into the shell
 
 function init(){
   getLogin()
@@ -6,6 +6,7 @@ function init(){
   
   
 }
+// UNCOMMENT TO RUN
 init();
 
 async function getLogin(){

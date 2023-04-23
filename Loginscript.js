@@ -5,9 +5,12 @@ function init(){
 // Get the form element
 
 }
+// UNCOMMENT TO RUN
 init();
 
 // Attach a submit event listener to the form
+
+// UNCOMMENT TO RUN
 form.addEventListener('submit', function(event) {
 
 // Prevent the form from submitting normally

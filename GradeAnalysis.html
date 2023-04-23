@@ -11,7 +11,7 @@
     
     <nav>
         <ul>
-          <li><a href="#">Home</a></li>
+          <li><a href="index.html">Home</a></li>
           <li><a href="login.html" id="Gslink">Login/Sign In</a></li>
         </ul>
         
@@ -21,8 +21,9 @@
   <main>
     <h1>Grade Analysis</h1>
     
-    <p>To start, enter your grades</p>
+    <p>To start, enter your grades or open existing grades</p>
     <button id="enter-grades-button" class="grade-button">Enter your Grades</button>
+    <button id="open-grades-button" class="grade-button">Open Existing Grades</button>
 <form id='gradeform'>
   <table>
     <thead>
@@ -109,7 +110,8 @@
   </table>
   <button type="submit">Submit</button>
 </form>
-<p id='uresponses'></p>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<canvas id="myChart"></canvas>
 
   </main>
 

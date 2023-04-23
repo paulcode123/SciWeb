@@ -1,15 +1,24 @@
+// UNCOMMENT TO RUN
+getLogin()
 
-function init(){
-  getLogin()
-  
-  
-}
-init()
+const form = document.querySelector("#gradeform");
+form.style.display = "none";
 
+const enter_button = document.querySelector("#enter-grades-button");
+const open_button = document.querySelector("#open-grades-button");
 
-
-const form = document.querySelector('#gradeform'); // Get the form element
 const tbody = form.querySelector('tbody'); // Get the tbody element inside the form
+
+
+
+// UNCOMMENT TO RUN
+enter_button.addEventListener("click", () => {
+  form.style.display = "block";
+});
+
+open_button.addEventListener("click", () => {
+  getGrades();
+});
 
 form.addEventListener('submit', (event) => {
   
@@ -66,7 +75,7 @@ body: JSON.stringify(input)
 });
 
 const result = await response.json();
-alert(JSON.stringify(result));   
+// alert(JSON.stringify(result));   
 }
 
 async function getLogin(){
@@ -93,3 +102,180 @@ function setName(name){
   
   document.getElementById('Gslink').textContent = name;
 }
+
+
+
+async function getGrades(){
+const response = await fetch('https://sheetdb.io/api/v1/pb8spx7u5gewk?sheet=Grades', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+if (response.ok) {
+  const data = await response.json();
+  grades = []
+  for(let i=0; i<data.length; i++){
+    grades.push(data[i])
+  
+  }
+  processGrades(grades);
+} else {
+  alert('Failed to read data from SheetDB');
+}
+
+}
+function processGrades(grades){
+  
+  
+  var smallerNum = 1000000;
+  var greaterNum = 0;
+  for(let i=0;i<grades.length;i++){
+    
+    const t_grade = grades[i].date
+    
+    if(t_grade < smallerNum){
+      
+      smallerNum = t_grade;
+      
+    }
+    if(grades[i].date > greaterNum){
+      
+      greaterNum = grades[i].date;
+    }
+  }
+
+// Calculate the range between the two numbers
+const range = greaterNum - smallerNum;
+
+// Calculate the size of each increment
+const increment = range / 10;
+
+// Create an array to store the 10 even increments
+const increments = [];
+const graph_grades = [];
+// Iterate through each increment and add it to the array
+
+for (let i = 0; i <= 10; i++) {
+  const step = Math.round(parseInt(smallerNum) + (i * increment)+1)
+  
+  increments.push(step);
+  graph_grades.push(calculateGrade(step, grades));
+}
+  
+  graphChart(increments, graph_grades);
+  
+}
+// Function to calculate the grade for a given time
+function calculateGrade(time, data) {
+  
+  const categories = {};
+  const weights = {
+  "Bio": {
+    "homework": 0.3,
+    "quiz": 0.2,
+    "test": 0.5
+  },
+  "Eng": {
+    "homework": 0.3,
+    "quiz": 0.2,
+    "test": 0.5
+  },
+  "Orch": {
+    "homework": 0.3,
+    "quiz": 0.2,
+    "test": 0.5
+  },
+  "Geo": {
+    "homework": 0.3,
+    "quiz": 0.2,
+    "test": 0.5
+  },
+  "History": {
+    "homework": 0.3,
+    "quiz": 0.2,
+    "test": 0.5
+  }
+  
+};
+  
+  for (let i = 0; i < data.length; i++) {
+    const datum = data[i];
+    if (datum.date >= time) continue;
+    num_data++;
+    if (!categories[datum.class]) categories[datum.class] = {};
+    if (!categories[datum.class][datum.category]) {
+      categories[datum.class][datum.category] = {
+        scoreSum: 0,
+        valueSum: 0,
+        count: 0,
+        weight: weights[datum.class][datum.category]
+      };
+    }
+    const category = categories[datum.class][datum.category];
+    category.scoreSum += datum.score;
+    category.valueSum += datum.value;
+    category.count++;
+    // alert("score:"+datum.score+"weight:"+category.weight);
+  }
+
+  let totalGrade = 0;
+  let classCount = 0;
+  for (const className in categories) {
+    const classData = categories[className];
+    let classGrade = 0;
+    let categoryCount = 0;
+  var weightSum = 0;
+    for (const categoryName in classData) {
+      const category = classData[categoryName];
+      classGrade += (category.scoreSum / category.valueSum)*category.weight;
+      weightSum += category.weight
+      
+      categoryCount++;
+    }
+    
+    if (categoryCount > 0) {
+      // classGrade /= categoryCount;
+      let multiplier = 2-weightSum
+      totalGrade += classGrade*multiplier;
+      classCount++;
+    }
+    
+  }
+  if (classCount > 0) {
+    return totalGrade / classCount;
+  } else {
+    return 0;
+  }
+}
+
+
+function graphChart(increments, grades){
+var ctx = document.getElementById('myChart').getContext('2d');
+var myChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: increments,
+        datasets: [{
+            label: 'Grade',
+            data: grades,
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        scales: {
+            yAxes: [{
+                ticks: {
+                    beginAtZero: true
+                }
+            }]
+        }
+    }
+});
+}
+
+
+
