@@ -1,5 +1,5 @@
 // UNCOMMENT TO RUN
-// getLogin()
+getLogin()
 
 const form = document.querySelector("#gradeform");
 form.style.display = "none";
@@ -12,9 +12,9 @@ const tbody = form.querySelector('tbody'); // Get the tbody element inside the f
 
 
 // UNCOMMENT TO RUN
-// enter_button.addEventListener("click", () => {
-//   form.style.display = "block";
-// });
+enter_button.addEventListener("click", () => {
+  form.style.display = "block";
+});
 
 open_button.addEventListener("click", () => {
   
