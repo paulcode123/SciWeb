@@ -1,0 +1,107 @@
+/* Navigation bar styles */
+header {
+  background-color: yellow;
+  padding: 20px;
+  position: fixed;
+  top: 0;
+  width: 100%;
+}
+nav ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: space-between;
+}
+nav li {
+  display: inline;
+  margin-right: 20px;
+}
+
+nav li a {
+  color: black;
+  text-decoration: none;
+}
+nav li a:hover {
+  color: blue;
+}
+nav li:nth-child(2) {
+  margin-right: 50px;
+}
+
+
+/* Main section styles */
+main {
+  margin-top: 100px; /* Space for the fixed header */
+  padding: 20px;
+}
+section {
+  margin-bottom: 20px;
+}
+section h2 {
+  margin-bottom: 10px;
+}
+section ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+section li {
+  margin-bottom: 5px;
+}
+section li a {
+  color: black;
+  text-decoration: none;
+}
+section li a:hover {
+  color: blue;
+}
+
+/* Footer styles */
+footer {
+  background-color: lightgray;
+  padding: 20px;
+  text-align: center;
+}
+button {
+  background-color: green;
+  border-radius: 5px;
+  color: white;
+  padding: 10px;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: darkgreen;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th, td {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+th {
+  background-color: #f2f2f2;
+  color: #333;
+}
+
+tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+input[type="number"], input[type="date"], select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+#gradeform {
+  display: none;
+}
