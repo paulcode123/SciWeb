@@ -162,7 +162,7 @@ def calculate_grade(time, data):
     if time < grade_time:
       
       continue
-    print(datum['date'])
+    
     if datum["class"] not in categories:
       categories[datum["class"]] = {}
 
@@ -200,11 +200,11 @@ def calculate_grade(time, data):
     if categoryCount > 0:
       # print(weightSum)
       totalGrade += classGrade/weightSum
-      print(classGrade/weightSum)
+      
       classCount += 1
 
   if classCount > 0:
-    print(totalGrade / classCount)
+    
     return totalGrade / classCount
   else:
     return 0
@@ -212,18 +212,17 @@ def calculate_grade(time, data):
 
 
 
-if __name__ == '__main__':
 
-  logins_url = "https://sheetdb.io/api/v1/pb8spx7u5gewk"
-  grades_url = "https://sheetdb.io/api/v1/pb8spx7u5gewk?sheet=Grades"
-  # full_name = get_name(logins_url)
-  full_name = "Testing"
-  # grades = get_grades(grades_url)
-  grades = [{'date': '1/2/2023', 'score': '1', 'value': '10', 'class': 'Bio', 'category': 'homework'}, {'date': '3/5/2016', 'score': '3', 'value': '10', 'class': 'Bio', 'category': 'test'}, {'date': '9/12/2005', 'score': '2', 'value': '10', 'class': 'History', 'category': 'quiz'}]
-  
-  times, grade_spread = process_grades(grades)
-  app.run(host='0.0.0.0', port=8080, debug=True)
 
-  
 
-  # print(full_name)
+# full_name = get_name(logins_url)
+full_name = "Testing"
+# grades = get_grades(grades_url)
+grades = [{'date': '1/2/2023', 'score': '1', 'value': '10', 'class': 'Bio', 'category': 'homework'}, {'date': '3/5/2016', 'score': '3', 'value': '10', 'class': 'Bio', 'category': 'test'}, {'date': '9/12/2005', 'score': '2', 'value': '10', 'class': 'History', 'category': 'quiz'}]
+
+times, grade_spread = process_grades(grades)
+# app.run(host='0.0.0.0', port=8080, debug=True)
+
+
+
+# print(full_name)
