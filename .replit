@@ -1,6 +1,6 @@
 
 # The command that runs the program. If the interpreter field is set, it will have priority and this run command will do nothing
-run = "gunicorn app:app --workers 1 --worker-class eventlet -b 0.0.0.0:$PORT"
+run = "gunicorn --bind 0.0.0.0:5000 main:app"
 # run = "python3 main.py"
 
 
