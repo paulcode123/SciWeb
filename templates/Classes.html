@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<link rel="stylesheet" href="static/Classes.css">
+
+
+<head>
+  <title>My Website</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+</head>
+
+<body>
+  <ul class="navbar">
+    <li><a href="/">Home</a></li>
+    <li class="dropdown">
+      <button class="dropdown-btn">Grades</button>
+      <div class="dropdown-content">
+        <a href="/EnterGrades">Enter</a>
+        <a href="/GradeAnalysis">Analyse</a>
+        <a href="/GradeAnalysis">Goals</a>
+        
+      </div>
+    </li>
+    <li class="dropdown">
+      <button class="dropdown-btn">Study</button>
+      <div class="dropdown-content">
+        <a href="#">Create</a>
+        <a href="#">Study</a>
+        <a href="#">Predict</a>
+      </div>
+    </li>
+    <li class="dropdown">
+      <button class="dropdown-btn">Connect</button>
+      <div class="dropdown-content">
+        <a href="#">Classes</a>
+        <a href="#">Assignments</a>
+        <a href="#">Leagues</a>
+        <a href="#">Questions</a>
+      </div>
+    </li>
+    <li class="dropdown">
+      <button class="dropdown-btn">About</button>
+      <div class="dropdown-content">
+        <a href="/Pitch">Pitch</a>
+        <a href="#">Getting Started</a>
+        
+      </div>
+    </li>
+    <li><a href="/Login" id="Cslink">Login</a></li>
+  </ul>
+  <main>
+    <h1>Classes Page</h1>
+    <div id="classList"></div>
+    <br>
+    <button id="joinButton">Join or Create Class</button>
+    <form id="classForm" class="hidden">
+      <label for="periodInput">Period:</label>
+      <input type="number" id="periodInput" autocomplete="off">
+      <label for="teacherInput">Teacher:</label>
+      <input type="text" id="teacherInput" autocomplete="off">
+      <label for="nameInput">Class Name:</label>
+      <input type="text" id="nameInput" autocomplete="off">
+      <ul id="classOptions"></ul>
+      <input type="submit" value="Submit">
+  </form>
+  </main>
+  
+
+
+ <script src="/static/Classes.js"></script>
+</body>
+
+</html>

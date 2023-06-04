@@ -1,0 +1,92 @@
+/* Navigation bar styles */
+header {
+  background-color: black;
+  padding: 20px;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  
+}
+body {
+  margin: 0;
+}
+    /* Add some basic styles to the navigation bar */
+    ul.navbar {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #333;
+    }
+
+    ul.navbar li {
+      float: left;
+    }
+
+    ul.navbar li a, .dropdown-content a {
+      display: block;
+      color: white;
+      text-align: center;
+      padding: 14px 16px;
+      text-decoration: none;
+    }
+
+    ul.navbar li a:hover:not(.dropdown-btn) {
+      background-color: black;
+    }
+   ul.navbar li .dropdown-btn:hover {
+      background-color: #2c8f3d;
+     border-radius: 20px; /* Rounded edges */
+    }
+
+    .dropdown-btn {
+      display: block;
+      font-size: 16px;
+      border: none;
+      outline: none;
+      color: white;
+      padding: 14px 16px;
+      background-color: inherit;
+      font-family: inherit;
+      margin: 0;
+    }
+
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: gray;
+      min-width: 160px;
+      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+      z-index: 1;
+    }
+
+    .dropdown-content a {
+      color: gray; /* Set the default text color to gray */
+      padding: 12px 16px;
+      text-decoration: none;
+      display: block;
+      text-align: left;
+    }
+
+    .dropdown-content a:hover {
+      background-color: #f1f1f1;
+      
+    }
+
+    .dropdown:hover .dropdown-content {
+      display: block;
+    }
+
+/* styles for user bubbles */
+.user-bubble {
+    display: inline-block;
+    margin: 5px;
+    padding: 10px;
+    background-color: green;
+    border-radius: 20px;
+    cursor: pointer;
+}
+
+.user-bubble:hover {
+    background-color: turquoise;
+}

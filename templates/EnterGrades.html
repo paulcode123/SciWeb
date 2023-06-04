@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Enter Grades</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/static/EG.css">
+</head>
+
+  
+
+<body>
+  <ul class="navbar">
+    <li><a href="/">Home</a></li>
+    <li class="dropdown">
+      <button class="dropdown-btn">Grades</button>
+      <div class="dropdown-content">
+        <a href="/EnterGrades">Enter</a>
+        <a href="/GradeAnalysis">Analyse</a>
+        <a href="/GradeAnalysis">Goals</a>
+        
+      </div>
+    </li>
+    <li class="dropdown">
+      <button class="dropdown-btn">Study</button>
+      <div class="dropdown-content">
+        <a href="#">Create</a>
+        <a href="#">Study</a>
+        <a href="#">Predict</a>
+      </div>
+    </li>
+    <li class="dropdown">
+      <button class="dropdown-btn">Connect</button>
+      <div class="dropdown-content">
+        <a href="#">Classes</a>
+        <a href="#">Assignments</a>
+        <a href="#">Leagues</a>
+        <a href="#">Questions</a>
+      </div>
+    </li>
+    <li class="dropdown">
+      <button class="dropdown-btn">About</button>
+      <div class="dropdown-content">
+        <a href="#">Pitch</a>
+        <a href="#">Getting Started</a>
+        
+      </div>
+    </li>
+    <li><a href="/Login" id="EGlink">Login</a></li>
+  </ul>
+
+  <main>
+    <h1>Enter Grades</h1>
+
+    <p>To start, Pull from Jupiter account, Paste in Grades from Jupiter or Enter Grades Manually</p>
+    <button id="Jupull">Pull from Jupiter</button>
+    <form id='gradeform'>
+      <input id="pasted" placeholder="copy and paste grades here"></input>
+ <table>
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Score</th>
+      <th>Value</th>
+      <th>Class</th>
+      <th>Category</th>
+      <th>Name</th> <!-- New column -->
+    </tr>
+  </thead>
+  <tbody id="mytbody">
+    <tr>
+      <td><input type="text" name="date1" id="pastedcn"></td>
+      <td><input type="number" name="score1"></td>
+      <td><input type="number" name="value1"></td>
+      <td><input type="text" name="class1"></td>
+      <td>
+        <select name="category1">
+          <option value=""></option>
+          <option value="homework">Homework</option>
+          <option value="quiz">Quiz</option>
+          <option value="test">Test</option>
+        </select>
+      </td>
+      <td><input type="text" name="name1"></td> <!-- New column cell -->
+    </tr>
+    <tr>
+      <td><input type="text" name="date2"></td>
+      <td><input type="number" name="score2"></td>
+      <td><input type="number" name="value2"></td>
+      <td><input type="text" name="class2"></td>
+      <td>
+        <select name="category2">
+          <option value=""></option>
+          <option value="homework">Homework</option>
+          <option value="quiz">Quiz</option>
+          <option value="test">Test</option>
+        </select>
+      </td>
+      <td><input type="text" name="name2"></td> <!-- New column cell -->
+    </tr>
+    <tr>
+      <td><input type="text" name="date3"></td>
+      <td><input type="number" name="score3"></td>
+      <td><input type="number" name="value3"></td>
+      <td><input type="text" name="class3"></td>
+      <td>
+        <select name="category3">
+          <option value=""></option>
+          <option value="homework">Homework</option>
+          <option value="quiz">Quiz</option>
+          <option value="test">Test</option>
+        </select>
+      </td>
+      <td><input type="text" name="name3"></td> <!-- New column cell -->
+    </tr>
+    <tr>
+      <td><input type="text" name="date4"></td>
+      <td><input type="number" name="score4"></td>
+      <td><input type="number" name="value4"></td>
+      <td><input type="text" name="class4"></td>
+      <td>
+        <select name="category4">
+          <option value=""></option>
+          <option value="homework">Homework</option>
+          <option value="quiz">Quiz</option>
+          <option value="test">Test</option>
+        </select>
+      </td>
+      <td><input type="text" name="name4"></td> <!-- New column cell -->
+    </tr>
+    <tr>
+      <td><input type="text" name="date5"></td>
+      <td><input type="number" name="score5"></td>
+      <td><input type="number" name="value5"></td>
+      <td><input type="text" name="class5"></td>
+      <td>
+        <select name="category5">
+          <option value=""></option>
+          <option value="homework">Homework</option>
+          <option value="quiz">Quiz</option>
+          <option value="test">Test</option>
+        </select>
+      </td>
+      <td><input type="text" name="name5"></td> <!-- New column cell -->
+    </tr>
+  </tbody>
+</table>
+
+      <button type="submit">Submit</button>
+    </form>
+<script src="static/EG.js"></script>
+  </main>
+</body>
+  </html>
+  

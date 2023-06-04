@@ -2,14 +2,33 @@
   "version": 2,
   "builds": [
     {
-      "src": "app.py",
+      "src": "main.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/app.py"
+      "dest": "/main.py"
     }
-  ]
+  ],
+  "env": {
+    "FLASK_APP": "main.py",
+    "FLASK_ENV": "production"
+  },
+  "functions": {
+    "api": {
+      "memory": 512,
+      "maxDuration": 10,
+      "runtime": "@vercel/python",
+      "includeFiles": [
+        "main.py",
+        "requirements.txt"
+      ],
+      "environment": {
+        "APP_MODULE": "main:app"
+      },
+      "entrypoint": "gunicorn --bind 0.0.0.0:5000 main:app"
+    }
+  }
 }

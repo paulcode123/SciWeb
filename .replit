@@ -1,7 +1,7 @@
 
 # The command that runs the program. If the interpreter field is set, it will have priority and this run command will do nothing
-run = "gunicorn --bind 0.0.0.0:5000 main:app"
-# run = "python3 main.py"
+# run = "gunicorn --bind 0.0.0.0:5000 main:app"
+run = "python3 main.py"
 
 
 # The primary language of the repl. There can be others, though!

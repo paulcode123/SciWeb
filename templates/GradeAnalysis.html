@@ -9,108 +9,54 @@
 </head>
 
 <body>
-  <header>
-
-    <nav>
-      <ul>
-        <li><a href="/">Home</a></li>
-        <li><a href="/Login" id="Gslink">Login/Sign In</a></li>
-      </ul>
-
-    </nav>
-  </header>
+  <ul class="navbar">
+    <li><a href="/">Home</a></li>
+    <li class="dropdown">
+      <button class="dropdown-btn">Grades</button>
+      <div class="dropdown-content">
+        <a href="/EnterGrades">Enter</a>
+        <a href="/GradeAnalysis">Analyse</a>
+        <a href="/GradeAnalysis">Goals</a>
+        
+      </div>
+    </li>
+    <li class="dropdown">
+      <button class="dropdown-btn">Study</button>
+      <div class="dropdown-content">
+        <a href="#">Create</a>
+        <a href="#">Study</a>
+        <a href="#">Predict</a>
+      </div>
+    </li>
+    <li class="dropdown">
+      <button class="dropdown-btn">Connect</button>
+      <div class="dropdown-content">
+        <a href="#">Classes</a>
+        <a href="#">Assignments</a>
+        <a href="#">Leagues</a>
+        <a href="#">Questions</a>
+      </div>
+    </li>
+    <li class="dropdown">
+      <button class="dropdown-btn">About</button>
+      <div class="dropdown-content">
+        <a href="#">Pitch</a>
+        <a href="#">Getting Started</a>
+        
+      </div>
+    </li>
+    <li><a href="/Login" id="Gslink">Login</a></li>
+  </ul>
 
   <main>
     <h1>Grade Analysis</h1>
 
-    <p>To start, enter your grades or open existing grades</p>
-    <button id="enter-grades-button" class="grade-button">Enter your Grades</button>
-    <button id="open-grades-button" class="grade-button">Open Existing Grades</button>
-    <form id='gradeform'>
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Score</th>
-            <th>Value</th>
-            <th>Class</th>
-            <th>Category</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><input type="text" name="date1"></td>
-            <td><input type="number" name="score1"></td>
-            <td><input type="number" name="value1"></td>
-            <td><input type="text" name="class1"></td>
-            <td>
-              <select name="category1">
-                <option value=""></option>
-                <option value="homework">Homework</option>
-                <option value="quiz">Quiz</option>
-                <option value="test">Test</option>
-              </select>
-            </td>
-          </tr>
-          <tr>
-            <td><input type="text" name="date2"></td>
-            <td><input type="number" name="score2"></td>
-            <td><input type="number" name="value2"></td>
-            <td><input type="text" name="class2"></td>
-            <td>
-              <select name="category2">
-                <option value=""></option>
-                <option value="homework">Homework</option>
-                <option value="quiz">Quiz</option>
-                <option value="test">Test</option>
-              </select>
-            </td>
-          </tr>
-          <tr>
-            <td><input type="text" name="date3"></td>
-            <td><input type="number" name="score3"></td>
-            <td><input type="number" name="value3"></td>
-            <td><input type="text" name="class3"></td>
-            <td>
-              <select name="category3">
-                <option value=""></option>
-                <option value="homework">Homework</option>
-                <option value="quiz">Quiz</option>
-                <option value="test">Test</option>
-              </select>
-            </td>
-          </tr>
-          <tr>
-            <td><input type="text" name="date4"></td>
-            <td><input type="number" name="score4"></td>
-            <td><input type="number" name="value4"></td>
-            <td><input type="text" name="class4"></td>
-            <td>
-              <select name="category4">
-                <option value=""></option>
-                <option value="homework">Homework</option>
-                <option value="quiz">Quiz</option>
-                <option value="test">Test</option>
-              </select>
-            </td>
-          </tr>
-          <tr>
-            <td><input type="text" name="date5"></td>
-            <td><input type="number" name="score5"></td>
-            <td><input type="number" name="value5"></td>
-            <td><input type="text" name="class5"></td>
-            <td>
-              <select name="category5">
-                <option value=""></option>
-                <option value="homework">Homework</option>
-                <option value="quiz">Quiz</option>
-                <option value="test">Test</option>
-              </select>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <button type="submit">Submit</button>
+   
+    <br>
+    
+    
+      
+      
     </form>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <canvas id="myChart"></canvas>

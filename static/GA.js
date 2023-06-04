@@ -1,41 +1,20 @@
-// UNCOMMENT TO RUN
-
 var form;
-var enter_button;
-var open_button;
 var tbody;
 var full_name;
 var grades;
 var times;
+
 setTimeout(function() {
 
-  set_button();
-}, 100); // 100 milliseconds = 0.1 seconds
-function set_button(){
+  get_data();
+}, 300); // 100 milliseconds = 0.1 seconds
+function set_button(grades, times){
 
-form = document.querySelector("#gradeform");
-form.style.display = "none";
-
-enter_button = document.querySelector("#enter-grades-button");
-
-open_button = document.querySelector("#open-grades-button");
-
-tbody = form.querySelector('tbody'); // Get the tbody element inside the form
-
-
-
-
-// UNCOMMENT TO RUN
-
-enter_button.addEventListener("click", () => {
-  
-  form.style.display = "block";
-});
-
-open_button.addEventListener("click", () => {
+// tbody = form.querySelector('tbody'); // Get the tbody element inside the form
 
   // Get the canvas element and create a new Chart object
-const canvas = document.getElementById('myChart');
+const canvas = document.querySelector('#myChart');
+
 times = times.slice(1, -1);
 times = times.split(",");
 grades = grades.split(",");
@@ -53,7 +32,7 @@ for (let i = 0; i < times.length; i++) {
   dateStrings.push(dateString);
 }
 
-alert(times)
+
 const chart = new Chart(canvas, {
     
     type: 'line',
@@ -65,7 +44,7 @@ const chart = new Chart(canvas, {
             // The data points for the y-axis (vertical axis)
             data: grades,
             // Set the line color to red
-            borderColor: 'red',
+            borderColor: "#2c7e8f",
             // Set the fill color to transparent
             backgroundColor: 'transparent'
         }]
@@ -83,51 +62,12 @@ const chart = new Chart(canvas, {
     }
 });
 
-});
-
-form.addEventListener('submit', (event) => {
-
-  event.preventDefault(); // Prevent the form from submitting and refreshing the page
-
-  // Create an array to store the user inputs
-  const inputs = [];
-
-  // Loop through all the rows in the tbody
-  const rows = tbody.querySelectorAll('tr');
-  rows.forEach((row) => {
-    // Get the input values for the current row
-    const date = row.querySelector('[name^="date"]').value; // Get the input with a name that starts with "date"
-    const score = row.querySelector('[name^="score"]').value; // Get the input with a name that starts with "score"
-    const value = row.querySelector('[name^="value"]').value; // Get the input with a name that starts with "value"
-    const classInput = row.querySelector('[name^="class"]').value; // Get the input with a name that starts with "class"
-    const category = row.querySelector('[name^="category"]').value; // Get the input with a name that starts with "category"
-
-    // Create an object with the input values and add it to the inputs array
-    const inputObj = {
-      date: date,
-      score: score,
-      value: value,
-      class: classInput,
-      category: category
-    };
-    inputs.push(inputObj);
-  });
-
-  // Do something with the inputs array, e.g. send it to a server or store it in local storage
-  document.getElementById("gradeform").reset();
-  post_grades(inputs);
-});
-}
-// Using setTimeout
-setTimeout(function() {
-  
-  get_data()
-}, 200); // 100 milliseconds = 0.1 seconds
+};
 
 function get_data() {
   
 
-fetch('/GA-data', {
+fetch('/grades', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
@@ -137,38 +77,36 @@ fetch('/GA-data', {
 .then(response => response.json())
 .then(data => {
   
-  full_name = JSON.stringify(data['full_name']);
-  full_name = full_name.slice(1, -1);
+  
   grades = JSON.stringify(data['grade_spread']);
   times = JSON.stringify(data['times']);
-  
+
   // alert(full_name); // Handle the response from Python
-  document.getElementById('Gslink').textContent = full_name;
+  
+  set_button(grades, times)
 })
 .catch(error => {
   alert('An error occurred:' +error);
 });
-}
 
 
-function post_grades(grades){
-  fetch('/post-grades', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(grades)
+
+fetch('/name', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ "message":"blank" })
 })
-.then(response => response.text())
-.then(result => {
-    alert(result);  // Log the response from Python
-})
-.catch(error => {
-    alert('An error occurred:', error);
-});
+.then(response => response.json())
+.then(data => {
+  full_name = JSON.stringify(data)
+  full_name = full_name.slice(1, -1);
+  // alert(full_name); // Handle the response from Python
+  if (full_name != "Login"){
+    
+  
+  document.getElementById('Gslink').textContent = full_name;
+  document.getElementById('Gslink').href = "/Profile";
+  }
 }
-
-
-
-
-

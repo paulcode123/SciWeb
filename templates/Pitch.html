@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="static/HomePage.css">
+  <title>Embedded Presentation</title>
+  <style>
+    /* Adjust the size of the container as per your requirements */
+    .presentation-container {
+      width: 100px;
+      height: 80px;
+    }
+  </style>
+</head>
+<body>
+  <ul class="navbar">
+    <li><a href="/">Home</a></li>
+    <li class="dropdown">
+      <button class="dropdown-btn">Grades</button>
+      <div class="dropdown-content">
+        <a href="/EnterGrades">Enter</a>
+        <a href="/GradeAnalysis">Analyse</a>
+        <a href="/GradeAnalysis">Goals</a>
+        
+      </div>
+    </li>
+    <li class="dropdown">
+      <button class="dropdown-btn">Study</button>
+      <div class="dropdown-content">
+        <a href="#">Create</a>
+        <a href="#">Study</a>
+        <a href="#">Predict</a>
+      </div>
+    </li>
+    <li class="dropdown">
+      <button class="dropdown-btn">Connect</button>
+      <div class="dropdown-content">
+        <a href="#">Classes</a>
+        <a href="#">Assignments</a>
+        <a href="#">Leagues</a>
+        <a href="#">Questions</a>
+      </div>
+    </li>
+    <li class="dropdown">
+      <button class="dropdown-btn">About</button>
+      <div class="dropdown-content">
+        <a href="/Pitch">Pitch</a>
+        <a href="#">Getting Started</a>
+        
+      </div>
+    </li>
+    <li><a href="/Login" id="Ptslink">Login</a></li>
+  </ul>
+  <div class="presentation-container">
+    <iframe src="https://docs.google.com/presentation/d/14nikx9UlVK61Jko7CUSNdRlfdNEF55WkEPUu9TXpeqQ/edit?usp=sharing/embed?start=true&loop=false&delayms=3000&rm=minimal" frameborder="0" width="800" height="600" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+  </div>
+<script src="/static/Pitch.js"></script>
+</body>
+</html>

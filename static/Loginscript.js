@@ -11,7 +11,9 @@ form.addEventListener('submit', function(event) {
   const email = document.getElementById('email').value;
   const grade = document.getElementById('grade').value;
   document.getElementById("login-form").reset();
+  alert('before calling post_login')
   post_login([fname, lname, email, grade]);
+  alert('after calling post_login')
 
   
   
@@ -23,7 +25,7 @@ setTimeout(function() {
 }, 100); // 100 milliseconds = 0.1 seconds
 
 function get_data(){
- fetch('/login-data', {
+ fetch('/name', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
@@ -36,6 +38,7 @@ function get_data(){
   full_name = full_name.slice(1, -1);
   // alert(full_name); // Handle the response from Python
   document.getElementById('lslink').textContent = full_name;
+  document.getElementById('lslink').href = "/Profile";
 })
 .catch(error => {
   alert('An error occurred:' +error);
@@ -44,7 +47,7 @@ function get_data(){
 
 
 function post_login(data){
-  alert('1')
+  alert('reached post_login')
   fetch('/post-login', {
     method: 'POST',
     headers: {
