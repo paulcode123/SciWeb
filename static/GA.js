@@ -1,24 +1,21 @@
 var form;
 var tbody;
-var full_name;
+
 var grades;
 var times;
 
 setTimeout(function() {
 
-  get_data();
+  graph_data("all");
 }, 300); // 100 milliseconds = 0.1 seconds
-function set_button(grades, times){
-
-// tbody = form.querySelector('tbody'); // Get the tbody element inside the form
-
-  // Get the canvas element and create a new Chart object
-const canvas = document.querySelector('#myChart');
+function create_graph(grades, times, name){
+  console.log(name)
+const canvas = document.querySelector('#myGraph');
 
 times = times.slice(1, -1);
+grades = grades.slice(1, -1);
 times = times.split(",");
 grades = grades.split(",");
-
 
 
 let dateStrings = [];
@@ -32,47 +29,45 @@ for (let i = 0; i < times.length; i++) {
   dateStrings.push(dateString);
 }
 
-
-const chart = new Chart(canvas, {
-    
-    type: 'line',
-    data: {
-        // The labels for the x-axis (horizontal axis)
-        labels: dateStrings,
-        datasets: [{
-            label: 'My Line Graph',
-            // The data points for the y-axis (vertical axis)
-            data: grades,
-            // Set the line color to red
-            borderColor: "#2c7e8f",
-            // Set the fill color to transparent
-            backgroundColor: 'transparent'
-        }]
-    },
-      
-    options: {
-        responsive: true,
-        scales: {
-            yAxes: [{
-                ticks: {
-                    beginAtZero: true
-                }
-            }]
-        }
+console.log("c1")
+const trace = {
+    x: dateStrings,
+    y: grades,
+    mode: 'lines',
+    line: {
+      color: '#2c7e8f'
     }
-});
+  };
+
+  // Create the data array
+  const data = [trace];
+
+  // Define the layout
+  const layout = {
+    title: name,
+    xaxis: {
+      title: 'Date'
+    },
+    yaxis: {
+      title: 'Grades'
+    },
+    displayModeBar: false
+  };
+
+  // Render the graph
+   Plotly.newPlot('myGraph', data, layout)
 
 };
 
-function get_data() {
+function graph_data(classes) {
   
 
-fetch('/grades', {
+fetch('/grades_over_time', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
   },
-  body: JSON.stringify({ data: 'Hello from JavaScript!' })
+  body: JSON.stringify({ data: classes })
 })
 .then(response => response.json())
 .then(data => {
@@ -80,33 +75,37 @@ fetch('/grades', {
   
   grades = JSON.stringify(data['grade_spread']);
   times = JSON.stringify(data['times']);
-
-  // alert(full_name); // Handle the response from Python
-  
-  set_button(grades, times)
+  if (classes != "all"){
+  let joined_classes = classes.join(', ');
+  var name =  joined_classes +" grades over time"
+  }
+  else{
+    var name = "Total grade over time"
+  }
+  create_graph(grades, times, name)
 })
 .catch(error => {
   alert('An error occurred:' +error);
 });
-
-
-
-fetch('/name', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ "message":"blank" })
-})
-.then(response => response.json())
-.then(data => {
-  full_name = JSON.stringify(data)
-  full_name = full_name.slice(1, -1);
-  // alert(full_name); // Handle the response from Python
-  if (full_name != "Login"){
-    
-  
-  document.getElementById('Gslink').textContent = full_name;
-  document.getElementById('Gslink').href = "/Profile";
-  }
 }
+
+document.getElementById("class-form").addEventListener("submit", function(event) {
+  event.preventDefault();
+  
+  const checkboxes = document.querySelectorAll('input[name="class"]:checked');
+  const selectedClasses = Array.from(checkboxes).map(function(checkbox) {
+    return checkbox.value;
+  });
+  
+  if (selectedClasses.length === 0) {
+    const errorMessage = document.getElementById("error-message");
+    errorMessage.textContent = "Please select at least one class.";
+    return;
+  }
+  
+  console.log(selectedClasses);
+  document.getElementById("class-form").reset();
+  graph_data(selectedClasses)
+  });
+
+

@@ -3,9 +3,11 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Grade Analysis</title>
+  <title>SciWeb Grade Analysis</title>
+  <link rel="icon" href="static/favicon.png" type="image/x-icon">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/static/GA.css">
+  <link rel="stylesheet" href="/static/navbar.css">
 </head>
 
 <body>
@@ -45,7 +47,7 @@
         
       </div>
     </li>
-    <li><a href="/Login" id="Gslink">Login</a></li>
+    <li><a href="/Login" id="profile">Login</a></li>
   </ul>
 
   <main>
@@ -58,15 +60,40 @@
       
       
     </form>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <canvas id="myChart"></canvas>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <div id="myGraph"></div>
+
+
+
+   <form id="class-form">
+  <h2>Select Classes to Graph</h2>
+  <div class="checkbox-group">
+    <label>
+      <input type="checkbox" name="class" value="biology"> Biology
+    </label>
+    <label>
+      <input type="checkbox" name="class" value="geometry"> Geometry
+    </label>
+    <label>
+      <input type="checkbox" name="class" value="history"> History
+    </label>
+    <label>
+      <input type="checkbox" name="class" value="english"> English
+    </label>
+    <label>
+      <input type="checkbox" name="class" value="french"> French
+    </label>
+  </div>
+  <button type="submit">Submit</button>
+</form>
+
+<ul id="selected-classes"></ul>
+
 
   </main>
 
-  <footer>
-    <p>&copy; 2023 My Web Page</p>
-  </footer>
-
+  <script src="/static/IP.js"></script>
+  <script src="/static/user_data.js"></script>
   <script src="static/GA.js"></script>
 </body>
 

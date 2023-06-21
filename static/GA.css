@@ -1,155 +1,29 @@
-/* Navigation bar styles */
-header {
-  background-color: black;
-  padding: 20px;
-  position: fixed;
-  top: 0;
-  width: 100%;
-  
+#class-form {
+  max-width: 400px;
+  margin: 0 auto;
 }
-body {
-  margin: 0;
+
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
-    /* Add some basic styles to the navigation bar */
-    ul.navbar {
-      list-style-type: none;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background-color: #333;
-    }
 
-    ul.navbar li {
-      float: left;
-    }
-
-    ul.navbar li a, .dropdown-content a {
-      display: block;
-      color: white;
-      text-align: center;
-      padding: 14px 16px;
-      text-decoration: none;
-    }
-
-    ul.navbar li a:hover:not(.dropdown-btn) {
-      background-color: #111;
-    }
-ul.navbar li .dropdown-btn:hover {
-      background-color: darkgreen;
-     border-radius: 20px; /* Rounded edges */
-    }
-
-    .dropdown-btn {
-      display: block;
-      font-size: 16px;
-      border: none;
-      outline: none;
-      color: white;
-      padding: 14px 16px;
-      background-color: inherit;
-      font-family: inherit;
-      margin: 0;
-    }
-
-    .dropdown-content {
-      display: none;
-      position: absolute;
-      background-color: gray;
-      min-width: 160px;
-      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-      z-index: 1;
-    }
-
-    .dropdown-content a {
-      color: gray; /* Set the default text color to gray */
-      padding: 12px 16px;
-      text-decoration: none;
-      display: block;
-      text-align: left;
-    }
-
-    .dropdown-content a:hover {
-      background-color: #f1f1f1;
-      
-    }
-
-    .dropdown:hover .dropdown-content {
-      display: block;
-    }
-
-
-/* Main section styles */
-main {
-  margin-top: 100px; /* Space for the fixed header */
-  padding: 20px;
+button {
+  margin-top: 10px;
 }
-section {
-  margin-bottom: 20px;
+
+#error-message {
+  color: red;
+  margin-top: 10px;
 }
-section h2 {
-  margin-bottom: 10px;
-}
-section ul {
+
+#selected-classes {
+  margin-top: 20px;
   list-style-type: none;
-  margin: 0;
   padding: 0;
 }
-section li {
+
+#selected-classes li {
   margin-bottom: 5px;
-}
-section li a {
-  color: black;
-  text-decoration: none;
-}
-section li a:hover {
-  color: blue;
-}
-
-/* Footer styles */
-footer {
-  background-color: lightgray;
-  padding: 20px;
-  text-align: center;
-}
-button {
-  background-color: green;
-  border-radius: 5px;
-  color: white;
-  padding: 10px;
-  transition: background-color 0.3s ease;
-}
-
-button:hover {
-  background-color: darkgreen;
-}
-
-table {
-  border-collapse: collapse;
-  width: 100%;
-}
-
-th, td {
-  text-align: left;
-  padding: 8px;
-  border-bottom: 1px solid #ddd;
-}
-
-th {
-  background-color: #f2f2f2;
-  color: #333;
-}
-
-tr:nth-child(even) {
-  background-color: #f2f2f2;
-}
-
-input[type="number"], input[type="date"], select {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-}
-#gradeform {
-  display: none;
 }

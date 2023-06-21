@@ -3,24 +3,31 @@ import json
 import requests
 import numpy as np
 import datetime
+import re
+import time
+from googleapiclient.discovery import build
+
+def init_vars():
+  spreadsheet_id = '1k7VOAgZY9FVdcyVFaQmY_iW_DXvYQluosM2LYL2Wmc8'
+  api_key = 'AIzaSyC4iGMgMaHMqSxGfsa5phA-peGBKUKkTWM'
+  sheetdb_url = 'https://sheetdb.io/api/v1/y0fswwtbyapbd'
+  
+  DISCOVERY_SERVICE_URL = 'https://sheets.googleapis.com/$discovery/rest?version=v4'
+  
+  service = build('sheets', 'v4', developerKey=api_key, discoveryServiceUrl=DISCOVERY_SERVICE_URL)
+  
+  
+  max_column = "H"
+  #define placeholders if name not set
+  user_data = {}
+  ip_add = 404;
+  return spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column, user_data, ip_add
+  
 
 
-#define sheetdb urls to get from/post to
-generic_url = "https://sheetdb.io/api/v1/pb8spx7u5gewk/"
-logins_url = "https://sheetdb.io/api/v1/pb8spx7u5gewk?sheet=Logins"
-grades_url = "https://sheetdb.io/api/v1/pb8spx7u5gewk?sheet=Grades"
-classes_url = "https://sheetdb.io/api/v1/pb8spx7u5gewk?sheet=Classes"
-# IP address
-ip_add = "1"
-
-fabricated_name = "Testing"
-fabricated_classes = [{'period': '1', 'teacher': 'Unger', 'name': 'Honors Bio', 'members': 'Paul Nieuwerburgh', 'assignments': 'mitosis Lab', 'assessments': 'mitosis', 'description': 'fun class', 'id': '3274'}, {'period': '2', 'teacher': 'Lubin', 'name': 'Global 9', 'members': 'Paul Nieuwerburgh, Testing', 'assignments': 'Final project', 'assessments': 'Mughal Empire', 'description': 'meh', 'id': '8236'}, {'period': '2', 'teacher': 'Ms. Johnson', 'name': 'AP chem', 'members': 'Testing', 'assignments': '', 'assessments': '', 'description': '', 'id': '9234'}]
-fabricated_grades = [{'date': '1/2/2023', 'score': '1', 'value': '10', 'class': 'Bio', 'category': 'homework'}, {'date': '3/5/2016', 'score': '3', 'value': '10', 'class': 'Bio', 'category': 'test'}, {'date': '9/12/2005', 'score': '2', 'value': '10', 'class': 'History', 'category': 'quiz'}]
-#True will use above data(request conservation), false will pull from sheetdb
-fabricate_data = True
-
+spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column, user_data, ip_add = init_vars()
 app = Flask(__name__)
-# app.debug = True
+
 
 #initialize HTML/CCS/JS files
 @app.route('/')
@@ -51,161 +58,188 @@ def pitch():
 def classes():
   return render_template('Classes.html')
 
-@app.route('/class/<class_name>')
-def class_page(class_name):
-  if not fabricate_data:
-    classes = get_data(classes_url)
-  else:
-    classes = fabricated_classes
-  class_data = next((row for row in classes if row['name'] == class_name), None)
+@app.route('/class/<classurl>')
+def class_page(classurl):
+  class_name = re.findall('[a-zA-Z]+', classurl)[0]
+  id = re.findall('[0-9]+', classurl)[0]
+  classes = get_data("Classes")
+  class_data = next((row for row in classes if row['id']  == id), None)
   return render_template('class.html', class_name=class_name, class_data = class_data)
 
 
+
   
-#Send data to JS files
+#Send post/get data to/from JS files
 @app.route('/home-ip', methods=['POST'])
 def get_home_ip():
   global ip_add
-  ip_add = request.json['data']
-  print(ip_add)
+  if ip_add == 404:
+    ip_add = request.data.decode('utf-8')
+  
+  print("ip from get_home_ip is:", ip_add)
   return "success"
 
 @app.route('/name', methods=['POST'])
 def post_name():
-  response_data = full_name
-  return json.dumps(response_data)
+  user_data = get_name()  
+  print("first_name from post_name is:",user_data["first_name"])
+  
+  return json.dumps(user_data)
 
 @app.route('/grades', methods=['POST'])
+def post_eg_grades():
+  grades = get_data("Grades")
+  return json.dumps(grades)
+  
+@app.route('/grades_over_time', methods=['POST'])
 def post_ga_grades():
-  if not fabricate_data:
-    grades = get_data(grades_url)
-  else:
-    grades = fabricated_grades
-  times, grade_spread = process_grades(grades)
+  classes = request.json
+  
+  grades = get_data("Grades")
+  times, grade_spread = process_grades(grades, classes['data'])
   response_data = {"times": times.tolist(), "grade_spread": grade_spread}
 
   return json.dumps(response_data)
 
 @app.route('/Classes-data', methods=['POST'])
 def post_Classes():
-  if not fabricate_data:
-    classes = get_data(classes_url)
-  else:
-    classes = fabricated_classes
+  classes = get_data("Classes")
   response_data = {"Classes": classes}
   # print("response_data", response_data)
   return json.dumps(response_data)
 
+@app.route('/Assignments-data', methods=['POST'])
+def post_Assignments():
+  assignments = get_data("Assignments")
+  response_data = {"Assignments": assignments}
+  # print("response_data", response_data)
+  return json.dumps(response_data)
 
-#get grades from sheetdb
-def get_data(url):
-  response = requests.get(url)
-  data = response.json()
-  return data
+@app.route('/profile-data', methods=['POST'])
+def profile_data():
+  user_data = get_name()
+  response_data = {"Data": user_data}
+  return json.dumps(response_data)
 
-
-#get name from sheetdb
-def get_name(url):
-  global ip_add
-  data = get_data(url)
-
-  filtered_data = [entry for entry in data if entry.get('IP') == ip_add]
-
-  if filtered_data:
-      latest_entry = filtered_data[-1]
-      first_name = latest_entry.get('first_name')
-      last_name = latest_entry.get('last_name')
-      return first_name
-  else:
-      return "Login"
-
-
-#Update Classes to sheetdb
-def update_classes(row_num, new_row, url, durl):
-  deletion_endpoint = durl+"id/"+str(row_num)+"?sheet=Classes";
-  print(deletion_endpoint)
-  print("rn: ", row_num)
-  response = requests.delete(deletion_endpoint)
-  
-  if response.status_code == 200:
-      print("Row deletion successful!")
-  else:
-      print("Row deletion failed. Status code:", response.status_code)
-  
-  response = requests.post(url, json=new_row)
-  
-  if response.status_code == 201:
-      print("Row creation successful!")
-  else:
-      print("Row creation failed. Status code:", response.status_code)
-  
-
-
-#post name to sheetdb
-def post_name_sheetdb(url, data):
-  
-  print("IP address from postname is", ip_add)
-  data = {
-    'first_name': data[0],
-    'last_name': data[1],
-    'email': data[2],
-    'grade': data[3],
-    'IP': ip_add
-  }
-  requests.post(url, json=data)
-
-
-#post grades to sheetdb
-
-def post_grades(url, data):
-  
-  payload = {
-    "data": data
-  }
-  response = requests.post(url, json=payload)
-
-  if response.status_code == 201:
-    print('Row added successfully')
-  else:
-    print('Failed to add row:', response.status_code)
-#post classes to sheetdb
-def post_classes(url, data):
-  print(data)
-  payload = {
-    "data": data
-  }
-  requests.post(url, json=payload)
-  
-#get user-inputted grades from GA.js
 @app.route('/post-grades', methods=['POST'])
 def receive_grades():
   data = request.json 
-  post_grades(grades_url, data)
+  post_data("Grades", data)
   return 'Data received successfully'
 
 #get user-inputted login from logins.js
 @app.route('/post-login', methods=['POST'])
 def postLogin():
-  print("from postLogin")
   data = request.json
-  post_name_sheetdb(logins_url, data)
+  post_data("Users", data)
   return 'success'
-  
+
+@app.route('/update-login', methods=['POST'])
+def updateLogin():
+  data = request.json
+  update_data(data['osis'], 'osis', data, "Users")
+  return 'success'
 #get user-inputted classes from Classes.js
 @app.route('/post-classes', methods=['POST'])
 def receive_Classes():
   data = request.json
-  print(data)
+  print("receive_classes data", data)
   if data["update"] == 0:
-    post_classes(classes_url, data['class'])
+    post_data("Classes", data['class'])
   else:
-    update_classes(data["update"], data['class'], classes_url, generic_url)
+    update_data(data["update"], "id", data['class'], "Classes")
+    
+    
   
   return json.dumps({"data":"success"})
 
+@app.route('/update-grades', methods=['POST'])
+def update_grades():
+  data = request.json
+  update_data(data['rowid'], "id", data['grades'], "Grades")
+  return 'success'
 
-def process_grades(grades):
- 
+@app.route('/post-assignment', methods=['POST'])
+def postAssignment():
+  data = request.json['data']
+  print(data)
+  post_data("Assignments", data['data'])
+  update_data(data['classid'], data["newrow"], "Classes")
+  return json.dumps('success')
+
+
+
+
+#get data from Google Sheets API
+def get_data(sheet):
+  ranges = [f'{sheet}!A:{max_column}']
+  request = service.spreadsheets().values().batchGet(spreadsheetId=spreadsheet_id, ranges=ranges, majorDimension='ROWS')
+  
+  response = request.execute()
+  response = response['valueRanges'][0]['values']
+  
+  
+  data = []
+  
+  headers = response[0]  # Assumes the first row contains headers
+  for row in response[1:]:
+      row_data = {}
+      for index, value in enumerate(row):
+          header = headers[index]
+          row_data[header] = value
+      data.append(row_data)
+  print("data from get_data:", data)
+  return data
+
+# post data to sheetdb
+def post_data(sheet, data):
+  print(data)
+  url = sheetdb_url+"?sheet="+sheet
+  response = requests.post(url, json=data)
+  print(response, url)
+  return response
+
+#delete data from sheetdb
+def delete_data(sheet, row_value, row_name):
+  url = sheetdb_url+"/"+row_name+"/"+row_value+"?sheet="+sheet
+  response = requests.delete(url)
+  print(response, url)
+  return response
+
+  
+#get name from Users data
+def get_name():
+  global ip_add, user_data
+  if user_data != {}:
+    print("user_data already defined in get_name()")
+    return user_data
+  while ip_add==404:
+    
+    time.sleep(0.1)
+  
+  data = get_data("Users")
+  
+  filtered_data = [entry for entry in data if entry.get('IP') == ip_add]
+  print("fd:", filtered_data)
+  if filtered_data:
+      user_data = filtered_data[-1]
+      
+      return user_data
+  else:
+      return "Login", 404
+
+
+#Update Classes to sheetdb
+def update_data(row_val, row_name, new_row, sheet):
+  delete_data(sheet, row_val, row_name)
+  post_data(sheet, new_row)
+  
+
+
+def process_grades(grades, classes):
+  #filter grades based on class
+  if classes != "all":
+    grades = [grade for grade in grades if grade['class'] in classes]
   # Extract the minimum and maximum dates from the data
   dates = [datetime.datetime.strptime(d['date'], '%m/%d/%Y').date() for d in grades]
   min_date = min(dates)
@@ -216,9 +250,6 @@ def process_grades(grades):
   evenly_spaced_dates = [datetime.date.fromordinal(d) for d in date_range]
   
   
-
-  
-
   grade_spread = []
   for date in evenly_spaced_dates:
     grade_spread.append(calculate_grade(date, grades))
@@ -229,30 +260,30 @@ def process_grades(grades):
 def calculate_grade(time, data):
   categories = {}
   weights = {
-    "Bio": {
-      "homework": 0.3,
-      "quiz": 0.2,
-      "test": 0.5
+    "biology": {
+      "Homework": 0.3,
+      "Assignment": 0.2,
+      "Assessment": 0.5
     },
-    "Eng": {
-      "homework": 0.3,
-      "quiz": 0.2,
-      "test": 0.5
+    "english": {
+      "Homework": 0.3,
+      "Quiz": 0.2,
+      "Test": 0.5
     },
-    "Orch": {
-      "homework": 0.3,
-      "quiz": 0.2,
-      "test": 0.5
+    "french": {
+      "Homework": 0.3,
+      "Quiz": 0.2,
+      "Test": 0.5
     },
-    "Geo": {
-      "homework": 0.3,
-      "quiz": 0.2,
-      "test": 0.5
+    "geometry": {
+      "Homework": 0.3,
+      "Quiz": 0.2,
+      "Test": 0.5
     },
-    "History": {
-      "homework": 0.4,
-      "quiz": 0.1,
-      "test": 0.5
+    "history": {
+      "Homework": 0.4,
+      "Quiz": 0.1,
+      "Test": 0.5
     }
   }
   
@@ -313,10 +344,7 @@ def calculate_grade(time, data):
 
 
 
-if not fabricate_data:
-  full_name = get_name(logins_url)
-else:
-  full_name = fabricated_name
 
 
 app.run(host='0.0.0.0', port=8080, debug=True)
+  

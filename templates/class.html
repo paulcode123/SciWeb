@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html>
 <link rel="stylesheet" href="https://sciweb.c26pn.repl.co/static/class.css">
+<link rel="stylesheet" href="https://sciweb.c26pn.repl.co/static/navbar.css">
 <head>
   
-    <title>Class {{ class_name }}</title>
+    <title>SciWeb {{ class_name }}</title>
+    <link rel="icon" href="https://sciweb.c26pn.repl.co/static/favicon.png" type="image/x-icon">
 </head>
 <body>
   <ul class="navbar">
-    <li><a href="#">Home</a></li>
+    <li><a href="/">Home</a></li>
     <li class="dropdown">
       <button class="dropdown-btn">Grades</button>
       <div class="dropdown-content">
@@ -42,19 +44,45 @@
         
       </div>
     </li>
-    <li><a href="/Login" id="Islink">Login</a></li>
+    <li><a href="/Login" id="profile">Login</a></li>
   </ul>
     <h1>Welcome to {{ class_name }}</h1>
+    <h3 id="description"></h3>
     <div id="user-list"></div>
+    <div id="assignmentList"></div>
     <br>
+  <button id="createBtn">Create Assignment</button>
+
+  <div id="formContainer" style="display: none;">
+    <form id="assignmentForm">
+      <label for="name">Name:</label>
+      <input type="text" id="name" name="name" required>
+
+      <label for="due">Due Date:</label>
+      <input type="date" id="due" name="due" required>
+      <label for="assignmentType">Type:</label>
+    <select id="assignmentType" name="assignmentType">
+      <option value="homework">Homework</option>
+      <option value="essay">Essay</option>
+      <option value="quiz">Quiz</option>
+      <option value="test">Test</option>
+      <option value="project">Project</option>
+    </select>
+      <br>
+      
+    
+      <input type="submit" value="Submit">
+    </form>
+  </div>
     
     <!-- Add any additional HTML content here -->
-  
+  <script src="/static/IP.js"></script>
   <script>
 
 const classData = JSON.parse('{{ class_data|tojson|safe }}');
 
   </script>
+  <script src="/static/user_data.js"></script>
   <script src="/static/class.js"></script>
   
 </body>

@@ -1,15 +1,16 @@
 // Jupiter API?
+console.log("EG")
 const form = document.querySelector("#gradeform");
 const tbody = document.querySelector("#mytbody");
-
+var grades;
 const Pullbutton = document.querySelector('#Jupull');
-alert("Pullbutton: "+ Pullbutton)
-Pullbutton.addEventListener('click', function() {
+
+// Pullbutton.addEventListener('click', function() {
  
-});
+// });
 
 form.addEventListener('submit', (event) => {
-  alert('1')
+  
   const inputs = [];
   event.preventDefault(); // Prevent the form from submitting and refreshing the page
 var pasted = document.getElementById('pasted').value;
@@ -45,7 +46,7 @@ for (let i = 0; i < pasted.length; i += 2) {
 });
   }
   else{
-  alert('2')
+  
 
 
   
@@ -62,17 +63,20 @@ for (let i = 0; i < pasted.length; i += 2) {
     const classInput = row.querySelector('[name^="class"]').value; // Get the input with a name that starts with "class"
     const category = row.querySelector('[name^="category"]').value; // Get the input with a name that starts with "category"
   const name = row.querySelector('[name^="name"]').value; 
-    // Create an object with the input values and add it to the inputs array
-    alert('3')
+    // If all values in row are filled in, create an object with the input values and add it to the inputs array
+    if(date != "" && score != "" && value != "" && classInput != "" && category != "" && name != ""){
     const inputObj = {
       date: date,
       score: score,
       value: value,
       class: classInput,
       category: category,
-      name: name
+      name: name,
+      osis: osis,
+      id: Math.floor(Math.random() * 10000)
     };
     inputs.push(inputObj);
+    }
   });
   
   }
@@ -86,37 +90,7 @@ for (let i = 0; i < pasted.length; i += 2) {
 
 
 // Using setTimeout
-setTimeout(function() {
-  
-  get_data();
-}, 200); // 100 milliseconds = 0.1 seconds
 
-function get_data() {
-  
-
-fetch('/name', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ data: 'Hello from JavaScript!' })
-})
-.then(response => response.json())
-.then(data => {
-  
-  var full_name = JSON.stringify(data);
- 
-  full_name = full_name.slice(1, -1);
-  
-  
-  // alert(full_name); // Handle the response from Python
-  document.getElementById('EGlink').textContent = full_name;
-  document.getElementById('EGlink').href = "/Profile";
-})
-.catch(error => {
-  alert('An error occurred:' +error);
-});
-}
 
 
 function post_grades(grades){
@@ -137,6 +111,145 @@ function post_grades(grades){
 }
 
 
+fetch('/grades', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ data: 'Hello from JavaScript!' })
+})
+.then(response => response.json())
+.then(data => {
+  
+  
+  grades = data
+  createGradesTable();
+})
+.catch(error => {
+  alert('An error occurred:' +error);
+});
 
 
+
+function createGradesTable() {
+  const tableBody = document.getElementById('gradesBody');
+  tableBody.innerHTML = ''; // Clear any existing rows
+
+  for (let i = 0; i < grades.length; i++) {
+    const row = document.createElement('tr');
+
+    const grade = grades[i];
+    const { date, score, value, class: className, category, name } = grade;
+
+    const cells = [
+      createTableCell(date),
+      createTableCell(score),
+      createTableCell(value),
+      createTableCell(className),
+      createTableCell(category),
+      createTableCell(name),
+      createEditButton(i)
+    ];
+
+    cells.forEach(cell => row.appendChild(cell));
+    tableBody.appendChild(row);
+  }
+}
+
+// Function to create a table cell
+function createTableCell(value) {
+  const cell = document.createElement('td');
+  cell.textContent = value;
+  return cell;
+}
+
+// Function to create an edit button for a row
+function createEditButton(index) {
+  const button = document.createElement('button');
+  button.textContent = 'Edit';
+  button.addEventListener('click', () => {
+    const row = document.getElementById('gradesBody').children[index];
+    makeRowEditable(row, index);
+  });
+
+  const cell = document.createElement('td');
+  cell.appendChild(button);
+  return cell;
+}
+
+// Function to make a row editable
+function makeRowEditable(row, index) {
+  const cells = row.children;
+  for (let i = 0; i < cells.length - 1; i++) {
+    const cell = cells[i];
+    const value = cell.textContent;
+    cell.innerHTML = `<input type="text" value="${value}">`;
+  }
+
+  const saveButton = document.createElement('button');
+  saveButton.textContent = 'Save';
+
+saveButton.addEventListener('click', () => {
+    saveRowChanges(row, index);
+  });
+
+  const actionCell = cells[cells.length - 1];
+  actionCell.innerHTML = '';
+  actionCell.appendChild(saveButton);
+}
+
+// Function to save the changes made to a row
+function saveRowChanges(row, index) {
+  const cells = row.children;
+  const updatedValues = {};
+
+  for (let i = 0; i < cells.length - 1; i++) {
+    const cell = cells[i];
+    const input = cell.firstChild;
+    const value = input.value;
+    const property = getPropertyByIndex(i);
+    updatedValues[property] = value;
+    cell.textContent = value;
+  }
+  updatedValues['id'] = grades[index]['id']
+
+  const saveButton = document.createElement('button');
+  saveButton.textContent = 'Edit';
+  saveButton.addEventListener('click', () => {
+    makeRowEditable(row, index);
+  });
+
+  const actionCell = cells[cells.length - 1];
+  actionCell.innerHTML = '';
+  actionCell.appendChild(saveButton);
+  index = grades[index]['id']
+  // Process the updated values as needed
+  console.log('Updated Values:', updatedValues);
+  console.log('Original Index:', index);
+  update_grades(index, updatedValues)
+}
+
+// Function to get the property name based on the index
+function getPropertyByIndex(index) {
+  const properties = ['date', 'score', 'value', 'class', 'category', 'name'];
+  return properties[index];
+}
+// Create the grades table
+
+function update_grades(id, grades){
+  fetch('/update-grades', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({"grades":grades, "rowid": id})
+})
+.then(response => response.text())
+.then(result => {
+    console.log(result);  // Log the response from Python
+})
+.catch(error => {
+    alert('An error occurred:', error);
+});
+}
 

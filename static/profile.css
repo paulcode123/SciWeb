@@ -1,0 +1,55 @@
+.profile-container {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f8f8f8;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .profile-field {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .profile-label {
+      flex-basis: 120px;
+      font-weight: bold;
+    }
+
+    .profile-input {
+      flex-grow: 1;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      background-color: #fff;
+      color: #555;
+    }
+    .profile-user-input{
+      visibility: hidden;
+      position: absolute;
+    }
+
+    .profile-edit-button {
+      width: 60px;
+      margin-left: 10px;
+      padding: 5px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    .profile-submit-button {
+      width: 60px;
+      margin-left: 10px;
+      padding: 5px;
+      background-color: #28a745;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      visibility: hidden;
+    }

@@ -3,9 +3,11 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Enter Grades</title>
+  <title>SciWeb Enter Grades</title>
+  <link rel="icon" href="static/favicon.png" type="image/x-icon">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/static/EG.css">
+  <link rel="stylesheet" href="/static/navbar.css">
 </head>
 
   
@@ -47,14 +49,31 @@
         
       </div>
     </li>
-    <li><a href="/Login" id="EGlink">Login</a></li>
+    <li><a href="/Login" id="profile">Login</a></li>
   </ul>
 
   <main>
     <h1>Enter Grades</h1>
 
-    <p>To start, Pull from Jupiter account, Paste in Grades from Jupiter or Enter Grades Manually</p>
+    <p>Pull from Jupiter account, Paste in Grades from Jupiter, Enter Grades Manually, or edit grades</p>
     <button id="Jupull">Pull from Jupiter</button>
+    <table id="gradesTable">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Score</th>
+        <th>Value</th>
+        <th>Class</th>
+        <th>Category</th>
+        <th>Name</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="gradesBody">
+      <!-- Grades rows will be dynamically added here -->
+    </tbody>
+  </table>
+    <p>Enter Grades</p>
     <form id='gradeform'>
       <input id="pasted" placeholder="copy and paste grades here"></input>
  <table>
@@ -149,6 +168,8 @@
 
       <button type="submit">Submit</button>
     </form>
+<script src="/static/IP.js"></script>
+<script src="/static/user_data.js"></script>
 <script src="static/EG.js"></script>
   </main>
 </body>

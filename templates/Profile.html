@@ -2,10 +2,12 @@
 <html>
 
 <head>
-  <title>Profile</title>
+  <title>SciWeb Profile</title>
+  <link rel="icon" href="static/favicon.png" type="image/x-icon">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="/static/Profile.css">
+  <link rel="stylesheet" href="/static/navbar.css">
+  <link rel="stylesheet" href="/static/profile.css">
 
 
 
@@ -48,9 +50,50 @@
         
       </div>
     </li>
-    <li><a href="/Login" id="Pslink">Login</a></li>
+    <li><a href="/Login" id="profile">Login</a></li>
   </ul>
   <h1>Profile Page</h1>
-  <script src="static/Profile.js"></script>
+  <div class="profile-container">
+    <div class="profile-field">
+
+      
+      <div class="profile-label">First Name:</div>
+      <div class="profile-input" id="first-name-text"></div>
+      <input class="profile-user-input" id="first-name-input"></input>
+      
+      <button class="profile-edit-button" id="first-name_edit" onclick="editField('first-name')">Edit</button>
+      <button class="profile-submit-button" id="first-name_submit" onclick="submitField('first-name')">Submit</button>
+    </div>
+    
+    <div class="profile-field">
+      <div class="profile-label">Last Name:</div>
+      <div class="profile-input" id="last-name-text"></div>
+      <input class="profile-user-input" id="last-name-input"></input>
+      
+      <button class="profile-edit-button" id="last-name_edit" onclick="editField('last-name')">Edit</button>
+      <button class="profile-submit-button" id="last-name_submit" onclick="submitField('last-name')">Submit</button>
+    </div>
+    
+    <div class="profile-field">
+      <div class="profile-label">OSIS:</div>
+      <div class="profile-input" id="osis-text"></div>
+      <input class="profile-user-input" id="osis-input"></input>
+      
+      <button class="profile-edit-button" id="osis_edit" onclick="editField('osis')">Edit</button>
+      <button class="profile-submit-button" id="osis_submit" onclick="submitField('osis')">Submit</button>
+    </div>
+    
+    <div class="profile-field">
+      <div class="profile-label">Grade:</div>
+      <div class="profile-input" id="grade-text"></div>
+      <input class="profile-user-input" id="grade-input"></input>
+      
+      <button class="profile-edit-button" id="grade_edit" onclick="editField('grade')">Edit</button>
+      <button class="profile-submit-button" id="grade_submit" onclick="submitField('grade')">Submit</button>
+    </div>
+  </div>
+  <script src="/static/IP.js"></script>
+  <script src="/static/user_data.js"></script>
+  <script src="/static/profile.js"></script>
 </body>
 </html>

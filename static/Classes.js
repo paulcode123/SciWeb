@@ -1,11 +1,9 @@
 const pushList = [];
-var full_name;
+
 var classList = 0;
 
- setTimeout(() => {
-      init_buttons()
-    }, 200);
-function init_buttons(){
+
+
     const joinButton = document.getElementById('joinButton');
     const classForm = document.getElementById('classForm');
     const periodInput = document.getElementById('periodInput');
@@ -17,7 +15,7 @@ function init_buttons(){
       joinButton.style.display = 'none';
       classForm.classList.remove('hidden');
     });
-}
+
     periodInput.addEventListener('input', updateClassOptions);
     teacherInput.addEventListener('input', updateClassOptions);
     nameInput.addEventListener('input', updateClassOptions);
@@ -73,8 +71,8 @@ classForm.addEventListener('submit', function(event) {
   var old_row_members= "";
 for (var i = 0; i < classList.length; i++) {
   if (classList[i].period === periodInput && classList[i].teacher === teacherInput) {
-    old_row_members = classList[i].members;
-    update = classList[i].id; // Add 1 to match the desired behavior of setting update to the index + 1
+    old_row_members = classList[i].OSIS;
+    update = classList[i].id; 
     break;
   }
 }
@@ -84,15 +82,9 @@ for (var i = 0; i < classList.length; i++) {
     period: parseInt(periodInput),
     teacher: teacherInput,
     name: nameInput,
-    members: full_name + ", " + old_row_members,
+    members: first_name + ", " + old_row_members,
     id: Math.floor(Math.random() * 10000)
   };
-
-  // Add the class data object to the classList array
-  
-  
-  // Display the updated classList in the console (you can modify this part as per your requirement)
-  
 
   // Reset the form inputs
   classForm.reset();
@@ -104,11 +96,13 @@ for (var i = 0; i < classList.length; i++) {
 
 
 
-function display_classes(classList, full_name){
+function display_classes(classList){
   const classListContainer = document.getElementById('classList');
 
     classList.forEach(classData => {
-      if(!((classData.members).includes(full_name))){return;}
+      
+      if(!((classData.OSIS).includes(osis))){return;}
+      
       const classItem = document.createElement('div');
       classItem.classList.add('class-item');
       classItem.innerHTML = `
@@ -118,16 +112,18 @@ function display_classes(classList, full_name){
       `;
       
       classItem.addEventListener('click', () => {
-        window.location.href = "/class/" + classData.name;
+        window.location.href = "/class/" + classData.name + classData.id;
       });
 
       classListContainer.appendChild(classItem);
     });
+  
 }
 setTimeout(() => {
       init_fetch()
-    }, 400);
+    }, 1);
 function init_fetch(){
+  console.log("in init_fetch")
 fetch('/Classes-data', {
   method: 'POST',
   headers: {
@@ -140,32 +136,14 @@ fetch('/Classes-data', {
   
   
   classList = data['Classes']
-  display_classes(classList, full_name)
-  // alert(full_name); // Handle the response from Python
+  console.log(classList)
+  display_classes(classList)
+  
   
 })
 .catch(error => {
   alert('An error occurred:' +error);
 });
-  fetch('/name', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ "message":"blank" })
-})
-.then(response => response.json())
-.then(data => {
-  full_name = JSON.stringify(data)
-  full_name = full_name.slice(1, -1);
-  // alert(full_name); // Handle the response from Python
-  if (full_name != "Login"){
-    
-  
-  document.getElementById('Cslink').textContent = full_name;
-  document.getElementById('Cslink').href = "/Profile";
-  }
-})
 }
 function post_classes(data, update){
 
