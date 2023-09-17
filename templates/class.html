@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <link rel="stylesheet" href="https://sciweb.c26pn.repl.co/static/class.css">
+<link rel="stylesheet" href="https://sciweb.c26pn.repl.co/static/chatBox.css">
 <link rel="stylesheet" href="https://sciweb.c26pn.repl.co/static/navbar.css">
 <head>
   
@@ -68,22 +69,49 @@
       <option value="test">Test</option>
       <option value="project">Project</option>
     </select>
+    
       <br>
       
     
       <input type="submit" value="Submit">
     </form>
   </div>
+  <br>
+  <div id="openNBcont"></div>
+  <div id="chat-box">
+    <ul id="message-list"></ul>
+    <div id="input-container">
+      <input type="text" id="message-input" placeholder="Type your message...">
+      <button id="send-button">Send</button>
+    </div>
     
     <!-- Add any additional HTML content here -->
   <script src="/static/IP.js"></script>
   <script>
 
 const classData = JSON.parse('{{ class_data|tojson|safe }}');
+const locationData = classData;
 
+    
+  // Create a button element
+var button = document.createElement("button");
+var href = "/class/"+classData['name']+classData['id']+"/notebook";
+button.textContent = "Open Class Notebook";
+button.id = "openNB";
+button.addEventListener("click", function() {
+        // Navigate to the specified URL
+        window.location.href = href;
+    })
+
+
+// Append the button to the document body or any desired element
+document.getElementById('openNBcont').appendChild(button);
+
+    
   </script>
   <script src="/static/user_data.js"></script>
   <script src="/static/class.js"></script>
+  <script src="/static/chatBox.js"></script>
   
 </body>
 </html>

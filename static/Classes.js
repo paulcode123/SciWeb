@@ -72,6 +72,7 @@ classForm.addEventListener('submit', function(event) {
 for (var i = 0; i < classList.length; i++) {
   if (classList[i].period === periodInput && classList[i].teacher === teacherInput) {
     old_row_members = classList[i].OSIS;
+    
     update = classList[i].id; 
     break;
   }
@@ -82,7 +83,7 @@ for (var i = 0; i < classList.length; i++) {
     period: parseInt(periodInput),
     teacher: teacherInput,
     name: nameInput,
-    members: first_name + ", " + old_row_members,
+    OSIS: osis + ", " + old_row_members,
     id: Math.floor(Math.random() * 10000)
   };
 
@@ -96,12 +97,12 @@ for (var i = 0; i < classList.length; i++) {
 
 
 
-function display_classes(classList){
+function display_classes(classList, user_data){
   const classListContainer = document.getElementById('classList');
 
     classList.forEach(classData => {
       
-      if(!((classData.OSIS).includes(osis))){return;}
+      if(!((classData.OSIS).includes(user_data['osis']))){return;}
       
       const classItem = document.createElement('div');
       classItem.classList.add('class-item');
@@ -136,8 +137,9 @@ fetch('/Classes-data', {
   
   
   classList = data['Classes']
+  user_data = data['UserData']
   console.log(classList)
-  display_classes(classList)
+  display_classes(classList, user_data)
   
   
 })

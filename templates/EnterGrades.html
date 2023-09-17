@@ -35,7 +35,7 @@
     <li class="dropdown">
       <button class="dropdown-btn">Connect</button>
       <div class="dropdown-content">
-        <a href="#">Classes</a>
+        <a href="/Classes">Classes</a>
         <a href="#">Assignments</a>
         <a href="#">Leagues</a>
         <a href="#">Questions</a>
@@ -44,7 +44,7 @@
     <li class="dropdown">
       <button class="dropdown-btn">About</button>
       <div class="dropdown-content">
-        <a href="#">Pitch</a>
+        <a href="/Pitch">Pitch</a>
         <a href="#">Getting Started</a>
         
       </div>
@@ -57,22 +57,7 @@
 
     <p>Pull from Jupiter account, Paste in Grades from Jupiter, Enter Grades Manually, or edit grades</p>
     <button id="Jupull">Pull from Jupiter</button>
-    <table id="gradesTable">
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Score</th>
-        <th>Value</th>
-        <th>Class</th>
-        <th>Category</th>
-        <th>Name</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody id="gradesBody">
-      <!-- Grades rows will be dynamically added here -->
-    </tbody>
-  </table>
+    
     <p>Enter Grades</p>
     <form id='gradeform'>
       <input id="pasted" placeholder="copy and paste grades here"></input>
@@ -168,6 +153,22 @@
 
       <button type="submit">Submit</button>
     </form>
+<table id="gradesTable">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Score</th>
+        <th>Value</th>
+        <th>Class</th>
+        <th>Category</th>
+        <th>Name</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="gradesBody">
+      <!-- Grades rows will be dynamically added here -->
+    </tbody>
+  </table>
 <script src="/static/IP.js"></script>
 <script src="/static/user_data.js"></script>
 <script src="static/EG.js"></script>

@@ -1,0 +1,22 @@
+
+.assignment-item {
+      margin-bottom: 10px;
+      padding: 10px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .assignment-item:hover {
+      background-color: #e0e0e0;
+    }
+
+    .assignment-item h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .assignment-item p {
+      margin: 5px 0 0;
+      font-size: 14px;
+    }

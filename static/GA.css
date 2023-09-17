@@ -1,11 +1,14 @@
 #class-form {
   max-width: 400px;
   margin: 0 auto;
+  box-shadow: 0 5px 7px rgba(0, 0, 0, 0.1);
+  background-color:#d4dadb;
+  padding: 20px;
 }
 
 .checkbox-group {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 10px;
 }
 
@@ -13,10 +16,25 @@ button {
   margin-top: 10px;
 }
 
+button {
+  background-color: #558f2c;
+  border-radius: 5px;
+  color: white;
+  padding: 10px;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #2c7e8f;
+}
 #error-message {
   color: red;
-  margin-top: 10px;
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
 }
+
+
 
 #selected-classes {
   margin-top: 20px;
@@ -26,4 +44,25 @@ button {
 
 #selected-classes li {
   margin-bottom: 5px;
+}
+
+.box {
+  background-color: #f1f1f1;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 20px;
+  margin-bottom: 20px;
+  display: inline-block;
+}
+
+.lightbulb {
+  width: 30px;
+  height: 30px;
+  background-color: #ffd700;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 10px;
+}
+h1 {
+  color: #333;
 }

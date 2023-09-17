@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>SciWeb Goals</title>
+  <link rel="icon" href="static/favicon.png" type="image/x-icon">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/static/Goals.css">
+  <link rel="stylesheet" href="/static/navbar.css">
+
+
+
+</head>
+
+<body>
+  <ul class="navbar">
+    <li><a href="/">Home</a></li>
+    <li class="dropdown">
+      <button class="dropdown-btn">Grades</button>
+      <div class="dropdown-content">
+        <a href="/EnterGrades">Enter</a>
+        <a href="/GradeAnalysis">Analyse</a>
+        <a href="#">Goals</a>
+        
+      </div>
+    </li>
+    <li class="dropdown">
+      <button class="dropdown-btn">Study</button>
+      <div class="dropdown-content">
+        <a href="#">Create</a>
+        <a href="#">Study</a>
+        <a href="#">Predict</a>
+      </div>
+    </li>
+    <li class="dropdown">
+      <button class="dropdown-btn">Connect</button>
+      <div class="dropdown-content">
+        <a href="/Classes">Classes</a>
+        <a href="#">Assignments</a>
+        <a href="#">Leagues</a>
+        <a href="#">Questions</a>
+      </div>
+    </li>
+    <li class="dropdown">
+      <button class="dropdown-btn">About</button>
+      <div class="dropdown-content">
+        <a href="/Pitch">Pitch</a>
+        <a href="#">Getting Started</a>
+        
+      </div>
+    </li>
+    <li><a href="/Login" id="profile">Login</a></li>
+  </ul>
+
+
+
+<h1>Grade Goals</h1>
+  <form id="gradeForm">
+    <label for="classDropdown">Class:</label>
+    <select id="classDropdown">
+      <option value="">Select a class</option>
+      <option value="history">History</option>
+      <option value="biology">Biology</option>
+      <option value="engineering">Engineering</option>
+      <option value="research">Research</option>
+      <option value="all">All</option>
+    </select>
+
+    <div id="categoryCheckboxes" style="display: none;">
+      <label for="categoryDropdown">Category:</label>
+      <select id="categoryDropdown">
+        <option value="">Select a category</option>
+        <option value="Homework">Homework</option>
+        <option value="Participation">Participation</option>
+        <option value="Assessments">Assessments</option>
+        <option value="Final">Final</option>
+        <option value="All">All</option>
+        
+      </select>
+
+      <label>Goals:</label>
+      <input type="date" id="goalDate" required>
+      <input type="text" id="goalGrade" placeholder="Grade" pattern="[0-9]+([.,][0-9]+)?" required>
+
+    </div>
+
+    <button type="submit">Set Goal</button>
+  </form>
+
+
+
+  
+  <script src="/static/IP.js"></script>
+  <script src="/static/user_data.js"></script>
+  <script src="static/Goals.js"></script>
+  
+</body>
+
+</html>

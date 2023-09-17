@@ -511,6 +511,25 @@ signals = ["blinker (>=1.4.0)"]
 signedtoken = ["cryptography (>=3.0.0)", "pyjwt (>=2.0.0,<3)"]
 
 [[package]]
+name = "openai"
+version = "0.27.8"
+description = "Python client library for the OpenAI API"
+category = "main"
+optional = false
+python-versions = ">=3.7.1"
+
+[package.dependencies]
+aiohttp = "*"
+requests = ">=2.20"
+tqdm = "*"
+
+[package.extras]
+datalib = ["numpy", "pandas (>=1.2.3)", "pandas-stubs (>=1.1.0.11)", "openpyxl (>=3.0.7)"]
+dev = ["black (>=21.6b0,<22.0.0)", "pytest (>=6.0.0,<7.0.0)", "pytest-asyncio", "pytest-mock"]
+embeddings = ["scikit-learn (>=1.0.2)", "tenacity (>=8.0.1)", "matplotlib", "plotly", "numpy", "scipy", "pandas (>=1.2.3)", "pandas-stubs (>=1.1.0.11)", "openpyxl (>=3.0.7)"]
+wandb = ["wandb", "numpy", "pandas (>=1.2.3)", "pandas-stubs (>=1.1.0.11)", "openpyxl (>=3.0.7)"]
+
+[[package]]
 name = "packaging"
 version = "23.0"
 description = "Core utilities for Python packages"
@@ -627,6 +646,21 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
+name = "pydantic"
+version = "1.9.2"
+description = "Data validation and settings management using python type hints"
+category = "main"
+optional = false
+python-versions = ">=3.6.1"
+
+[package.dependencies]
+typing-extensions = ">=3.7.4.3"
+
+[package.extras]
+dotenv = ["python-dotenv (>=0.10.4)"]
+email = ["email-validator (>=1.0.3)"]
+
+[[package]]
 name = "pyflakes"
 version = "2.5.0"
 description = "passive checker of Python programs"
@@ -705,6 +739,22 @@ doc = ["tabulate (>=0.8.9)", "sphinx (>=4.5.0)"]
 gendocs = ["sphinx (>=4.5.0)", "sphinx-autodoc-typehints (>=1.18.1)", "sphinx-rtd-theme (>=1.0.0)", "pytoolconfig"]
 global = ["platformdirs (>=1.4.4)"]
 validation = ["pydantic (>=1.7.4)"]
+
+[[package]]
+name = "replicate"
+version = "0.11.0"
+description = "Python client for Replicate"
+category = "main"
+optional = false
+python-versions = ">=3.8"
+
+[package.dependencies]
+packaging = "*"
+pydantic = ">1"
+requests = ">2"
+
+[package.extras]
+dev = ["black", "mypy", "pytest", "responses", "ruff"]
 
 [[package]]
 name = "replit"
@@ -840,6 +890,23 @@ optional = false
 python-versions = ">=3.7"
 
 [[package]]
+name = "tqdm"
+version = "4.65.0"
+description = "Fast, Extensible Progress Meter"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+colorama = {version = "*", markers = "platform_system == \"Windows\""}
+
+[package.extras]
+dev = ["py-make (>=0.1.0)", "twine", "wheel"]
+notebook = ["ipywidgets (>=6)"]
+slack = ["slack-sdk"]
+telegram = ["requests"]
+
+[[package]]
 name = "typing-extensions"
 version = "3.10.0.2"
 description = "Backported and Experimental Type Hints for Python 3.5+"
@@ -933,7 +1000,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.10.0,<3.11"
-content-hash = "337dccc019afda846ce2ccb75e5dd39f957081ed09be7068a9e805ab52a06424"
+content-hash = "bd11dd568ceab4f5836991e58a427ba534ac1b8d406c30a9566e5666e746d23a"
 
 [metadata.files]
 aiohttp = []
@@ -976,6 +1043,7 @@ multidict = []
 numpy = []
 oauth2client = []
 oauthlib = []
+openai = []
 packaging = []
 parso = []
 passlib = []
@@ -987,12 +1055,14 @@ pyasn1 = []
 pyasn1-modules = []
 pycparser = []
 pycryptodomex = []
+pydantic = []
 pyflakes = []
 pyparsing = []
 pyseto = []
 python-dateutil = []
 python-lsp-jsonrpc = []
 pytoolconfig = []
+replicate = []
 replit = []
 replit-python-lsp-server = []
 requests = []
@@ -1002,6 +1072,7 @@ rsa = []
 six = []
 toml = []
 tomli = []
+tqdm = []
 typing-extensions = []
 ujson = []
 uritemplate = []

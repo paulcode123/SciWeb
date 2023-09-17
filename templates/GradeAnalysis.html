@@ -33,7 +33,7 @@
     <li class="dropdown">
       <button class="dropdown-btn">Connect</button>
       <div class="dropdown-content">
-        <a href="#">Classes</a>
+        <a href="/Classes">Classes</a>
         <a href="#">Assignments</a>
         <a href="#">Leagues</a>
         <a href="#">Questions</a>
@@ -42,7 +42,7 @@
     <li class="dropdown">
       <button class="dropdown-btn">About</button>
       <div class="dropdown-content">
-        <a href="#">Pitch</a>
+        <a href="/Pitch">Pitch</a>
         <a href="#">Getting Started</a>
         
       </div>
@@ -66,8 +66,9 @@
 
 
    <form id="class-form">
-  <h2>Select Classes to Graph</h2>
-  <div class="checkbox-group">
+  <h2>Select Classes/Categories to Graph</h2>
+  <div id="checkbox-group">
+  <div>  
     <label>
       <input type="checkbox" name="class" value="biology"> Biology
     </label>
@@ -80,14 +81,43 @@
     <label>
       <input type="checkbox" name="class" value="english"> English
     </label>
+    <br>
     <label>
-      <input type="checkbox" name="class" value="french"> French
+      <input type="checkbox" name="class" value="engineering"> Engineering
+    </label>
+    <label>
+      <input type="checkbox" name="class" value="research"> Research
+    </label>
+    <input type="checkbox" name="class" value="all"> All
     </label>
   </div>
-  <button type="submit">Submit</button>
+    <br>
+    <label>
+      <input type="checkbox" name="class" value="Homework"> Homework
+    </label>
+    <label>
+      <input type="checkbox" name="class" value="Participation"> Participation
+    </label>
+    <label>
+      <input type="checkbox" name="class" value="Assessments"> Assessments
+    </label>
+    <label>
+      <input type="checkbox" name="class" value="Final"> Final
+    </label>
+    <br>
+    <label>
+      <input type="checkbox" name="class" value="All"> All
+    </label>
+    
+  </div>
+  <button type="submit">Graph</button>
+  <h1 id="error-message"></h1>
 </form>
+    <br>
+    <div id="insightContainer"></div>
+    <br>
 
-<ul id="selected-classes"></ul>
+
 
 
   </main>

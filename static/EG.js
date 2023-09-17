@@ -1,5 +1,5 @@
 // Jupiter API?
-console.log("EG")
+
 const form = document.querySelector("#gradeform");
 const tbody = document.querySelector("#mytbody");
 var grades;
@@ -212,7 +212,7 @@ function saveRowChanges(row, index) {
     cell.textContent = value;
   }
   updatedValues['id'] = grades[index]['id']
-
+  updatedValues['osis'] = grades[index]['osis']
   const saveButton = document.createElement('button');
   saveButton.textContent = 'Edit';
   saveButton.addEventListener('click', () => {

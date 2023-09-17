@@ -14,14 +14,14 @@ function after_wait(){
 })
 .then(response => response.json())
 .then(data => {
-  
+  if(first_name != "Login"){
   first_name = JSON.stringify(data["first_name"]).slice(1, -1);
   last_name = JSON.stringify(data["last_name"]);
   osis = parseInt(JSON.stringify(data["osis"]).slice(1, -1));
   console.log(osis)
   grade = parseInt(JSON.stringify(data["grade"]))
   
-  if(first_name != "Login"){
+  
   document.getElementById('profile').textContent = first_name;
   document.getElementById('profile').href = "/Profile";
   }

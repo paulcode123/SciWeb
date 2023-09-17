@@ -1,7 +1,11 @@
 // classData is predefined in the html
-
+// console.log("class.js classData: "+classData)
 // create user bubbles
-document.getElementById("description").textContent = classData['description']
+// console.log(document.getElementById("description"))
+document.getElementById("description").textContent = classData['description'];
+
+
+
 var userListContainer = document.getElementById('user-list');
 members = classData['OSIS'].split(", ")
 members.forEach(function(user) {
@@ -17,7 +21,7 @@ members.forEach(function(user) {
 
 
 
-
+//add class form
 const createBtn = document.getElementById('createBtn');
 const formContainer = document.getElementById('formContainer');
 const assignmentForm = document.getElementById('assignmentForm');
@@ -42,7 +46,8 @@ assignmentForm.addEventListener('submit', (e) => {
     name: name,
     categories: type,
     due: due,
-    id: Math.floor(Math.random() * 10000)
+    id: Math.floor(Math.random() * 10000),
+    class: classData['id']
   };
 
   post_assignment(assignmentObj);
@@ -83,8 +88,9 @@ function get_assignment(){
   
   
   assignmentList = data['Assignments']
-  console.log(assignmentList)
-  display_classes(assignmentList)
+  classesList = data['Classes']
+  
+  display_classes(assignmentList, classesList)
   
   
 })
@@ -94,10 +100,10 @@ function get_assignment(){
 }
 get_assignment()
 
-function display_classes(assignmentList){
+function display_classes(assignmentList, classList){
   const assignmentListContainer = document.getElementById('assignmentList');
     assignmentList.forEach(assignmentData => {
-      if(!((classData.assignments).includes(assignmentData["id"]))){return;}
+      if(!(assignmentData['class']==classData['id'])){return;}
       
       const assignmentItem = document.createElement('div');
       assignmentItem.classList.add('assignment-item');
@@ -108,7 +114,7 @@ function display_classes(assignmentList){
       `;
       
       assignmentItem.addEventListener('click', () => {
-        window.location.href = "/assignment/" + assignmentData.name + assignmentData.id;
+        window.location.href = "/assignment/" + assignmentData.id;
       });
 
       assignmentListContainer.appendChild(assignmentItem);
