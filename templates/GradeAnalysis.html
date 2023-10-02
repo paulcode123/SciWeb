@@ -34,7 +34,7 @@
       <button class="dropdown-btn">Connect</button>
       <div class="dropdown-content">
         <a href="/Classes">Classes</a>
-        <a href="#">Assignments</a>
+        <a href="/Assignments">Assignments</a>
         <a href="#">Leagues</a>
         <a href="#">Questions</a>
       </div>
@@ -68,47 +68,19 @@
    <form id="class-form">
   <h2>Select Classes/Categories to Graph</h2>
   <div id="checkbox-group">
-  <div>  
+  <div id='classes'>
     <label>
-      <input type="checkbox" name="class" value="biology"> Biology
-    </label>
-    <label>
-      <input type="checkbox" name="class" value="geometry"> Geometry
-    </label>
-    <label>
-      <input type="checkbox" name="class" value="history"> History
-    </label>
-    <label>
-      <input type="checkbox" name="class" value="english"> English
-    </label>
-    <br>
-    <label>
-      <input type="checkbox" name="class" value="engineering"> Engineering
-    </label>
-    <label>
-      <input type="checkbox" name="class" value="research"> Research
-    </label>
-    <input type="checkbox" name="class" value="all"> All
+      All
+    <input type="checkbox" name="class" value="all"> 
     </label>
   </div>
     <br>
+  <div id='categories'>
     <label>
-      <input type="checkbox" name="class" value="Homework"> Homework
+      All
+      <input type="checkbox" name="class" value="All">
     </label>
-    <label>
-      <input type="checkbox" name="class" value="Participation"> Participation
-    </label>
-    <label>
-      <input type="checkbox" name="class" value="Assessments"> Assessments
-    </label>
-    <label>
-      <input type="checkbox" name="class" value="Final"> Final
-    </label>
-    <br>
-    <label>
-      <input type="checkbox" name="class" value="All"> All
-    </label>
-    
+  </div>
   </div>
   <button type="submit">Graph</button>
   <h1 id="error-message"></h1>

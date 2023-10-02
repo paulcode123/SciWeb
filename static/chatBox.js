@@ -1,4 +1,5 @@
-console.log(locationData)
+var locationData = null;
+ClassId = window.location.href.slice(-4)
 // Function to receive and display messages in the chat box
 function receive_messages(messages, users) {
   
@@ -6,7 +7,7 @@ function receive_messages(messages, users) {
   clearMessages()
   messages.forEach(message => {
     
-    if (message.location ===locationData['id']) {
+    if (message.location ===ClassId) {
       
       const listItem = document.createElement('li');
       listItem.className = 'message';
@@ -53,7 +54,7 @@ function sendMessage() {
   
   const chat = {
     text: message,
-    location: locationData['id'],
+    location: ClassId,
     sender: osis,
     id: Math.floor(Math.random() * 10000)
   }
@@ -87,23 +88,25 @@ fetch('/post-message', {
 //get messages from py
 function get_messages(){
   
-  fetch('/get-message', {
+  fetch('/data', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
   },
-  body: JSON.stringify({ data: "data being sent Py=>JS" })
+  body: JSON.stringify({ data: "Chat, Users, Classes" })
 })
 .then(response => response.json())
 .then(data => {
   
-  const messages = data['messages']
-  const users = data['users']
+  const messages = data['Chat']
+  const users = data['Users']
+  locationData = data['Classes']
+  
   receive_messages(messages, users);
   return true;
 })
 .catch(error => {
-  console.error('An error occurred in get_messages(), assignment.js:' +error);
+  console.error('An error occurred in get_messages(), chatBox.js:' +error);
   return false;
 });
 }

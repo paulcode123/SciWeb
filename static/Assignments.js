@@ -29,12 +29,12 @@ function display_assignments(assignmentList, classList){
 
 
 function get_assignment(){
-  fetch('/Assignments-data', {
+  fetch('/data', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
   },
-  body: JSON.stringify({ data: "data being sent Py=>JS" })
+  body: JSON.stringify({ data: "Assignments, Classes" })
 })
 .then(response => response.json())
 .then(data => {
@@ -48,7 +48,7 @@ function get_assignment(){
   
 })
 .catch(error => {
-  alert('An error occurred:' +error);
+  alert('Assignments.js: An error occurred:' +error);
 });
 }
 get_assignment()

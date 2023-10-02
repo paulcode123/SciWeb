@@ -2,16 +2,16 @@ var userData;
 setTimeout(function() {
   
 
-fetch('/profile-data', {
+fetch('/data', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
   },
-  body: JSON.stringify({ data: "data being sent Py=>JS" })
+  body: JSON.stringify({ data: "Name" })
 })
 .then(response => response.json())
 .then(data => {
-  userData = data['Data'];
+  userData = data['Name'];
   console.log(userData);
   displayUserInfo(userData);
 })

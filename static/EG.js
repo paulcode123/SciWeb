@@ -5,10 +5,28 @@ const tbody = document.querySelector("#mytbody");
 var grades;
 const Pullbutton = document.querySelector('#Jupull');
 
-// Pullbutton.addEventListener('click', function() {
- 
-// });
 
+function optionSelected(classNum, classes){
+  console.log(classNum);
+  console.log(classes);
+  var selectedClass = document.getElementById("class"+classNum).value;
+  var categories = classes.filter(item => item.name == selectedClass)[0].categories;
+  
+  if(categories){
+    
+  categories = JSON.parse(categories).filter(item => typeof item === 'string');
+    
+  var categoryElement = document.getElementById("category"+classNum)
+  for(let x=0; x<categories.length; x++){
+  const newOption = document.createElement("option");
+  newOption.value = categories[x];
+  newOption.textContent = categories[x];
+      // Add the new option to the select element
+categoryElement.appendChild(newOption);
+  }
+  categoryElement.removeChild(categoryElement.querySelector('option[value="default"]'));
+  }
+}
 form.addEventListener('submit', (event) => {
   
   const inputs = [];
@@ -111,25 +129,53 @@ function post_grades(grades){
 }
 
 
-fetch('/grades', {
+fetch('/data', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
   },
-  body: JSON.stringify({ data: 'Hello from JavaScript!' })
+  body: JSON.stringify({ data: 'Grades, Classes' })
 })
 .then(response => response.json())
 .then(data => {
   
   
-  grades = data
+  grades = data['Grades']
+  var rawclasses = data['Classes']
+  const classes = rawclasses.filter(item => item.OSIS.includes(osis));
+  setClassOptions(classes)
+  for(let z=1;z<6;z++){
+document.getElementById("class"+z).addEventListener("change", () => {optionSelected(z, classes)});
+}
   createGradesTable();
 })
 .catch(error => {
   alert('An error occurred:' +error);
 });
 
+function setClassOptions(filteredClasses){
+  
+  for(let i=1; i<6; i++){
+    const selectElement = document.getElementById("class"+i);
+    for(let x=0; x<filteredClasses.length; x++){
+      // Create a new option element
+      const newOption = document.createElement("option");
+      newOption.value = filteredClasses[x].name;
+      newOption.textContent = filteredClasses[x].name;
 
+      // Add the new option to the select element
+      selectElement.appendChild(newOption);
+    }
+
+// Remove the "Please add classes first" option
+if(filteredClasses.length != 0){
+selectElement.removeChild(selectElement.querySelector('option[value="default"]'));
+} else {
+  selectElement.querySelector('option[value="default"]').textContent = "Please select classes"
+}
+  }
+  
+}
 
 function createGradesTable() {
   const tableBody = document.getElementById('gradesBody');

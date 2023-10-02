@@ -4,7 +4,7 @@
 <head>
   <title>{{ class_name }} Notebook</title>
   
-  <link rel="icon" href="static/favicon.png" type="image/x-icon">
+  <link rel="icon" href="https://sciweb.c26pn.repl.co/static/favicon.png" type="image/x-icon">
   
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -37,7 +37,7 @@
       <button class="dropdown-btn">Connect</button>
       <div class="dropdown-content">
         <a href="/Classes">Classes</a>
-        <a href="#">Assignments</a>
+        <a href="/Assignments">Assignments</a>
         <a href="#">Leagues</a>
         <a href="#">Questions</a>
       </div>
@@ -45,7 +45,7 @@
     <li class="dropdown">
       <button class="dropdown-btn">About</button>
       <div class="dropdown-content">
-        <a href="#">Pitch</a>
+        <a href="/Pitch">Pitch</a>
         <a href="#">Getting Started</a>
         
       </div>
@@ -53,8 +53,12 @@
     <li><a href="/Login" id="profile">Login</a></li>
   </ul>
   <h1>{{ class_name }} Notebook</h1>
-  <div id="mindmap-container"></div>
-  <h3>div end</h3>
+  <button id="create_section" class='btn'>New Section</button>
+  <div id="tabs"></div>
+  
+  <button id='save' onclick="postNotebook()">Save</button>
+  <div id="insights_container"></div>
+  <br><br>
   <script src="/static/IP.js"></script>
   <script src="/static/user_data.js"></script>
   <script src="/static/notebook.js"></script>

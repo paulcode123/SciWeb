@@ -1,5 +1,5 @@
 const form = document.getElementById('login-form');
-
+console.log("loginscript ip:"+ip)
 form.addEventListener('submit', function(event) {
 
   // Prevent the form from submitting normally

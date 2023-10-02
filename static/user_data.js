@@ -5,16 +5,18 @@ var grade = 0;
 
 setTimeout(after_wait, 2000);
 function after_wait(){
- fetch('/name', {
+ fetch('/data', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
   },
-  body: JSON.stringify({ data: 'Hello from JavaScript!' })
+  body: JSON.stringify({ data: 'Name' })
 })
 .then(response => response.json())
 .then(data => {
-  if(first_name != "Login"){
+  data = data['Name']
+  if(data[0] != "Login"){
+    
   first_name = JSON.stringify(data["first_name"]).slice(1, -1);
   last_name = JSON.stringify(data["last_name"]);
   osis = parseInt(JSON.stringify(data["osis"]).slice(1, -1));
@@ -27,7 +29,7 @@ function after_wait(){
   }
 })
 .catch(error => {
-  alert('An error occurred:' +error);
+  alert('An error occurred in user_data.js:' +error);
 });
 console.log(osis)
 }

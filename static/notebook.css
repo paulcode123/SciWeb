@@ -1,7 +1,7 @@
 body {
             margin: 0;
             padding: 0;
-            overflow: hidden;
+            overflow: auto;
         }
         #mindmap-container {
             position: relative;
@@ -10,8 +10,8 @@ body {
         }
         .node {
             position: absolute;
-            background-color: #f0f0f0;
-            border: 1px solid lightblue;
+            background-color: #ff2072;
+            border: 1px solid blue;
             padding: 20px;
             cursor: move;
         }
@@ -19,3 +19,110 @@ body {
             position: absolute;
             border: 3px solid red;
         }
+
+#save {
+    background-color: #4CAF50; /* Green */
+    color: white; /* Text color */
+    padding: 10px 20px; /* Adjust padding as needed */
+    border: none; /* Remove border for a clean look */
+    cursor: pointer; /* Change cursor on hover to indicate interactivity */
+    transition: background-color 0.3s; /* Add transition effect for background color */
+    border-radius: 10px;
+    margin-left: 50%;
+}
+
+#save:hover {
+    background-color: black; /* Darker green on hover */
+}
+
+
+
+/* Style for the tabs container */
+#tabs {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 20px;
+}
+
+/* Style for the tab buttons */
+.tab {
+  background-color: #20c4ff;
+  color: white;
+  padding: 8px 16px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  display: flex;
+  /* justify-content: space-between;
+  align-items: center; */ 
+  width: 100%;
+}
+
+.tab:hover {
+  background-color: #0056b3;
+}
+
+/* Style for the "Add Subsection," "Add Text," and "Add Diagram" buttons */
+.btn {
+  background-color: #ffd620;
+  color: white;
+  padding: 5px 10px;
+  margin-right: 5px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background-color: #1f8e22;
+}
+
+/* Style for the input text fields */
+input[type="text"] {
+  width: 100%;
+  padding: 5px;
+  margin-top: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  min-height: 20px;
+}
+input[type="name"] {
+  resize: none;
+  height: 20px;
+}
+
+/* Style for the diagram elements */
+.dgm {
+  width: 100%;
+  height: 300px;
+  background-color: #f0f0f0;
+  margin-top: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+/* div {
+  width: 100%;
+} */
+.box {
+  background-color: #f1f1f1;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 20px;
+  margin-bottom: 20px;
+  display: inline-block;
+}
+
+.lightbulb {
+  width: 30px;
+  height: 30px;
+  background-color: #ffd700;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 10px;
+}
+h1 {
+  color: #333;
+}

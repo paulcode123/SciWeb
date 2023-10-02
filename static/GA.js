@@ -4,6 +4,63 @@ var tbody;
 var grades;
 var times;
 
+fetch('/grades', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ data: 'fetching' })
+})
+.then(response => response.json())
+.then(data => {
+    var classes = data['classes']
+    classes = classes.filter(item => item.OSIS.includes(osis));
+    var class_div = document.getElementById("classes")
+    var categories_div = document.getElementById("categories")
+    for(let x=0;x<classes.length;x++){
+      var label = document.createElement("label");
+      var input = document.createElement("input");
+      input.type = 'checkbox'
+      input.value = classes[x].name.toLowerCase();
+      label.textContent = "     "+ classes[x].name;
+      input.name = 'class'
+      label.appendChild(input);
+      
+      class_div.appendChild(label);
+    }
+  const uniqueStrings = new Set();
+
+// Iterate through the data and collect unique strings
+for (const entry of classes) {
+  const categories = JSON.parse(entry.categories);
+  if (Array.isArray(categories)) {
+    for (const item of categories) {
+      if (typeof item === 'string') {
+        uniqueStrings.add(item);
+      }
+    }
+  }
+}
+
+// Convert the set to an array if needed
+const ust = Array.from(uniqueStrings);
+  
+for(let x=0;x<ust.length;x++){
+      var label = document.createElement("label");
+      var input = document.createElement("input");
+      input.type = 'checkbox'
+      input.value = ust[x];
+      label.textContent = "     "+ ust[x];
+      input.name = 'class'
+      label.appendChild(input);
+      
+      categories_div.appendChild(label);
+    }
+  
+  })
+.catch(error => {
+  console.error('An error occurred:' +error);
+});
 setTimeout(function() {
 
   graph_data(["all", "All"]);
@@ -82,14 +139,15 @@ fetch('/grades_over_time', {
   grades = JSON.stringify(data['grade_spread']);
   times = JSON.stringify(data['times']);
   goals = data['goals'];
+  insights = data['insights'];
   
   let joined_classes = classes.join(', ');
   var name =  joined_classes +" grades over time"
-  
+  displayInsights(insights);
   create_graph(grades, times, name, goals)
 })
 .catch(error => {
-  alert('An error occurred:' +error);
+  console.error('An error occurred:' +error);
 });
 }
 
@@ -114,19 +172,15 @@ errorMessage.textContent = "";
   });
 
 
-const insights = [
-  "You have a high engagement rate on social media.",
-  "Your website traffic has increased by 20% this month.",
-  "Your email campaign had a 10% click-through rate.",
-  "Your sales revenue has exceeded the target for this quarter.",
-];
+
 
 const insightContainer = document.getElementById("insightContainer");
 
-function displayNewInsight() {
-  const randomIndex = Math.floor(Math.random() * insights.length);
-  const insightText = insights[randomIndex];
-
+function displayInsights(insights) {
+  
+  insights = insights.split('\n').filter(item => item.trim() !== '');
+  for(let x=0;x<insights.length;x++){
+    
   const box = document.createElement("div");
   box.className = "box";
 
@@ -134,13 +188,14 @@ function displayNewInsight() {
   lightbulb.className = "lightbulb";
 
   const text = document.createElement("span");
-  text.textContent = insightText;
+  text.textContent = insights[x];
 
   box.appendChild(lightbulb);
   box.appendChild(text);
-
   insightContainer.appendChild(box);
+  }
+  
 }
 
-displayNewInsight();
+
 

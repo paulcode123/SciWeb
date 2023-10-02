@@ -67,6 +67,7 @@ classForm.addEventListener('submit', function(event) {
   const periodInput = document.getElementById('periodInput').value;
   const teacherInput = document.getElementById('teacherInput').value;
   const nameInput = document.getElementById('nameInput').value;
+  const categories = document.getElementById('categories').value;
   var update = 0;
   var old_row_members= "";
 for (var i = 0; i < classList.length; i++) {
@@ -77,14 +78,25 @@ for (var i = 0; i < classList.length; i++) {
     break;
   }
 }
-  
+// parse categories string
+const parts = categories.split(/,\s+/);
+
+// Initialize an empty result array
+const result = [];
+
+// Iterate over the parts and extract the name and percentage
+parts.forEach(part => {
+  const [name, percentage] = part.split(': ');
+  result.push(name, parseInt(percentage));
+});
   // Create an object with the captured values
   const classData = {
     period: parseInt(periodInput),
     teacher: teacherInput,
     name: nameInput,
     OSIS: osis + ", " + old_row_members,
-    id: Math.floor(Math.random() * 10000)
+    id: Math.floor(Math.random() * 9000)+1000,
+    categories: result
   };
 
   // Reset the form inputs
@@ -125,19 +137,19 @@ setTimeout(() => {
     }, 1);
 function init_fetch(){
   console.log("in init_fetch")
-fetch('/Classes-data', {
+fetch('/data', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
   },
-  body: JSON.stringify({ data: "data being sent Py=>JS" })
+  body: JSON.stringify({ data: "Classes, Name" })
 })
 .then(response => response.json())
 .then(data => {
   
   
   classList = data['Classes']
-  user_data = data['UserData']
+  user_data = data['Name']
   console.log(classList)
   display_classes(classList, user_data)
   

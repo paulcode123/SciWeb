@@ -2,11 +2,33 @@
 // console.log("class.js classData: "+classData)
 // create user bubbles
 // console.log(document.getElementById("description"))
+var classData = null;
+function display_NB_btn(classData){
+  console.log(classData)
 document.getElementById("description").textContent = classData['description'];
 
+var button = document.createElement("button");
+var href = "/class/"+classData['name']+classData['id']+"/notebook";
+button.textContent = "Open Class Notebook";
+button.id = "openNB";
+button.addEventListener("click", function() {
+        // Navigate to the specified URL
+        window.location.href = href;
+    })
 
 
+// Append the button to the document body or any desired element
+document.getElementById('openNBcont').appendChild(button);
+}
+
+
+
+
+
+
+function add_user_bubbles(classData){
 var userListContainer = document.getElementById('user-list');
+  console.log(classData)
 members = classData['OSIS'].split(", ")
 members.forEach(function(user) {
     var userBubble = document.createElement('div');
@@ -17,7 +39,7 @@ members.forEach(function(user) {
     });
     userListContainer.appendChild(userBubble);
 });
-
+}
 
 
 
@@ -76,26 +98,29 @@ function post_assignment(data){
 
 
 function get_assignment(){
-  fetch('/Assignments-data', {
+  fetch('/data', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
   },
-  body: JSON.stringify({ data: "data being sent Py=>JS" })
+  body: JSON.stringify({ data: "Assignments, Classes" })
 })
 .then(response => response.json())
 .then(data => {
   
+  var classId = window.location.href.slice(-4);
+  var assignmentList = data['Assignments']
+  classData = data['Classes'];
+  console.log(classId);
+  classData = classData.find(item => item.id === classId);
   
-  assignmentList = data['Assignments']
-  classesList = data['Classes']
-  
-  display_classes(assignmentList, classesList)
-  
+  display_classes(assignmentList, classData);
+  display_NB_btn(classData);
+  add_user_bubbles(classData)
   
 })
 .catch(error => {
-  alert('An error occurred:' +error);
+  console.error('An error occurred in class.js :' +error);
 });
 }
 get_assignment()
