@@ -73,10 +73,17 @@ def profile():
 def pitch():
   return render_template('Pitch.html')
 
+@app.route('/Study')
+def study():
+  return render_template('Study.html')
 
 @app.route('/Classes')
 def classes():
   return render_template('Classes.html')
+
+@app.route('/GetStart')
+def getstart():
+  return render_template('GetStart.html')
 
 @app.route('/Assignments')
 def assignments():
@@ -122,7 +129,7 @@ def get_home_ip():
     ip_add = request.data.decode('utf-8')
 
   print("ip from get_home_ip is:", ip_add)
-  return "success"
+  return json.dumps({'Name': get_name()})
 
 
 # @app.route('/is-ip', methods=['POST'])
@@ -154,6 +161,9 @@ def fetch_data():
       response[sheet] = get_data(sheet)
   return json.dumps(response)
 
+@app.route('/AI', methods=['POST'])
+def get_AI():
+  return json.dumps(get_insights(request.json['data']));
 
 @app.route('/grades_over_time', methods=['POST'])
 def post_ga_grades():

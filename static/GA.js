@@ -4,16 +4,16 @@ var tbody;
 var grades;
 var times;
 
-fetch('/grades', {
+fetch('/data', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
   },
-  body: JSON.stringify({ data: 'fetching' })
+  body: JSON.stringify({ data: 'Classes' })
 })
 .then(response => response.json())
 .then(data => {
-    var classes = data['classes']
+    var classes = data['Classes']
     classes = classes.filter(item => item.OSIS.includes(osis));
     var class_div = document.getElementById("classes")
     var categories_div = document.getElementById("categories")
@@ -142,6 +142,13 @@ fetch('/grades_over_time', {
   insights = data['insights'];
   
   let joined_classes = classes.join(', ');
+  if(joined_classes=='all, All'){
+    joined_classes = "All";
+  }
+  else{
+    alert(classes);
+  }
+    
   var name =  joined_classes +" grades over time"
   displayInsights(insights);
   create_graph(grades, times, name, goals)

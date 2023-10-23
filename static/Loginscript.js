@@ -1,5 +1,14 @@
 const form = document.getElementById('login-form');
-console.log("loginscript ip:"+ip)
+console.log("loginscript ip:"+ip);
+function demo(){
+  post_login({
+    "first_name": "Demo", 
+    "last_name": "Account", 
+    "osis": "342875634", 
+    "grade": "15",
+    "IP": ip
+  });
+}
 form.addEventListener('submit', function(event) {
 
   // Prevent the form from submitting normally
@@ -41,6 +50,9 @@ function post_login(data){
 .then(response => response.text())
 .then(result => {
     var a = result;  // Log the response from Python
+    //redirect to home page: index.hmtl
+    window.location.href = "/";
+
 })
 .catch(error => {
     alert('An error occurred:', error);

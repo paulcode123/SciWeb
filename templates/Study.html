@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>SciWeb Study</title>
+  <link rel="icon" href="static/favicon.png" type="image/x-icon">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/static/navbar.css">
+  <link rel="stylesheet" href="/static/study.css">
+
+
+
+</head>
+
+<body>
+  <ul class="navbar">
+    <li><a href="/">Home</a></li>
+    <li class="dropdown">
+      <button class="dropdown-btn">Grades</button>
+      <div class="dropdown-content">
+        <a href="/EnterGrades">Enter</a>
+        <a href="/GradeAnalysis">Analyse</a>
+        <a href="/GradeAnalysis">Goals</a>
+
+      </div>
+    </li>
+    <li class="dropdown">
+      <button class="dropdown-btn">Study</button>
+      <div class="dropdown-content">
+        <a href="#">Create</a>
+        <a href="#">Study</a>
+        <a href="#">Predict</a>
+      </div>
+    </li>
+    <li class="dropdown">
+      <button class="dropdown-btn">Connect</button>
+      <div class="dropdown-content">
+        <a href="/Classes">Classes</a>
+        <a href="/Assignments">Assignments</a>
+        <a href="#">Leagues</a>
+        <a href="#">Questions</a>
+      </div>
+    </li>
+    <li class="dropdown">
+      <button class="dropdown-btn">About</button>
+      <div class="dropdown-content">
+        <a href="/Pitch">Pitch</a>
+        <a href="#">Getting Started</a>
+
+      </div>
+    </li>
+    <li><a href="/Login" id="profile">Login</a></li>
+  </ul>
+  <h1>Study</h1>
+  <div id="study-container"></div>
+  
+  <script src="/static/user_data.js"></script>
+  <script src="/static/study.js"></script>
+</body>
+</html>
