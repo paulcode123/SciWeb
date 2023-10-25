@@ -30,5 +30,11 @@
     {
       "handle": "filesystem" 
     }
-  ]
+  ],
+  "functions": {
+    "api": {
+      "memory": 512,
+      "maxDuration": 10,
+    }
+  }
 }
