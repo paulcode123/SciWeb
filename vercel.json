@@ -2,33 +2,41 @@
   "version": 2,
   "builds": [
     {
-      "src": "main.py",
+      "src": "main.py", 
       "use": "@vercel/python"
+    },
+    {
+      "src": "static/*",  
+      "use": "@vercel/static"
+    },
+    {
+      "src": "templates/*", 
+      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
-      "src": "/(.*)",
-      "dest": "/main.py"
+      "src": "/api/endpoint", 
+      "dest": "main.py"
+    },
+    {
+      "src": "/static/(.*)",
+      "dest": "static/$1"
+    },
+    {
+      "src": "/templates/(.*)",
+      "dest": "templates/$1"
+    },
+    {
+      "handle": "filesystem" 
     }
   ],
-  "env": {
-    "FLASK_APP": "main.py",
-    "FLASK_ENV": "production"
-  },
   "functions": {
     "api": {
       "memory": 512,
-      "maxDuration": 10,
-      "runtime": "@vercel/python",
-      "includeFiles": [
-        "main.py",
-        "requirements.txt"
-      ],
-      "environment": {
-        "APP_MODULE": "main:app"
-      },
-      "entrypoint": "gunicorn --bind 0.0.0.0:5000 main:app"
+      "maxDuration": 10
     }
   }
 }
+
+
