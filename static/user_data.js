@@ -11,7 +11,7 @@ var ip;
 
 
 function send_data(userId) {
-
+console.log(userId);
 
 fetch('/home-ip', {
   method: 'POST',
@@ -23,6 +23,7 @@ fetch('/home-ip', {
 })
   .then(response => response.json())
   .then(data => {
+    console.log(data["Name"])
     set_data(data['Name'])
   })
 }
@@ -35,6 +36,7 @@ const storedUserID = getCookie('user_id');
         if (storedUserID) {
             // User has a stored user ID, log it to the console
             console.log('Found User ID:', storedUserID);
+          ip = storedUserID
             send_data(storedUserID)
         } else {
             // Generate a random 4-digit user ID
@@ -45,6 +47,7 @@ const storedUserID = getCookie('user_id');
 
             // Log the new user ID to the console
             console.log('New User ID:', newUserID);
+          ip = newUserID
             send_data(newUserID)
         }
 }

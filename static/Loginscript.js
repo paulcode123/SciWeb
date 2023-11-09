@@ -1,6 +1,7 @@
 const form = document.getElementById('login-form');
 console.log("loginscript ip:"+ip);
 function demo(){
+  console.log(ip)
   post_login({
     "first_name": "Demo", 
     "last_name": "Account", 

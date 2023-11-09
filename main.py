@@ -36,7 +36,7 @@ def init_vars():
 
 spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column, user_data, ip_add, openAIAPI = init_vars()
 app = Flask(__name__)
-
+allow_demo_change = True
 
 #initialize HTML/CCS/JS files
 @app.route('/')
@@ -126,10 +126,10 @@ def assignment_page(assignmentid):
 def get_home_ip():
   global ip_add
   if ip_add == 404:
-    ip_add = request.data.decode('utf-8')
-
+    ip_add = request.json
+    print(request.json)
   print("ip from get_home_ip is:", ip_add)
-  return json.dumps({'Name': get_name()})
+  return json.dumps({'Name': get_name(str(ip_add))})
 
 
 # @app.route('/is-ip', methods=['POST'])
@@ -174,7 +174,20 @@ def post_ga_grades():
   goals = get_goals(classes['data'], user_data, grades)
   
   times, grade_spread = process_grades(grades, classes['data'], user_data, classes_data)
-  prompt = "Generate 3 insights about trends this data, which represents a student's grade over the course of a period of time: " +str(grade_spread)
+  grade_spreads = []
+  if classes['data'][0] == "all":
+    matching_classes = [item['name'] for item in classes_data if user_data['osis'] in item['OSIS']]
+    
+    for item in matching_classes:
+      t, g = process_grades(grades, [item.lower(), "All"], user_data, classes_data)
+      if type(t)!='int':
+        grade_spreads.append(item+": "+str(g))
+      
+  else:
+    print(classes['data'])
+  prompt = [{"role":"system", "content": "You are a college advisor, and you have to write 5 specific ways in which the factors influence the overall grade, which represents a student's grades over time. You will be given their total grade, as well as the various factors what influenced that grade."},
+            {"role": "user", "content": "total: "+str(grade_spread)+"factors: "+str(grade_spreads)}]
+  
   insights = get_insights(prompt)
   response_data = {
     "times": times.tolist(),
@@ -198,7 +211,7 @@ def receive_grades():
 @app.route('/post-login', methods=['POST'])
 def postLogin():
   data = request.json
-  data['IP'] = ip_add
+  ip_add = data['IP']
   logins = get_data("Users")
   for row in logins:
     if row['osis'] == data['osis']:
@@ -218,7 +231,8 @@ def get_notebook():
   insights = 'none'
   for item in notebooks:
     if item['classID'] == id:
-        prompt = "Generate 3 practice questions based on this text: "+item['text']
+        prompt = [{"role":"system", "content": "Generate 3 practice questions based on this text"},
+                  {"role":"user", "content": item['text']}]
         insights = get_insights(prompt)
         break  # Stop the loop once 'a' is found
   response = {"notebook":notebooks, 'insights': insights}
@@ -230,6 +244,15 @@ def updateLogin():
   update_data(data['osis'], 'osis', data, "Users")
   return 'success'
 
+@app.route('/updateStudy', methods=['POST'])
+def updateStudy():
+  data = request.json
+  data = data['data']
+  user_data = get_name()
+  osis = user_data['osis']
+  print("d", data)
+  update_data(osis, 'OSIS', [{"OSIS": osis, "Q&As": data}], "Study")
+  return json.dumps('success')
 
 #get user-inputted classes from Classes.js
 @app.route('/post-classes', methods=['POST'])
@@ -306,6 +329,11 @@ def get_data(sheet):
 
 # post data to sheetdb
 def post_data(sheet, data):
+  user_data = get_name()
+  if not isinstance(user_data, tuple) and sheet !="Users" and user_data['osis'] == '342875634' and not allow_demo_change:
+    message = "rejected: can't change demo account data"
+    print(message)
+    return message
   print(data)
   url = sheetdb_url + "?sheet=" + sheet
   response = requests.post(url, json=data)
@@ -315,6 +343,10 @@ def post_data(sheet, data):
 
 #delete data from sheetdb
 def delete_data(sheet, row_value, row_name):
+  if not isinstance(user_data, tuple) and sheet !="Users" and user_data['osis'] == '342875634' and not allow_demo_change:
+    message = "rejected: can't delete demo account data"
+    print(message)
+    return message
   url = sheetdb_url + "/" + row_name + "/" + row_value + "?sheet=" + sheet
   response = requests.delete(url)
   print(response, url)
@@ -322,18 +354,23 @@ def delete_data(sheet, row_value, row_name):
 
 
 #get name from Users data
-def get_name():
+def get_name(ip=None):
   global ip_add, user_data
+  if ip:
+    print("ip", ip)
+    ip_add = ip
   if user_data != {}:
     print("user_data already defined in get_name()")
     return user_data
-  while ip_add == 404:
+  # while ip_add == 404:
 
-    time.sleep(0.1)
+  #   time.sleep(0.1)
 
   data = get_data("Users")
 
-  filtered_data = [entry for entry in data if ip_add in entry.get('IP')]
+  filtered_data = [entry for entry in data if str(ip_add) in entry.get('IP')]
+  if filtered_data == []:
+    ip_add = 404
   # print("fd:", filtered_data)
   if filtered_data:
     user_data = filtered_data[-1]
@@ -397,7 +434,7 @@ def filter_grades(grades, user_data, classes):
   
   grades = [
     grade for grade in grades
-    if ((grade['class'] in classes) or ('all' in classes)) and ((grade['category'] in classes) or ('All' in classes))
+    if ((grade['class'].lower() in classes) or ('all' in classes)) and ((grade['category'] in classes) or ('All' in classes))
   ]
   print(len(grades))
   return grades
@@ -410,6 +447,7 @@ def get_min_max(grades, user_data, classes):
   ]
   if len(dates) == 0:
     print("error: no grades found")
+    return 0, 0, 0
   min_date = min(dates)
   max_date = max(dates)
   max_date = max_date + datetime.timedelta(days=1)
@@ -422,6 +460,8 @@ def process_grades(grades, classes, user_data, classes_data):
   #filter grades based on class
 
   min_date, max_date, grades = get_min_max(grades, user_data, classes)
+  if min_date == 0:
+    return 0, []
   # Generate 10 evenly spaced dates between the minimum and maximum dates
   date_range = np.linspace(min_date.toordinal(),
                            max_date.toordinal(),
@@ -510,7 +550,7 @@ def calculate_grade(time, data, weights):
   else:
     return 0
 
-def get_insights(prompt):
+def get_insights(prompts):
   # grades = filter_grades(grades, user_data, filters)
   headers = {
     'Authorization': f'Bearer {openAIAPI}',
@@ -519,10 +559,7 @@ def get_insights(prompt):
   
   payload = {
     "model": "gpt-3.5-turbo",
-    "messages": [{
-                "role": "assistant",
-                "content": prompt
-            }]
+    "messages": prompts
 }
   insights = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
   insights = insights.json()
