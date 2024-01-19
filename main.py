@@ -12,7 +12,7 @@ import os
 
 def init_gapi():
   spreadsheet_id = '1k7VOAgZY9FVdcyVFaQmY_iW_DXvYQluosM2LYL2Wmc8'
-  api_key = os.environ['GAPIkey']
+  api_key = "not published to github"
   sheetdb_url = 'https://sheetdb.io/api/v1/y0fswwtbyapbd'
 
   DISCOVERY_SERVICE_URL = 'https://sheets.googleapis.com/$discovery/rest?version=v4'
@@ -27,7 +27,7 @@ def init_gapi():
   
 def init_vars():
   spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column = init_gapi()
-  openAIAPI = os.environ['OpenAI'];
+  openAIAPI = "not published to github"
   #define placeholders if name not set
   user_data = {}
   ip_add = 404
