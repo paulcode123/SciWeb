@@ -12,7 +12,7 @@ import os
 
 def init_gapi():
   spreadsheet_id = '1k7VOAgZY9FVdcyVFaQmY_iW_DXvYQluosM2LYL2Wmc8'
-  api_key = "not published to github"
+  api_key = "not published for security reasons"
   sheetdb_url = 'https://sheetdb.io/api/v1/y0fswwtbyapbd'
 
   DISCOVERY_SERVICE_URL = 'https://sheets.googleapis.com/$discovery/rest?version=v4'
@@ -27,7 +27,7 @@ def init_gapi():
   
 def init_vars():
   spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column = init_gapi()
-  openAIAPI = "not published to github"
+  openAIAPI = "not published for security reasons"
   #define placeholders if name not set
   user_data = {}
   ip_add = 404
@@ -213,6 +213,12 @@ def postLogin():
   data = request.json
   ip_add = data['IP']
   logins = get_data("Users")
+  #remove ip addresses from logins other than the current one
+  for row in logins:
+    if ip_add in row['IP']:
+      row['IP'] = row['IP'].replace(ip_add, "")
+      update_data(row['osis'], 'osis', row, "Users")
+      
   for row in logins:
     if row['osis'] == data['osis']:
       data['IP'] = f"{ip_add}, {row['IP']}"
@@ -571,6 +577,6 @@ def get_insights(prompts):
   
   
   
-
-  
-app.run(host='0.0.0.0', port=8080, debug=True)
+#uncomment to run locally
+# mport = int(os.environ.get('PORT', 8080))
+# app.run(host='0.0.0.0', port=mport, debug=False)
