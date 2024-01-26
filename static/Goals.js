@@ -1,10 +1,11 @@
 const classDropdown = document.getElementById("classDropdown");
-    const categoryCheckboxes = document.getElementById("categoryCheckboxes");
+const categoryCheckboxes = document.getElementById("categoryCheckboxes");
 
+    //Once user has selected a class, display the category checkboxes and the rest of the form
     classDropdown.addEventListener("change", function() {
       categoryCheckboxes.style.display = this.value ? "block" : "none";
     });
-
+    //When the user submits the form, get the values from the form and create a goal object
     const gradeForm = document.getElementById("gradeForm");
     gradeForm.addEventListener("submit", function(event) {
       event.preventDefault();
@@ -47,6 +48,78 @@ function post_goal(goal){
     console.log(result);  // Log the response from Python
 })
 .catch(error => {
-    alert('An error occurred:', error);
+    console.log('An error occurred:', error);
 });
 }
+
+// Get the classes for the user
+fetch('/data', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ data: 'Classes' })
+})
+.then(response => response.json())
+.then(data => {
+  var rawclasses = data['Classes']
+  const classes = rawclasses.filter(item => item.OSIS.includes(osis));
+  setClassOptions(classes)
+  
+  document.getElementById("classDropdown").addEventListener("change", () => {optionSelected(classes)});
+    
+})
+.catch(error => {
+  console.log('An error occurred:' +error);
+});
+
+// Set the options for the class dropdown
+function setClassOptions(filteredClasses){
+  
+    const selectElement = document.getElementById("classDropdown");
+    for(let x=0; x<filteredClasses.length; x++){
+      // Create a new option element
+      const newOption = document.createElement("option");
+      newOption.value = filteredClasses[x].name;
+      newOption.textContent = filteredClasses[x].name;
+
+      // Add the new option to the select element
+      selectElement.appendChild(newOption);
+    }
+
+// Remove the "Please add classes first" option
+if(filteredClasses.length != 0){
+selectElement.removeChild(selectElement.querySelector('option[value="default"]'));
+} else {
+  selectElement.querySelector('option[value="default"]').textContent = "Please select classes"
+}
+  }
+  
+
+//After the user has selected a class, display the associated category dropdown
+  function optionSelected(classes){
+    
+    console.log(classes);
+    var selectedClass = document.getElementById("classDropdown").value;
+    var categories = classes.filter(item => item.name == selectedClass)[0].categories;
+    
+    if(categories){
+      
+    categories = JSON.parse(categories).filter(item => typeof item === 'string');
+      
+    var categoryElement = document.getElementById("categoryDropdown")
+    // Remove all existing options
+    while (categoryElement.firstChild) {
+      categoryElement.removeChild(categoryElement.firstChild);
+  }
+    // Add nex options
+    for(let x=0; x<categories.length; x++){
+    const newOption = document.createElement("option");
+    newOption.value = categories[x];
+    newOption.textContent = categories[x];
+        // Add the new option to the select element
+  categoryElement.appendChild(newOption);
+    }
+    
+    }
+  }

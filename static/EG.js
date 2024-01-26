@@ -5,7 +5,7 @@ const tbody = document.querySelector("#mytbody");
 var grades;
 const Pullbutton = document.querySelector('#Jupull');
 
-
+//When the user selects a class, update the category dropdown with the categories for that class
 function optionSelected(classNum, classes){
   console.log(classNum);
   console.log(classes);
@@ -17,6 +17,11 @@ function optionSelected(classNum, classes){
   categories = JSON.parse(categories).filter(item => typeof item === 'string');
     
   var categoryElement = document.getElementById("category"+classNum)
+  // Remove all existing options
+  while (categoryElement.firstChild) {
+    categoryElement.removeChild(categoryElement.firstChild);
+}
+  // Add nex options
   for(let x=0; x<categories.length; x++){
   const newOption = document.createElement("option");
   newOption.value = categories[x];
@@ -24,18 +29,21 @@ function optionSelected(classNum, classes){
       // Add the new option to the select element
 categoryElement.appendChild(newOption);
   }
-  categoryElement.removeChild(categoryElement.querySelector('option[value="default"]'));
+  
   }
 }
+
+//When the user submits the form, get the values from the form and create a grade object
 form.addEventListener('submit', (event) => {
   
   const inputs = [];
   event.preventDefault(); // Prevent the form from submitting and refreshing the page
 var pasted = document.getElementById('pasted').value;
+  //if the user pasted grades, parse the pasted text: not working yet
   if (pasted != ""){
     
 pasted = pasted.split(/\s(?=\d+\/\d+)/);
-    alert(pasted)
+    console.log(pasted)
   var assignments = [];
 for (let i = 0; i < pasted.length; i += 2) {
   const mergedItem = pasted.slice(i, i + 2).join(' ');
@@ -63,6 +71,7 @@ for (let i = 0; i < pasted.length; i += 2) {
   
 });
   }
+  //If the user didn't paste grades, get the grades from the form
   else{
   
 
@@ -78,8 +87,8 @@ for (let i = 0; i < pasted.length; i += 2) {
     const date = row.querySelector('[name^="date"]').value; // Get the input with a name that starts with "date"
     const score = row.querySelector('[name^="score"]').value; // Get the input with a name that starts with "score"
     const value = row.querySelector('[name^="value"]').value; // Get the input with a name that starts with "value"
-    const classInput = row.querySelector('[name^="class"]').value; // Get the input with a name that starts with "class"
-    const category = row.querySelector('[name^="category"]').value; // Get the input with a name that starts with "category"
+    const classInput = row.querySelector('[id^="class"]').value; // Get the input with a name that starts with "class"
+    const category = row.querySelector('[id^="category"]').value; // Get the input with a name that starts with "category"
   const name = row.querySelector('[name^="name"]').value; 
     // If all values in row are filled in, create an object with the input values and add it to the inputs array
     if(date != "" && score != "" && value != "" && classInput != "" && category != "" && name != ""){
@@ -99,7 +108,7 @@ for (let i = 0; i < pasted.length; i += 2) {
   
   }
   // Do something with the inputs array, e.g. send it to a server or store it in local storage
-  alert(inputs);
+  console.log(inputs);
   document.getElementById("gradeform").reset();
   
   post_grades(inputs);
@@ -121,10 +130,10 @@ function post_grades(grades){
 })
 .then(response => response.text())
 .then(result => {
-    alert(result);  // Log the response from Python
+    console.log(result);  // Log the response from Python
 })
 .catch(error => {
-    alert('An error occurred:', error);
+    console.log('An error occurred:', error);
 });
 }
 
@@ -150,7 +159,7 @@ document.getElementById("class"+z).addEventListener("change", () => {optionSelec
   createGradesTable();
 })
 .catch(error => {
-  alert('An error occurred:' +error);
+  console.log('An error occurred:' +error);
 });
 
 function setClassOptions(filteredClasses){
@@ -177,6 +186,7 @@ selectElement.removeChild(selectElement.querySelector('option[value="default"]')
   
 }
 
+//Add previously inputted grades to the table
 function createGradesTable() {
   const tableBody = document.getElementById('gradesBody');
   tableBody.innerHTML = ''; // Clear any existing rows
@@ -225,16 +235,20 @@ function createEditButton(index) {
 
 // Function to make a row editable
 function makeRowEditable(row, index) {
+  input_types = ["date", "number", "number", "text", "text", "text"]
   const cells = row.children;
   for (let i = 0; i < cells.length - 1; i++) {
     const cell = cells[i];
     const value = cell.textContent;
-    cell.innerHTML = `<input type="text" value="${value}">`;
+    let type = input_types[i];
+    cell.innerHTML = `<input type="${type}" value="${value}">`;
+    
   }
 
   const saveButton = document.createElement('button');
   saveButton.textContent = 'Save';
 
+// When the user clicks the save button, save the changes made to the row
 saveButton.addEventListener('click', () => {
     saveRowChanges(row, index);
   });
@@ -295,7 +309,7 @@ function update_grades(id, grades){
     console.log(result);  // Log the response from Python
 })
 .catch(error => {
-    alert('An error occurred:', error);
+    console.log('An error occurred:', error);
 });
 }
 

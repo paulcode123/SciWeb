@@ -1,13 +1,17 @@
+//add the assignments to the page
 function display_assignments(assignmentList, classList){
   const assignmentListContainer = document.getElementById('assignmentList');
+  // For each assignment, get the class name by looping through assignments, looping through classes, and matching the ids
     assignmentList.forEach(assignmentData => {
-      //get class name given class id
+  
       for (const item of classList) {
+
         if (item.id === assignmentData['class']) {
             class_name = item.name;
             break;
         }
 }
+//create a div element for each assignment
       const assignmentItem = document.createElement('div');
       assignmentItem.classList.add('assignment-item');
       assignmentItem.innerHTML = `
@@ -16,7 +20,7 @@ function display_assignments(assignmentList, classList){
         <p>Type: ${assignmentData.categories}</p>
         <p>Name: ${assignmentData.name}</p>
       `;
-      
+      //add an event listener to each assignment div so that when the user clicks on it, they are taken to the assignment page
       assignmentItem.addEventListener('click', () => {
         window.location.href = "/assignment/" + assignmentData.id;
       });
@@ -27,7 +31,7 @@ function display_assignments(assignmentList, classList){
 }
 
 
-
+//fetch the assignments from the database
 function get_assignment(){
   fetch('/data', {
   method: 'POST',
@@ -48,7 +52,7 @@ function get_assignment(){
   
 })
 .catch(error => {
-  alert('Assignments.js: An error occurred:' +error);
+  console.log('Assignments.js: An error occurred:' +error);
 });
 }
 get_assignment()

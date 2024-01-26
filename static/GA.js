@@ -146,7 +146,7 @@ fetch('/grades_over_time', {
     joined_classes = "All";
   }
   else{
-    alert(classes);
+    console.log(classes);
   }
     
   var name =  joined_classes +" grades over time"

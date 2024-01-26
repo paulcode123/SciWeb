@@ -351,7 +351,7 @@ document.addEventListener('keyup', (e) => {
       remove = false;
     }
     // else if (e.key === ''){
-    //   alert(container.innerHTML)
+    //   console.log(container.innerHTML)
     // }
     lineCreated=false;
     boxCreated=false;
@@ -445,7 +445,7 @@ function postNotebook(){
     console.log(result)
 })
 .catch(error => {
-    alert('An error occurred:', error);
+    console.log('An error occurred:', error);
 });
 }
 

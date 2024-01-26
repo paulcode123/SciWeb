@@ -69,14 +69,18 @@ classForm.addEventListener('submit', function(event) {
   const nameInput = document.getElementById('nameInput').value;
   const categories = document.getElementById('categories').value;
   var update = 0;
-  var old_row_members= "";
 for (var i = 0; i < classList.length; i++) {
   if (classList[i].period === periodInput && classList[i].teacher === teacherInput) {
-    old_row_members = classList[i].OSIS;
-    
+    classList[i].OSIS = classList[i].OSIS + ", " + osis;
     update = classList[i].id; 
+    post_classes(classList[i], update);
     break;
   }
+}
+if (update != 0){
+  classForm.reset();
+  classForm.style.display = 'none';
+  return;
 }
 // parse categories string
 const parts = categories.split(/,\s+/);
@@ -94,7 +98,7 @@ parts.forEach(part => {
     period: parseInt(periodInput),
     teacher: teacherInput,
     name: nameInput,
-    OSIS: osis + ", " + old_row_members,
+    OSIS: osis,
     id: Math.floor(Math.random() * 9000)+1000,
     categories: result
   };
@@ -134,7 +138,7 @@ function display_classes(classList, user_data){
 }
 setTimeout(() => {
       init_fetch()
-    }, 1);
+    }, 0.1);
 function init_fetch(){
   console.log("in init_fetch")
 fetch('/data', {
@@ -156,7 +160,7 @@ fetch('/data', {
   
 })
 .catch(error => {
-  alert('An error occurred:' +error);
+  console.log('An error occurred:' +error);
 });
 }
 function post_classes(data, update){

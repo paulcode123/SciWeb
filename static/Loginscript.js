@@ -56,7 +56,7 @@ function post_login(data){
 
 })
 .catch(error => {
-    alert('An error occurred:', error);
+    console.log('An error occurred:', error);
 });
 }
 

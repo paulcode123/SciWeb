@@ -16,7 +16,7 @@ fetch('/data', {
   displayUserInfo(userData);
 })
 .catch(error => {
-  alert('An error occurred at profile.js:' +error);
+  console.log('An error occurred at profile.js:' +error);
 });
 }, 300);
 
@@ -76,6 +76,6 @@ function update_data(data){
     var a = result;  // Log the response from Python
 })
 .catch(error => {
-    alert('An error occurred:', error);
+    console.log('An error occurred:', error);
 });
 }
