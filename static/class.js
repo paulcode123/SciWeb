@@ -52,6 +52,7 @@ const assignmentForm = document.getElementById('assignmentForm');
 createBtn.addEventListener('click', () => {
   // Toggle the visibility of the form container
   formContainer.style.display = formContainer.style.display === 'none' ? 'block' : 'none';
+
 });
 
 // Add event listener to the form submission
@@ -98,6 +99,7 @@ function post_assignment(data){
 
 
 function get_assignment(){
+
   fetch('/data', {
   method: 'POST',
   headers: {
@@ -116,8 +118,9 @@ function get_assignment(){
   
   display_classes(assignmentList, classData);
   display_NB_btn(classData);
-  add_user_bubbles(classData)
-  
+  add_user_bubbles(classData);
+  optionSelected(classData);
+  document.getElementById('loadingWheel').style.display = "none";
 })
 .catch(error => {
   console.error('An error occurred in class.js :' +error);
@@ -145,4 +148,32 @@ function display_classes(assignmentList, classList){
       assignmentListContainer.appendChild(assignmentItem);
     });
   
+}
+
+
+
+function optionSelected(classes){
+    
+  console.log(classes);
+  var categories = classes['categories']
+  
+  if(categories){
+    
+  categories = JSON.parse(categories).filter(item => typeof item === 'string');
+    
+  var categoryElement = document.getElementById("assignmentType")
+  // Remove all existing options
+  while (categoryElement.firstChild) {
+    categoryElement.removeChild(categoryElement.firstChild);
+}
+  // Add new options
+  for(let x=0; x<categories.length; x++){
+  const newOption = document.createElement("option");
+  newOption.value = categories[x];
+  newOption.textContent = categories[x];
+      // Add the new option to the select element
+categoryElement.appendChild(newOption);
+  }
+  
+  }
 }

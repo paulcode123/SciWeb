@@ -156,7 +156,7 @@ fetch('/data', {
   user_data = data['Name']
   console.log(classList)
   display_classes(classList, user_data)
-  
+  document.getElementById('loadingWheel').style.display = "none";
   
 })
 .catch(error => {

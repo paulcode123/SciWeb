@@ -14,6 +14,7 @@ fetch('/data', {
   userData = data['Name'];
   console.log(userData);
   displayUserInfo(userData);
+  document.getElementById('loadingWheel').style.display = "none";
 })
 .catch(error => {
   console.log('An error occurred at profile.js:' +error);

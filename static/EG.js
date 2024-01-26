@@ -157,6 +157,7 @@ fetch('/data', {
 document.getElementById("class"+z).addEventListener("change", () => {optionSelected(z, classes)});
 }
   createGradesTable();
+  document.getElementById('loadingWheel').style.display = "none";
 })
 .catch(error => {
   console.log('An error occurred:' +error);

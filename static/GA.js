@@ -118,7 +118,8 @@ const layout = {
 
 // Render the graph
 Plotly.newPlot('myGraph', data, layout);
-
+console.log(document.getElementById('loadingWheel').style.visibility)
+document.getElementById('loadingWheel').style.visibility = "hidden";
 
 };
 
@@ -152,6 +153,7 @@ fetch('/grades_over_time', {
   var name =  joined_classes +" grades over time"
   displayInsights(insights);
   create_graph(grades, times, name, goals)
+  
 })
 .catch(error => {
   console.error('An error occurred:' +error);
@@ -172,10 +174,15 @@ errorMessage.textContent = "";
     errorMessage.textContent = "Please select at least one class.";
     return;
   }
-  
+  console.log(document.getElementById('loadingWheel').style.visibility)
+  document.getElementById('loadingWheel').style.visibility = "visible";
+  document.getElementById('loadingWheel').style.display = "block";
+  console.log(document.getElementById('loadingWheel').style.visibility)
   console.log(selectedClasses);
   // document.getElementById("class-form").reset();
   graph_data(selectedClasses)
+  console.log("done")
+  
   });
 
 

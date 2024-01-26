@@ -67,7 +67,7 @@ fetch('/data', {
   setClassOptions(classes)
   
   document.getElementById("classDropdown").addEventListener("change", () => {optionSelected(classes)});
-    
+  document.getElementById('loadingWheel').style.display = "none";  
 })
 .catch(error => {
   console.log('An error occurred:' +error);

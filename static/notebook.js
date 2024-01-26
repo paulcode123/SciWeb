@@ -252,7 +252,8 @@ nodes.forEach(node => {
 lines.forEach(line => {
   element_click(line)
 });
-  }   
+  }
+  document.getElementById('loadingWheel').style.display = "none";   
 })
 .catch(error => {
   console.error('An error occurred in notebook.js:' +error);

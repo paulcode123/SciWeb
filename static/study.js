@@ -141,6 +141,7 @@ async function make_context_prompt(context, prompt){
 
 // getAIResponse("What's 2+2?"));
 async function main(classes, class_ids, notebooks, userStudy){
+  document.getElementById('loadingWheel').style.display = "none";
 chatBotPrompt("Which class would you like to study for?");
 let [inputElement, divElement] = userPrompt()
   while(entered == false){

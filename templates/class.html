@@ -47,6 +47,7 @@
     </li>
     <li><a href="/Login" id="profile">Login</a></li>
   </ul>
+  <div id="loadingWheel"></div>
     <h1>Welcome to {{ class_name }}</h1>
     <h3 id="description"></h3>
     <div id="user-list"></div>
@@ -63,11 +64,8 @@
       <input type="date" id="due" name="due" required>
       <label for="assignmentType">Type:</label>
     <select id="assignmentType" name="assignmentType">
-      <option value="homework">Homework</option>
-      <option value="essay">Essay</option>
-      <option value="quiz">Quiz</option>
-      <option value="test">Test</option>
-      <option value="project">Project</option>
+      <option value="default">Loading Classes</option>
+      
     </select>
     
       <br>

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session
 import json
 import requests
 import numpy as np
@@ -12,7 +12,7 @@ import os
 
 def init_gapi():
   spreadsheet_id = '1k7VOAgZY9FVdcyVFaQmY_iW_DXvYQluosM2LYL2Wmc8'
-  api_key = "not published to github"
+  api_key = "AIzaSyC4iGMgMaHMqSxGfsa5phA-peGBKUKkTWM"
   sheetdb_url = 'https://sheetdb.io/api/v1/y0fswwtbyapbd'
 
   DISCOVERY_SERVICE_URL = 'https://sheets.googleapis.com/$discovery/rest?version=v4'
@@ -27,15 +27,15 @@ def init_gapi():
   
 def init_vars():
   spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column = init_gapi()
-  openAIAPI = "not published to github"
+  openAIAPI = "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"
   #define placeholders if name not set
-  user_data = {}
-  ip_add = 404
-  return spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column, user_data, ip_add, openAIAPI
+  
+  return spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column, openAIAPI
 
 
-spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column, user_data, ip_add, openAIAPI = init_vars()
+spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column, openAIAPI = init_vars()
 app = Flask(__name__)
+app.secret_key = '<cS£6iIW774@X!z^7^9yW'
 allow_demo_change = True
 
 #initialize HTML/CCS/JS files
@@ -124,12 +124,12 @@ def assignment_page(assignmentid):
 #Send post/get data to/from JS files
 @app.route('/home-ip', methods=['POST'])
 def get_home_ip():
-  global ip_add
-  if ip_add == 404:
-    ip_add = request.json
+  
+  if 'ip_add' not in session:
+    session['ip_add'] = request.json
     print(request.json)
-  print("ip from get_home_ip is:", ip_add)
-  return json.dumps({'Name': get_name(str(ip_add))})
+  print("ip from get_home_ip is:", session['ip_add'])
+  return json.dumps({'Name': get_name(str(session['ip_add']))})
 
 
 # @app.route('/is-ip', methods=['POST'])
@@ -210,20 +210,20 @@ def receive_grades():
 #get user-inputted login from logins.js
 @app.route('/post-login', methods=['POST'])
 def postLogin():
-  global user_data
+  
   data = request.json
-  ip_add = data['IP']
+  session['ip_add'] = data['IP']
   logins = get_data("Users")
   #remove ip addresses from logins other than the current one
   for row in logins:
-    if ip_add in row['IP']:
-      row['IP'] = row['IP'].replace(ip_add, "")
+    if session['ip_add'] in row['IP']:
+      row['IP'] = row['IP'].replace(session['ip_add'], "")
       update_data(row['osis'], 'osis', row, "Users")
       
       
   for row in logins:
     if row['osis'] == data['osis']:
-      data['IP'] = f"{ip_add}, {row['IP']}"
+      data['IP'] = f"{session['ip_add']}, {row['IP']}"
       update_data(row['osis'], 'osis', data, "Users")
       user_data = row
       return 'success'
@@ -352,7 +352,7 @@ def post_data(sheet, data):
 
 #delete data from sheetdb
 def delete_data(sheet, row_value, row_name):
-  if not isinstance(user_data, tuple) and sheet !="Users" and user_data['osis'] == '342875634' and not allow_demo_change:
+  if not isinstance(session['user_data'], tuple) and sheet !="Users" and session['user_data']['osis'] == '342875634' and not allow_demo_change:
     message = "rejected: can't delete demo account data"
     print(message)
     return message
@@ -364,27 +364,26 @@ def delete_data(sheet, row_value, row_name):
 
 #get name from Users data
 def get_name(ip=None):
-  global ip_add, user_data
+  
   if ip:
     print("ip", ip)
-    ip_add = ip
-  if user_data != {}:
+    session['ip_add'] = ip
+  if 'user_data' in session:
     print("user_data already defined in get_name()")
-    return user_data
+    return session['user_data']
   # while ip_add == 404:
 
   #   time.sleep(0.1)
 
   data = get_data("Users")
 
-  filtered_data = [entry for entry in data if str(ip_add) in entry.get('IP')]
-  if filtered_data == []:
-    ip_add = 404
+  filtered_data = [entry for entry in data if str(session['ip_add']) in entry.get('IP')]
+  
   # print("fd:", filtered_data)
   if filtered_data:
-    user_data = filtered_data[-1]
-    print("User's name from ip address", ip_add, "is", user_data['first_name'])
-    return user_data
+    session['user_data'] = filtered_data[-1]
+    print("User's name from ip address", session['ip_add'], "is", session['user_data']['first_name'])
+    return session['user_data']
   return "Login", 404
 
 

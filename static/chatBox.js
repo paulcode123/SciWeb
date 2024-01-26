@@ -113,3 +113,4 @@ function get_messages(){
 
 
 get_messages()
+document.getElementById('loadingWheel').style.display = "none";

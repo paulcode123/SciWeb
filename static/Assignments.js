@@ -48,6 +48,7 @@ function get_assignment(){
   classList = data["Classes"]
   
   display_assignments(assignmentList, classList)
+  document.getElementById('loadingWheel').style.display = "none";
   
   
 })
@@ -56,3 +57,8 @@ function get_assignment(){
 });
 }
 get_assignment()
+
+
+
+
+
