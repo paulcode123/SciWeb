@@ -1,16 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <link rel="stylesheet" href="static/Pitch.css">
   <link rel="stylesheet" href="static/navbar.css">
   <title>SciWeb Pitch</title>
-  <link rel="icon" href="static/favicon.png" type="image/x-icon">
-  <style>
-    /* Adjust the size of the container as per your requirements */
-    .presentation-container {
-      width: 100px;
-      height: 80px;
-    }
-  </style>
+  <link rel="icon" href="static/media/favicon.png" type="image/x-icon">
+  
 </head>
 <body>
   <ul class="navbar">
@@ -51,8 +46,29 @@
     </li>
     <li><a href="/Login" id="profile">Login</a></li>
   </ul>
-<br>
-<h1>About Us</h1>
+  <div id="loadingWheel"></div>
+  <main>
+  <img src="static/media/PitchBg.png"id="dimImage" class="dim-on-scroll" alt="Scrollable Image">
+  <!-- create a div element to allow elements to be placed on top of the image -->
+  <div class="image-container">
+  <img src="static/media/PitchToC.jpg">
+  <div class="overlay-content">
+    <div class="button-row">
+    <button id="b1">Mission</button>
+    <button id="b2">About</button>
+    <button id="b3">Join</button>
+  </div>
+  <div class="button-row">
+    <button id="b4">Resources</button>
+    <button id="b5">Our Team</button>
+    <button id="b6">FAQ</button>
+    </div>
+  </div>
+</div>
+  <br>
+<h1 id="msn">Our Mission</h1>
+<h2 id="msnText"></h2>
+<h1 id="abt">About Us</h1>
 <p>
   SciWeb is an innovative club at Bronx Science dedicated<br>
   to enhancing the academic experience through a unique, <br>
@@ -67,8 +83,8 @@
 <br>
 
 
-<video width="640" height="360" controls>
-    <source src="static/SciWeb_Video.mp4" type="video/mp4">
+<video id="swbVid" width="640" height="360" controls>
+    <source src="static/media/SciWeb_Video.mp4" type="video/mp4">
     Your browser does not support the video tag.
 </video>
 <h3>Check Out all of our videos on our youtube channel, <a href="https://www.youtube.com/channel/UCbR3QtSEkwO-lgjpIgiB2Ow" target="_blank">@bxsciweb</a>!</h3>
@@ -82,10 +98,11 @@
 <h3>See the presentation below for more info:</h3>
   
   <div class="presentation-container">
-    <iframe src="https://docs.google.com/presentation/d/14nikx9UlVK61Jko7CUSNdRlfdNEF55WkEPUu9TXpeqQ/edit?usp=sharing/embed?start=true&loop=false&delayms=3000&rm=minimal" frameborder="0" width="800" height="600" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+    <iframe id="prez" style="visibility: hidden;" src="https://docs.google.com/presentation/d/14nikx9UlVK61Jko7CUSNdRlfdNEF55WkEPUu9TXpeqQ/edit?usp=sharing/embed?start=true&loop=false&delayms=3000&rm=minimal" frameborder="0" width="800" height="600" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
   </div>
 <br>
-
+</main>
+<script src="/static/Pitch.js"></script>
 <script src="/static/user_data.js"></script>
 
 </body>
