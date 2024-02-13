@@ -123,3 +123,21 @@ selectElement.removeChild(selectElement.querySelector('option[value="default"]')
     
     }
   }
+  const { filter_grades, get_data } = require('./your_util_functions.js'); // Import your utility functions
+  
+  function get_min_max(grades, user_data, classes) {
+      // Your existing function code here
+  }
+  
+  let minDate, maxDate, filteredGrades;
+  [minDate, maxDate, filteredGrades] = get_min_max(grades, user_data, classes);
+  
+  // Displaying the data with goal-related data printed in orange
+  filteredGrades.forEach(grade => {
+      const date = new Date(grade.date).toLocaleDateString('en-US'); // Convert date to a readable format
+      if (grade.isGoal) {
+          console.log(`\x1b[33mDate: ${date}, Grade: ${grade.grade}\x1b[0m`); // Print in orange color
+      } else {
+          console.log(`Date: ${date}, Grade: ${grade.grade}`);
+      }
+  });

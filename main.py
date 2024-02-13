@@ -11,8 +11,8 @@ import os
 
 
 def init_gapi():
-  spreadsheet_id = '1k7VOAgZY9FVdcyVFaQmY_iW_DXvYQluosM2LYL2Wmc8'
-  api_key = "AIzaSyC4iGMgMaHMqSxGfsa5phA-peGBKUKkTWM"
+  spreadsheet_id = 'nope'
+  api_key = "nice_try"
   sheetdb_url = 'https://sheetdb.io/api/v1/y0fswwtbyapbd'
 
   DISCOVERY_SERVICE_URL = 'https://sheets.googleapis.com/$discovery/rest?version=v4'
@@ -27,7 +27,7 @@ def init_gapi():
   
 def init_vars():
   spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column = init_gapi()
-  openAIAPI = "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"
+  openAIAPI = "not yours"
   #define placeholders if name not set
   
   return spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column, openAIAPI
@@ -172,7 +172,9 @@ def post_ga_grades():
   grades = get_data("Grades")
   user_data = get_name()
   goals = get_goals(classes['data'], user_data, grades)
-  
+  goal_date = get_data("Goals")
+  dates_only = [entry['date'] for entry in goal_date]
+
   times, grade_spread = process_grades(grades, classes['data'], user_data, classes_data)
   grade_spreads = []
   if classes['data'][0] == "all":
@@ -352,7 +354,7 @@ def post_data(sheet, data):
 
 #delete data from sheetdb
 def delete_data(sheet, row_value, row_name):
-  if not isinstance(session['user_data'], tuple) and sheet !="Users" and session['user_data']['osis'] == '342875634' and not allow_demo_change:
+  if 'user_data' in session and not isinstance(session['user_data'], tuple) and sheet !="Users" and session['user_data']['osis'] == '342875634' and not allow_demo_change:
     message = "rejected: can't delete demo account data"
     print(message)
     return message
@@ -413,7 +415,7 @@ def get_goals(classes, user_data, grades):
     max_diff = (max_date - min_date).days
     x0 = date_diff / max_diff
     x1 = x0 + 0.04
-
+#change formating here 
     goalZone = {
       'type': 'rect',
       'xref': 'paper',
@@ -448,20 +450,30 @@ def filter_grades(grades, user_data, classes):
   return grades
 
 def get_min_max(grades, user_data, classes):
-  grades = filter_grades(grades, user_data, classes)
-  # Extract the minimum and maximum dates from the data
-  dates = [
-    datetime.datetime.strptime(d['date'], '%m/%d/%Y').date() for d in grades
-  ]
-  if len(dates) == 0:
-    print("error: no grades found")
-    return 0, 0, 0
-  min_date = min(dates)
-  max_date = max(dates)
-  max_date = max_date + datetime.timedelta(days=1)
-  if min_date == max_date:
-    max_date = max_date + datetime.timedelta(days=5)
-  return min_date, max_date, grades
+    grades = filter_grades(grades, user_data, classes)
+    goals = get_data('Goals')
+    
+    # Highlighting the portion related to goals with comments
+    # Start of the goals portion
+    user_goals = [goal for goal in goals if goal['osis'] == user_data['osis']]
+    goal_dates = [
+        datetime.datetime.strptime(goal['date'], '%m/%d/%Y').date() for goal in user_goals
+    ]
+    # End of the goals portion
+    
+    dates = [
+        datetime.datetime.strptime(grade['date'], '%m/%d/%Y').date() for grade in grades
+    ]
+    dates.extend(goal_dates)  # Include goal dates in the list
+    if len(dates) == 0:
+        print("error: no grades found")
+        return 0, 0, 0
+    min_date = min(dates)
+    max_date = max(dates)
+    max_date = max_date + datetime.timedelta(days=1)
+    if min_date == max_date:
+        max_date = max_date + datetime.timedelta(days=5)
+    return min_date, max_date, grades
 
 
 def process_grades(grades, classes, user_data, classes_data):
