@@ -11,8 +11,8 @@ import os
 
 
 def init_gapi():
-  spreadsheet_id = 'nope'
-  api_key = "nice_try"
+  spreadsheet_id = '1k7VOAgZY9FVdcyVFaQmY_iW_DXvYQluosM2LYL2Wmc8'
+  api_key = "no"
   sheetdb_url = 'https://sheetdb.io/api/v1/y0fswwtbyapbd'
 
   DISCOVERY_SERVICE_URL = 'https://sheets.googleapis.com/$discovery/rest?version=v4'
@@ -27,7 +27,7 @@ def init_gapi():
   
 def init_vars():
   spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column = init_gapi()
-  openAIAPI = "not yours"
+  openAIAPI = "nope"
   #define placeholders if name not set
   
   return spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column, openAIAPI
@@ -35,7 +35,7 @@ def init_vars():
 
 spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column, openAIAPI = init_vars()
 app = Flask(__name__)
-app.secret_key = '<cS£6iIW774@X!z^7^9yW'
+app.secret_key = 'not published'
 allow_demo_change = True
 
 #initialize HTML/CCS/JS files
@@ -220,14 +220,18 @@ def postLogin():
   for row in logins:
     if session['ip_add'] in row['IP']:
       row['IP'] = row['IP'].replace(session['ip_add'], "")
-      update_data(row['osis'], 'osis', row, "Users")
+      #if the ip address is the only one in the list(no numbers in row['IP']), remove the row
+      if not any(char.isdigit() for char in row['IP']):
+        delete_data("Users", row['osis'], "osis")
+      else:
+        update_data(row['osis'], 'osis', row, "Users")
       
       
   for row in logins:
     if row['osis'] == data['osis']:
       data['IP'] = f"{session['ip_add']}, {row['IP']}"
       update_data(row['osis'], 'osis', data, "Users")
-      user_data = row
+      session['user_data'] = row
       return 'success'
   
   post_data("Users", data)
@@ -370,6 +374,8 @@ def get_name(ip=None):
   if ip:
     print("ip", ip)
     session['ip_add'] = ip
+    
+  
   if 'user_data' in session:
     print("user_data already defined in get_name()")
     return session['user_data']
@@ -378,8 +384,9 @@ def get_name(ip=None):
   #   time.sleep(0.1)
 
   data = get_data("Users")
-
-  filtered_data = [entry for entry in data if str(session['ip_add']) in entry.get('IP')]
+  print(data[0])
+  print(data[0].get('IP'))
+  filtered_data = [entry for entry in data if str(session['ip_add']) in str(entry.get('IP'))]
   
   # print("fd:", filtered_data)
   if filtered_data:

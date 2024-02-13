@@ -1,6 +1,9 @@
+//hide loading wheel
+document.getElementById("loadingWheel").style.display = "none";
 const form = document.getElementById('login-form');
 console.log("loginscript ip:"+ip);
 function demo(){
+  document.getElementById("loadingWheel").style.display = "block";
   console.log(ip)
   post_login({
     "first_name": "Demo", 
@@ -11,7 +14,7 @@ function demo(){
   });
 }
 form.addEventListener('submit', function(event) {
-
+  document.getElementById("loadingWheel").style.display = "block";
   // Prevent the form from submitting normally
   event.preventDefault();
 

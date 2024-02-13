@@ -139,17 +139,106 @@ async function make_context_prompt(context, prompt){
 }
 
 
-// getAIResponse("What's 2+2?"));
+//main function that runs the study session
 async function main(classes, class_ids, notebooks, userStudy){
+  questions_per_round = 1;
+  //hide loading wheel
   document.getElementById('loadingWheel').style.display = "none";
+  //wait for the class and category to be asked for
+  let subtopics = await get_class_and_category(classes, class_ids, notebooks);
+
+  //main study loop, for each round of questions
+  while(true){
+    //build prompt
+    prompt_end = " Make questions about these specific topics: "+subtopics+". Simply list "+ questions_per_round.toString() +" questions and nothing else."
+    context = [{"role": "system", "content": build_prompt("challenge")+prompt_end}]
+  
+    //load and process the user's questions and answers from past study sessions from the database
+    roles = ["assistant", "user"]
+    for(i = 0; i < userStudy.length; i++){
+      context.push({"role": roles[i%2], "content": userStudy[i]})
+    }
+    
+
+    //get the AI's response to the prompt
+    let ai_response = await getAIResponse(context);
+    console.log(ai_response)
+    //split the AI response into questions
+    var questions = ai_response.split(/\d+\.\s+/).filter(Boolean);
+
+    //for each question, ask the user and get their response
+    for(let i = 0; i<questions.length; i++){
+    //ask the user the question
+    chatBotPrompt(questions[i]);
+    [inputElement, divElement] = userPrompt()
+      //log the question to the context and userStudy arrays
+      userStudy.push(questions[i]);
+      context.push({"role": "assistant", "content": questions[i]});
+    //wait for user to press enter on their response  
+    while(entered == false){
+      await sleep(500);
+    }
+      //log the user's response to the context and userStudy arrays
+      userStudy.push(inputElement.value);
+      context.push({"role": "user", "content": inputElement.value});
+      //create feedback prompt
+    let c = "Tell the user how accurate their answer is in 20 words."
+    prompt = "question: "+questions[i]+", student answer: "+inputElement.value;
+    ai_response = await make_context_prompt(c, prompt);
+    pclass = document.createElement('p');
+    pclass.style.fontSize = "8px";
+    divElement.appendChild(pclass);
+    typeOut(ai_response, pclass, 15);
+
+    }
+    //Evaluate progress
+    context[0]={"role": "system", "content": "for each of the user's answers to a question, rate it from 1-10. Return scores in an ordered array."};
+    console.log(context);
+    ai_response = await getAIResponse(context);
+    console.log(ai_response);
+
+    //update the database with the user's study session
+    updateUserStudy(userStudy);
+  }
+}
+
+
+function build_prompt(mode){
+  //given what the style(mode) of how the bot asks questions, give the corresponding prompt
+  if (mode == "weaknesses"){
+    return "tbd";
+  }
+  else if (mode == "strengths"){
+    return "tbd";
+  }
+  else if (mode == "challenge"){
+    return "You are a tutor using the user's past answers to questions to help you understand what they know. Ask them specific questions that will challenge their knowledge.";
+  }
+  else if (mode == "review"){
+    return "tbd";
+  }
+  else if (mode == "new"){
+    return "tbd";
+  }
+  else if (mode == "custom"){
+    return "tbd";
+  }
+}
+
+
+
+
+
+async function get_class_and_category(classes, class_ids, notebooks){
+  //get user input: which class to study for
 chatBotPrompt("Which class would you like to study for?");
 let [inputElement, divElement] = userPrompt()
+  //wait for user to press enter on their response
   while(entered == false){
     await sleep(500);
   }
 
-  
-  
+  //get class name from user input
   let prompt = parseClassResponse(inputElement, divElement, classes)
   let ai_response = await make_assistant_prompt(prompt);
   let i = parseInt(ai_response.match(/\d+/)[0], 10)
@@ -162,11 +251,13 @@ let [inputElement, divElement] = userPrompt()
   divElement.appendChild(pclass);
   typeOut(classes+"=>"+studyClass, pclass, 15);
 
+  //get user input: which topic to study for
   chatBotPrompt("What topic/unit in "+studyClass+" would you like to study?");
   [inputElement, divElement] = userPrompt()
   while(entered == false){
     await sleep(500);
   }
+  //generate subtopics that are relevant to the user's topic by using the notebook text to find what the teacher covered
   var topic = inputElement.value
   let context = "You are a tutor tasked with listing the subtopics that relate to both the topic and the text in the list. Just list the subtopics and nothing else."
   prompt = "topic: "+ topic + ", list: " +notebookText;
@@ -177,48 +268,5 @@ let [inputElement, divElement] = userPrompt()
   pclass.style.fontSize = "8px";
   divElement.appendChild(pclass);
   typeOut("relevant topics in notebook=>"+subtopics, pclass, 15);
-
-  
-  while(true){
-    roles = ["assistant", "user"]
-    context = [{"role": "system", "content": "You are a tutor trying to pinpoint the user's weaknesses by using their past answers to questions to help you understand how they think. Ask them more specific questions that will help you further understand how they answer questions. You will be given a list to topics to ask about. Simply list 1 question and nothing else."}]
-      for(i = 0; i < userStudy.length; i++){
-        context.push({"role": roles[i%2], "content": userStudy[i]})
-      }
-      context.push({"role": "assistant", "content": subtopics})
-    // if (prevQs.length>0){
-    //   prompt +=" previously asked: "+prevQs;
-    // }
-    console.log(context);
-    let ai_response = await getAIResponse(context);
-    
-    console.log(ai_response)
-    var questions = ai_response.split(/\d+\.\s+/).filter(Boolean);
-    for(let i = 0; i<questions.length; i++){
-      
-    
-    chatBotPrompt(questions[i]);
-    [inputElement, divElement] = userPrompt()
-      userStudy.push(questions[i]);
-      
-      context.push({"role": "assistant", "content": questions[i]});
-      
-    while(entered == false){
-      await sleep(500);
-    }
-      userStudy.push(inputElement.value);
-      context.push({"role": "user", "content": inputElement.value});
-    let c = "You are a tutor giving feedback to a student on their answer to a question. Given the question and the student's answer, evaluate their understanding of the question and the quality of their response."
-    prompt = "question: "+questions[i]+", student answer: "+inputElement.value;
-    
-    ai_response = await make_context_prompt(c, prompt);
-    pclass = document.createElement('p');
-    pclass.style.fontSize = "8px";
-    divElement.appendChild(pclass);
-    typeOut(ai_response, pclass, 15);
-    }
-    
-    updateUserStudy(userStudy);
-  }
+  return subtopics;
 }
-
