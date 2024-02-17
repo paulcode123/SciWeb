@@ -65,7 +65,7 @@ setTimeout(function() {
 
   graph_data(["all", "All"]);
 }, 300); // 100 milliseconds = 0.1 seconds
-function create_graph(grades, times, name, goals){
+function create_graph(grades, times, name, goals, max_date){
   
 const canvas = document.querySelector('#myGraph');
 
@@ -103,11 +103,13 @@ const data = [trace];
 // Define the goal zone
 
 console.log(goals)
+console.log(max_date)
 // Define the layout
 const layout = {
   title: name,
   xaxis: {
-    title: 'Date'
+    title: 'Date',
+    range: [dateStrings[0], max_date]
   },
   yaxis: {
     title: 'Grades'
@@ -140,7 +142,8 @@ fetch('/grades_over_time', {
   grades = JSON.stringify(data['grade_spread']);
   times = JSON.stringify(data['times']);
   goals = data['goals'];
-  insights = data['insights'];
+  
+  max_date = data['max_date'];
   
   let joined_classes = classes.join(', ');
   if(joined_classes=='all, All'){
@@ -151,8 +154,13 @@ fetch('/grades_over_time', {
   }
     
   var name =  joined_classes +" grades over time"
-  displayInsights(insights);
-  create_graph(grades, times, name, goals)
+  //if insights exist, display them
+  if (data['insights'] !== undefined) {
+    var insights = data['insights'];
+    displayInsights(insights);
+  }
+  
+  create_graph(grades, times, name, goals, max_date);
   
 })
 .catch(error => {

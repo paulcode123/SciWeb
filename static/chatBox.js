@@ -5,8 +5,9 @@ function receive_messages(messages, users) {
   
   const messageList = document.getElementById('message-list');
   clearMessages()
+  // Loop through all the messages and display them
   messages.forEach(message => {
-    
+    //if the message is in the current class, display it
     if (message.location ===ClassId) {
       
       const listItem = document.createElement('li');
@@ -15,6 +16,7 @@ function receive_messages(messages, users) {
       const senderElement = document.createElement('div');
       senderElement.className = 'sender';
       var senderName = 'default';
+      
       for (let i = 0; i < users.length; i++) {
         if (users[i].osis == message.sender) {
           senderName = users[i].first_name;
