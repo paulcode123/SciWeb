@@ -69,6 +69,7 @@ function create_graph(grades, times, name, goals, max_date){
   
 const canvas = document.querySelector('#myGraph');
 
+// Clean grade and time data
 times = times.slice(1, -1);
 grades = grades.slice(1, -1);
 times = times.split(",");
@@ -76,6 +77,8 @@ grades = grades.split(",");
 
 console.log(grades)
 console.log(times)
+
+// Convert dates from ordinal(eg. 79432) to strings(eg. 12/31/2021)
 let dateStrings = [];
 for (let i = 0; i < times.length; i++) {
   let date = new Date(0);
@@ -86,8 +89,9 @@ for (let i = 0; i < times.length; i++) {
   let dateString = month + "/" + day + "/" + year;
   dateStrings.push(dateString);
 }
+console.log(dateStrings)
 
-
+// Main grade line
 const trace = {
   x: dateStrings,
   y: grades,
@@ -95,15 +99,40 @@ const trace = {
   line: {
     color: '#2c7e8f'
   }
-};
-
+}
 // Create the data array
-const data = [trace];
+var data = [trace];
+
+// Get number of instances of 'none' in grades
+let noneCount = grades.filter(grade => grade === '"none"').length;
+console.log(noneCount)
+  // For each goal, have a dotted line going from the rightmost point on the grades line to the corresponding goal
+  for (let i = 0; i < goals.length; i++) {
+    let goal = goals[i];
+    let x = [dateStrings[dateStrings.length-noneCount-1], goal.x];
+    let y = [grades[grades.length-noneCount-1], goal.y];
+    let goalTrace = {
+      x: x,
+      y: y,
+      mode: 'lines',
+      line: {
+        color: '#2c7e8f',
+        dash: 'dot'
+      }
+    };
+    data.push(goalTrace);
+  }
+
+console.log(data)
+
 
 // Define the goal zone
 
 console.log(goals)
 console.log(max_date)
+min_grade = Math.min(...grades.filter(value => value !== '"none"').map(Number));
+console.log(min_grade)
+min_x = min_grade-(0.3*(100-min_grade))
 // Define the layout
 const layout = {
   title: name,
@@ -112,10 +141,13 @@ const layout = {
     range: [dateStrings[0], max_date]
   },
   yaxis: {
-    title: 'Grades'
+    title: 'Grades',
+    // make max value 100, while leaving min value the lowest point on the graph
+    range: [min_x, 100]
   },
   displayModeBar: false,
-  shapes: goals // Add the goal zone shape
+  //shapes: goals // Add the goal zone shape
+  images: goals
 };
 
 // Render the graph

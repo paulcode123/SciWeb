@@ -90,8 +90,13 @@ function setClassOptions(filteredClasses){
 // Remove the "Please add classes first" option
 if(filteredClasses.length != 0){
 selectElement.removeChild(selectElement.querySelector('option[value="default"]'));
+// add "all" option to selectElement
+const newOption = document.createElement("option");
+newOption.value = "all";
+newOption.textContent = "All";
+selectElement.appendChild(newOption);
 } else {
-  selectElement.querySelector('option[value="default"]').textContent = "Please select classes"
+  selectElement.querySelector('option[value="default"]').textContent = "Please join classes first"
 }
   }
   
@@ -120,6 +125,11 @@ selectElement.removeChild(selectElement.querySelector('option[value="default"]')
         // Add the new option to the select element
   categoryElement.appendChild(newOption);
     }
+    // Add "All" option
+    const newOption = document.createElement("option");
+    newOption.value = "All";
+    newOption.textContent = "All";
+    categoryElement.appendChild(newOption);
     
     }
   }
