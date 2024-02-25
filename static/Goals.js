@@ -22,6 +22,7 @@ const categoryCheckboxes = document.getElementById("categoryCheckboxes");
         "category": selectedCategory,
         "date": goalDate,
         "grade": goalGrade,
+        "date_set": new Date().toLocaleDateString(),
         "osis": osis,
         "id": Math.floor(Math.random() * 10000)
       }
@@ -106,13 +107,22 @@ selectElement.appendChild(newOption);
     
     console.log(classes);
     var selectedClass = document.getElementById("classDropdown").value;
+    var categoryElement = document.getElementById("categoryDropdown");
+    // If the user selects "All", add 'all' to the category dropdown
+    if(selectedClass == "all"){
+      const newOption = document.createElement("option");
+      newOption.value = "All";
+      newOption.textContent = "All";
+      categoryElement.appendChild(newOption);
+      return;
+    }
     var categories = classes.filter(item => item.name == selectedClass)[0].categories;
     
     if(categories){
       
     categories = JSON.parse(categories).filter(item => typeof item === 'string');
       
-    var categoryElement = document.getElementById("categoryDropdown")
+    
     // Remove all existing options
     while (categoryElement.firstChild) {
       categoryElement.removeChild(categoryElement.firstChild);
@@ -125,12 +135,9 @@ selectElement.appendChild(newOption);
         // Add the new option to the select element
   categoryElement.appendChild(newOption);
     }
-    // Add "All" option
-    const newOption = document.createElement("option");
-    newOption.value = "All";
-    newOption.textContent = "All";
-    categoryElement.appendChild(newOption);
+    
     
     }
+    
   }
   

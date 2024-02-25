@@ -1,9 +1,30 @@
+
+
+
+import Jupiter from './jupiter-api/lib/index.ts';
 // Jupiter API?
 
 const form = document.querySelector("#gradeform");
 const tbody = document.querySelector("#mytbody");
 var grades;
 const Pullbutton = document.querySelector('#Jupull');
+
+function pullfromJupiter(){
+  console.log('c1')
+  Jupiter.launch().then(async (jupiter) => {
+      const request = {
+          id: '',
+          password: '',
+          school: '',
+          city: '',
+          state: ''
+      }
+  
+      const scraper = await jupiter.request(request)
+      const student = await scraper.data()
+      console.log(student.toString())
+  })
+}
 
 //When the user selects a class, update the category dropdown with the categories for that class
 function optionSelected(classNum, classes){
