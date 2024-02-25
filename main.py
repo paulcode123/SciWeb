@@ -18,12 +18,13 @@ import os
 
 
 
+
 # Function to initialize the Google Sheets API
 def init_gapi():
   spreadsheet_id = '1k7VOAgZY9FVdcyVFaQmY_iW_DXvYQluosM2LYL2Wmc8'
   # API key for accessing the Google Sheets API: find it in the "Getting Started with Contributing" document
   # Remember to keep it secret, and don't publish it to GitHub
-  api_key = "not published to GitHub"
+  api_key = "AIzaSyCrnqW_TUydNMxjgBBalIZ7JyiDVX6fZBI"
 
   # URL for the SheetDB API, for POST requests
   sheetdb_url = 'https://sheetdb.io/api/v1/y0fswwtbyapbd'
@@ -43,7 +44,7 @@ def init_vars():
   spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column = init_gapi()
   # OpenAI API key for generating insights: find it in the "Getting Started with Contributing" document
   # don't publish it to GitHub
-  openAIAPI = "not published to GitHub"
+  openAIAPI = "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"
   
   
   return spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column, openAIAPI
@@ -53,10 +54,10 @@ spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column
 app = Flask(__name__)
 
 # App secret key for session management
-app.secret_key = 'not published to GitHub'
+app.secret_key = '<cS£6iIW774@X!z^7^9yW'
 
 allow_demo_change = True
-generate_grade_insights = False
+generate_grade_insights = True
 
 #initialize the front end: all of the HTML/CCS/JS files
 @app.route('/')
@@ -184,6 +185,10 @@ def fetch_data():
       response[sheet] = get_data(sheet)
   return json.dumps(response)
 
+@app.route('/goals_progress', methods=['POST'])
+def get_goals_progress():
+  return json.dumps(calculate_goal_progress())
+
 # Function to return insights to the Study page
 @app.route('/AI', methods=['POST'])
 def get_AI():
@@ -192,22 +197,26 @@ def get_AI():
 # Function to return grades and insights to the Grade Analysis page
 @app.route('/grades_over_time', methods=['POST'])
 def post_ga_grades():
-  classes = request.json
+  data = request.json
+  classes = data['classes']
+  print("specificity", data['specificity'])
+  specificity = int(data['specificity'])
   # Get User, Class, and Grade data
   classes_data = get_data("Classes")
   grades = get_data("Grades")
   user_data = get_name()
 
   # Calculate the user's grades over time, return the grades at their corresponding dates
-  times, grade_spread = process_grades(grades, classes['data'], user_data, classes_data)
+  times, grade_spread = process_grades(grades, classes, user_data, classes_data, specificity)
 
   # Get the goals that the user has set, and create objects to overlay on the graph
-  goals, max_date = get_goals(classes['data'], user_data, grades, times)
+  goals, set_dates, max_date = get_goals(classes, user_data, grades, times)
   # Create a dictionary to return the calculated data to the frontend
   response_data = {
     "times": times.tolist(),
     "grade_spread": grade_spread,
     "goals": goals,
+    "goal_set_dates": set_dates,
     "max_date": max_date
   }
 
@@ -215,7 +224,7 @@ def post_ga_grades():
   if generate_grade_insights:
     grade_spreads = []
     # If the user is graphing all of their classes, allow insights to be generated for each class individually by getting the user's grades for each class to pass to the AI
-    if classes['data'][0] == "all":
+    if classes[0] == "all" and generate_grade_insights:
       matching_classes = [item['name'] for item in classes_data if user_data['osis'] in item['OSIS']]
       
       for item in matching_classes:
@@ -446,10 +455,40 @@ def update_data(row_val, row_name, new_row, sheet):
   delete_data(sheet, row_val, row_name)
   post_data(sheet, new_row)
 
+# Calculate goal progress
+def calculate_goal_progress():
+  goals = get_data("Goals")
+  goals = filter_goals(goals, session['user_data'], 'any')
+  classes = get_data("Classes")
+  grades = get_data("Grades")
+  weights = get_weights(classes)
+  progress = []
+  for goal in goals:
+    #filter grades for matching user osis
+    goal_grades = filter_grades(grades, session['user_data'], [goal['class'], goal['category']])
+
+    date_set = datetime.datetime.strptime(goal['date_set'], '%m/%d/%Y').date()
+    grade_when_set = calculate_grade(date_set, grades, weights)
+    goal_date = datetime.datetime.strptime(goal['date'], '%m/%d/%Y').date()
+    goal_grade = float(goal['grade'])
+    current_date = datetime.datetime.now().date()
+    current_grade = calculate_grade(current_date, grades, weights)
+
+    percent_time_passed = (current_date - date_set).days / (goal_date - date_set).days if (goal_date - date_set).days != 0 else 0
+    grade_change = current_grade - grade_when_set
+    percent_grade_change = grade_change / (goal_grade - grade_when_set) if goal_grade - grade_when_set != 0 else 0
+    percent_grade_change = round(percent_grade_change, 3)
+    print("pgc", percent_grade_change)
+    current_grade_trajectory = grade_when_set + (current_grade - grade_when_set) / percent_time_passed if percent_time_passed != 0 else current_grade
+    
+    print("goal_grade", goal_grade, "current_grade", current_grade, "grade change", grade_change, "grade_when_set", grade_when_set, "current_grade_trajectory", current_grade_trajectory)
+    progress.append({'date_set': str(date_set), 'grade_when_set': grade_when_set, 'goal_date': str(goal_date), 'goal_grade': goal_grade, 'current_grade': current_grade, 'current_date': str(current_date), 'current_grade_trajectory': current_grade_trajectory, 'class': goal['class'], 'category': goal['category'], 'percent_time_passed': percent_time_passed, 'percent_grade_change': percent_grade_change, 'grade_change': grade_change})
+  return progress
 # Use the Goal data to create icons to be overlayed on the graph in the Grade Analysis page
 def get_goals(classes, user_data, grades, times, extend_to_goals=False):
   
   goal_coords = []
+  goal_set_dates = []
   goals = get_data('Goals')
 
   # Get the minimum and maximum dates of the user's grades
@@ -460,66 +499,57 @@ def get_goals(classes, user_data, grades, times, extend_to_goals=False):
   max_diff = (max_date - min_date).days
 
   #filter goals for matching osis matching user osis and classes among those being graphed
-  goals = [
-    goal for goal in goals
-    if (goal['osis'] == user_data['osis']) and (
-      goal['class'] in classes) and (goal['category'] in classes)
-  ]
+  goals = filter_goals(goals, user_data, classes)
 
   # Create a rectangle for each goal to overlay on the graph
   for goal in goals:
     grade = float(goal['grade'])
     date = goal['date']
-    y0 = grade - 0.3
-    y1 = grade + 0.1
+    date_set = goal['date_set']
+    y0 = grade - 0.15
+    if y0 > 99.7:
+      y0 = 99.7
+    
+    # Convert the date and date_set to datetime objects
     date = datetime.datetime.strptime(date, '%m/%d/%Y')
-    date_diff = (date - min_date).days
-    oldx0 = date_diff / max_diff
-    x1 = oldx0 + 0.04
-    # Calculate the value of times that is closest to the date of the goal
+    date_set = datetime.datetime.strptime(date_set, '%m/%d/%Y')
+
+    # Calculate the value of times that is closest to the date and date_set of the goal
     dates = [datetime.datetime.fromordinal(int(time)-1) for time in times]
+
 
     # Find the date closest to xdate
     closest_date = min(dates, key=lambda d: abs(d - date))
+    closest_date_set = min(dates, key=lambda d: abs(d - date_set))
 
     # Convert the closest date back to string format m/d/YYYY
     closest_date_str = f"{closest_date.month}/{closest_date.day}/{closest_date.year}"
     
+    closest_date_set_index = dates.index(closest_date_set)
 #change formating here 
-    goalZone = {
-      'type': 'rect',
-      'xref': 'paper',
-      'yref': 'y',
-      'x0': oldx0,
-      'x1': x1,
-      'y0': y0,
-      'y1': y1,
-      'fillcolor': 'rgba(0, 255, 0, 0.2)',
-      'line': {
-        'width': 0
-      }
-    }
+    
     gZ = {
       'x': closest_date_str, # The x-coordinate (date) for the goal
       'y': y0, # The y-coordinate (grade or value) for the goal
       'xref': 'x',
       'yref': 'y',
       'yanchor': 'bottom',
-      'sizex': 0.6,
-      'sizey': 0.6,
+      'sizex': 0.3,
+      'sizey': 0.3,
       'text': '',
       'source': '/static/media/GoalMedal.png'
     }
     
 
     goal_coords.append(gZ)
+    goal_set_dates.append(closest_date_set_index)
   
   #get max date of any goal in goals
   if len(goals) > 0 and extend_to_goals:
     max_date = max([datetime.datetime.strptime(goal['date'], '%m/%d/%Y') for goal in goals])
-    return goal_coords, str(max_date)
+    return goal_coords, goal_set_dates, str(max_date)
   
-  return goal_coords, 404
+  return goal_coords, goal_set_dates, 404
 
 #filter grades for those matching user osis and classes among those being graphed
 def filter_grades(grades, user_data, classes):
@@ -539,15 +569,23 @@ def filter_grades(grades, user_data, classes):
   ]
   return grades
 
+# Filter function for goals
+def filter_goals(goals, user_data, classes):
+  goals = [
+    goal for goal in goals
+    if (goal['osis'] == user_data['osis']) and ((
+      goal['class'] in classes) and (goal['category'] in classes) or classes=='any')
+  ]
+  return goals
 # Get the minimum and maximum dates of the user's grades
-def get_min_max(grades, user_data, classes, extend_to_goals=False):
+def get_min_max(grades, user_data, classes, extend_to_goals=False, interval=10):
     grades = filter_grades(grades, user_data, classes)
     goals = get_data("Goals")
 
     # If min and max dates include goals, then add goal dates to the list of dates
     if extend_to_goals:
       # This should be changed to only include goals for the classes being graphed
-      user_goals = [goal for goal in goals if goal['osis'] == user_data['osis']]
+      user_goals = filter_goals(goals, user_data, classes)
       goal_dates = [
           datetime.datetime.strptime(goal['date'], '%m/%d/%Y').date() for goal in user_goals
       ]
@@ -564,30 +602,13 @@ def get_min_max(grades, user_data, classes, extend_to_goals=False):
         return 0, 0, 0
     min_date = min(dates)
     max_date = max(dates)
-    max_date = max_date + datetime.timedelta(days=1)
+    
+    max_date = max_date + datetime.timedelta(days=((max_date-min_date).days/interval))
     if min_date == max_date:
         max_date = max_date + datetime.timedelta(days=5)
     return min_date, max_date, grades
 
-
-# Calculate the user's grades over time
-def process_grades(grades, classes, user_data, classes_data, interval=10):
-  #filter grades based on class
-
-  # Get the minimum and maximum dates of the user's grades and goals
-  min_date, max_date, grades = get_min_max(grades, user_data, classes, True)
-  #Get the minium and maximum dates of just the user's grades
-  mi, mx, g = get_min_max(grades, user_data, classes)
-  if min_date == 0:
-    return 0, []
-  # Generate 10 evenly spaced dates between the minimum and maximum dates
-  date_range = np.linspace(min_date.toordinal(),
-                           max_date.toordinal(),
-                           num=interval,
-                           dtype=int)
-  evenly_spaced_dates = [datetime.date.fromordinal(d) for d in date_range]
-  #Throw out the dates that are past mx, the maximum date of the user's grades
-  evenly_spaced_dates = [date for date in evenly_spaced_dates if date <= mx]
+def get_weights(classes_data):
   #convert grading categories in classes data to weights
   weights = {}
 
@@ -609,6 +630,28 @@ def process_grades(grades, classes, user_data, classes_data, interval=10):
         weight_dict[category] = weight
     
     weights[name.lower()] = weight_dict
+  return weights
+
+# Calculate the user's grades over time
+def process_grades(grades, classes, user_data, classes_data, interval=10):
+  #filter grades based on class
+  grades = filter_grades(grades, user_data, classes)
+  # Get the minimum and maximum dates of the user's grades and goals
+  min_date, max_date, z = get_min_max(grades, user_data, classes, True, interval)
+  #Get the minium and maximum dates of just the user's grades
+  mi, mx, g = get_min_max(grades, user_data, classes)
+  if min_date == 0:
+    return 0, []
+  # Generate 10 evenly spaced dates between the minimum and maximum dates
+  date_range = np.linspace(min_date.toordinal(),
+                           max_date.toordinal(),
+                           num=interval,
+                           dtype=int)
+  evenly_spaced_dates = [datetime.date.fromordinal(d) for d in date_range]
+  #Throw out the dates that are past mx, the maximum date of the user's grades
+  evenly_spaced_dates = [date for date in evenly_spaced_dates if date <= mx]
+
+  weights = get_weights(classes_data)
 
   # get grades for each date
   grade_spread = []
@@ -702,5 +745,5 @@ def get_insights(prompts):
   
   
 #uncomment to run locally, comment to deploy
-port = int(os.environ.get('PORT', 8080))
-app.run(host='0.0.0.0', port=port, debug=False)
+# port = int(os.environ.get('PORT', 8080))
+# app.run(host='0.0.0.0', port=port, debug=False)

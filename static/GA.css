@@ -66,3 +66,26 @@ button:hover {
 h1 {
   color: #333;
 }
+
+.custom-checkbox{
+  background-color: darkgray; /* Dark gray background */
+  border-radius: 5px; /* Rounded corners */
+  padding: 5px; /* Padding around the text and checkbox */
+  display: inline-block; /* Allows the label to wrap the text and checkbox neatly */
+  margin-top: 5px; /* Add some space between the checkboxes */
+  margin-bottom: 5px; /* Add some space between the checkboxes */
+  margin-left: 5px; /* Add some space between the checkboxes */
+  margin-right: 5px; /* Add some space between the checkboxes */
+}
+
+
+.goal {
+  background-color: #f1f1f1;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 20px;
+  margin-bottom: 20px;
+  margin-left: 10px;
+  margin-right: 10px;
+  display: inline-block;
+}

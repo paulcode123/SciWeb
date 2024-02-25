@@ -17,16 +17,38 @@ fetch('/data', {
     classes = classes.filter(item => item.OSIS.includes(osis));
     var class_div = document.getElementById("classes")
     var categories_div = document.getElementById("categories")
+
     for(let x=0;x<classes.length;x++){
-      var label = document.createElement("label");
-      var input = document.createElement("input");
-      input.type = 'checkbox'
-      input.value = classes[x].name.toLowerCase();
-      label.textContent = "     "+ classes[x].name;
-      input.name = 'class'
-      label.appendChild(input);
+      // var child_label = document.createElement("label");
+      let text = document.createElement("label");
+      let checkbox = document.createElement("input");
+      let checkmark = document.createElement("span");
+
+      checkbox.type = 'checkbox';
+      checkbox.value = classes[x].name.toLowerCase();
+      checkbox.name = 'class';
+
+      text.textContent = "     "+ classes[x].name;
+      text.className = 'custom-checkbox';
+
+      checkmark.className = 'checkmark';
+      checkbox.addEventListener('change', function() {
+        if(this.checked) {
+          text.style.backgroundColor = 'green'; // Directly change the background color
+          // Or add a class
+          // text.classList.add('checked');
+        } else {
+          text.style.backgroundColor = 'darkgray'; // Revert to original color
+          // Or remove the class
+          // text.classList.remove('checked');
+        }
+      });
       
-      class_div.appendChild(label);
+      text.appendChild(checkmark);
+      text.appendChild(checkbox);
+      class_div.appendChild(text);
+      
+      // class_div.appendChild(child_label);
     }
   const uniqueStrings = new Set();
 
@@ -46,12 +68,25 @@ for (const entry of classes) {
 const ust = Array.from(uniqueStrings);
   
 for(let x=0;x<ust.length;x++){
-      var label = document.createElement("label");
-      var input = document.createElement("input");
+      let label = document.createElement("label");
+      let input = document.createElement("input");
       input.type = 'checkbox'
       input.value = ust[x];
       label.textContent = "     "+ ust[x];
       input.name = 'class'
+      label.className = 'custom-checkbox';
+      input.addEventListener('change', function() {
+        if(this.checked) {
+          label.style.backgroundColor = 'green'; // Directly change the background color
+          // Or add a class
+          // text.classList.add('checked');
+        } else {
+          label.style.backgroundColor = 'darkgray'; // Revert to original color
+          // Or remove the class
+          // text.classList.remove('checked');
+        }
+      });
+      
       label.appendChild(input);
       
       categories_div.appendChild(label);
@@ -63,9 +98,9 @@ for(let x=0;x<ust.length;x++){
 });
 setTimeout(function() {
 
-  graph_data(["all", "All"]);
+  graph_data(["all", "All"], 15);
 }, 300); // 100 milliseconds = 0.1 seconds
-function create_graph(grades, times, name, goals, max_date){
+function create_graph(grades, times, name, goals, max_date, goal_set_dates){
   
 const canvas = document.querySelector('#myGraph');
 
@@ -109,14 +144,14 @@ console.log(noneCount)
   // For each goal, have a dotted line going from the rightmost point on the grades line to the corresponding goal
   for (let i = 0; i < goals.length; i++) {
     let goal = goals[i];
-    let x = [dateStrings[dateStrings.length-noneCount-1], goal.x];
-    let y = [grades[grades.length-noneCount-1], goal.y];
+    let x = [dateStrings[goal_set_dates[i]], goal.x];
+    let y = [grades[goal_set_dates[i]], goal.y];
     let goalTrace = {
       x: x,
       y: y,
       mode: 'lines',
       line: {
-        color: '#2c7e8f',
+        color: 'darkgreen',
         dash: 'dot'
       }
     };
@@ -157,7 +192,7 @@ document.getElementById('loadingWheel').style.visibility = "hidden";
 
 };
 
-function graph_data(classes) {
+function graph_data(classes, specificity) {
   
 
 fetch('/grades_over_time', {
@@ -165,7 +200,7 @@ fetch('/grades_over_time', {
   headers: {
     'Content-Type': 'application/json'
   },
-  body: JSON.stringify({ data: classes })
+  body: JSON.stringify({classes: classes, specificity: specificity})
 })
 .then(response => response.json())
 .then(data => {
@@ -174,6 +209,7 @@ fetch('/grades_over_time', {
   grades = JSON.stringify(data['grade_spread']);
   times = JSON.stringify(data['times']);
   goals = data['goals'];
+  goal_set_dates = data['goal_set_dates'];
   
   max_date = data['max_date'];
   
@@ -192,7 +228,7 @@ fetch('/grades_over_time', {
     displayInsights(insights);
   }
   
-  create_graph(grades, times, name, goals, max_date);
+  create_graph(grades, times, name, goals, max_date, goal_set_dates);
   
 })
 .catch(error => {
@@ -210,17 +246,18 @@ errorMessage.textContent = "";
   });
   
   if (selectedClasses.length === 0) {
-    
     errorMessage.textContent = "Please select at least one class.";
     return;
   }
+
   console.log(document.getElementById('loadingWheel').style.visibility)
   document.getElementById('loadingWheel').style.visibility = "visible";
   document.getElementById('loadingWheel').style.display = "block";
-  console.log(document.getElementById('loadingWheel').style.visibility)
+  
+  let specificity = document.getElementById("mySlider").value;
   console.log(selectedClasses);
   // document.getElementById("class-form").reset();
-  graph_data(selectedClasses)
+  graph_data(selectedClasses, specificity)
   console.log("done")
   
   });
@@ -251,5 +288,52 @@ function displayInsights(insights) {
   
 }
 
+fetch('/goals_progress', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ data: '' })
+})
+.then(response => response.json())
+.then(data => {
+  container_element = document.getElementById("GoalProgressContainer")
+  for (let i = 0; i < data.length; i++) {
+    const goal = data[i];
+    const goalElement = document.createElement("div");
+    goalElement.className = "goal";
+    var dateBar = document.createElement('progress');
+    var gradeBar = document.createElement('progress');
+    var br = document.createElement('br');
+    
+    dateBar.value = parseFloat(goal.percent_time_passed);
+    dateBar.max = 1;
+    
+    gradeBar.value = parseFloat(goal.percent_grade_change);
+    gradeBar.max = 1;
+
+    // code to round to 1 decimal place: Math.round(num * 10) / 10
+
+    var title = document.createElement('h3');
+    title.textContent = "Your goal for "+goal.class+" "+goal.category;
+    var datesText = document.createElement('p');
+    datesText.textContent = "Date set: " + goal.date_set+" | Target date: " + goal.goal_date;
+
+    var gradesText = document.createElement('p');
+    gradesText.textContent = "Grade when set: " + Math.round(goal.grade_when_set*100)/100+" | Target grade: " + goal.goal_grade;
+
+    var trajectory = document.createElement('p');
+    trajectory.textContent = "Current Trajectory by goal date: " + Math.round(goal.current_grade_trajectory*100)/100;
+
+    goalElement.appendChild(title);
+    goalElement.appendChild(datesText);
+    goalElement.appendChild(dateBar);
+    goalElement.appendChild(br);
+    goalElement.appendChild(gradesText);
+    goalElement.appendChild(gradeBar);
+    goalElement.appendChild(trajectory);
+    container_element.appendChild(goalElement);
+  }
+  })
 
 

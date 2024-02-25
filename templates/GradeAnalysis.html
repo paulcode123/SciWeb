@@ -70,24 +70,28 @@
   <h2>Select Classes/Categories to Graph</h2>
   <div id="checkbox-group">
   <div id='classes'>
-    <label>
+    <label class="custom-checkbox">
       All
     <input type="checkbox" name="class" value="all"> 
     </label>
   </div>
     <br>
   <div id='categories'>
-    <label>
+    <label class="custom-checkbox">
       All
       <input type="checkbox" name="class" value="All">
     </label>
   </div>
   </div>
+  <input type="range" id="mySlider" name="mySlider" min="0" max="30" value="15">
   <button type="submit">Graph</button>
   <h1 id="error-message"></h1>
 </form>
     <br>
     <div id="insightContainer"></div>
+    <div id="GoalProgressContainer"></div>
+    <div id="RecentScoresContainer"></div>
+    
     <br>
 
 

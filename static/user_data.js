@@ -2,7 +2,7 @@ var osis = 888;
 var first_name = "";
 var last_name = ""
 var grade = 0;
-
+var logged_in = false;
 
 
 
@@ -102,7 +102,7 @@ function generateUserID() {
 function set_data(data){
  
   if(data[0] != "Login"){
-    
+  logged_in = true;
   first_name = JSON.stringify(data["first_name"]).slice(1, -1);
   last_name = JSON.stringify(data["last_name"]);
   osis = parseInt(JSON.stringify(data["osis"]).slice(1, -1));
@@ -114,6 +114,13 @@ function set_data(data){
   document.getElementById('profile').href = "/Profile";
   
 console.log(osis)
+}
+else{
+  logged_in = false;
+  // if the user is on the home page, redirect to the Pitch page
+  if(window.location.pathname == "/"){
+    window.location.href = "/Pitch"
+  }
 }
 }
 
