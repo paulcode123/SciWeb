@@ -49,6 +49,16 @@
   <!-- <div id="loadingWheel"></div> -->
     <h1>{{ assignment_name }} Assignment Page</h1>
     <h3 id="description"></h3>
+    <p id="due-date"></p>
+    <p id="points"></p>
+    <p id="categories"></p>
+
+  <br>
+  <h2>Assignment Score modeler:</h2>
+    <input type="range" id="slider" min="40" max="100" value="50">
+    <p id="slider-value">If score is: 90</p>
+    <p id="category-impact">+0.0%</p>
+    <p id="class-impact">+0.0%</p>
 
     <div id="chat-box">
     <ul id="message-list"></ul>
@@ -69,6 +79,7 @@ const locationData = assignmentData;
   </script>
   <script src="/static/user_data.js"></script>
   <script src="/static/chatBox.js"></script>
+  <script src="/static/assignment.js"></script>
   
 </body>
 </html>

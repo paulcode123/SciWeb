@@ -22,11 +22,12 @@ observer.observe(document.getElementById('swbVid'));
  window.addEventListener('scroll', function() {
     var image = document.getElementById('dimImage');
     var windowHeight = window.innerHeight;
+    console.log(windowHeight)
     var scrollY = window.scrollY;
   
     // Adjust these values as needed
-    var startDimAt = 100; // Start dimming after 100px of scrolling
-    var fullyDimmedAt = 500; // Fully dimmed at 500px of scrolling
+    var startDimAt = 0; // Start dimming after 100px of scrolling
+    var fullyDimmedAt = 300; // Fully dimmed at 500px of scrolling
   
     var opacity = 1;
     if (scrollY > startDimAt) {
@@ -34,6 +35,35 @@ observer.observe(document.getElementById('swbVid'));
     }
   
     image.style.opacity = opacity;
+
+    var imageb = document.getElementById('Toc');
+    const startScrollPosition = 700; // The scroll position where opacity should start changing
+    const endScrollPosition = 800; // The scroll position where opacity should be fully 1
+
+    opacity = 1;
+
+  if (scrollY < startScrollPosition) {
+    // Calculate how far outside the range we are, to scale opacity to 0 when the image wouldn't be on the screen
+    let distance = startScrollPosition - scrollY;
+    
+    opacity = Math.max(0, 1 - (distance / windowHeight));
+  } else if (scrollY > endScrollPosition) {
+    // Similar calculation for when scrolling past the end position
+    let distance = scrollY - endScrollPosition;
+    
+    opacity = Math.max(0, 1 - (distance / windowHeight));
+  } // When in between, opacity remains 1, as initialized
+  console.log(opacity)
+  imageb.style.opacity = opacity;
+  const buttons = document.querySelectorAll('main button');
+
+
+
+
+// Iterate over all buttons and set their opacity
+buttons.forEach(button => {
+    button.style.opacity = opacity;
+});
   });
 
   //When the buttons in the table of contents are clicked, scroll to their respective sections
@@ -49,6 +79,21 @@ observer.observe(document.getElementById('swbVid'));
               behavior: 'smooth'
           });
       });
+      document.getElementById('b3').addEventListener('click', function() {
+        document.getElementById('join').scrollIntoView({
+            behavior: 'smooth'
+        });
+    });
+    document.getElementById('b4').addEventListener('click', function() {
+        document.getElementById('res').scrollIntoView({
+            behavior: 'smooth'
+        });
+    });
+    document.getElementById('b5').addEventListener('click', function() {
+        document.getElementById('team').scrollIntoView({
+            behavior: 'smooth'
+        });
+    });
 
 
 

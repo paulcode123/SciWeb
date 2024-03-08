@@ -54,7 +54,7 @@ spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column
 app = Flask(__name__)
 
 # App secret key for session management
-app.secret_key = 'not published to GitHub'
+app.secret_key = 'not published to Github'
 
 allow_demo_change = True
 generate_grade_insights = True
@@ -194,7 +194,34 @@ def get_goals_progress():
 def get_AI():
   return json.dumps(get_insights(request.json['data']))
 
-# Function to return grades and insights to the Grade Analysis page
+#function to generate insights and return them to the Grade Analysis page
+@app.route('/insights', methods=['POST'])
+def get_insights_ga():
+  classes_data = get_data("Classes")
+  user_data = get_name()
+  grades = get_data("Grades")
+  grade_spreads = []
+
+  grade_spread = process_grades(grades, ["all", "All"], user_data, classes_data)
+  # If the user is graphing all of their classes, allow insights to be generated for each class individually by getting the user's grades for each class to pass to the AI
+  
+  matching_classes = [item['name'] for item in classes_data if session['user_data']['osis'] in item['OSIS']]
+  
+  for item in matching_classes:
+    # Get the user's grades for the class
+    t, g = process_grades(grades, [item.lower(), "All"], user_data, classes_data)
+    # If the user has grades for the class, add the class and the grades to the list of grade spreads
+    if type(t)!='int':
+      grade_spreads.append(item+": "+str(g))
+    
+  # Generate the insights
+  prompt = [{"role":"system", "content": "You are an advisor to a high school student, and your job is to curate 5 insightful and specific ways in which the students grades over time in individual classes influence their overall grade, and what they should focus their efforts on improving. Write a numbered list and nothing else."},
+            {"role": "user", "content": "total: "+str(grade_spread)+"factors: "+str(grade_spreads)}]
+  
+  insights = get_insights(prompt)
+  return json.dumps(insights)
+
+# Function to return grades to the Grade Analysis page
 @app.route('/grades_over_time', methods=['POST'])
 def post_ga_grades():
   data = request.json
@@ -220,27 +247,7 @@ def post_ga_grades():
     "max_date": max_date
   }
 
-  # If generate_grade_insights is true, generate insights about the user's grades
-  if generate_grade_insights:
-    grade_spreads = []
-    # If the user is graphing all of their classes, allow insights to be generated for each class individually by getting the user's grades for each class to pass to the AI
-    if classes[0] == "all" and generate_grade_insights:
-      matching_classes = [item['name'] for item in classes_data if user_data['osis'] in item['OSIS']]
-      
-      for item in matching_classes:
-        # Get the user's grades for the class
-        t, g = process_grades(grades, [item.lower(), "All"], user_data, classes_data)
-        # If the user has grades for the class, add the class and the grades to the list of grade spreads
-        if type(t)!='int':
-          grade_spreads.append(item+": "+str(g))
-        
-    # Generate the insights
-    prompt = [{"role":"system", "content": "You are a college advisor, and you have to write 5 specific ways in which the factors influence the overall grade, which represents a student's grades over time. You will be given their total grade, as well as the various factors what influenced that grade."},
-              {"role": "user", "content": "total: "+str(grade_spread)+"factors: "+str(grade_spreads)}]
-    
-    insights = get_insights(prompt)
-    # add to response_data to be sent to the frontend
-    response_data['insights'] = insights
+  
   
   # Return the response data
   return json.dumps(response_data)
@@ -252,6 +259,25 @@ def receive_grades():
   data = request.json
   post_data("Grades", data)
   return 'Data received successfully'
+
+@app.route('/impact', methods=['POST'])
+def get_impact():
+  data = request.json
+  
+  grades = get_data("Grades")
+  classes = get_data("Classes")
+  category_grades = filter_grades(grades, session['user_data'], [data['class'], data['category']])
+  
+  weights = get_weights(classes)
+  #get current date
+  current_date = datetime.datetime.now().date()
+  #get grade at current date
+  current_grade = calculate_grade(current_date, category_grades, weights)
+  print("current_grade", current_grade)
+  #get total number of points from all grades in the category
+  total_points = sum([int(grade['value']) for grade in category_grades])
+  print("total_points", total_points)
+  return json.dumps({"current_grade": current_grade, "total_points": total_points, "category_weight": weights[data['class']][data['category']]})
 
 
 #When the user logs in, their data is posted to the Users sheet
@@ -282,6 +308,7 @@ def postLogin():
       return 'success'
   
   # If the user has not logged in before, add their data to the Users sheet
+  session['user_data'] = data
   post_data("Users", data)
   return 'success'
 
@@ -440,7 +467,10 @@ def get_name(ip=None):
   data = get_data("Users")
   
   # If the user's IP address is in the Users data, return their name and other info
-  filtered_data = [entry for entry in data if str(session['ip_add']) in str(entry.get('IP'))]
+  if 'ip_add' in session:
+    filtered_data = [entry for entry in data if str(session['ip_add']) in str(entry.get('IP'))]
+  else:
+    filtered_data = []
   
   
   if filtered_data:
@@ -520,6 +550,8 @@ def get_goals(classes, user_data, grades, times, extend_to_goals=False):
 
     # Find the date closest to xdate
     closest_date = min(dates, key=lambda d: abs(d - date))
+    print("dates", dates)
+    print("closest_date", closest_date)
     closest_date_set = min(dates, key=lambda d: abs(d - date_set))
 
     # Convert the closest date back to string format m/d/YYYY
@@ -602,8 +634,11 @@ def get_min_max(grades, user_data, classes, extend_to_goals=False, interval=10):
         return 0, 0, 0
     min_date = min(dates)
     max_date = max(dates)
-    
-    max_date = max_date + datetime.timedelta(days=((max_date-min_date).days/interval))
+    print("max_date", max_date)
+    print("new_max_date", max_date + datetime.timedelta(days=(((max_date-min_date).days)/interval)))
+    #11/30
+    #11/6
+    max_date = max_date + datetime.timedelta(days=(((max_date-min_date).days)/interval))
     if min_date == max_date:
         max_date = max_date + datetime.timedelta(days=5)
     return min_date, max_date, grades

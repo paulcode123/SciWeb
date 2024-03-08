@@ -173,7 +173,7 @@ const layout = {
   title: name,
   xaxis: {
     title: 'Date',
-    range: [dateStrings[0], max_date]
+    // range: [dateStrings[0], max_date]
   },
   yaxis: {
     title: 'Grades',
@@ -222,11 +222,7 @@ fetch('/grades_over_time', {
   }
     
   var name =  joined_classes +" grades over time"
-  //if insights exist, display them
-  if (data['insights'] !== undefined) {
-    var insights = data['insights'];
-    displayInsights(insights);
-  }
+  
   
   create_graph(grades, times, name, goals, max_date, goal_set_dates);
   
@@ -335,5 +331,23 @@ fetch('/goals_progress', {
     container_element.appendChild(goalElement);
   }
   })
+
+  function getInsights(){
+    document.getElementById('loadingWheel').style.visibility = "visible";
+  fetch('/insights', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ data: '' })
+})
+.then(response => response.json())
+.then(data => {
+  
+  
+  displayInsights(data);
+  document.getElementById('loadingWheel').style.visibility = "hidden";
+})
+  }
 
 

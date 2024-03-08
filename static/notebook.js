@@ -70,7 +70,7 @@ function new_section(parent){
   //create toggler and set properties
   const toggle = document.createElement('button');
   toggle.textContent = "v";
-  toggle.className = "btn";
+  toggle.className = "toggle";
   //add event listener from predefined function
   add_toggle_EL(toggle, tabContent)
   //add toggle as an element of the main tab
