@@ -100,7 +100,7 @@ setTimeout(function() {
 
   graph_data(["all", "All"], 15);
 }, 300); // 100 milliseconds = 0.1 seconds
-function create_graph(grades, times, name, goals, max_date, goal_set_dates){
+function create_graph(grades, times, name, goals, max_date, goal_set_coords, grade_points){
   
 const canvas = document.querySelector('#myGraph');
 
@@ -124,28 +124,41 @@ for (let i = 0; i < times.length; i++) {
   let dateString = month + "/" + day + "/" + year;
   dateStrings.push(dateString);
 }
-console.log(dateStrings)
+
 
 // Main grade line
 const trace = {
-  x: dateStrings,
+  x: times,
   y: grades,
   mode: 'lines',
   line: {
     color: '#2c7e8f'
   }
 }
+
+const scatterPlotTrace = {
+  // Get all the x coordinates from grade_points
+  x: grade_points.map(point => point[0]), 
+  y: grade_points.map(point => point[1]),
+  mode: 'markers', // This makes it a scatter plot
+  type: 'scatter', // Explicitly stating the plot type is optional but can be helpful
+  marker: {
+    color: 'rgba(255, 127, 14, 0.5)', // Example color
+    size: grade_points.map(point => point[2]) // This sets the size of the markers
+  }
+};
+
 // Create the data array
-var data = [trace];
+var data = [trace, scatterPlotTrace];
 
 // Get number of instances of 'none' in grades
-let noneCount = grades.filter(grade => grade === '"none"').length;
-console.log(noneCount)
+// let noneCount = grades.filter(grade => grade === '"none"').length;
+// console.log(noneCount)
   // For each goal, have a dotted line going from the rightmost point on the grades line to the corresponding goal
   for (let i = 0; i < goals.length; i++) {
     let goal = goals[i];
-    let x = [dateStrings[goal_set_dates[i]], goal.x];
-    let y = [grades[goal_set_dates[i]], goal.y];
+    let x = [goal_set_coords[i][0], goal.x];
+    let y = [goal_set_coords[i][1], goal.y];
     let goalTrace = {
       x: x,
       y: y,
@@ -156,6 +169,7 @@ console.log(noneCount)
       }
     };
     data.push(goalTrace);
+    // data.push(goal);
   }
 
 console.log(data)
@@ -168,11 +182,16 @@ console.log(max_date)
 min_grade = Math.min(...grades.filter(value => value !== '"none"').map(Number));
 console.log(min_grade)
 min_x = min_grade-(0.3*(100-min_grade))
+
+console.log(dateStrings)
+
 // Define the layout
 const layout = {
   title: name,
   xaxis: {
     title: 'Date',
+    tickvals: times,
+    ticktext: dateStrings,
     // range: [dateStrings[0], max_date]
   },
   yaxis: {
@@ -185,6 +204,7 @@ const layout = {
   images: goals
 };
 
+console.log(layout)
 // Render the graph
 Plotly.newPlot('myGraph', data, layout);
 console.log(document.getElementById('loadingWheel').style.visibility)
@@ -209,7 +229,8 @@ fetch('/grades_over_time', {
   grades = JSON.stringify(data['grade_spread']);
   times = JSON.stringify(data['times']);
   goals = data['goals'];
-  goal_set_dates = data['goal_set_dates'];
+  goal_set_coords = data['goal_set_coords'];
+  grade_points = data['grade_points'];
   
   max_date = data['max_date'];
   
@@ -224,7 +245,7 @@ fetch('/grades_over_time', {
   var name =  joined_classes +" grades over time"
   
   
-  create_graph(grades, times, name, goals, max_date, goal_set_dates);
+  create_graph(grades, times, name, goals, max_date, goal_set_coords, grade_points);
   
 })
 .catch(error => {

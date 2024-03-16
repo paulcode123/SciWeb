@@ -23,7 +23,7 @@ const categoryCheckboxes = document.getElementById("categoryCheckboxes");
         "date": goalDate,
         "grade": goalGrade,
         "date_set": new Date().toLocaleDateString(),
-        "osis": osis,
+        "OSIS": osis,
         "id": Math.floor(Math.random() * 10000)
       }
       post_goal(goal);

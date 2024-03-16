@@ -125,10 +125,20 @@ input[type="name"] {
   border: 1px solid #ccc;
   border-radius: 4px;
   margin-bottom: 10px;
+  /* position: relative; */
+  /* overflow: auto; */
 }
-/* div {
-  width: 100%;
-} */
+.dgm:focus {
+  outline: none;
+  border-color: blue;
+}
+
+.img {
+  position: absolute;
+    cursor: move; /* Indicates the image can be moved */
+    resize: both; /* Enables resizing */
+    overflow: auto; /* Ensures the resize handle is visible */
+}
 .box {
   background-color: #f1f1f1;
   border: 1px solid #ccc;
