@@ -44,7 +44,7 @@ def init_vars():
   spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column = init_gapi()
   # OpenAI API key for generating insights: find it in the "Getting Started with Contributing" document
   # don't publish it to GitHub
-  openAIAPI = "not published to Github"
+  openAIAPI = "not published to GitHub"
   
   
   return spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column, openAIAPI
@@ -144,6 +144,30 @@ def assignment_page(assignmentid):
   return render_template('assignment.html',
                          assignment_name=assignment_name,
                          assignment_data=assignment_data)
+
+@app.route('/users/<userid>')
+def public_profile(userid):
+  users = get_data("Users")
+  profiles = get_data("Profiles")
+  
+  profile = next((row for row in profiles if str(row['OSIS']) == str(userid)), None)
+  
+  
+  #Get just first name, last name, grade, and osis of the user, still as a dictionary
+  user_data = next(
+    ([row['first_name'], row['last_name'], row['grade'], row['osis']] for row in users if row['osis'] == userid), None)
+  #If the user wishes to show their classes
+  class_data = ""
+  if 'showClasses' in profile and profile['showClasses'] == "TRUE":
+    classes = get_data("Classes")
+    class_data = [row for row in classes if str(userid) in row['OSIS']]
+    #Turn it into a string with "Classes: x, y, z"
+    class_data = "Classes: " + ", ".join([row['name'] for row in class_data])
+  return render_template('pubProf.html',
+                         profile=profile,
+                         user_data=user_data,
+                         classes=class_data)
+
 # This concludes initializing the front end
 
 #The following route functions post/get data to/from JS files
@@ -184,9 +208,16 @@ def fetch_data():
     elif "FILTERED" in sheet:
       sheet_name = sheet.replace("FILTERED ", "")
       data = get_data(sheet_name)
-      #filter the data for the user's osis
-      response[sheet_name] = [item for item in data if session['user_data']['osis'] in item['OSIS']]
-
+      if sheet_name=="Friends":
+        #send if the user's osis is in the OSIS or targetOSIS of the row
+        response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in item['OSIS'] or str(session['user_data']['osis']) in item['targetOSIS']]
+      else:
+        #Otherwise, filter the data for the user's osis
+        response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in item['OSIS']]
+    elif sheet=="Users":
+      #only include the first 3 columns of the Users sheet, first_name, last_name, and osis
+      data = get_data(sheet)
+      response[sheet] = [{key: item[key] for key in item if key in ['first_name', 'last_name', 'osis']} for item in data]
     else:
       response[sheet] = get_data(sheet)
   return json.dumps(response)
@@ -307,11 +338,11 @@ def postLogin():
   # if the user has logged in before, update their IP address    
   for row in logins:
     # If the user's osis is already in the Users sheet...
-    if row['osis'] == data['osis']:
+    if row['password'] == data['password'] and row['first_name'] == data['first_name']:
       # Add their new IP address to the list of IP addresses
       data['IP'] = f"{session['ip_add']}, {row['IP']}"
       # Update the user's data in the Users sheet
-      update_data(row['osis'], 'osis', data, "Users")
+      update_data(row['password'], 'password', data, "Users")
       session['user_data'] = row
       return 'success'
   
@@ -341,7 +372,32 @@ def get_notebook():
 @app.route('/update-login', methods=['POST'])
 def updateLogin():
   data = request.json
-  update_data(data['osis'], 'osis', data, "Users")
+  
+  update_data(str(data['osis']), 'osis', data, "Users")
+  return 'success'
+
+#accept friend request
+@app.route('/accept-friend', methods=['POST'])
+def acceptFriend():
+  data = request.json
+  friends = get_data("Friends")
+  # If status is pending and there already is a row with the same osis and targetOSIS, update the row
+  if data['status'] == "accepted":
+    update_data(data['id'], 'id', data, "Friends")
+    return 'success'
+  data['OSIS'] = session['user_data']['osis']
+  for row in friends:
+    if (row['OSIS'] == data['targetOSIS'] and row['targetOSIS'] == data['OSIS']) or (row['OSIS'] == data['OSIS'] and row['targetOSIS'] == data['targetOSIS']):
+      return 'success'
+    
+  post_data("Friends", data)
+  return 'success'
+
+#update public profile
+@app.route('/update-public-profile', methods=['POST'])
+def updatePublicProfile():
+  data = request.json
+  update_data(str(data['OSIS']), 'OSIS', data, "Profiles")
   return 'success'
 
 # After every couple of questions that the user answers on the study page, their questions and answers are logged to the Study sheet
@@ -810,8 +866,12 @@ def get_grade_points(grades, user_data, classes):
     
     #Get weight/sum of weights for the grades
     relative_weight = (weight/sum([float(grade['value']) for grade in grades]))*1000
+
+    #If relative_weight exceeds 40, set it to 40
+    if relative_weight > 40:
+      relative_weight = 40
     
-    grade_points.append([date, score, relative_weight])
+    grade_points.append([date, score, relative_weight, grade['name']])
   return grade_points
   
   

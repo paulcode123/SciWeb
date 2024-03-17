@@ -67,6 +67,14 @@ function sendMessage() {
 var sendButton = document.getElementById('send-button');
 sendButton.addEventListener('click', sendMessage);
 
+// Add event listener to input field for when the user presses Enter, send the message
+var inputField = document.getElementById('message-input');
+inputField.addEventListener('keydown', function(event) {
+  if (event.key === 'Enter') {
+    sendMessage();
+  }
+});
+
 // receive_messages(['hello', 'world'])
 //post messages to py database
 function post_message(message){

@@ -8,7 +8,8 @@ function demo(){
   post_login({
     "first_name": "Demo", 
     "last_name": "Account", 
-    "osis": "342875634", 
+    "osis": "342875634",
+    "password": "password",
     "grade": "15",
     "IP": ip
   });
@@ -21,8 +22,10 @@ form.addEventListener('submit', function(event) {
   // Get the input values
   const fname = document.getElementById('fname').value;
   const lname = document.getElementById('lname').value;
-  const osis = document.getElementById('osis').value;
+  const password = document.getElementById('password').value;
   const grade = document.getElementById('grade').value;
+  //generate random 7 digit osis
+  const osis = Math.floor(Math.random() * 9000000)+1000000;
   document.getElementById("login-form").reset();
   
   post_login({
@@ -30,6 +33,7 @@ form.addEventListener('submit', function(event) {
     "last_name": lname, 
     "osis": osis, 
     "grade": grade,
+    "password": password,
     "IP": ip
   });
   

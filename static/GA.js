@@ -145,7 +145,9 @@ const scatterPlotTrace = {
   marker: {
     color: 'rgba(255, 127, 14, 0.5)', // Example color
     size: grade_points.map(point => point[2]) // This sets the size of the markers
-  }
+  },
+  text: grade_points.map(point => point[3]), // An array of strings for hover text, one for each point
+  hoverinfo: 'text' // Specify to show only the custom text on hover
 };
 
 // Create the data array
@@ -197,7 +199,7 @@ const layout = {
   yaxis: {
     title: 'Grades',
     // make max value 100, while leaving min value the lowest point on the graph
-    range: [min_x, 100]
+    range: [min_x, 100.3]
   },
   displayModeBar: false,
   //shapes: goals // Add the goal zone shape
@@ -207,6 +209,32 @@ const layout = {
 console.log(layout)
 // Render the graph
 Plotly.newPlot('myGraph', data, layout);
+
+
+// Set up histogram
+var histogrades = grade_points.map(point => point[1])
+var minVal = percentile(histogrades, 0.05);
+var maxVal = percentile(histogrades, 0.95);
+let buckets = 10;
+//Render Histogram
+var histogram = [{
+  x: histogrades,
+  type: 'histogram',
+  xbins: {
+    start: minVal,
+    end: maxVal,
+    size: (maxVal - minVal) / buckets
+  }
+}];
+
+const histlayout = {
+  title: 'Histogram of '+name.slice(0, -9),
+  xaxis: {title: 'Grade'},
+  yaxis: {title: 'Count'}
+};
+
+// Plot the chart to a div with id 'myDiv'
+Plotly.newPlot('myHistogram', histogram, histlayout);
 console.log(document.getElementById('loadingWheel').style.visibility)
 document.getElementById('loadingWheel').style.visibility = "hidden";
 
@@ -372,3 +400,13 @@ fetch('/goals_progress', {
   }
 
 
+  function percentile(arr, p) {
+    const sorted = arr.slice().sort((a, b) => a - b);
+    const index = (sorted.length - 1) * p;
+    const lower = Math.floor(index);
+    const upper = lower + 1;
+    const weight = index % 1;
+
+    if (upper >= sorted.length) return sorted[lower];
+    return sorted[lower] * (1 - weight) + sorted[upper] * weight;
+}

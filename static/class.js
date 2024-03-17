@@ -29,13 +29,16 @@ document.getElementById('openNBcont').appendChild(button);
 function add_user_bubbles(classData){
 var userListContainer = document.getElementById('user-list');
   console.log(classData)
-members = classData['OSIS'].split(", ")
+// members = classData['OSIS'].split(", ")
+//set members as a list of osis values, taking only the numbers and not any combination of spaces and commas in between
+members = classData['OSIS'].split(/[\s,]+/).filter(item => item.length > 0);
+
 members.forEach(function(user) {
     var userBubble = document.createElement('div');
     userBubble.textContent = user;
     userBubble.classList.add('user-bubble');
     userBubble.addEventListener('click', function() {
-        window.location.href = 'profile.html?user=' + user; // link to profile page
+        window.location.href = '/users/' + user; // link to profile page
     });
     userListContainer.appendChild(userBubble);
 });
@@ -105,7 +108,7 @@ function get_assignment(){
   headers: {
     'Content-Type': 'application/json'
   },
-  body: JSON.stringify({ data: "Assignments, Classes" })
+  body: JSON.stringify({ data: "Assignments, FILTERED Classes" })
 })
 .then(response => response.json())
 .then(data => {

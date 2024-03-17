@@ -73,7 +73,7 @@ function getData(){
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ data: "Classes, Name, Notebooks, Study" })
+    body: JSON.stringify({ data: "FILTERED Classes, Name, Notebooks, FILTERED Study" })
   })
   .then(response => response.json())
   .then(data => {

@@ -76,12 +76,12 @@
     </div>
     
     <div class="profile-field">
-      <div class="profile-label">OSIS:</div>
-      <div class="profile-input" id="osis-text"></div>
-      <input class="profile-user-input" id="osis-input"></input>
+      <div class="profile-label">Password:</div>
+      <div class="profile-input" id="password-text"></div>
+      <input class="profile-user-input" id="password-input"></input>
       
-      <button class="profile-edit-button" id="osis_edit" onclick="editField('osis')">Edit</button>
-      <button class="profile-submit-button" id="osis_submit" onclick="submitField('osis')">Submit</button>
+      <button class="profile-edit-button" id="password_edit" onclick="editField('password')">Edit</button>
+      <button class="profile-submit-button" id="password_submit" onclick="submitField('password')">Submit</button>
     </div>
     
     <div class="profile-field">
@@ -93,6 +93,60 @@
       <button class="profile-submit-button" id="grade_submit" onclick="submitField('grade')">Submit</button>
     </div>
   </div>
+<br>
+  <h3>Friends</h3>
+  <div id="friendsList">
+<div class="tab">
+  <button class="tablinks" onclick="openTab(event, 'friends')">Friends</button>
+  <button class="tablinks" onclick="openTab(event, 'YourInvites')">Your Invites</button>
+  <button class="tablinks" onclick="openTab(event, 'Requests')">Requests</button>
+</div>
+
+<div id="friends" class="tabcontent">
+  <p>Friends</p>
+  <!-- Add your content for Tab 1 here -->
+</div>
+
+<div id="YourInvites" class="tabcontent">
+  <p>Pending Invites</p>
+  <!-- Search Bar for users -->
+  <input type="text" id="search-bar" placeholder="Search for users..">
+  <div id="search-results"></div>
+  <!-- Add your content for Tab 2 here -->
+</div>
+
+<div id="Requests" class="tabcontent">
+  <p>Requests</p>
+  <!-- Add your content for Tab 3 here -->
+</div>
+    
+  </div>
+  <br>
+  <h3>Public Profile</h3>
+  <p>Profile Pic:</p>
+  <input type="file" id="profilePictureInput" accept="image/*" />
+  <img id="profilePicturePreview" style="display:none; width: 100px; height: 100px;" alt="Profile Preview" />
+
+  <!-- Paragraph-length input field for about me section -->
+  <p>About Me:</p>
+  <textarea id="aboutMeInput" rows="4" cols="50"></textarea>
+
+  <p>My Hobbies, Clubs, and Extracurriculars:</p>
+  <textarea id="hobbiesInput" rows="4" cols="50"></textarea>
+
+  <p>My Goals:</p>
+  <textarea id="goalsInput" rows="4" cols="50"></textarea>
+
+  <!-- Make checkboxes for "show Classes" and "Show Friends" -->
+  <input type="checkbox" id="showClassesInput" />
+  <label for="showClassesInput">Show Classes</label>
+
+  <input type="checkbox" id="showFriendsInput" />
+  <label for="showFriendsInput">Show Friends</label>
+
+  <!-- Save button for public profile -->
+  <button id="savePublicProfileButton" onclick="savePubProf()">Save</button>
+  <br><br>
   <a id="logout" href="/Login" class="button">Sign into a different account</a>
 
   
