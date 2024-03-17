@@ -1,42 +1,47 @@
-
 /* Main section styles */
 main {
   margin-top: 100px; /* Space for the fixed header */
-  padding: 20px;
+  padding: 50px;
   background-image: url('Spider.png');
-  
-	background-repeat: no-repeat;
-	background-size: contain;
+  background-repeat: repeat; /* Repeat the background image */
+  background-size: 150px; /* Increase the size of the background image */
+  text-align: center; /* Center the text */
+  font-family: 'Roboto', sans-serif;
+  height: 100vh; /* Set height to 100% of the viewport height */
+  display: flex; /* Use flexbox to center content vertically */
+  flex-direction: column; /* Arrange content in a column */
+  justify-content: center; /* Center vertically */
+}
+
+.text-container {
+  margin-bottom: 20px; /* Add space between text and buttons */
+  border: 2px solid #ffffff; /* Add border to the text container */
+  padding: 20px; /* Add padding for better spacing */
+}
+
+h1 {
+  font-size: 48px; /* Increase font size for h1 */
+  color: black;
+  margin-top: 0; /* Ensure no top margin for h1 */
+}
+
+p {
+  font-size: 24px; /* Increase font size for paragraphs */
+  color: black; /* Set text color to white */
+  margin-top: 0; /* Ensure no top margin for paragraphs */
 }
 
 .btn {
-      background-color: #558f2c;
-      color: white;
-      padding: 12px 20px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 16px;
-      margin-right: 10px;
-    }
-
-    .btn:hover {
-      background-color: black;
-    }
-.container {
-      display: flex;
-      align-items: center;
-    }
-h4 {
-      margin: 0;
-      margin-right: 5px;
-    }
-h1{
-  color: #2c7e8f;
+  background-color: #58cf39; /* Change button color */
+  color: white; /* Set text color to white */
+  padding: 12px 25px; /* Increase padding for better button appearance */
+  border: none;
+  border-radius: 25px; /* Increase border radius for a more rounded look */
+  cursor: pointer;
+  font-size: 18px;
+  transition: background-color 0.3s ease; /* Smooth transition */
 }
-/* Footer styles */
-footer {
-  background-color: lightgray;
-  padding: 20px;
-  text-align: center;
+
+.btn:hover {
+  background-color: #00660f; /* Darken on hover */
 }

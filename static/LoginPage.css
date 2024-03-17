@@ -1,53 +1,29 @@
-
 /* Form styles */
 form {
   max-width: 500px;
-  margin: auto;
+  margin: 40px auto;
   padding: 20px;
   background-color: #f2f2f2;
   border-radius: 10px;
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-  margin-top: 40px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
-input[type=text], input[type=email], input[type=number] {
+
+input[type="text"],
+input[type="email"],
+input[type="number"] {
   width: 100%;
   padding: 10px;
   margin: 5px 0;
   border: none;
   border-radius: 5px;
-  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
 }
-input[type=submit] {
+
+input[type="submit"] {
   background-color: #4CAF50;
   color: white;
   padding: 10px 20px;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  
-
-}
-#button-wrapper {
-  display: flex;
-  justify-content: center; /* Horizontally center the child elements */
-  align-items: center; /* Vertically center the child elements (optional) */
-}
-input[type=submit]:hover {
-  background-color: #3e8e41;
-}
-h1 {
-  text-align: center;
-  margin-bottom: 20px;
-}
-#demo {
-  background-color: skyblue; /* Normal state background color */
-  color: white; /* Text color */
-  padding: 10px 20px; /* Padding around the text */
-  border: none; /* Remove the default border */
-  cursor: pointer; /* Change mouse cursor to pointer */
-  transition: background-color 0.3s; /* Smooth transition for background color */
-}
-
-#demo:hover {
-  background-color: darkgreen; /* Background color when hovered */
 }

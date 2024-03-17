@@ -24,7 +24,7 @@ def init_gapi():
   spreadsheet_id = '1k7VOAgZY9FVdcyVFaQmY_iW_DXvYQluosM2LYL2Wmc8'
   # API key for accessing the Google Sheets API: find it in the "Getting Started with Contributing" document
   # Remember to keep it secret, and don't publish it to GitHub
-  api_key = "not published to GitHub"
+  api_key = "nuh uh"
 
   # URL for the SheetDB API, for POST requests
   sheetdb_url = 'https://sheetdb.io/api/v1/y0fswwtbyapbd'
@@ -44,7 +44,7 @@ def init_vars():
   spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column = init_gapi()
   # OpenAI API key for generating insights: find it in the "Getting Started with Contributing" document
   # don't publish it to GitHub
-  openAIAPI = "not published to GitHub"
+  openAIAPI = "nope"
   
   
   return spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column, openAIAPI
@@ -54,7 +54,7 @@ spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column
 app = Flask(__name__)
 
 # App secret key for session management
-app.secret_key = 'not published to Github'
+app.secret_key = 'no way'
 
 allow_demo_change = True
 generate_grade_insights = True
