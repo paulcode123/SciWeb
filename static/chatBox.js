@@ -1,31 +1,31 @@
-var locationData = null;
-ClassId = window.location.href.slice(-4)
+// let locationData = null;
+var classId = window.location.href.slice(-4)
 // Function to receive and display messages in the chat box
 function receive_messages(messages, users) {
   
-  const messageList = document.getElementById('message-list');
+  var messageList = document.getElementById('message-list');
   clearMessages()
   // Loop through all the messages and display them
   messages.forEach(message => {
     //if the message is in the current class, display it
-    if (message.location ===ClassId) {
+    if (message.location ===classId) {
       
-      const listItem = document.createElement('li');
+      let listItem = document.createElement('li');
       listItem.className = 'message';
 
-      const senderElement = document.createElement('div');
+      let senderElement = document.createElement('div');
       senderElement.className = 'sender';
-      var senderName = 'default';
+      let senderName = 'default';
       
       for (let i = 0; i < users.length; i++) {
-        if (users[i].osis == message.sender) {
+        if (users[i].osis == message.OSIS) {
           senderName = users[i].first_name;
           break;
         }
       }
       senderElement.textContent = senderName;
 
-      const textElement = document.createElement('div');
+      let textElement = document.createElement('div');
       textElement.textContent = message.text;
 
       listItem.appendChild(senderElement);
@@ -39,7 +39,7 @@ function receive_messages(messages, users) {
 
 
 function clearMessages() {
-  const messageList = document.getElementById('message-list');
+  let messageList = document.getElementById('message-list');
   while (messageList.firstChild) {
     messageList.firstChild.remove();
   }
@@ -48,24 +48,32 @@ function clearMessages() {
 
 // Handle sending a message
 function sendMessage() {
-  const inputField = document.getElementById('message-input');
-  const message = inputField.value;
+  let inputField = document.getElementById('message-input');
+  var message = inputField.value;
   inputField.value = '';
   
   console.log('Message:', message);
   
-  const chat = {
+  let chat = {
     text: message,
-    location: ClassId,
-    sender: osis,
+    location: classId,
+    OSIS: osis,
     id: Math.floor(Math.random() * 10000)
   }
   post_message(chat)
 }
 
 // Add event listener to send button
-const sendButton = document.getElementById('send-button');
+var sendButton = document.getElementById('send-button');
 sendButton.addEventListener('click', sendMessage);
+
+// Add event listener to input field for when the user presses Enter, send the message
+var inputField = document.getElementById('message-input');
+inputField.addEventListener('keydown', function(event) {
+  if (event.key === 'Enter') {
+    sendMessage();
+  }
+});
 
 // receive_messages(['hello', 'world'])
 //post messages to py database
@@ -95,13 +103,13 @@ function get_messages(){
   headers: {
     'Content-Type': 'application/json'
   },
-  body: JSON.stringify({ data: "Chat, Users, Classes" })
+  body: JSON.stringify({ data: "Chat, Users, FILTERED Classes" })
 })
 .then(response => response.json())
 .then(data => {
   
-  const messages = data['Chat']
-  const users = data['Users']
+  var messages = data['Chat']
+  var users = data['Users']
   locationData = data['Classes']
   
   receive_messages(messages, users);

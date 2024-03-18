@@ -74,3 +74,88 @@
 #logout:hover {
   background-color: black;
 }
+
+/* Styles for the tabs */
+.tabs {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.tablinks {
+  padding: 10px;
+  background-color: #f8f8f8;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.tablinks.active {
+  background-color: #007bff;
+  color: #fff;
+}
+
+/* Styles for the tab content */
+.tabcontent {
+  display: none;
+  padding: 20px;
+  background-color: #f8f8f8;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  width: 40%;
+}
+
+.tabcontent.active {
+  display: block;
+}
+
+.friend {
+  border: 1px solid green;
+  transition: border-color 0.3s;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 5px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+}
+
+.friend:hover {
+  border-color: darkgreen;
+  background-color: lightblue;
+}
+  /* Add your styles for the friend class here */
+
+/* Styles for green accept button that turns black on hover */
+.accept {
+  background-color: green;
+  color: white;
+  border: none;
+  padding: 10px 13px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 9px;
+  margin: 1px 2px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s; /* Add a smooth transition */
+}
+
+/* Styles for search bar */
+#search-bar {
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  margin-bottom: 20px;
+}
+
+.search-result{
+  border: 1px solid green;
+  background-color: lightsalmon;
+  transition: border-color 0.3s;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 5px;
+  cursor: pointer;
+  
+}

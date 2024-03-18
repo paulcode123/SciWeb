@@ -3,7 +3,7 @@ fetch('/data', {
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ data: "Assignments, Classes" })
+    body: JSON.stringify({ data: "Assignments, FILTERED Classes" })
   })
   .then(response => response.json())
   .then(data => {

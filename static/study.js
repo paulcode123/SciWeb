@@ -73,7 +73,7 @@ function getData(){
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ data: "Classes, Name, Notebooks, Study" })
+    body: JSON.stringify({ data: "FILTERED Classes, Name, Notebooks, FILTERED Study" })
   })
   .then(response => response.json())
   .then(data => {
@@ -246,10 +246,34 @@ let [inputElement, divElement] = userPrompt()
   let studyClassID = class_ids[i]
   let notebookText = notebooks.filter((item) => item.classID == studyClassID)[0]['text'];
   console.log(notebooks.filter((item) => item.classID == studyClassID));
-  pclass = document.createElement('p');
-  pclass.style.fontSize = "8px";
-  divElement.appendChild(pclass);
-  typeOut(classes+"=>"+studyClass, pclass, 15);
+  var classbox = document.createElement('div');
+  divElement.appendChild(classbox);
+  //Display the class the user chose by showing the names of the classes and having a box move from one class to the next until the chosen one is boxed
+  for (let x = 0; x < classes.length; x++){
+    pclass = document.createElement('span');
+    pclass.style.fontSize = "17px";
+    pclass.style.marginRight = '5px';
+    classbox.appendChild(pclass);
+    typeOut(classes[x], pclass, 7);
+  }
+  //For every child element in classbox...
+  for (let x = 0; x < classbox.children.length; x++){
+    //box the current class
+    classbox.children[x].style.border = "2px solid green";
+    //unbox the previous class
+    if (x != 0){
+      classbox.children[x-1].style.border = "none";
+    }
+    //break if the current class is the chosen class
+    if (x == i){
+      break;
+    }
+    //wait 1 second
+    await sleep(300);
+  }
+  
+  
+  // typeOut(classes+"=>"+studyClass, pclass, 15);
 
   //get user input: which topic to study for
   chatBotPrompt("What topic/unit in "+studyClass+" would you like to study?");

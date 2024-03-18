@@ -24,7 +24,7 @@ def init_gapi():
   spreadsheet_id = '1k7VOAgZY9FVdcyVFaQmY_iW_DXvYQluosM2LYL2Wmc8'
   # API key for accessing the Google Sheets API: find it in the "Getting Started with Contributing" document
   # Remember to keep it secret, and don't publish it to GitHub
-  api_key = "nuh uh"
+  api_key = "not published to GitHub"
 
   # URL for the SheetDB API, for POST requests
   sheetdb_url = 'https://sheetdb.io/api/v1/y0fswwtbyapbd'
@@ -44,7 +44,7 @@ def init_vars():
   spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column = init_gapi()
   # OpenAI API key for generating insights: find it in the "Getting Started with Contributing" document
   # don't publish it to GitHub
-  openAIAPI = "nope"
+  openAIAPI = "not published to GitHub"
   
   
   return spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column, openAIAPI
@@ -54,7 +54,7 @@ spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column
 app = Flask(__name__)
 
 # App secret key for session management
-app.secret_key = 'no way'
+app.secret_key = 'not published to GitHub'
 
 allow_demo_change = True
 generate_grade_insights = True
@@ -144,6 +144,30 @@ def assignment_page(assignmentid):
   return render_template('assignment.html',
                          assignment_name=assignment_name,
                          assignment_data=assignment_data)
+
+@app.route('/users/<userid>')
+def public_profile(userid):
+  users = get_data("Users")
+  profiles = get_data("Profiles")
+  
+  profile = next((row for row in profiles if str(row['OSIS']) == str(userid)), None)
+  
+  
+  #Get just first name, last name, grade, and osis of the user, still as a dictionary
+  user_data = next(
+    ([row['first_name'], row['last_name'], row['grade'], row['osis']] for row in users if row['osis'] == userid), None)
+  #If the user wishes to show their classes
+  class_data = ""
+  if 'showClasses' in profile and profile['showClasses'] == "TRUE":
+    classes = get_data("Classes")
+    class_data = [row for row in classes if str(userid) in row['OSIS']]
+    #Turn it into a string with "Classes: x, y, z"
+    class_data = "Classes: " + ", ".join([row['name'] for row in class_data])
+  return render_template('pubProf.html',
+                         profile=profile,
+                         user_data=user_data,
+                         classes=class_data)
+
 # This concludes initializing the front end
 
 #The following route functions post/get data to/from JS files
@@ -181,6 +205,19 @@ def fetch_data():
   for sheet in sheets:
     if sheet=="Name":
       response[sheet] = get_name()
+    elif "FILTERED" in sheet:
+      sheet_name = sheet.replace("FILTERED ", "")
+      data = get_data(sheet_name)
+      if sheet_name=="Friends":
+        #send if the user's osis is in the OSIS or targetOSIS of the row
+        response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in item['OSIS'] or str(session['user_data']['osis']) in item['targetOSIS']]
+      else:
+        #Otherwise, filter the data for the user's osis
+        response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in item['OSIS']]
+    elif sheet=="Users":
+      #only include the first 3 columns of the Users sheet, first_name, last_name, and osis
+      data = get_data(sheet)
+      response[sheet] = [{key: item[key] for key in item if key in ['first_name', 'last_name', 'osis']} for item in data]
     else:
       response[sheet] = get_data(sheet)
   return json.dumps(response)
@@ -232,18 +269,20 @@ def post_ga_grades():
   classes_data = get_data("Classes")
   grades = get_data("Grades")
   user_data = get_name()
+  grade_points = get_grade_points(grades, user_data, classes)
 
   # Calculate the user's grades over time, return the grades at their corresponding dates
   times, grade_spread = process_grades(grades, classes, user_data, classes_data, specificity)
 
   # Get the goals that the user has set, and create objects to overlay on the graph
-  goals, set_dates, max_date = get_goals(classes, user_data, grades, times)
+  goals, set_coords, max_date = get_goals(classes, user_data, grades, times, grade_spread)
   # Create a dictionary to return the calculated data to the frontend
   response_data = {
     "times": times.tolist(),
     "grade_spread": grade_spread,
     "goals": goals,
-    "goal_set_dates": set_dates,
+    "goal_set_coords": set_coords,
+    "grade_points": grade_points,
     "max_date": max_date
   }
 
@@ -299,11 +338,11 @@ def postLogin():
   # if the user has logged in before, update their IP address    
   for row in logins:
     # If the user's osis is already in the Users sheet...
-    if row['osis'] == data['osis']:
+    if row['password'] == data['password'] and row['first_name'] == data['first_name']:
       # Add their new IP address to the list of IP addresses
       data['IP'] = f"{session['ip_add']}, {row['IP']}"
       # Update the user's data in the Users sheet
-      update_data(row['osis'], 'osis', data, "Users")
+      update_data(row['password'], 'password', data, "Users")
       session['user_data'] = row
       return 'success'
   
@@ -333,7 +372,32 @@ def get_notebook():
 @app.route('/update-login', methods=['POST'])
 def updateLogin():
   data = request.json
-  update_data(data['osis'], 'osis', data, "Users")
+  
+  update_data(str(data['osis']), 'osis', data, "Users")
+  return 'success'
+
+#accept friend request
+@app.route('/accept-friend', methods=['POST'])
+def acceptFriend():
+  data = request.json
+  friends = get_data("Friends")
+  # If status is pending and there already is a row with the same osis and targetOSIS, update the row
+  if data['status'] == "accepted":
+    update_data(data['id'], 'id', data, "Friends")
+    return 'success'
+  data['OSIS'] = session['user_data']['osis']
+  for row in friends:
+    if (row['OSIS'] == data['targetOSIS'] and row['targetOSIS'] == data['OSIS']) or (row['OSIS'] == data['OSIS'] and row['targetOSIS'] == data['targetOSIS']):
+      return 'success'
+    
+  post_data("Friends", data)
+  return 'success'
+
+#update public profile
+@app.route('/update-public-profile', methods=['POST'])
+def updatePublicProfile():
+  data = request.json
+  update_data(str(data['OSIS']), 'OSIS', data, "Profiles")
   return 'success'
 
 # After every couple of questions that the user answers on the study page, their questions and answers are logged to the Study sheet
@@ -515,10 +579,10 @@ def calculate_goal_progress():
     progress.append({'date_set': str(date_set), 'grade_when_set': grade_when_set, 'goal_date': str(goal_date), 'goal_grade': goal_grade, 'current_grade': current_grade, 'current_date': str(current_date), 'current_grade_trajectory': current_grade_trajectory, 'class': goal['class'], 'category': goal['category'], 'percent_time_passed': percent_time_passed, 'percent_grade_change': percent_grade_change, 'grade_change': grade_change})
   return progress
 # Use the Goal data to create icons to be overlayed on the graph in the Grade Analysis page
-def get_goals(classes, user_data, grades, times, extend_to_goals=False):
+def get_goals(classes, user_data, grades, times, grade_spread, extend_to_goals=False):
   
   goal_coords = []
-  goal_set_dates = []
+  goal_set_coords = []
   goals = get_data('Goals')
 
   # Get the minimum and maximum dates of the user's grades
@@ -526,7 +590,7 @@ def get_goals(classes, user_data, grades, times, extend_to_goals=False):
   min_date = datetime.datetime.combine(min_date, datetime.time())
   max_date = datetime.datetime.combine(max_date, datetime.time())
   
-  max_diff = (max_date - min_date).days
+  
 
   #filter goals for matching osis matching user osis and classes among those being graphed
   goals = filter_goals(goals, user_data, classes)
@@ -534,54 +598,52 @@ def get_goals(classes, user_data, grades, times, extend_to_goals=False):
   # Create a rectangle for each goal to overlay on the graph
   for goal in goals:
     grade = float(goal['grade'])
-    date = goal['date']
-    date_set = goal['date_set']
     y0 = grade - 0.15
     if y0 > 99.7:
       y0 = 99.7
     
-    # Convert the date and date_set to datetime objects
-    date = datetime.datetime.strptime(date, '%m/%d/%Y')
-    date_set = datetime.datetime.strptime(date_set, '%m/%d/%Y')
+    date_string = goal['date']
+    date_set_string = goal['date_set']
+    # Convert the date and date_set to datetime objects(dtos)
+    date_dto = datetime.datetime.strptime(date_string, '%m/%d/%Y')
+    date_set_dto = datetime.datetime.strptime(date_set_string, '%m/%d/%Y')
 
-    # Calculate the value of times that is closest to the date and date_set of the goal
-    dates = [datetime.datetime.fromordinal(int(time)-1) for time in times]
+    #convert to ordinal
+    date_ordinal = date_dto.toordinal()
+    date_set_ordinal = date_set_dto.toordinal()
 
+    #remove all instances of 'none' from grade_spread
+    grade_spreadc = [float(grade) for grade in grade_spread if grade != 'none']
 
-    # Find the date closest to xdate
-    closest_date = min(dates, key=lambda d: abs(d - date))
-    print("dates", dates)
-    print("closest_date", closest_date)
-    closest_date_set = min(dates, key=lambda d: abs(d - date_set))
-
-    # Convert the closest date back to string format m/d/YYYY
-    closest_date_str = f"{closest_date.month}/{closest_date.day}/{closest_date.year}"
+    #make times and grade_spreadc the same length by removing the last elements of times
+    timesc = times[:len(grade_spreadc)]
+   #calculate grade when set given grades and times: interpolate
+    print("date_set_ordinal", date_set_ordinal, "times", timesc, "grades", grade_spreadc)
+    grade_when_set = np.interp(date_set_ordinal, timesc, grade_spreadc)
     
-    closest_date_set_index = dates.index(closest_date_set)
-#change formating here 
     
     gZ = {
-      'x': closest_date_str, # The x-coordinate (date) for the goal
+      'x': date_ordinal, # The x-coordinate (date) for the goal
       'y': y0, # The y-coordinate (grade or value) for the goal
       'xref': 'x',
       'yref': 'y',
       'yanchor': 'bottom',
-      'sizex': 0.3,
-      'sizey': 0.3,
+      'sizex': 30,
+      'sizey': 0.9,
       'text': '',
       'source': '/static/media/GoalMedal.png'
     }
     
 
     goal_coords.append(gZ)
-    goal_set_dates.append(closest_date_set_index)
+    goal_set_coords.append([date_set_ordinal, grade_when_set])
   
   #get max date of any goal in goals
   if len(goals) > 0 and extend_to_goals:
     max_date = max([datetime.datetime.strptime(goal['date'], '%m/%d/%Y') for goal in goals])
-    return goal_coords, goal_set_dates, str(max_date)
+    return goal_coords, goal_set_coords, str(max_date)
   
-  return goal_coords, goal_set_dates, 404
+  return goal_coords, goal_set_coords, 404
 
 #filter grades for those matching user osis and classes among those being graphed
 def filter_grades(grades, user_data, classes):
@@ -590,7 +652,7 @@ def filter_grades(grades, user_data, classes):
     print("no grades passed into filter_grades()")
   
   #filter grades for matching osis'
-  grades = [grade for grade in grades if grade['osis'] == user_data['osis']]
+  grades = [grade for grade in grades if grade['OSIS'] == user_data['osis']]
   if len(grades) == 0:
     print("no grades match osis")
   
@@ -605,7 +667,7 @@ def filter_grades(grades, user_data, classes):
 def filter_goals(goals, user_data, classes):
   goals = [
     goal for goal in goals
-    if (goal['osis'] == user_data['osis']) and ((
+    if (goal['OSIS'] == user_data['osis']) and ((
       goal['class'] in classes) and (goal['category'] in classes) or classes=='any')
   ]
   return goals
@@ -776,6 +838,41 @@ def get_insights(prompts):
   print("insights: "+str(insights))
   return insights
   
+def get_grade_points(grades, user_data, classes):
+  #Get the ordinal date and score/value of every grade in the given classes
+  grades = filter_grades(grades, user_data, classes)
+  weights = get_weights(get_data('Classes'))
+  print("weights", weights)
+  grade_points = []
+  category_weight_sums = {}
+  for grade in grades:
+    date = datetime.datetime.strptime(grade['date'], '%m/%d/%Y').toordinal()
+    weight = float(grade['value'])
+    score = (float(grade['score'])/weight)*100
+    class_upper = grade['class'][0].upper() + grade['class'][1:]
+    #Get the sum of the weights of all assignments in the category
+    #Check if the class and category has been added to the category_weight_sums dictionary
+    if (class_upper not in category_weight_sums) or (grade['category'] not in category_weight_sums[class_upper]):
+      category_weight_sum = sum([float(xgrade['value']) for xgrade in grades if xgrade['category'] == grade['category']])
+      category_weight_sums[class_upper] = {grade['category']: category_weight_sum}
+      
+    else:
+      category_weight_sum = category_weight_sums[class_upper][grade['category']]
+    #Change first letter of class to uppercase
+    
+    category_weight = weights[grade['class']][grade['category']]
+    relative_weight = (weight/(category_weight_sum*category_weight))*1000
+
+    
+    #Get weight/sum of weights for the grades
+    relative_weight = (weight/sum([float(grade['value']) for grade in grades]))*1000
+
+    #If relative_weight exceeds 40, set it to 40
+    if relative_weight > 40:
+      relative_weight = 40
+    
+    grade_points.append([date, score, relative_weight, grade['name']])
+  return grade_points
   
   
   

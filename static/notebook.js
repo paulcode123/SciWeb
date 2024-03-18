@@ -16,7 +16,7 @@
 //       -subsection
 //   -section
 
-//define preexisting elements
+//define preexisting elements from HTML
 var current_dgm = null;
 var remove = false;
 var container = document.getElementById('tabs');
@@ -26,7 +26,6 @@ create_sec_button.addEventListener('click', () => new_section(container));
 
 //define functions to add elements
 function textField(parent){
-  event.stopPropagation();
   const textField = document.createElement('textarea')
   textField.type = 'text';
   parent.appendChild(textField)
@@ -40,9 +39,38 @@ function diagram(parent){
   diagram.addEventListener('click', function() {
     current_dgm = diagram
   })
+  allow_image_paste_in(diagram)
   parent.appendChild(diagram);
-  
 }
+
+//allow images to be pasted into the diagram
+function allow_image_paste_in(diagram){
+  
+  diagram.addEventListener('paste', function(event) {
+    var items = (event.clipboardData || event.originalEvent.clipboardData).items;
+    console.log(JSON.stringify(items)); // logs all clipboard items for debugging
+    for (index in items) {
+      var item = items[index];
+      if (item.kind === 'file') {
+        var blob = item.getAsFile();
+        var reader = new FileReader();
+        reader.onload = function(event){
+          // Create an img element and add it to the div
+          var img = document.createElement("img");
+          img.src = event.target.result;
+          diagram.innerHTML = ''; // Clear the div's content
+          element_click(img);
+          img_resize_draggable(img);
+          diagram.appendChild(img); // Append the image
+        }; // data url!
+        reader.readAsDataURL(blob);
+      }
+    }
+    event.preventDefault(); // Prevent the default handling of the paste event
+  });
+}
+
+
 //function for toggle section content visible/invisible
 function add_toggle_EL(button, tabContent){
   button.addEventListener('click', function() {
@@ -123,7 +151,7 @@ function new_section(parent){
 
 
 
-
+//function to add event listener to diagram elements to set them as the current diagram when clicked
 function element_click(node){
   node.addEventListener('mousedown', (e) => {
     selectedNode = node;
@@ -149,6 +177,7 @@ fetch('/notebook', {
   //get raw data
   insights = rawdata['insights']
   if (insights != "none"){
+    //show AI generated practice questions about notebook topics
     displayInsights(insights)
   }
   alldata = rawdata['notebook']
@@ -159,10 +188,7 @@ fetch('/notebook', {
   var data = alldata.find(item => item.classID === id);
   // if saved data for this class notebook exists, contine
   if(data && data.innerHTML){
-    
-    
   //if there is preexisting data for this class notebook, apply it to the main(container) element
-  
     container.innerHTML = data.innerHTML;
   
   
@@ -187,6 +213,7 @@ const diagrams = container.querySelectorAll('.dgm');
     diagram.addEventListener('click', function() {
       current_dgm = diagram
   })
+  allow_image_paste_in(diagram)
   }
     q(diagrams[i]) //call this function
   }
@@ -471,4 +498,80 @@ function postNotebook(){
   insightContainer.appendChild(box);
   }
   
+}
+
+
+
+
+
+//code for resizing and dragging diagram images
+
+
+function img_resize_draggable(img){
+  img.style.position = 'absolute';
+  img.style.cursor = 'move'; // Indicates the image can be moved
+  img.style.resize = 'both'; // Enables resizing
+  img.style.overflow = 'auto'; // Ensures the resize handle is visible
+
+  let active = false;
+  let currentMouseX;
+  let currentMouseY;
+  let initialMouseX;
+  let initialMouseY;
+  let initialImgX;
+  let initialImgY;
+  let xOffset;
+  let yOffset;
+
+  const dragStart = (e) => {
+    //Get initial position of mouse
+    initialMouseX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+    initialMouseY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+    //Get initial position of image
+    initialImgX = img.offsetLeft;
+    initialImgY = img.offsetTop;
+    //Get difference between initial mouse position and initial image position
+    xOffset = initialMouseX - initialImgX;
+    yOffset = initialMouseY - initialImgY;
+    //console.log everything
+    console.log(initialMouseX, initialMouseY, initialImgX, initialImgY, xOffset, yOffset)
+    if (e.target === img) {
+      active = true;
+    }
+  };
+
+  const dragEnd = () => {
+    initialMouseX = currentMouseX;
+    initialMouseY = currentMouseY;
+    active = false;
+  };
+
+  const drag = (e) => {
+    if (active) {
+      e.preventDefault();
+      
+      //Get current position of mouse
+      currentMouseX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+      currentMouseY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+      //Get new position of image by adding the offset to the current mouse position
+      let imgX = currentMouseX - initialMouseX;
+      let imgY = currentMouseY - initialMouseY;
+      console.log(imgX, imgY, currentMouseX)
+
+      setTranslate(imgX, imgY, img);
+    }
+  };
+
+  const setTranslate = (xPos, yPos, el) => {
+    el.style.transform = "translate3d(" + xPos + "px, " + yPos + "px, 0)";
+  };
+
+  // Adding event listeners to make the image draggable
+  img.addEventListener('mousedown', dragStart, false);
+  window.addEventListener('mouseup', dragEnd, false);
+  window.addEventListener('mousemove', drag, false);
+
+  img.addEventListener('touchstart', dragStart, false);
+  window.addEventListener('touchend', dragEnd, false);
+  window.addEventListener('touchmove', drag, false);
 }

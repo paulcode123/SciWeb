@@ -23,7 +23,7 @@ const categoryCheckboxes = document.getElementById("categoryCheckboxes");
         "date": goalDate,
         "grade": goalGrade,
         "date_set": new Date().toLocaleDateString(),
-        "osis": osis,
+        "OSIS": osis,
         "id": Math.floor(Math.random() * 10000)
       }
       post_goal(goal);
@@ -59,7 +59,7 @@ fetch('/data', {
   headers: {
     'Content-Type': 'application/json'
   },
-  body: JSON.stringify({ data: 'Classes' })
+  body: JSON.stringify({ data: 'FILTERED Classes' })
 })
 .then(response => response.json())
 .then(data => {
