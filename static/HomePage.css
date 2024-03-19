@@ -21,7 +21,7 @@ main {
 
 h1 {
   font-size: 48px; /* Increase font size for h1 */
-  color: black;
+  color: rgb(18, 74, 5);
   margin-top: 0; /* Ensure no top margin for h1 */
 }
 
