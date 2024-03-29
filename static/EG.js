@@ -1,7 +1,7 @@
 
 
 
-// import Jupiter from './jupiter-api/lib/index.ts';
+
 // Jupiter API?
 
 const form = document.querySelector("#gradeform");
@@ -9,22 +9,28 @@ const tbody = document.querySelector("#mytbody");
 var grades;
 const Pullbutton = document.querySelector('#Jupull');
 
-// function pullfromJupiter(){
-//   console.log('c1')
-//   Jupiter.launch().then(async (jupiter) => {
-//       const request = {
-//           id: '',
-//           password: '',
-//           school: '',
-//           city: '',
-//           state: ''
-//       }
-  
-//       const scraper = await jupiter.request(request)
-//       const student = await scraper.data()
-//       console.log(student.toString())
-//   })
-// }
+//add event listener to the pull button
+Pullbutton.addEventListener('click', pullfromJupiter);
+
+function pullfromJupiter(){
+  console.log("pulling from Jupiter")
+  const osis = document.getElementById('osis').value;
+  const password = document.getElementById('password').value;
+  //Send to python with fetch request
+  fetch('/jupiter', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({"osis": osis, "password": password})
+})
+.then(response => response.json())
+.then(data => {
+  console.log("got response")
+  grades = data;
+  createGradesTable(grades);
+})
+}
 
 //When the user selects a class, update the category dropdown with the categories for that class
 function optionSelected(classNum, classes){
@@ -159,6 +165,8 @@ function post_grades(grades){
 }
 
 
+
+
 fetch('/data', {
   method: 'POST',
   headers: {
@@ -177,7 +185,7 @@ fetch('/data', {
   for(let z=1;z<6;z++){
 document.getElementById("class"+z).addEventListener("change", () => {optionSelected(z, classes)});
 }
-  createGradesTable();
+  createGradesTable(grades);
   document.getElementById('loadingWheel').style.display = "none";
 })
 .catch(error => {
@@ -209,7 +217,7 @@ selectElement.removeChild(selectElement.querySelector('option[value="default"]')
 }
 
 //Add previously inputted grades to the table
-function createGradesTable() {
+function createGradesTable(grades) {
   const tableBody = document.getElementById('gradesBody');
   tableBody.innerHTML = ''; // Clear any existing rows
 

@@ -8,7 +8,7 @@ function demo(){
   post_login({
     "first_name": "Demo", 
     "last_name": "Account", 
-    "osis": "342875634",
+    "osis": "3428756",
     "password": "password",
     "grade": "15",
     "IP": ip

@@ -45,3 +45,17 @@ p {
 .btn:hover {
   background-color: #00660f; /* Darken on hover */
 }
+
+.myptag{
+  color: black;
+  background-color: yellow;
+  font-size: 24px;
+  padding: 20px;
+  margin-top: 0;
+  
+}
+/* add hover animation */
+.myptag:hover {
+  background-color: #f1f1f1;
+  transform: scale(1.1);
+}

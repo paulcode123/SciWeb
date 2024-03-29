@@ -27,3 +27,17 @@ input[type="submit"] {
   border-radius: 5px;
   cursor: pointer;
 }
+
+#demo {
+  background-color: lightblue; /* Light blue background */
+  color: white; /* White text color */
+  padding: 10px 20px; /* Top and bottom padding of 10px, left and right padding of 20px */
+  border: none; /* No border */
+  cursor: pointer; /* Cursor changes to pointer when hovering over the button */
+  font-size: 16px; /* Text size */
+  transition: background-color 0.3s; /* Smooth transition for background color change */
+}
+
+#demo:hover {
+  background-color: black; /* Black background on hover */
+}

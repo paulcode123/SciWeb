@@ -6,15 +6,20 @@ from flask import Flask, render_template, request, session
 import json
 # requests is a library for getting info from the web
 import requests
-# numpy is a library for numerical computing
-import numpy as np
 # datetime is a library for working with dates and times
 import datetime
+# re is a library for working with regular expressions
 import re
 # googleapiclient is a library for working with Google APIs(Getting data from Google Sheets in this case)
 from googleapiclient.discovery import build
-# os is a library for working with the operating system(used to get environment variables)
-import os
+
+
+# Get functions from other files
+from database import get_data, post_data, update_data, delete_data
+from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades
+from goals import calculate_goal_progress, get_goals
+from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades
+
 
 
 
@@ -24,7 +29,7 @@ def init_gapi():
   spreadsheet_id = '1k7VOAgZY9FVdcyVFaQmY_iW_DXvYQluosM2LYL2Wmc8'
   # API key for accessing the Google Sheets API: find it in the "Getting Started with Contributing" document
   # Remember to keep it secret, and don't publish it to GitHub
-  api_key = "not published to GitHub"
+  api_key = "not published"
 
   # URL for the SheetDB API, for POST requests
   sheetdb_url = 'https://sheetdb.io/api/v1/y0fswwtbyapbd'
@@ -44,7 +49,7 @@ def init_vars():
   spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column = init_gapi()
   # OpenAI API key for generating insights: find it in the "Getting Started with Contributing" document
   # don't publish it to GitHub
-  openAIAPI = "not published to GitHub"
+  openAIAPI = "not published"
   
   
   return spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column, openAIAPI
@@ -54,7 +59,7 @@ spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column
 app = Flask(__name__)
 
 # App secret key for session management
-app.secret_key = 'not published to GitHub'
+app.secret_key = 'not published'
 
 allow_demo_change = True
 generate_grade_insights = True
@@ -176,7 +181,7 @@ def public_profile(userid):
 # Get the user's IP address, connects to the user_data.js function
 @app.route('/home-ip', methods=['POST'])
 def get_home_ip():
-  
+
   if 'ip_add' not in session:
     # store the ip address in the session
     session['ip_add'] = request.json
@@ -185,13 +190,17 @@ def get_home_ip():
   # return the user's data given their IP address
   return json.dumps({'Name': get_name(str(session['ip_add']))})
 
+# /Jupiter route
+@app.route('/jupiter', methods=['POST'])
+def Jupiter():
+  print("in jup py route")
+  # get_gclassroom_api_data()
+  data = request.json
+  classes= run_puppeteer_script(data['osis'], data['password'])
+  jupapi_output_to_classes(classes, session, sheetdb_url, allow_demo_change)
+  grades = jupapi_output_to_grades(classes, session, sheetdb_url, allow_demo_change)
+  return json.dumps(grades)
 
-
-#/grades = grades, classes
-#/Classes-data = classes, name
-#/Assignments-data = assignments, classes
-#/profile-data = name
-#//get-message = chat, users, classes
 
 # This function is called from many JS files to get data from specific sheets
 # The requested sheets are passed in as a list: eg. "Grades, Classes"
@@ -211,6 +220,8 @@ def fetch_data():
       if sheet_name=="Friends":
         #send if the user's osis is in the OSIS or targetOSIS of the row
         response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in item['OSIS'] or str(session['user_data']['osis']) in item['targetOSIS']]
+      elif sheet_name=="Grades":
+        response[sheet_name] = get_grades(session)
       else:
         #Otherwise, filter the data for the user's osis
         response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in item['OSIS']]
@@ -224,7 +235,7 @@ def fetch_data():
 
 @app.route('/goals_progress', methods=['POST'])
 def get_goals_progress():
-  return json.dumps(calculate_goal_progress())
+  return json.dumps(calculate_goal_progress(session))
 
 # Function to return insights to the Study page
 @app.route('/AI', methods=['POST'])
@@ -236,7 +247,7 @@ def get_AI():
 def get_insights_ga():
   classes_data = get_data("Classes")
   user_data = get_name()
-  grades = get_data("Grades")
+  grades = get_grades(session)
   grade_spreads = []
 
   grade_spread = process_grades(grades, ["all", "All"], user_data, classes_data)
@@ -267,7 +278,10 @@ def post_ga_grades():
   specificity = int(data['specificity'])
   # Get User, Class, and Grade data
   classes_data = get_data("Classes")
-  grades = get_data("Grades")
+  # grades = get_data("Grades")
+  grades = get_grades(session)
+  
+  
   user_data = get_name()
   grade_points = get_grade_points(grades, user_data, classes)
 
@@ -296,14 +310,14 @@ def post_ga_grades():
 @app.route('/post-grades', methods=['POST'])
 def receive_grades():
   data = request.json
-  post_data("Grades", data)
+  post_data("Grades", data, allow_demo_change)
   return 'Data received successfully'
 
 @app.route('/impact', methods=['POST'])
 def get_impact():
   data = request.json
   
-  grades = get_data("Grades")
+  grades = get_grades(session)
   classes = get_data("Classes")
   category_grades = filter_grades(grades, session['user_data'], [data['class'], data['category']])
   
@@ -331,9 +345,9 @@ def postLogin():
       row['IP'] = row['IP'].replace(session['ip_add'], "")
       #if the ip address is the only one in the list(no numbers in row['IP']), remove the row
       if not any(char.isdigit() for char in row['IP']):
-        delete_data("Users", row['osis'], "osis")
+        delete_data("Users", row['osis'], "osis", session, sheetdb_url, allow_demo_change)
       else:
-        update_data(row['osis'], 'osis', row, "Users")
+        update_data(row['osis'], 'osis', row, "Users", session, sheetdb_url, allow_demo_change)
       
   # if the user has logged in before, update their IP address    
   for row in logins:
@@ -342,13 +356,13 @@ def postLogin():
       # Add their new IP address to the list of IP addresses
       data['IP'] = f"{session['ip_add']}, {row['IP']}"
       # Update the user's data in the Users sheet
-      update_data(row['password'], 'password', data, "Users")
+      update_data(row['password'], 'password', data, "Users", session, sheetdb_url, allow_demo_change)
       session['user_data'] = row
       return 'success'
   
   # If the user has not logged in before, add their data to the Users sheet
   session['user_data'] = data
-  post_data("Users", data)
+  post_data("Users", data, allow_demo_change)
   return 'success'
 
 
@@ -373,7 +387,7 @@ def get_notebook():
 def updateLogin():
   data = request.json
   
-  update_data(str(data['osis']), 'osis', data, "Users")
+  update_data(str(data['osis']), 'osis', data, "Users", session, sheetdb_url, allow_demo_change)
   return 'success'
 
 #accept friend request
@@ -383,21 +397,21 @@ def acceptFriend():
   friends = get_data("Friends")
   # If status is pending and there already is a row with the same osis and targetOSIS, update the row
   if data['status'] == "accepted":
-    update_data(data['id'], 'id', data, "Friends")
+    update_data(data['id'], 'id', data, "Friends", session, sheetdb_url, allow_demo_change)
     return 'success'
   data['OSIS'] = session['user_data']['osis']
   for row in friends:
     if (row['OSIS'] == data['targetOSIS'] and row['targetOSIS'] == data['OSIS']) or (row['OSIS'] == data['OSIS'] and row['targetOSIS'] == data['targetOSIS']):
       return 'success'
     
-  post_data("Friends", data)
+  post_data("Friends", data, allow_demo_change)
   return 'success'
 
 #update public profile
 @app.route('/update-public-profile', methods=['POST'])
 def updatePublicProfile():
   data = request.json
-  update_data(str(data['OSIS']), 'OSIS', data, "Profiles")
+  update_data(str(data['OSIS']), 'OSIS', data, "Profiles", session, sheetdb_url, allow_demo_change)
   return 'success'
 
 # After every couple of questions that the user answers on the study page, their questions and answers are logged to the Study sheet
@@ -407,7 +421,7 @@ def updateStudy():
   data = data['data']
   user_data = get_name()
   osis = user_data['osis']
-  update_data(osis, 'OSIS', [{"OSIS": osis, "Q&As": data}], "Study")
+  update_data(osis, 'OSIS', [{"OSIS": osis, "Q&As": data}], "Study", session, sheetdb_url, allow_demo_change)
   return json.dumps('success')
 
 #If a user joins or creates a class, the class data is posted to the Classes sheet
@@ -417,10 +431,10 @@ def receive_Classes():
   print("receive_classes data", data)
   # update=0 means the class is new, update=1 means the class is being joined
   if data["update"] == 0:
-    post_data("Classes", data['class'])
+    post_data("Classes", data['class'], allow_demo_change)
   else:
     # add the user's osis to the class's list of osis
-    update_data(data["update"], "id", data['class'], "Classes")
+    update_data(data["update"], "id", data['class'], "Classes", session, sheetdb_url, allow_demo_change)
 
   return json.dumps({"data": "success"})
 
@@ -428,7 +442,7 @@ def receive_Classes():
 @app.route('/update-grades', methods=['POST'])
 def update_grades():
   data = request.json
-  update_data(data['rowid'], "id", data['grades'], "Grades")
+  update_data(data['rowid'], "id", data['grades'], "Grades", session, sheetdb_url, allow_demo_change)
   return 'success'
 
 
@@ -439,79 +453,31 @@ def postAssignment():
   data = request.json['data']
   print(data)
   # Add the assignment to the Assignments sheet
-  post_data("Assignments", data['data'])
+  post_data("Assignments", data['data'], allow_demo_change)
   # Also, update the Classes sheet to include the assignment
-  update_data(data['classid'], "id", data["newrow"], "Classes")
+  update_data(data['classid'], "id", data["newrow"], "Classes", session, sheetdb_url, allow_demo_change)
   return json.dumps('success')
 
 # When the user creates a goal, it's posted to the Goals sheet
 @app.route('/post-goal', methods=['POST'])
 def postGoal():
   data = request.json
-  post_data("Goals", data)
+  post_data("Goals", data, allow_demo_change)
   return 'success'
 
 # When the user types a message into the chat, it's posted to the Chat sheet
 @app.route('/post-message', methods=['POST'])
 def postMessage():
   data = request.json
-  post_data("Chat", data)
+  post_data("Chat", data, allow_demo_change)
   return json.dumps({"data": 'success'})
 
 # When the user saves a notebook after changing it, it's posted to the Notebooks sheet
 @app.route('/post-notebook', methods=['POST'])
 def postNotebook():
   data = request.json
-  update_data(data['data']['classID'], 'classID', data, "Notebooks")
+  update_data(data['data']['classID'], 'classID', data, "Notebooks", session, sheetdb_url, allow_demo_change)
   return json.dumps({"data": 'success'})
-
-#get data from Google Sheets API
-def get_data(sheet):
-  spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column = init_gapi()
-  ranges = [f'{sheet}!A:{max_column}']
-  request = service.spreadsheets().values().batchGet(
-    spreadsheetId=spreadsheet_id, ranges=ranges, majorDimension='ROWS')
-
-  response = request.execute()
-  response = response['valueRanges'][0]['values']
-
-  data = []
-
-  headers = response[0]  # Assumes the first row contains headers
-  for row in response[1:]:
-    row_data = {}
-    for index, value in enumerate(row):
-      header = headers[index]
-      row_data[header] = value
-    data.append(row_data)
-  # print("data from get_data:", data)
-  return data
-
-
-# Function to post data to sheetdb
-def post_data(sheet, data):
-  user_data = get_name()
-  if not isinstance(user_data, tuple) and sheet !="Users" and user_data['osis'] == '342875634' and not allow_demo_change:
-    message = "rejected: can't change demo account data"
-    print(message)
-    return message
-  print(data)
-  url = sheetdb_url + "?sheet=" + sheet
-  response = requests.post(url, json=data)
-  print(response, url)
-  return response
-
-
-#delete data from sheetdb
-def delete_data(sheet, row_value, row_name):
-  if 'user_data' in session and not isinstance(session['user_data'], tuple) and sheet !="Users" and session['user_data']['osis'] == '342875634' and not allow_demo_change:
-    message = "rejected: can't delete demo account data"
-    print(message)
-    return message
-  url = sheetdb_url + "/" + row_name + "/" + row_value + "?sheet=" + sheet
-  response = requests.delete(url)
-  print(response, url)
-  return response
 
 
 #Function to get the user's name from Users data
@@ -544,280 +510,9 @@ def get_name(ip=None):
   # If the user's IP address is not in the Users data, then don't do anything
   return "Login", 404
 
-# update data by deleting old data and posting new data
-def update_data(row_val, row_name, new_row, sheet):
-  delete_data(sheet, row_val, row_name)
-  post_data(sheet, new_row)
 
-# Calculate goal progress
-def calculate_goal_progress():
-  goals = get_data("Goals")
-  goals = filter_goals(goals, session['user_data'], 'any')
-  classes = get_data("Classes")
-  grades = get_data("Grades")
-  weights = get_weights(classes)
-  progress = []
-  for goal in goals:
-    #filter grades for matching user osis
-    goal_grades = filter_grades(grades, session['user_data'], [goal['class'], goal['category']])
 
-    date_set = datetime.datetime.strptime(goal['date_set'], '%m/%d/%Y').date()
-    grade_when_set = calculate_grade(date_set, grades, weights)
-    goal_date = datetime.datetime.strptime(goal['date'], '%m/%d/%Y').date()
-    goal_grade = float(goal['grade'])
-    current_date = datetime.datetime.now().date()
-    current_grade = calculate_grade(current_date, grades, weights)
 
-    percent_time_passed = (current_date - date_set).days / (goal_date - date_set).days if (goal_date - date_set).days != 0 else 0
-    grade_change = current_grade - grade_when_set
-    percent_grade_change = grade_change / (goal_grade - grade_when_set) if goal_grade - grade_when_set != 0 else 0
-    percent_grade_change = round(percent_grade_change, 3)
-    print("pgc", percent_grade_change)
-    current_grade_trajectory = grade_when_set + (current_grade - grade_when_set) / percent_time_passed if percent_time_passed != 0 else current_grade
-    
-    print("goal_grade", goal_grade, "current_grade", current_grade, "grade change", grade_change, "grade_when_set", grade_when_set, "current_grade_trajectory", current_grade_trajectory)
-    progress.append({'date_set': str(date_set), 'grade_when_set': grade_when_set, 'goal_date': str(goal_date), 'goal_grade': goal_grade, 'current_grade': current_grade, 'current_date': str(current_date), 'current_grade_trajectory': current_grade_trajectory, 'class': goal['class'], 'category': goal['category'], 'percent_time_passed': percent_time_passed, 'percent_grade_change': percent_grade_change, 'grade_change': grade_change})
-  return progress
-# Use the Goal data to create icons to be overlayed on the graph in the Grade Analysis page
-def get_goals(classes, user_data, grades, times, grade_spread, extend_to_goals=False):
-  
-  goal_coords = []
-  goal_set_coords = []
-  goals = get_data('Goals')
-
-  # Get the minimum and maximum dates of the user's grades
-  min_date, max_date, x = get_min_max(grades, user_data, classes, True)
-  min_date = datetime.datetime.combine(min_date, datetime.time())
-  max_date = datetime.datetime.combine(max_date, datetime.time())
-  
-  
-
-  #filter goals for matching osis matching user osis and classes among those being graphed
-  goals = filter_goals(goals, user_data, classes)
-
-  # Create a rectangle for each goal to overlay on the graph
-  for goal in goals:
-    grade = float(goal['grade'])
-    y0 = grade - 0.15
-    if y0 > 99.7:
-      y0 = 99.7
-    
-    date_string = goal['date']
-    date_set_string = goal['date_set']
-    # Convert the date and date_set to datetime objects(dtos)
-    date_dto = datetime.datetime.strptime(date_string, '%m/%d/%Y')
-    date_set_dto = datetime.datetime.strptime(date_set_string, '%m/%d/%Y')
-
-    #convert to ordinal
-    date_ordinal = date_dto.toordinal()
-    date_set_ordinal = date_set_dto.toordinal()
-
-    #remove all instances of 'none' from grade_spread
-    grade_spreadc = [float(grade) for grade in grade_spread if grade != 'none']
-
-    #make times and grade_spreadc the same length by removing the last elements of times
-    timesc = times[:len(grade_spreadc)]
-   #calculate grade when set given grades and times: interpolate
-    print("date_set_ordinal", date_set_ordinal, "times", timesc, "grades", grade_spreadc)
-    grade_when_set = np.interp(date_set_ordinal, timesc, grade_spreadc)
-    
-    
-    gZ = {
-      'x': date_ordinal, # The x-coordinate (date) for the goal
-      'y': y0, # The y-coordinate (grade or value) for the goal
-      'xref': 'x',
-      'yref': 'y',
-      'yanchor': 'bottom',
-      'sizex': 30,
-      'sizey': 0.9,
-      'text': '',
-      'source': '/static/media/GoalMedal.png'
-    }
-    
-
-    goal_coords.append(gZ)
-    goal_set_coords.append([date_set_ordinal, grade_when_set])
-  
-  #get max date of any goal in goals
-  if len(goals) > 0 and extend_to_goals:
-    max_date = max([datetime.datetime.strptime(goal['date'], '%m/%d/%Y') for goal in goals])
-    return goal_coords, goal_set_coords, str(max_date)
-  
-  return goal_coords, goal_set_coords, 404
-
-#filter grades for those matching user osis and classes among those being graphed
-def filter_grades(grades, user_data, classes):
-  # check if grades is empty
-  if len(grades) == 0:
-    print("no grades passed into filter_grades()")
-  
-  #filter grades for matching osis'
-  grades = [grade for grade in grades if grade['OSIS'] == user_data['osis']]
-  if len(grades) == 0:
-    print("no grades match osis")
-  
-  #filter grades for matching classes
-  grades = [
-    grade for grade in grades
-    if ((grade['class'].lower() in classes) or ('all' in classes)) and ((grade['category'] in classes) or ('All' in classes))
-  ]
-  return grades
-
-# Filter function for goals
-def filter_goals(goals, user_data, classes):
-  goals = [
-    goal for goal in goals
-    if (goal['OSIS'] == user_data['osis']) and ((
-      goal['class'] in classes) and (goal['category'] in classes) or classes=='any')
-  ]
-  return goals
-# Get the minimum and maximum dates of the user's grades
-def get_min_max(grades, user_data, classes, extend_to_goals=False, interval=10):
-    grades = filter_grades(grades, user_data, classes)
-    goals = get_data("Goals")
-
-    # If min and max dates include goals, then add goal dates to the list of dates
-    if extend_to_goals:
-      # This should be changed to only include goals for the classes being graphed
-      user_goals = filter_goals(goals, user_data, classes)
-      goal_dates = [
-          datetime.datetime.strptime(goal['date'], '%m/%d/%Y').date() for goal in user_goals
-      ]
-      
-    #get dates from grades
-    dates = [
-        datetime.datetime.strptime(grade['date'], '%m/%d/%Y').date() for grade in grades
-    ]
-    if extend_to_goals:
-      dates.extend(goal_dates)  # Include goal dates in the list
-
-    if len(dates) == 0:
-        print("error: no grades found")
-        return 0, 0, 0
-    min_date = min(dates)
-    max_date = max(dates)
-    print("max_date", max_date)
-    print("new_max_date", max_date + datetime.timedelta(days=(((max_date-min_date).days)/interval)))
-    #11/30
-    #11/6
-    max_date = max_date + datetime.timedelta(days=(((max_date-min_date).days)/interval))
-    if min_date == max_date:
-        max_date = max_date + datetime.timedelta(days=5)
-    return min_date, max_date, grades
-
-def get_weights(classes_data):
-  #convert grading categories in classes data to weights
-  weights = {}
-
-  for class_info in classes_data:
-    name = class_info['name'].lower()
-    categories_str = class_info['categories']
-    
-    # Parse the JSON-like string into a Python list
-    categories = json.loads(categories_str)
-    
-    # Create a dictionary to store weights
-    weight_dict = {}
-    
-    # Iterate over the list in pairs (category, weight)
-    for i in range(0, len(categories), 2):
-        category = categories[i]
-        weight = categories[i + 1] / 100.0  # Convert the percentage to a decimal
-        
-        weight_dict[category] = weight
-    
-    weights[name.lower()] = weight_dict
-  return weights
-
-# Calculate the user's grades over time
-def process_grades(grades, classes, user_data, classes_data, interval=10):
-  #filter grades based on class
-  grades = filter_grades(grades, user_data, classes)
-  # Get the minimum and maximum dates of the user's grades and goals
-  min_date, max_date, z = get_min_max(grades, user_data, classes, True, interval)
-  #Get the minium and maximum dates of just the user's grades
-  mi, mx, g = get_min_max(grades, user_data, classes)
-  if min_date == 0:
-    return 0, []
-  # Generate 10 evenly spaced dates between the minimum and maximum dates
-  date_range = np.linspace(min_date.toordinal(),
-                           max_date.toordinal(),
-                           num=interval,
-                           dtype=int)
-  evenly_spaced_dates = [datetime.date.fromordinal(d) for d in date_range]
-  #Throw out the dates that are past mx, the maximum date of the user's grades
-  evenly_spaced_dates = [date for date in evenly_spaced_dates if date <= mx]
-
-  weights = get_weights(classes_data)
-
-  # get grades for each date
-  grade_spread = []
-  for date in evenly_spaced_dates:
-    grade_spread.append(calculate_grade(date, grades, weights))
-
-  # add "none" values to the end of the grade spread to make it the same length as the date range
-  while len(grade_spread) < interval:
-    grade_spread.append('none')
-
-  return date_range, grade_spread
-
-# Calculate grade at given date
-def calculate_grade(time, data, weights):
-  categories = {}
-  
-  # For each assignment(with grade) in the data...
-  for datum in data:
-    #get the date of the grade
-    grade_time = datetime.datetime.strptime(datum['date'], '%m/%d/%Y').date()
-    # If the date of the grade is after the date we're calculating the grade for, skip it
-    if time < grade_time:
-      continue
-    # If the class has not yet been added to the categories dictionary, add it
-    if datum["class"] not in categories:
-      categories[datum["class"]] = {}
-    # If the category has not yet been added to the class's dictionary, add it, and initialize the category's data
-    if datum["category"] not in categories[datum["class"]]:
-      categories[datum["class"]][datum["category"]] = {
-        "scoreSum": 0,
-        "valueSum": 0,
-        "count": 0,
-        "weight": weights[datum["class"]][datum["category"]]
-      }
-
-    category = categories[datum["class"]][datum["category"]]
-    # Add the score and value of the grade to the category's data
-    category["scoreSum"] += float(datum["score"])
-    category["valueSum"] += int(datum["value"])
-    category["count"] += 1
-
-  totalGrade = 0
-  classCount = 0
-# For each class in the categories dictionary...
-  for className, classData in categories.items():
-    # Initialize the class's grade, category count, and weight sum
-    classGrade = 0
-    categoryCount = 0
-    weightSum = 0 # Purpose: if the weights don't add up to 1, the grade will be scaled to 100
-    # For each category in the class's data...
-    for categoryName, category in classData.items():
-      # Add the weighted category grade to the class's grade
-      classGrade += (category["scoreSum"] /
-                     category["valueSum"]) * category["weight"]
-      weightSum += category["weight"]
-
-      categoryCount += 1
-
-    if categoryCount > 0:
-      # print(weightSum)
-      totalGrade += classGrade / weightSum
-
-      classCount += 1
-
-  if classCount > 0:
-
-    return totalGrade * 100 / classCount
-  else:
-    return 0
 
 # Query the LLM API to get insights
 def get_insights(prompts):
@@ -838,44 +533,11 @@ def get_insights(prompts):
   print("insights: "+str(insights))
   return insights
   
-def get_grade_points(grades, user_data, classes):
-  #Get the ordinal date and score/value of every grade in the given classes
-  grades = filter_grades(grades, user_data, classes)
-  weights = get_weights(get_data('Classes'))
-  print("weights", weights)
-  grade_points = []
-  category_weight_sums = {}
-  for grade in grades:
-    date = datetime.datetime.strptime(grade['date'], '%m/%d/%Y').toordinal()
-    weight = float(grade['value'])
-    score = (float(grade['score'])/weight)*100
-    class_upper = grade['class'][0].upper() + grade['class'][1:]
-    #Get the sum of the weights of all assignments in the category
-    #Check if the class and category has been added to the category_weight_sums dictionary
-    if (class_upper not in category_weight_sums) or (grade['category'] not in category_weight_sums[class_upper]):
-      category_weight_sum = sum([float(xgrade['value']) for xgrade in grades if xgrade['category'] == grade['category']])
-      category_weight_sums[class_upper] = {grade['category']: category_weight_sum}
-      
-    else:
-      category_weight_sum = category_weight_sums[class_upper][grade['category']]
-    #Change first letter of class to uppercase
-    
-    category_weight = weights[grade['class']][grade['category']]
-    relative_weight = (weight/(category_weight_sum*category_weight))*1000
 
-    
-    #Get weight/sum of weights for the grades
-    relative_weight = (weight/sum([float(grade['value']) for grade in grades]))*1000
+  
 
-    #If relative_weight exceeds 40, set it to 40
-    if relative_weight > 40:
-      relative_weight = 40
-    
-    grade_points.append([date, score, relative_weight, grade['name']])
-  return grade_points
-  
-  
-  
 #uncomment to run locally, comment to deploy
-port = int(os.environ.get('PORT', 8080))
-app.run(host='0.0.0.0', port=port, debug=False)
+# port = int(os.environ.get('PORT', 8080))
+# app.run(host='0.0.0.0', port=port, debug=False)
+if __name__ == '__main__':
+  app.run(host='localhost', port=8080)

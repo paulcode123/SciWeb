@@ -1,2 +1,0 @@
-runtime: python312  # replace with your Python version
-entrypoint: gunicorn -b :$PORT main:app  # replace 'main:app' with your app's entry point

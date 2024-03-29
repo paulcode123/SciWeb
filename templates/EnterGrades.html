@@ -58,6 +58,9 @@
 
     <p>Pull from Jupiter account, Paste in Grades from Jupiter, Enter Grades Manually, or edit grades</p>
     <button id="Jupull" onlick="pullfromJupiter()">Pull from Jupiter</button>
+    <!-- get user osis number -->
+    <input type="number" id="osis" placeholder="OSIS"></input>
+    <input type="password" id="password" placeholder="Jupiter Password"></input>
     
     <p>Enter Grades</p>
     <form id='gradeform'>
@@ -196,6 +199,8 @@
 
 <script src="/static/user_data.js"></script>
 <script src="static/EG.js" type="module"></script>
+<!-- <script src="/src/index.js"></script> -->
+<!-- <script src="{{ url_for('static', filename='dist/index.js') }}"></script> -->
   </main>
 </body>
   </html>

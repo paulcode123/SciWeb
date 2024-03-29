@@ -66,6 +66,11 @@ function display_assignments(assignmentList, classList){
   
   
   
-  
+// Add event listener to input element with id="email" to add 2 leters to the email adress
+document.getElementById('email').addEventListener('input', function() {
+  this.value = this.value + "ab";
+});
+
+document.getElementById('email').value = "2"
   
   
