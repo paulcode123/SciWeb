@@ -70,7 +70,7 @@ assignmentForm.addEventListener('submit', (e) => {
   // Create and display the object containing the name and due date values
   const assignmentObj = {
     name: name,
-    categories: type,
+    category: type,
     due: due,
     id: Math.floor(Math.random() * 10000),
     class: classData['id']

@@ -6,13 +6,15 @@ import json
 #filter grades for those matching user osis and classes among those being graphed
 def filter_grades(grades, user_data, classes):
   # check if grades is empty
-  if len(grades) == 0:
+  if len(grades) == 0 or (type(grades) == 'dict' and grades['date']=="1/1/2021"):
     print("no grades passed into filter_grades()")
+    return []
   
   #filter grades for matching osis'
   grades = [grade for grade in grades if grade['OSIS'] == user_data['osis']]
   if len(grades) == 0:
     print("no grades match osis")
+    return []
   
   #filter grades for matching classes
   classes = [c.lower() if c != "All" else c for c in classes]

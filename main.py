@@ -29,7 +29,7 @@ def init_gapi():
   spreadsheet_id = '1k7VOAgZY9FVdcyVFaQmY_iW_DXvYQluosM2LYL2Wmc8'
   # API key for accessing the Google Sheets API: find it in the "Getting Started with Contributing" document
   # Remember to keep it secret, and don't publish it to GitHub
-  api_key = "not published"
+  api_key = "not published to Github"
 
   # URL for the SheetDB API, for POST requests
   sheetdb_url = 'https://sheetdb.io/api/v1/y0fswwtbyapbd'
@@ -49,7 +49,7 @@ def init_vars():
   spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column = init_gapi()
   # OpenAI API key for generating insights: find it in the "Getting Started with Contributing" document
   # don't publish it to GitHub
-  openAIAPI = "not published"
+  openAIAPI = "not published to Github"
   
   
   return spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column, openAIAPI
@@ -59,7 +59,7 @@ spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column
 app = Flask(__name__)
 
 # App secret key for session management
-app.secret_key = 'not published'
+app.secret_key = 'not published to Github'
 
 allow_demo_change = True
 generate_grade_insights = True
@@ -310,7 +310,7 @@ def post_ga_grades():
 @app.route('/post-grades', methods=['POST'])
 def receive_grades():
   data = request.json
-  post_data("Grades", data, allow_demo_change)
+  post_data("Grades", data, sheetdb_url, allow_demo_change)
   return 'Data received successfully'
 
 @app.route('/impact', methods=['POST'])
@@ -330,7 +330,7 @@ def get_impact():
   #get total number of points from all grades in the category
   total_points = sum([int(grade['value']) for grade in category_grades])
   print("total_points", total_points)
-  return json.dumps({"current_grade": current_grade, "total_points": total_points, "category_weight": weights[data['class']][data['category']]})
+  return json.dumps({"current_grade": current_grade, "total_points": total_points, "category_weight": weights[data['class'].lower()][data['category'].lower()]})
 
 
 #When the user logs in, their data is posted to the Users sheet
@@ -362,7 +362,7 @@ def postLogin():
   
   # If the user has not logged in before, add their data to the Users sheet
   session['user_data'] = data
-  post_data("Users", data, allow_demo_change)
+  post_data("Users", data, sheetdb_url, allow_demo_change)
   return 'success'
 
 
@@ -404,7 +404,7 @@ def acceptFriend():
     if (row['OSIS'] == data['targetOSIS'] and row['targetOSIS'] == data['OSIS']) or (row['OSIS'] == data['OSIS'] and row['targetOSIS'] == data['targetOSIS']):
       return 'success'
     
-  post_data("Friends", data, allow_demo_change)
+  post_data("Friends", data, sheetdb_url, allow_demo_change)
   return 'success'
 
 #update public profile
@@ -431,7 +431,7 @@ def receive_Classes():
   print("receive_classes data", data)
   # update=0 means the class is new, update=1 means the class is being joined
   if data["update"] == 0:
-    post_data("Classes", data['class'], allow_demo_change)
+    post_data("Classes", data['class'], sheetdb_url, allow_demo_change)
   else:
     # add the user's osis to the class's list of osis
     update_data(data["update"], "id", data['class'], "Classes", session, sheetdb_url, allow_demo_change)
@@ -445,7 +445,12 @@ def update_grades():
   update_data(data['rowid'], "id", data['grades'], "Grades", session, sheetdb_url, allow_demo_change)
   return 'success'
 
-
+#If the user clicks the delete saved grades button, delete their grades from the Grades sheet
+@app.route('/delete-grades', methods=['POST'])
+def delete_grades():
+  data = request.json
+  delete_data("GradeData", data['osis'], "OSIS", session, sheetdb_url, allow_demo_change)
+  return 'success'
 
 # When the user creates an assignment, the database is updated
 @app.route('/post-assignment', methods=['POST'])
@@ -453,7 +458,7 @@ def postAssignment():
   data = request.json['data']
   print(data)
   # Add the assignment to the Assignments sheet
-  post_data("Assignments", data['data'], allow_demo_change)
+  post_data("Assignments", data['data'], sheetdb_url, allow_demo_change)
   # Also, update the Classes sheet to include the assignment
   update_data(data['classid'], "id", data["newrow"], "Classes", session, sheetdb_url, allow_demo_change)
   return json.dumps('success')
@@ -462,14 +467,14 @@ def postAssignment():
 @app.route('/post-goal', methods=['POST'])
 def postGoal():
   data = request.json
-  post_data("Goals", data, allow_demo_change)
+  post_data("Goals", data, sheetdb_url, allow_demo_change)
   return 'success'
 
 # When the user types a message into the chat, it's posted to the Chat sheet
 @app.route('/post-message', methods=['POST'])
 def postMessage():
   data = request.json
-  post_data("Chat", data, allow_demo_change)
+  post_data("Chat", data, sheetdb_url, allow_demo_change)
   return json.dumps({"data": 'success'})
 
 # When the user saves a notebook after changing it, it's posted to the Notebooks sheet

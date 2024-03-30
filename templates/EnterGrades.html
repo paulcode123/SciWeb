@@ -55,16 +55,19 @@
   <main>
     <div id="loadingWheel"></div>
     <h1>Enter Grades</h1>
-
-    <p>Pull from Jupiter account, Paste in Grades from Jupiter, Enter Grades Manually, or edit grades</p>
-    <button id="Jupull" onlick="pullfromJupiter()">Pull from Jupiter</button>
+    <p>Pull your grades directly from Jupiter, or enter/edit them manually</p>
+    <br>
+    <input type="number" id="osis" placeholder="OSIS"></input><br>
+    <input type="password" id="password" placeholder="Jupiter Password"></input><br>
+    <p>By pulling grades from Jupiter, you agree to our <a target="_blank" href="https://docs.google.com/document/d/1lhb14Q6I_U5Tj7EFQUM2bF0cNlkBF_6_4zce6fF70L0/edit?usp=sharing">Terms and Conditions</a></p>
+    <button id="Jupull">Pull from Jupiter</button>
+    <button id="DeleteGrades">Delete Saved Grades</button>
     <!-- get user osis number -->
-    <input type="number" id="osis" placeholder="OSIS"></input>
-    <input type="password" id="password" placeholder="Jupiter Password"></input>
+    <br><br><br><br>
     
-    <p>Enter Grades</p>
+    
     <form id='gradeform'>
-      <input id="pasted" placeholder="copy and paste grades here"></input>
+      
  <table>
   <thead>
     <tr>

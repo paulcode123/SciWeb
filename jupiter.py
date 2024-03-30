@@ -83,7 +83,10 @@ def jupapi_output_to_classes(data, session, sheetdb_url, allow_demo_change):
       categories.extend([cat["name"], cat["weight"]*100])
     # if class_name and teacher match a class in class_data, update the class with the user's osis
     for class_info in class_data:
-      if class_info["name"] == class_name and class_info["teacher"] == teacher and class_info["schedule"] == schedule:
+      if str(session['user_data']['osis']) in class_info["OSIS"]:
+        class_exists = True
+        break
+      elif class_info["name"] == class_name and class_info["teacher"] == teacher and class_info["schedule"] == schedule:
         class_info["OSIS"] = session['user_data']['osis'] + ", " + class_info["OSIS"]
         update_data(class_info["id"], "id", class_info, "Classes", session, sheetdb_url, allow_demo_change)
         class_exists = True
@@ -100,10 +103,10 @@ def jupapi_output_to_classes(data, session, sheetdb_url, allow_demo_change):
 def get_grades(session):
   data = get_data("GradeData")
   #filter for osis
-  print(data[0]['OSIS'])
   has_grades = False
   for grade in data:
-    if grade['OSIS'] == session['user_data']['osis']:
+    print(session['user_data']['osis'], grade['OSIS'])
+    if str(grade['OSIS']) == str(session['user_data']['osis']):
       line = grade
       has_grades = True
   

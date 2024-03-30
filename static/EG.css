@@ -41,3 +41,23 @@ input[type="number"], input[type="date"], select {
 input[type="text"] {
   width: 100%;
 }
+
+#osis{
+  width:10%;
+}
+
+#password{
+  width: 10%;
+}
+
+#DeleteGrades{
+  visibility: hidden;
+  border-radius: 5px;
+  background-color: #f44336;
+  color: white;
+}
+
+/* turn background color black on hover */
+#DeleteGrades:hover {
+  background-color: black;
+}

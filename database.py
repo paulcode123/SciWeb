@@ -71,8 +71,9 @@ def get_gclassroom_api_data():
 
 
 # Function to post data to sheetdb
-def post_data(sheet, data, sheetdb_url, allow_demo_change=False):
-  from main import get_name
+def post_data(sheet, data, x, allow_demo_change=True):
+  from main import get_name, init_gapi
+  a,b, sheetdb_url, c,d,e = init_gapi()
   user_data = get_name()
   if not isinstance(user_data, tuple) and sheet !="Users" and user_data['osis'] == '3428756' and not allow_demo_change:
     message = "rejected: can't change demo account data"

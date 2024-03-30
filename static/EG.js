@@ -220,7 +220,9 @@ selectElement.removeChild(selectElement.querySelector('option[value="default"]')
 function createGradesTable(grades) {
   const tableBody = document.getElementById('gradesBody');
   tableBody.innerHTML = ''; // Clear any existing rows
-
+  if (grades.length>1) {
+    document.getElementById('DeleteGrades').style.visibility = "visible";
+  }
   for (let i = 0; i < grades.length; i++) {
     const row = document.createElement('tr');
 
@@ -343,3 +345,21 @@ function update_grades(id, grades){
 });
 }
 
+// add event listener
+document.getElementById('DeleteGrades').addEventListener('click', DeleteGrades);
+function DeleteGrades(){
+  fetch('/delete-grades', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({"osis": osis})
+})
+.then(response => response.text())
+.then(result => {
+    // hide button
+    document.getElementById('DeleteGrades').style.visibility = "hidden";
+    // remove grades from table
+    document.getElementById('gradesBody').innerHTML = '';
+})
+}

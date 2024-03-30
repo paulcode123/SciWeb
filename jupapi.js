@@ -40,13 +40,13 @@ Jupiter.launch().then(async (jupiter) => {
         //     min_ind = Math.min(i+5000, student.length-1)
         //     console.dir(student.slice(i, min_ind), { depth: null });
         // }
-        process.stdout.flush();
-        process.exit(0)
+        
+        process.exit()
     } catch (error) {
         // If an error occurs, log it
         console.error("An error occurred:", error);
-        process.stdout.flush();
-        process.exit(0)
+        
+        process.exit()
     }
 });
 
