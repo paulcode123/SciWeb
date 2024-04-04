@@ -2,6 +2,7 @@ import subprocess
 import json
 import random
 import datetime
+import requests
 from database import get_data, update_data, post_data
 
 
@@ -9,26 +10,26 @@ from database import get_data, update_data, post_data
 def run_puppeteer_script(osis, password):
   print("runnnning puppeteer script")
   try:
-    result = subprocess.run(["node", "jupapi.js", osis, password], capture_output=True, text=True)
-    print("done")
-    # Check if the subprocess exited with a non-zero exit code
-    result.check_returncode()
-
-    # The output is available in result.stdout
-    output = result.stdout
-    print(output)
-    output = str(output)
+    cloud_run_url = f'https://jupiterapi-xz43fty7fq-pd.a.run.app/fetchData?osis={osis}&password={password}'
     
-    # new line character: \n
-    # category_names = ["name", "date", "score", "value", "class", "teacher", "schedule", "grade", "weight", "points", "categories", "category", "due", "graded", "assignments", "courses"]
+    
+
+    output = requests.get(cloud_run_url)
+    output = output.text
+    print("done")
+
     output = output.replace("\n", "")
     output = output.replace("'", "")
     output = output.replace("`", "")
+    output = output.replace('\\"', '"')
+    output = output.replace('"{', "{")
     output = output.replace("&amp;", "&")
-  
+    
     output = output[:-2] + "}"
     print(output[:80])
     output = json.loads(output)
+    output = output['data']
+    
     # output = output.split("Course ")[1:]
 
     # for course in output:
@@ -38,10 +39,9 @@ def run_puppeteer_script(osis, password):
     return output
     # print(result)
 
-  except subprocess.CalledProcessError as e:
-    # If a non-zero exit code was returned, print the error message
-    print("Error:", e.stderr)
-    return False
+  except Exception as e:
+    print("Error running puppeteer script:", e)
+    return None
 
 
 def jupapi_output_to_grades(data, session, sheetdb_url, allow_demo_change):
@@ -68,14 +68,16 @@ def jupapi_output_to_classes(data, session, sheetdb_url, allow_demo_change):
   #this function suggests which classes the user should create or join based on their jupiter classes
   #for each class, if the class exists in class_data, update the db it with the user's osis in the 'OSIS' col of that class
   # If the class does not yet exist, add the class to the db: {"teacher": teacher name, "name": class name, "OSIS": user's osis, "id": random 4 digit number, "period": period, "categories": [name, weight, name, weight, ...]}
-
+  
   class_data = get_data("Classes")
+  
   classes = data["courses"]
   for c in classes:
     class_exists = False
     class_name = c["name"]
+    
     teacher = c["teacher"]
-    teacher = teacher.split(" ")[1:]
+    teacher = teacher.split(" ")[-1]
     schedule = c["schedule"]
     raw_cat = c["categories"]
     categories = []
@@ -83,15 +85,19 @@ def jupapi_output_to_classes(data, session, sheetdb_url, allow_demo_change):
       categories.extend([cat["name"], cat["weight"]*100])
     # if class_name and teacher match a class in class_data, update the class with the user's osis
     for class_info in class_data:
+      if not(class_info["name"] == class_name and class_info["teacher"] == teacher and class_info["schedule"] == schedule):
+        break
       if str(session['user_data']['osis']) in class_info["OSIS"]:
         class_exists = True
+        
         break
-      elif class_info["name"] == class_name and class_info["teacher"] == teacher and class_info["schedule"] == schedule:
+      else:
         class_info["OSIS"] = session['user_data']['osis'] + ", " + class_info["OSIS"]
         update_data(class_info["id"], "id", class_info, "Classes", session, sheetdb_url, allow_demo_change)
+        
         class_exists = True
         break
-
+    
     if not class_exists:
       #generate 4 digit random number
       id = random.randint(1000, 9999)
