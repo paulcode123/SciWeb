@@ -73,7 +73,8 @@ assignmentForm.addEventListener('submit', (e) => {
     category: type,
     due: due,
     id: Math.floor(Math.random() * 10000),
-    class: classData['id']
+    class: classData['id'],
+    class_name: classData['name']
   };
 
   post_assignment(assignmentObj);
@@ -140,7 +141,7 @@ function display_classes(assignmentList, classList){
       assignmentItem.classList.add('assignment-item');
       assignmentItem.innerHTML = `
         <h3>Due ${assignmentData.due}</h3>
-        <p>Type: ${assignmentData.categories}</p>
+        <p>Type: ${assignmentData.category}</p>
         <p>Name: ${assignmentData.name}</p>
       `;
       

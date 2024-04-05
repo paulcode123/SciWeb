@@ -49,6 +49,7 @@
   <!-- <div id="loadingWheel"></div> -->
     <h1>{{ assignment_name }} Assignment Page</h1>
     <h3 id="description"></h3>
+    <p id="class-name"></p>
     <p id="due-date"></p>
     <p id="points"></p>
     <p id="categories"></p>
@@ -61,10 +62,14 @@
     <p id="class-impact">+0.0%</p>
 
     <div id="chat-box">
+    <button id="refresh-chat">🔄</button>
     <ul id="message-list"></ul>
+    <div id="image-container"></div>
     <div id="input-container">
       <input type="text" id="message-input" placeholder="Type your message...">
       <button id="send-button">Send</button>
+      <input type="file" id="upload" style="display: none;">
+      <label for="upload" id="uploadLabel">📁</label>
     </div>
     <div id="loadingWheel"></div>
   

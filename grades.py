@@ -92,7 +92,7 @@ def get_weights(classes_data):
         category = categories[i]
         weight = categories[i + 1] / 100.0  # Convert the percentage to a decimal
         
-        weight_dict[category] = weight
+        weight_dict[category.lower()] = weight
     
     weights[name.lower()] = weight_dict
   return weights

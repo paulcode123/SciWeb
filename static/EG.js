@@ -14,6 +14,8 @@ Pullbutton.addEventListener('click', pullfromJupiter);
 
 function pullfromJupiter(){
   console.log("pulling from Jupiter")
+  // make loading wheel visible
+  document.getElementById('loadingWheel').style.visibility = "visible";
   const osis = document.getElementById('osis').value;
   const password = document.getElementById('password').value;
   //Send to python with fetch request
@@ -29,6 +31,7 @@ function pullfromJupiter(){
   console.log("got response")
   grades = data;
   createGradesTable(grades);
+  document.getElementById('loadingWheel').style.visibility = "hidden";
 })
 }
 

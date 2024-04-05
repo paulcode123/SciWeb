@@ -26,8 +26,14 @@ function receive_messages(messages, users) {
       senderElement.textContent = senderName;
 
       let textElement = document.createElement('div');
+      //if the message is a base64 image, display the image
+      if (message.text.includes('data:image')) {
+        let imageElement = document.createElement('img');
+        imageElement.src = message.text;
+        textElement.appendChild(imageElement);
+      } else {
       textElement.textContent = message.text;
-
+      }
       listItem.appendChild(senderElement);
       listItem.appendChild(textElement);
       messageList.appendChild(listItem);
@@ -48,8 +54,32 @@ function clearMessages() {
 
 // Handle sending a message
 function sendMessage() {
+  // If image is uploaded, send the image
+  var message = '';
+  if (document.getElementById('upload').files.length > 0) {
+    let image = document.getElementById('upload').files[0];
+    // Call your getBase64 function, assuming it's defined to accept a file and do something with the result
+    getBase64(image).then(base64 => {
+      console.log(base64); // For example, log the base64 string to the console
+      message = base64;
+  
+
+    document.getElementById('upload').value = '';
+    let chat = {
+      text: message,
+      location: classId,
+      OSIS: osis,
+      id: Math.floor(Math.random() * 10000)
+    }
+    post_message(chat)
+  }).catch(error => {
+    console.error(error); // Handle any errors
+});
+return;
+  }
+  
   let inputField = document.getElementById('message-input');
-  var message = inputField.value;
+  message = inputField.value;
   inputField.value = '';
   
   console.log('Message:', message);
@@ -120,6 +150,43 @@ function get_messages(){
   return false;
 });
 }
+
+
+//add event listener to refresh-chat button to refresh the chat
+refreshbtn = document.getElementById('refresh-chat');
+refreshbtn.addEventListener('click', function() {
+  get_messages();
+});
+
+
+
+
+
+document.getElementById('upload').addEventListener('change', function(event) {
+  // Check if files were uploaded
+  if (this.files && this.files.length > 0) {
+      // Get the first file in the collection
+      const file = this.files[0];
+      renderImage(URL.createObjectURL(file));
+      
+  }
+});
+
+function renderImage(image) {
+  const img = document.createElement('img');
+  img.src = image;
+  document.getElementById('image-container').appendChild(img);
+}
+
+async function getBase64(file) {
+  return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file); // Converts the file to Base64
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+  });
+}
+
 
 
 get_messages()

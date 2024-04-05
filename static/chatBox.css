@@ -44,3 +44,28 @@
   border-radius: 5px;
   cursor: pointer;
 }
+
+
+#refresh-chat {
+  background-color: lightblue; /* Light grey background */
+  border: none; /* Remove default border */
+  padding: 2px 2px; /* Padding around the text */
+  font-size: 24px; /* Increase emoji size */
+  cursor: pointer; /* Change cursor to pointer on hover */
+  border-radius: 5px; /* Rounded corners */
+  transition: background-color 0.3s, transform 0.3s; /* Smooth transitions for background and transform */
+}
+
+/* Hover effect */
+#refresh-chat:hover {
+  background-color: greenyellow; /* Darker grey on hover */
+  transform: rotate(180deg); /* Rotate button 180 degrees */
+}
+
+#uploadLabel {
+  display: inline-block;
+  padding: 0px;
+  font-size: 20px;
+  background-color: white;
+  color: white;
+}

@@ -15,7 +15,7 @@ fetch('/data', {
     var current_class = data['Classes'].find(item => item.id === assignment.class);
     
     //change values of html elements to reflect the assignments
-    
+    document.getElementById('class-name').textContent = 'Class: ' +assignment.class_name;
     document.getElementById('due-date').textContent = 'Due: ' + assignment.due;
     document.getElementById('points').textContent = 'Points: ' + assignment.points;
     document.getElementById('categories').textContent = 'Category: ' + assignment.category;
