@@ -3,7 +3,8 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 import pickle
 import os
-
+from google.cloud import storage
+import base64
 
 #get data from Google Sheets API
 def get_data(sheet):
@@ -104,3 +105,32 @@ def update_data(row_val, row_name, new_row, sheet, session, sheetdb_url, allow_d
   print("in update_data")
   delete_data(sheet, row_val, row_name, session, sheetdb_url, allow_demo_change)
   post_data(sheet, new_row, sheetdb_url, allow_demo_change)
+
+
+def upload_file(bucket_name, base64_string, destination_blob_name):
+    """Uploads a file to the bucket."""
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(str(destination_blob_name))
+
+    content = base64.urlsafe_b64decode(base64_string + '==')  # Adding a fixed padding. This will be ignored if not needed.
+    
+    # Use the blob.upload_from_string method to upload the binary content
+    blob.upload_from_string(content)
+
+    print(f"Content uploaded to {destination_blob_name}.")
+
+def download_file(bucket_name, source_blob_name):
+    """Downloads a blob from the bucket and returns it as a base64 string."""
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(source_blob_name)
+
+    # Download the blob's content as a bytes object.
+    content = blob.download_as_bytes()
+
+    # Convert the bytes object to a base64 encoded string.
+    base64_encoded_content = base64.b64encode(content).decode()
+
+    print(f"Blob {source_blob_name} downloaded and converted to base64.")
+    return base64_encoded_content

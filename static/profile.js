@@ -90,20 +90,25 @@ function update_data(data){
 async function savePubProf(){
   var picinp = document.getElementById('profilePictureInput');
   var imgPreview = document.getElementById('profilePicturePreview');
-  var binary;
+  var id;
   if(picinp.files.length != 0){
-  binary = await getBase64(picinp.files[0]);
+  let binary = await getBase64(picinp.files[0]);
+  //Generate random 7 digit file id
+  id = Math.floor(Math.random() * 10000000);
+  uploadFile(binary, id);
   }
   //If there is an existing profile pic, set as imgPreview.src
   else if(imgPreview.src != ""){
-    binary = imgPreview.src;
+    let binary = imgPreview.src;
+    id = Math.floor(Math.random() * 10000000);
+    uploadFile(binary, id);
   }
   else{
-    binary = "";
+    id = "";
   }
   let data = {
     "OSIS": userData.osis,
-    "ProfPic": binary,
+    "ProfPic": id,
     "AboutMe": document.getElementById('aboutMeInput').value,
     "HobClub": document.getElementById('hobbiesInput').value,
     "Goals": document.getElementById('goalsInput').value,
@@ -127,11 +132,13 @@ async function savePubProf(){
 function set_public_profile(userData){
   userData = userData[0];
   console.log(userData)
-  if(userData.ProfPic != null){
-  let imgPreview = document.getElementById('profilePicturePreview');
+  if(userData.ProfPic != null && userData.ProfPic != ""){
   
-  imgPreview.src = userData.ProfPic;
+  let imgPreview = document.getElementById('profilePicturePreview');
+  getFile(userData.ProfPic).then(image => {
+  imgPreview.src = image;
   imgPreview.style.display = 'block';
+  })
   }
   //Set the input fields to the user's public profile data if it exists
 
@@ -322,3 +329,47 @@ document.getElementById('search-bar').addEventListener('input', function(event) 
     }
   }
 });
+
+function getFile(fileId) {
+  // Return the fetch promise chain
+  return fetch('/get-file', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ file: fileId })
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    return response.json();
+  })
+  .then(data => {
+    // Assuming `data.file` is the image or file data you want
+    let file = data.file;
+    file = file.replace('dataimage/pngbase64', 'data:image/png;base64,');
+    //remove last character from string
+    file = file.slice(0, -1);
+    
+    
+    return file; // This will be the resolved value of the promise
+  });
+}
+
+
+// Create function for fetch request to upload-file route
+function uploadFile(xfile, id) {
+  fetch('/upload-file', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ file: xfile, name: id })
+  })
+  .then(response => response.json())
+  .then(data => {
+    // Display the image
+    return data;
+  });
+}

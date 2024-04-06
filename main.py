@@ -15,11 +15,13 @@ from googleapiclient.discovery import build
 
 
 # Get functions from other files
-from database import get_data, post_data, update_data, delete_data
+from database import get_data, post_data, update_data, delete_data, download_file, upload_file
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades
 from goals import calculate_goal_progress, get_goals
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades
 
+#get api keys from static/api_keys.json file
+keys = json.load(open('static/api_keys.json'))
 
 
 
@@ -29,7 +31,7 @@ def init_gapi():
   spreadsheet_id = '1k7VOAgZY9FVdcyVFaQmY_iW_DXvYQluosM2LYL2Wmc8'
   # API key for accessing the Google Sheets API: find it in the "Getting Started with Contributing" document
   # Remember to keep it secret, and don't publish it to GitHub
-  api_key = "not published to Github"
+  api_key = keys["GoogleAPIKey"]
 
   # URL for the SheetDB API, for POST requests
   sheetdb_url = 'https://sheetdb.io/api/v1/y0fswwtbyapbd'
@@ -49,7 +51,7 @@ def init_vars():
   spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column = init_gapi()
   # OpenAI API key for generating insights: find it in the "Getting Started with Contributing" document
   # don't publish it to GitHub
-  openAIAPI = "not published to Github"
+  openAIAPI = keys["OpenAiAPIKey"]
   
   
   return spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column, openAIAPI
@@ -59,7 +61,7 @@ spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column
 app = Flask(__name__)
 
 # App secret key for session management
-app.secret_key = 'not published to Github'
+app.secret_key = keys["AppSecretKey"]
 
 allow_demo_change = True
 generate_grade_insights = True
@@ -321,7 +323,7 @@ def get_impact():
   classes = get_data("Classes")
   category_grades = filter_grades(grades, session['user_data'], [data['class'], data['category']])
   
-  weights = get_weights(classes)
+  weights = get_weights(classes, session['user_data']['osis'])
   #get current date
   current_date = datetime.datetime.now().date()
   #get grade at current date
@@ -331,6 +333,21 @@ def get_impact():
   total_points = sum([int(grade['value']) for grade in category_grades])
   print("total_points", total_points)
   return json.dumps({"current_grade": current_grade, "total_points": total_points, "category_weight": weights[data['class'].lower()][data['category'].lower()]})
+
+@app.route('/get-file', methods=['POST'])
+def get_file():
+  data = request.json
+  # Get the file from the bucket
+  base64 = download_file("sciweb-files", data['file'])
+  return json.dumps({"file": str(base64)})
+
+@app.route('/upload-file', methods=['POST'])
+def upload_file_route():
+  data = request.json
+  print(data['file'][:100])
+  # Upload the file to the bucket
+  upload_file("sciweb-files", data['file'], data['name'])
+  return json.dumps({"message": "success"})
 
 
 #When the user logs in, their data is posted to the Users sheet
@@ -487,6 +504,7 @@ def postNotebook():
 
 #Function to get the user's name from Users data
 def get_name(ip=None):
+  global session
   
   # If an IP address is passed in, store it in the session
   if ip:

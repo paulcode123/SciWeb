@@ -69,3 +69,12 @@
   background-color: white;
   color: white;
 }
+
+#clear {
+  /* There should be no background or padding at all, just the emoji */
+  background-color: transparent;
+  padding: 0;
+  font-size: 20px;
+  cursor: pointer;
+  border: none;
+}

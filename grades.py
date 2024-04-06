@@ -73,11 +73,14 @@ def get_min_max(grades, user_data, classes, extend_to_goals=False, interval=10):
         max_date = max_date + datetime.timedelta(days=5)
     return min_date, max_date, grades
 
-def get_weights(classes_data):
+def get_weights(classes_data, osis):
   #convert grading categories in classes data to weights
   weights = {}
 
   for class_info in classes_data:
+    # if osis does not match user data, continue
+    if not osis in class_info['OSIS']:
+      continue
     name = class_info['name'].lower()
     categories_str = class_info['categories'].lower()
     
@@ -116,7 +119,7 @@ def process_grades(grades, classes, user_data, classes_data, interval=10):
   #Throw out the dates that are past mx, the maximum date of the user's grades
   evenly_spaced_dates = [date for date in evenly_spaced_dates if date <= mx]
 
-  weights = get_weights(classes_data)
+  weights = get_weights(classes_data, user_data['osis'])
 
   # get grades for each date
   grade_spread = []
@@ -190,7 +193,7 @@ def calculate_grade(time, data, weights):
 def get_grade_points(grades, user_data, classes):
   #Get the ordinal date and score/value of every grade in the given classes
   grades = filter_grades(grades, user_data, classes)
-  weights = get_weights(get_data('Classes'))
+  weights = get_weights(get_data('Classes'), user_data['osis'])
   print("weights", weights)
   grade_points = []
   category_weight_sums = {}

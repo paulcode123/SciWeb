@@ -4,7 +4,7 @@ import random
 import datetime
 import requests
 from database import get_data, update_data, post_data
-
+import re
 
 
 def run_puppeteer_script(osis, password):
@@ -21,14 +21,19 @@ def run_puppeteer_script(osis, password):
     output = output.replace("\n", "")
     output = output.replace("'", "")
     output = output.replace("`", "")
-    output = output.replace('\\"', '"')
+   
     output = output.replace('"{', "{")
     output = output.replace("&amp;", "&")
-    
+    pattern = r'(\\)?\\"'
+    # Replace matched patterns with just "
+    output = re.sub(pattern, '"', output)
+
+
     output = output[:-2] + "}"
-    print(output[:80])
+   
     output = json.loads(output)
     output = output['data']
+
     
     # output = output.split("Course ")[1:]
 

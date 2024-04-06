@@ -1,3 +1,5 @@
+// const { get } = require("http");
+
 // let locationData = null;
 var classId = window.location.href.slice(-4)
 // Function to receive and display messages in the chat box
@@ -27,10 +29,17 @@ function receive_messages(messages, users) {
 
       let textElement = document.createElement('div');
       //if the message is a base64 image, display the image
-      if (message.text.includes('data:image')) {
+      if (message.text.includes('file:')) {
         let imageElement = document.createElement('img');
-        imageElement.src = message.text;
+        //get the 7 digit number from the end of the message to use as the file id
+        let id = message.text.slice(-7);
+        getFile(id).then(image => {
+        
+        imageElement.src = image;
+        imageElement.width = 120;
+        imageElement.height = 120;
         textElement.appendChild(imageElement);
+        })
       } else {
       textElement.textContent = message.text;
       }
@@ -61,8 +70,10 @@ function sendMessage() {
     // Call your getBase64 function, assuming it's defined to accept a file and do something with the result
     getBase64(image).then(base64 => {
       console.log(base64); // For example, log the base64 string to the console
-      message = base64;
-  
+      //generate random 7 digit number to use as the file id
+      let id = Math.floor(Math.random() * 9000000) + 1000000;
+      message = "file: " + id;
+      uploadFile(base64, id);
 
     document.getElementById('upload').value = '';
     let chat = {
@@ -72,6 +83,7 @@ function sendMessage() {
       id: Math.floor(Math.random() * 10000)
     }
     post_message(chat)
+    document.getElementById('image-container').innerHTML = '';
   }).catch(error => {
     console.error(error); // Handle any errors
 });
@@ -171,10 +183,19 @@ document.getElementById('upload').addEventListener('change', function(event) {
       
   }
 });
+// add event listener to button with id="clear" to clear the input field
+document.getElementById('clear').addEventListener('click', clearInput);
+function clearInput() {
+  document.getElementById('message-input').value = '';
+  document.getElementById('upload').value = '';
+  document.getElementById('image-container').innerHTML = '';
+}
 
 function renderImage(image) {
   const img = document.createElement('img');
   img.src = image;
+  img.width = 60;
+  img.height = 60;
   document.getElementById('image-container').appendChild(img);
 }
 
@@ -187,6 +208,56 @@ async function getBase64(file) {
   });
 }
 
+// Create function for fetch request to get-file route
+function getFile(fileId) {
+  // Return the fetch promise chain
+  return fetch('/get-file', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ file: fileId })
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    return response.json();
+  })
+  .then(data => {
+    // Assuming `data.file` is the image or file data you want
+    let file = data.file;
+    file = file.replace('dataimage/pngbase64', 'data:image/png;base64,');
+    file = file.replace('dataimage/jpegbase64', 'data:image/jpeg;base64,');
+    // if it's a png, remove last character from string
+    
+    if (file.slice(11, 14) == 'png') {
+      file = file.slice(0, -1);
+    }
+    // console.log(file)
+    
+    
+    
+    return file; // This will be the resolved value of the promise
+  });
+}
+
+
+// Create function for fetch request to upload-file route
+function uploadFile(xfile, id) {
+  fetch('/upload-file', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ file: xfile, name: id })
+  })
+  .then(response => response.json())
+  .then(data => {
+    // Display the image
+    return data;
+  });
+}
 
 
 get_messages()

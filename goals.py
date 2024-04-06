@@ -11,7 +11,7 @@ def calculate_goal_progress(session):
   goals = filter_goals(goals, session['user_data'], 'any')
   classes = get_data("Classes")
   grades = get_grades(session)
-  weights = get_weights(classes)
+  weights = get_weights(classes, session['user_data']['osis'])
   progress = []
   for goal in goals:
     #filter grades for matching user osis
