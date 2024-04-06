@@ -73,7 +73,7 @@ def get_gclassroom_api_data():
 
 # Function to post data to sheetdb
 def post_data(sheet, data, x, allow_demo_change=True):
-  print(data)
+  # print(data)
   from main import get_name, init_gapi
   a,b, sheetdb_url, c,d,e = init_gapi()
   user_data = get_name()
@@ -83,8 +83,9 @@ def post_data(sheet, data, x, allow_demo_change=True):
     return message
   
   url = sheetdb_url + "?sheet=" + sheet
+  print(data)
   response = requests.post(url, json=data)
-  print(response.text)
+  print("POST error", response.text)
   print(response, url)
   return response
 
@@ -98,13 +99,19 @@ def delete_data(sheet, row_value, row_name, session, sheetdb_url, allow_demo_cha
   print("deleting data", sheetdb_url)
   url = sheetdb_url + "/" + str(row_name) + "/" + str(row_value) + "?sheet=" + sheet
   response = requests.delete(url)
+  print(response.text)
   print(response, url)
   return response
 
 def update_data(row_val, row_name, new_row, sheet, session, sheetdb_url, allow_demo_change=False):
   print("in update_data")
-  delete_data(sheet, row_val, row_name, session, sheetdb_url, allow_demo_change)
-  post_data(sheet, new_row, sheetdb_url, allow_demo_change)
+  # delete_data(sheet, row_val, row_name, session, sheetdb_url, allow_demo_change)
+  # post_data(sheet, new_row, sheetdb_url, allow_demo_change)
+  url = sheetdb_url + "/" + str(row_name) + "/" + str(row_val) + "?sheet=" + sheet
+  response = requests.patch(url, json=new_row)
+  print(response.text)
+  print(response, url)
+  return response
 
 
 def upload_file(bucket_name, base64_string, destination_blob_name):

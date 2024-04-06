@@ -3,7 +3,7 @@ import json
 import random
 import datetime
 import requests
-from database import get_data, update_data, post_data
+from database import get_data, update_data, post_data, delete_data
 import re
 
 
@@ -65,7 +65,13 @@ def jupapi_output_to_grades(data, session, sheetdb_url, allow_demo_change):
   #modify the line above to include all the grades
   for i in range(0, len(grades_split)):
     grades_obj[str(i+1)] = grades_split[i]
-  update_data(session['user_data']['osis'], "OSIS", grades_obj, "GradeData", session, sheetdb_url, allow_demo_change)
+  #get list of all values in 'OSIS' column
+  grades_data = get_data("GradeData")
+  osis_list = [str(grade['OSIS']) for grade in grades_data]
+  # If the user's osis is already in the osis column, update, otherwise post
+  if str(session['user_data']['osis']) in osis_list:
+    update_data(session['user_data']['osis'], "OSIS", grades_obj, "GradeData", session, sheetdb_url, allow_demo_change)
+  post_data("GradeData", grades_obj, sheetdb_url, allow_demo_change)
   print(len(grades))
   return grades
   
@@ -74,6 +80,7 @@ def jupapi_output_to_classes(data, session, sheetdb_url, allow_demo_change):
   #for each class, if the class exists in class_data, update the db it with the user's osis in the 'OSIS' col of that class
   # If the class does not yet exist, add the class to the db: {"teacher": teacher name, "name": class name, "OSIS": user's osis, "id": random 4 digit number, "period": period, "categories": [name, weight, name, weight, ...]}
   
+  to_post = []
   class_data = get_data("Classes")
   
   classes = data["courses"]
@@ -91,23 +98,29 @@ def jupapi_output_to_classes(data, session, sheetdb_url, allow_demo_change):
     # if class_name and teacher match a class in class_data, update the class with the user's osis
     for class_info in class_data:
       if not(class_info["name"] == class_name and class_info["teacher"] == teacher and class_info["schedule"] == schedule):
-        break
+        continue
       if str(session['user_data']['osis']) in class_info["OSIS"]:
         class_exists = True
-        
         break
       else:
-        class_info["OSIS"] = session['user_data']['osis'] + ", " + class_info["OSIS"]
+        class_info["OSIS"] = str(session['user_data']['osis']) + ", " + class_info["OSIS"]
+        # update_data(class_info["id"], "id", class_info, "Classes", session, sheetdb_url, allow_demo_change)
         update_data(class_info["id"], "id", class_info, "Classes", session, sheetdb_url, allow_demo_change)
         
         class_exists = True
         break
+      
+        
     
     if not class_exists:
       #generate 4 digit random number
       id = random.randint(1000, 9999)
-      class_info = {"teacher": teacher, "name": class_name, "OSIS": session['user_data']['osis'], "id": id, "schedule": c["schedule"], "categories": categories}
-      post_data("Classes", class_info, sheetdb_url, allow_demo_change)
+      class_info = {"period": "", "teacher": teacher, "name": class_name, "OSIS": session['user_data']['osis'], "assignments": "", "description": "", "id": id, "schedule": c["schedule"], "categories": categories}
+      to_post.append(class_info)
+
+  # if to_post is not empty...
+  if to_post:
+    post_data("Classes", to_post, sheetdb_url, allow_demo_change)
     
   
 

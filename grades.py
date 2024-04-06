@@ -9,12 +9,14 @@ def filter_grades(grades, user_data, classes):
   if len(grades) == 0 or (type(grades) == 'dict' and grades['date']=="1/1/2021"):
     print("no grades passed into filter_grades()")
     return []
-  
-  #filter grades for matching osis'
-  grades = [grade for grade in grades if grade['OSIS'] == user_data['osis']]
-  if len(grades) == 0:
-    print("no grades match osis")
-    return []
+  try:
+    #filter grades for matching osis'
+    grades = [grade for grade in grades if grade['OSIS'] == user_data['osis']]
+    if len(grades) == 0:
+      print("no grades match osis")
+      return []
+  except TypeError:
+    print(grades)
   
   #filter grades for matching classes
   classes = [c.lower() if c != "All" else c for c in classes]
@@ -79,7 +81,7 @@ def get_weights(classes_data, osis):
 
   for class_info in classes_data:
     # if osis does not match user data, continue
-    if not osis in class_info['OSIS']:
+    if not str(osis) in class_info['OSIS']:
       continue
     name = class_info['name'].lower()
     categories_str = class_info['categories'].lower()
@@ -217,6 +219,8 @@ def get_grade_points(grades, user_data, classes):
 
     
     #Get weight/sum of weights for the grades
+    if grade['value']==None:
+      grade['value'] = 0
     relative_weight = (weight/sum([float(grade['value']) for grade in grades]))*1000
 
     #If relative_weight exceeds 40, set it to 40

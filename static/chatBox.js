@@ -30,15 +30,29 @@ function receive_messages(messages, users) {
       let textElement = document.createElement('div');
       //if the message is a base64 image, display the image
       if (message.text.includes('file:')) {
-        let imageElement = document.createElement('img');
+        
         //get the 7 digit number from the end of the message to use as the file id
         let id = message.text.slice(-7);
-        getFile(id).then(image => {
-        
+        getFile(id).then(([image, type]) => {
+        if(type == 'pdf'){
+          let pdfElement = document.createElement('a');
+          let pdfBlob = base64ToBlob(image, 'application/pdf');
+          // Create an object URL for the Blob
+          let url = URL.createObjectURL(pdfBlob);
+          pdfElement.href = url;
+          pdfElement.textContent = 'Open PDF     ➡️';
+          pdfElement.target = '_blank'; // Opens the link in a new tab
+          pdfElement.className = 'pdf';
+          textElement.appendChild(pdfElement);
+          console.log('PDF:', pdfElement);
+        }
+        else{
+        let imageElement = document.createElement('img');
         imageElement.src = image;
         imageElement.width = 120;
         imageElement.height = 120;
         textElement.appendChild(imageElement);
+        }
         })
       } else {
       textElement.textContent = message.text;
@@ -227,18 +241,27 @@ function getFile(fileId) {
   .then(data => {
     // Assuming `data.file` is the image or file data you want
     let file = data.file;
-    file = file.replace('dataimage/pngbase64', 'data:image/png;base64,');
-    file = file.replace('dataimage/jpegbase64', 'data:image/jpeg;base64,');
-    // if it's a png, remove last character from string
-    
-    if (file.slice(11, 14) == 'png') {
+    let type;
+    // console.log(file.slice(11, 14));
+    if(file.includes('pngbase64')){
+      type = 'png';
+      file = file.replace('dataimage/pngbase64', 'data:image/png;base64,');
       file = file.slice(0, -1);
     }
-    // console.log(file)
+    else if(file.includes('jpegbase64')){
+      type = 'jpeg';
+      file = file.replace('dataimage/jpegbase64', 'data:image/jpeg;base64,');
+    }
+    else if(file.includes('pdfbase64')){
+      type = 'pdf';
+      file = file.replace('dataapplication/pdfbase64', 'data:application/pdf;base64,');
+    }
+    else{
+      console.log('Error: File type not supported', file);
+    }
     
     
-    
-    return file; // This will be the resolved value of the promise
+    return [file, type]; // This will be the resolved value of the promise
   });
 }
 
@@ -257,6 +280,27 @@ function uploadFile(xfile, id) {
     // Display the image
     return data;
   });
+}
+
+function base64ToBlob(base64, type = 'application/octet-stream') {
+  base64 = base64.split('base64,')[1];
+  // log the last 5 characters of the base64 string
+  
+  // add equals signs to the end of the base64 string to make it a multiple of 4
+  while (base64.length % 4 !== 0) {
+      base64 += '=';
+  }
+  console.log(base64.slice(-5));
+  // Decode the base64 string
+  const binaryString = window.atob(base64);
+  // Create an array buffer of the same length
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+  }
+  // Create and return a Blob from the array buffer
+  return new Blob([bytes], {type});
 }
 
 

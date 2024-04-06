@@ -78,3 +78,13 @@
   cursor: pointer;
   border: none;
 }
+
+/* write <a> tag styles */
+.pdf {
+  text-decoration: none;
+  color: black;
+  background-color: coral;
+  padding: 5px;
+  border-radius: 3px;
+  cursor: pointer;
+}

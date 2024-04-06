@@ -21,7 +21,7 @@ from goals import calculate_goal_progress, get_goals
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades
 
 #get api keys from static/api_keys.json file
-keys = json.load(open('static/api_keys.json'))
+keys = json.load(open('api_keys.json'))
 
 
 
@@ -42,7 +42,7 @@ def init_gapi():
                   'v4',
                   developerKey=api_key,
   discoveryServiceUrl=DISCOVERY_SERVICE_URL)
-  max_column = "H"
+  max_column = "K"
 
   return spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column
 

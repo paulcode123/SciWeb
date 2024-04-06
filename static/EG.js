@@ -189,7 +189,7 @@ fetch('/data', {
 document.getElementById("class"+z).addEventListener("change", () => {optionSelected(z, classes)});
 }
   createGradesTable(grades);
-  document.getElementById('loadingWheel').style.display = "none";
+  document.getElementById('loadingWheel').style.visibility = "hidden";
 })
 .catch(error => {
   console.log('An error occurred:' +error);
