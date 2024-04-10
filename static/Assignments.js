@@ -1,3 +1,30 @@
+
+//add event lister to button with id=authorizeGclass to redirect to /init_oauth
+document.getElementById('authorizeGclass').addEventListener('click', function() {
+  window.location.href = "/init_oauth";
+});
+
+//create a fetch request to /get-gclasses to get the user's classes from google classroom, then log them to the console
+document.getElementById('getGclasses').addEventListener('click', function() {
+  fetch('/get-gclasses', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      data: {"data":"none"}
+      
+    })
+})
+  .then(response => response.json())
+  .then(data => {
+    console.log(data);
+  })
+  .catch(error => {
+    console.log('Assignments.js: An error occurred:' +error);
+  });
+});
+
 //add the assignments to the page
 function display_assignments(assignmentList, classList){
   const assignmentListContainer = document.getElementById('assignmentList');

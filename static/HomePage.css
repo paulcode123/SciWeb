@@ -1,23 +1,30 @@
 /* Main section styles */
-main {
+/* Parent container */
+.container {
   margin-top: 100px; /* Space for the fixed header */
   padding: 50px;
-  background-image: url('Spider.png');
-  background-repeat: repeat; /* Repeat the background image */
-  background-size: 150px; /* Increase the size of the background image */
   text-align: center; /* Center the text */
   font-family: 'Roboto', sans-serif;
-  height: 100vh; /* Set height to 100% of the viewport height */
   display: flex; /* Use flexbox to center content vertically */
   flex-direction: column; /* Arrange content in a column */
   justify-content: center; /* Center vertically */
+  position: relative; /* Needed for the pseudo-element positioning */
 }
 
-.text-container {
-  margin-bottom: 20px; /* Add space between text and buttons */
-  border: 2px solid #ffffff; /* Add border to the text container */
-  padding: 20px; /* Add padding for better spacing */
+/* Pseudo-element for the background */
+.container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 425px; /* Height of the repeating background */
+  background-image: url('Spider.png');
+  background-repeat: repeat;
+  background-size: 150px;
+  z-index: -1; /* Ensure it's behind the content */
 }
+
 
 h1 {
   font-size: 48px; /* Increase font size for h1 */
@@ -40,6 +47,10 @@ p {
   cursor: pointer;
   font-size: 18px;
   transition: background-color 0.3s ease; /* Smooth transition */
+  width: 150px;
+  /* center hoizontally on page */
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .btn:hover {

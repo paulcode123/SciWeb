@@ -94,7 +94,8 @@ function sendMessage() {
       text: message,
       location: classId,
       OSIS: osis,
-      id: Math.floor(Math.random() * 10000)
+      id: Math.floor(Math.random() * 10000),
+      timestamp: Date.now()
     }
     post_message(chat)
     document.getElementById('image-container').innerHTML = '';
@@ -114,7 +115,8 @@ return;
     text: message,
     location: classId,
     OSIS: osis,
-    id: Math.floor(Math.random() * 10000)
+    id: Math.floor(Math.random() * 10000),
+    timestamp: Date.now()
   }
   post_message(chat)
 }

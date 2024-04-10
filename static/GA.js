@@ -4,16 +4,17 @@ var tbody;
 var grades;
 var times;
 
-fetch('/data', {
+fetch('/GAsetup', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
   },
-  body: JSON.stringify({ data: 'Classes' })
+  body: JSON.stringify({ data: '' })
 })
 .then(response => response.json())
 .then(data => {
     var classes = data['Classes']
+    var categories = data['categories']
     classes = classes.filter(item => item.OSIS.includes(osis));
     var class_div = document.getElementById("classes")
     var categories_div = document.getElementById("categories")
@@ -35,63 +36,33 @@ fetch('/data', {
       checkbox.addEventListener('change', function() {
         if(this.checked) {
           text.style.backgroundColor = 'green'; // Directly change the background color
-          // Or add a class
-          // text.classList.add('checked');
         } else {
           text.style.backgroundColor = 'darkgray'; // Revert to original color
-          // Or remove the class
-          // text.classList.remove('checked');
         }
       });
-      
       text.appendChild(checkmark);
       text.appendChild(checkbox);
       class_div.appendChild(text);
-      
-      // class_div.appendChild(child_label);
     }
-  const uniqueStrings = new Set();
-
-// Iterate through the data and collect unique strings
-for (const entry of classes) {
-  const categories = JSON.parse(entry.categories);
-  if (Array.isArray(categories)) {
-    for (const item of categories) {
-      if (typeof item === 'string') {
-        uniqueStrings.add(item);
-      }
-    }
-  }
-}
-
-// Convert the set to an array if needed
-const ust = Array.from(uniqueStrings);
   
-for(let x=0;x<ust.length;x++){
+for(let x=0;x<categories.length;x++){
       let label = document.createElement("label");
       let input = document.createElement("input");
       input.type = 'checkbox'
-      input.value = ust[x];
-      label.textContent = "     "+ ust[x];
+      input.value = "[CAT]" + categories[x];
+      label.textContent = "     "+ categories[x];
       input.name = 'class'
       label.className = 'custom-checkbox';
       input.addEventListener('change', function() {
         if(this.checked) {
           label.style.backgroundColor = 'green'; // Directly change the background color
-          // Or add a class
-          // text.classList.add('checked');
         } else {
           label.style.backgroundColor = 'darkgray'; // Revert to original color
-          // Or remove the class
-          // text.classList.remove('checked');
         }
       });
-      
       label.appendChild(input);
-      
       categories_div.appendChild(label);
     }
-  
   })
 .catch(error => {
   console.error('An error occurred:' +error);
@@ -211,31 +182,60 @@ console.log(layout)
 Plotly.newPlot('myGraph', data, layout);
 
 
-// Set up histogram
-var histogrades = grade_points.map(point => point[1])
-var minVal = percentile(histogrades, 0.05);
-var maxVal = percentile(histogrades, 0.95);
-let buckets = 10;
-//Render Histogram
-var histogram = [{
-  x: histogrades,
-  type: 'histogram',
-  xbins: {
-    start: minVal,
-    end: maxVal,
-    size: (maxVal - minVal) / buckets
-  }
+// // Set up histogram
+// var histogrades = grade_points.map(point => point[1])
+// var minVal = percentile(histogrades, 0.05);
+// var maxVal = percentile(histogrades, 0.95);
+// let buckets = 10;
+// //Render Histogram
+// var histogram = [{
+//   x: histogrades,
+//   type: 'histogram',
+//   xbins: {
+//     start: minVal,
+//     end: maxVal,
+//     size: (maxVal - minVal) / buckets
+//   }
+// }];
+
+// const histlayout = {
+//   title: 'Histogram of '+name.slice(0, -9),
+//   xaxis: {title: 'Grade'},
+//   yaxis: {title: 'Count'}
+// };
+
+// // Plot the chart to a div with id 'myDiv'
+// Plotly.newPlot('myHistogram', histogram, histlayout);
+// console.log(document.getElementById('loadingWheel').style.visibility)
+
+// make a circle graph with the frequency of each grade using grade_points
+var circlegrades = grade_points.map(point => point[1])
+//get frequency of each grade
+var freq = {};
+circlegrades.forEach(function(grade) {
+  freq[grade] = (freq[grade] || 0) + 1;
+});
+//sort dict freq from highest to lowest based on key
+
+freq = Object.fromEntries(Object.entries(freq).sort((a, b) => b[0] - a[0]));
+
+var unique_grades = Object.keys(freq);
+var counts = Object.values(freq);
+
+var circledata = [{
+  values: counts,
+  labels: unique_grades,
+  type: 'pie'
 }];
 
-const histlayout = {
-  title: 'Histogram of '+name.slice(0, -9),
-  xaxis: {title: 'Grade'},
-  yaxis: {title: 'Count'}
+circlelayout = {
+  title: 'Grade Distribution',
+  height: 400,
+  width: 500
 };
+Plotly.newPlot('myHistogram', circledata, circlelayout);
 
-// Plot the chart to a div with id 'myDiv'
-Plotly.newPlot('myHistogram', histogram, histlayout);
-console.log(document.getElementById('loadingWheel').style.visibility)
+
 document.getElementById('loadingWheel').style.visibility = "hidden";
 
 };
@@ -269,7 +269,9 @@ fetch('/grades_over_time', {
   else{
     console.log(classes);
   }
-    
+  // remove [CAT] from joined classes string
+  joined_classes = joined_classes.replace(/\[CAT\]/g, '');
+
   var name =  joined_classes +" grades over time"
   
   
@@ -400,13 +402,13 @@ fetch('/goals_progress', {
   }
 
 
-  function percentile(arr, p) {
-    const sorted = arr.slice().sort((a, b) => a - b);
-    const index = (sorted.length - 1) * p;
-    const lower = Math.floor(index);
-    const upper = lower + 1;
-    const weight = index % 1;
+function percentile(arr, p) {
+  const sorted = arr.slice().sort((a, b) => a - b);
+  const index = (sorted.length - 1) * p;
+  const lower = Math.floor(index);
+  const upper = lower + 1;
+  const weight = index % 1;
 
-    if (upper >= sorted.length) return sorted[lower];
-    return sorted[lower] * (1 - weight) + sorted[upper] * weight;
+  if (upper >= sorted.length) return sorted[lower];
+  return sorted[lower] * (1 - weight) + sorted[upper] * weight;
 }

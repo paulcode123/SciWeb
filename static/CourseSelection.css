@@ -1,0 +1,78 @@
+#all{
+display: flex;
+  width: 100%;
+}
+
+#schedule {
+    width: 50%;
+    display: flex;
+    flex-wrap: wrap; /* Allows periods to wrap to the next line as needed */
+    align-content: flex-start;
+  }
+/* Default state of the period boxes */
+.period {
+    background-color: aliceblue; /* Light blue background */
+    border: 2px dotted #888; /* Dotted border */
+    height: 80px; /* Example height, adjust as needed */
+    width: 100%; /* Example width, adjust as needed */
+    display: flex;
+    justify-content: center;
+    /* center horizontally on page */
+    /* margin-left: auto;
+    margin-right: auto; */
+    /* add 5px of vertical spacing between elements */
+    margin-bottom: 5px;
+    align-items: center;
+    text-align: center;
+    color: #888; /* Text color */
+    font-style: italic;
+    transition: background-color 0.3s ease; /* Smooth background color transition */
+  }
+  
+  /* Style when dragging a class over */
+  .period.dragover {
+    background-color: #90ee90; /* Light green background */
+    color: #000; /* Change text color to black or any as needed */
+  }
+  
+  /* Optional: Style for the text to ensure it stays centered and readable if the box size changes */
+  .period::before {
+    /* content: "Drop class here"; */
+    display: block;
+  }
+
+
+
+
+  /* Container for draggable classes */
+#classes {
+    width: 50%;
+    /* Style as needed, e.g., a background color, padding, etc. */
+  }
+  
+  /* Style for draggable classes */
+  #classes > div {
+    cursor: grab;
+    margin: 10px; /* Space between classes */
+    /* Additional styling for your draggable classes */
+  }
+
+  .course-item{
+    background-color: #f9f9f9;
+    width:100px;
+    /* align text in center of div */
+    text-align: center;
+    padding: 1px;
+    margin-bottom: 5px;
+    margin-left:50px;
+    border-radius: 5px;
+  }
+  
+  /* styles for search bar */
+  #search{
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+  }

@@ -1,79 +1,89 @@
 
-    /* Adjust the size of the container as per your requirements */
-    main {
-        background-color: #000; /* Set the background color to black */
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        color: #FFF; /* Set the default text color to white for contrast */
-        font-family: 'Arial', sans-serif; /* Optional: Set a default font */
-    }
-    
-    .presentation-container {
-      width: 100px;
-      height: 80px;
-    }
-    .dim-on-scroll {
-            transition: opacity 0.5s ease-out;
-            width: 100%;
-            height: auto;
-        }
-        .image-container {
-            position: relative;
-            display: inline-block; /* Or 'block' depending on layout */
-            width: 100%;
-            height: auto;
-        }
+/* Adjust the size of the container as per your requirements */
+main {
+background-color: #000; /* Set the background color to black */
+margin: 0;
+padding: 0;
+width: 100%;
+height: 100%;
+color: #FFF; /* Set the default text color to white for contrast */
+font-family: 'Arial', sans-serif; /* Optional: Set a default font */
+}
 
-        img {
-            width: 100%;
-            height: auto;
-            display: block; /* Remove extra space below the image */
-        }
+.presentation-container {
+width: 100px;
+height: 80px;
+}
+.dim-on-scroll {
+    transition: opacity 0.5s ease-out;
+    width: 100%;
+    height: auto;
+}
+.image-container {
+    position: relative;
+    display: inline-block; /* Or 'block' depending on layout */
+    width: 100%;
+    height: auto;
+}
 
-        .overlay-content {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            display: flex;
-            flex-direction: column; /* Stack content vertically */
-            justify-content: center; /* Center the content vertically */
-            align-items: center; /* Center the content horizontally */
-            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
-            padding: 10px;
-        }
-        
-        .button-row {
-            display: flex;
-            justify-content: space-evenly; /* Evenly space the buttons within each row */
-            width: 100%; /* Take up the full width of the overlay-content */
-            margin: 50px 0; /* Add some vertical space between the rows */
-        }
-        
-        button {
-            padding: 15px 30px;
-            font-size: 1rem;
-            font-family: 'Arial', sans-serif;
-            color: #FFFBEA; /* Pale yellow text color for contrast and readability */
-            background-color: #FFA500; /* A soft orange background color for the buttons */
-            border: none;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
-            transition: all 0.3s ease; /* Smooth transition for hover effects */
-        }
-        
-        button:hover {
-            background-color: #E69500; /* A darker shade of orange for the hover state */
-            color: #FFF; /* Pure white text color for the hover state */
-        }
+img {
+    width: 100%;
+    height: auto;
+    display: block; /* Remove extra space below the image */
+}
 
-        #msnText {
-            font-family: 'Courier New', Courier, monospace;
-    border-right: 3px solid;
-    overflow: hidden;
-        }
+.overlay-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column; /* Stack content vertically */
+    justify-content: center; /* Center the content vertically */
+    align-items: center; /* Center the content horizontally */
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+    padding: 10px;
+}
 
-        
+.button-row {
+    display: flex;
+    justify-content: space-evenly; /* Evenly space the buttons within each row */
+    width: 100%; /* Take up the full width of the overlay-content */
+    margin: 50px 0; /* Add some vertical space between the rows */
+}
+
+button {
+    padding: 15px 30px;
+    font-size: 1rem;
+    font-family: 'Arial', sans-serif;
+    color: #FFFBEA; /* Pale yellow text color for contrast and readability */
+    background-color: #FFA500; /* A soft orange background color for the buttons */
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
+    transition: all 0.3s ease; /* Smooth transition for hover effects */
+}
+
+button:hover {
+    background-color: #E69500; /* A darker shade of orange for the hover state */
+    color: #FFF; /* Pure white text color for the hover state */
+}
+
+#msnText {
+    font-family: 'Courier New', Courier, monospace;
+border-right: 3px solid;
+overflow: hidden;
+}
+
+#GetStarted {
+    background-color: green;
+    border: none;
+    padding: 10px;
+}
+/* on hover turn black with a white border and text */
+#GetStarted:hover {
+    background-color: black;
+    color: white;
+    border: 1px solid white;
+}

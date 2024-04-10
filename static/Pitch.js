@@ -57,7 +57,10 @@ observer.observe(document.getElementById('swbVid'));
   imageb.style.opacity = opacity;
   const buttons = document.querySelectorAll('main button');
 
-
+// add event listener to button with id="GetStarted" to link to "/GetStart" page when clicked
+document.getElementById('GetStarted').addEventListener('click', function() {
+    window.location.href = "/GetStart";
+});
 
 
 // Iterate over all buttons and set their opacity
@@ -132,4 +135,4 @@ buttons.forEach(button => {
         window.scrollTo(0, 0);
         observer2.observe(typingText);
         document.getElementById('loadingWheel').style.display = "none";
-    }, 7000); // 2000 milliseconds = 2 seconds
+    }, 2000); // 2000 milliseconds = 2 seconds

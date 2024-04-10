@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
-<link rel="stylesheet" href="static/HomePage.css">
+    <link rel="stylesheet" href="static/CourseSelection.css">
 <link rel="stylesheet" href="static/navbar.css">
 
 <head>
-  <title>SciWeb Home</title>
+  <title>SciWeb Course Selection</title>
   <link rel="icon" href="static/media/favicon.png" type="image/x-icon">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,7 +13,7 @@
 
 <body>
   <ul class="navbar">
-    <li><a href="#">Home</a></li>
+    <li><a href="/">Home</a></li>
     <li class="dropdown">
       <button class="dropdown-btn">Achieve</button>
       <div class="dropdown-content">
@@ -51,32 +51,33 @@
     <li><a href="/Login" id="profile">Login</a></li>
   </ul>
   <main>
-    <div class="container">
-      <h1> Welcome To SciWeb</h1>
-      <h5>A Data-Driven Approach to Academics, built for BxSci</h5>
- 
-    
-      
-      
-    <h4>Go to</h4>
-    <button class="btn" id="scrolltodash">Dashboard</button>
-    <h4>or see</h4>
-    <a href="/Pitch">
-  <button class="btn">About Us</button>
-</a>
-<br><br><br><br><br>
-<section id="dashboard">
-<h2>This is the dashboard</h2>
-<br>
-<h3>Recent Messages</h3>
-<div id="recent_messages"></div>
-</section>
-  
+    <h1>Course Selection</h1>
+    <br><br>
+    <div id="all">
+    <div id="schedule">
+    <div id="per1" class="period">Period 1: Drop Class Here</div>
+    <div id="per2" class="period">Period 2: Drop Class Here</div>
+    <div id="per3" class="period">Period 3: Drop Class Here</div>
+    <div id="per4" class="period">Period 4: Drop Class Here</div>
+    <div id="per5" class="period">Period 5: Drop Class Here</div>
+    <div id="per6" class="period">Period 6: Drop Class Here</div>
+    <div id="per7" class="period">Period 7: Drop Class Here</div>
+    <div id="per8" class="period">Period 8: Drop Class Here</div>
+    <div id="per9" class="period">Period 9: Drop Class Here</div>
+</div>
+    <div id="classes">
+        <input id="search" type="text" placeholder="Search for classes...">
+        <p>   Search Results</p>
+        <div id="searchResults"></div>
+        <p>   Recommended</p>
+        <div id="classList"></div>
+    </div>
 </div>
   </main>
   
 <script src="/static/user_data.js"></script>
-<script src="/static/Home.js"></script>
+<script src="/static/CourseSelection.js"></script>
+
 
 </body>
 

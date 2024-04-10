@@ -1,7 +1,10 @@
 from database import get_data
+from flask import session
 import datetime
 import numpy as np
 import json
+import ast
+
 
 #filter grades for those matching user osis and classes among those being graphed
 def filter_grades(grades, user_data, classes):
@@ -229,3 +232,47 @@ def get_grade_points(grades, user_data, classes):
     
     grade_points.append([date, score, relative_weight, grade['name']])
   return grade_points
+
+def make_category_groups(class_data):
+  from main import get_insights
+  #Get all categories across all classes
+  categories = []
+  for class_info in class_data:
+    categories.extend(json.loads(class_info['categories'].lower()))
+  #remove every other element of categories, starting with the one at index 1
+  categories = categories[::2]
+
+  prompt = "For each category given, sort it into the group that is the best match: Assessments, Midyear/Final, Participation, or Homework. Return only an array of form {'Assessments': [component1, component2, ...], ...}:"+str(categories)
+  full_prompt = [{"role":"system", "content": prompt}]
+  response = get_insights(full_prompt)
+  # print(response)
+  response = response.replace("\n", "")
+  response = response.replace("    ", " ")
+  response = response.replace("{ ", "{")
+  try:
+    response = ast.literal_eval(response)
+  except:
+    print("Error: response not in correct format", response)
+    return []
+  #get keys of response
+  grouped_categories = list(response.keys())
+  session['category_groups'] = response
+  return grouped_categories
+  
+def decode_category_groups(category_groups):
+  if category_groups[1] == "All":
+    # print("dcg exit")
+    return category_groups
+  #filter elements of category_groups for only those with an uppercase first letter
+  category_names = [category[5:] for category in category_groups if category[:5]=="[CAT]"]
+  components = [category for category in category_groups if category[:5]!="[CAT]"]
+  
+  #replace each category group name with it's components
+  for category in category_names:
+    c = session['category_groups'][category]
+    print("c", c)
+    components.extend(c)
+
+  print("input", category_groups, "components", components)
+  return components
+  

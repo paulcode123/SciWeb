@@ -1,7 +1,7 @@
 # Import necessary libraries
 
 # Flask is a web framework for Python that allows backend-frontend communication
-from flask import Flask, render_template, request, session
+from flask import Flask, render_template, request, session, redirect, url_for
 # json is a library for parsing and creating JSON data
 import json
 # requests is a library for getting info from the web
@@ -16,7 +16,8 @@ from googleapiclient.discovery import build
 
 # Get functions from other files
 from database import get_data, post_data, update_data, delete_data, download_file, upload_file
-from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades
+from classroom import init_oauth, oauth2callback, list_courses
+from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups
 from goals import calculate_goal_progress, get_goals
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades
 
@@ -117,6 +118,10 @@ def getstart():
 def assignments():
   return render_template('Assignments.html')
 
+@app.route('/CourseSelection')
+def course_selection():
+  return render_template('CourseSelection.html')
+
 # The following routes are pages for specific classes and assignments
 @app.route('/class/<classurl>')
 def class_page(classurl):
@@ -203,7 +208,16 @@ def Jupiter():
   grades = jupapi_output_to_grades(classes, session, sheetdb_url, allow_demo_change)
   return json.dumps(grades)
 
+@app.route('/init_oauth', methods=['POST', 'GET'])
+def init_oauth_handler():
+  response = init_oauth()
+  return response
 
+@app.route('/oauth2callback', methods=['GET'])
+def oauth2callback_handler():
+  token = oauth2callback()
+  print("session", session['credentials'])
+  return redirect(url_for('assignments'))
 # This function is called from many JS files to get data from specific sheets
 # The requested sheets are passed in as a list: eg. "Grades, Classes"
 # It returns the data from the requested sheet
@@ -276,6 +290,7 @@ def get_insights_ga():
 def post_ga_grades():
   data = request.json
   classes = data['classes']
+  classes = decode_category_groups(classes)
   print("specificity", data['specificity'])
   specificity = int(data['specificity'])
   # Get User, Class, and Grade data
@@ -307,6 +322,21 @@ def post_ga_grades():
   # Return the response data
   return json.dumps(response_data)
 
+@app.route('/GAsetup', methods=['POST'])
+def GA_setup():
+  classes = get_data("Classes")
+  #filter classes for the user's osis
+  classes = [item for item in classes if str(session['user_data']['osis']) in item['OSIS']]
+  categories = make_category_groups(classes)
+  
+  return json.dumps({"Classes": classes, "categories": categories})
+
+@app.route('/get-gclasses', methods=['POST'])
+def get_gclasses():
+  print("in get gclasses")
+  classes = list_courses()
+  print("classes", classes)
+  return json.dumps(classes)
 
 # Post grades entered in the Enter Grades page to the Grades sheet
 @app.route('/post-grades', methods=['POST'])
