@@ -41,6 +41,23 @@ display: flex;
     display: block;
   }
 
+  .scheduledPeriod{
+    border: 2px dotted #888; /* Dotted border */
+    height: 80px; /* Example height, adjust as needed */
+    width: 100%; /* Example width, adjust as needed */
+    display: flex;
+    justify-content: center;
+    margin-bottom: 5px;
+    align-items: center;
+    position: relative;
+    text-align: center;
+    color: black; /* Text color */
+    font-style: normal;
+    font-family: Arial;
+    font-size: 20px;
+    transition: background-color 0.3s ease; /* Smooth background color transition */
+  }
+
 
 
 
@@ -60,6 +77,7 @@ display: flex;
   .course-item{
     background-color: #f9f9f9;
     width:100px;
+    position: relative;
     /* align text in center of div */
     text-align: center;
     padding: 1px;
@@ -76,3 +94,34 @@ display: flex;
     border-radius: 5px;
     border: 1px solid #ccc;
   }
+
+  .clear{
+    /* make background transparent */
+    background-color: transparent;
+    /* remove padding */
+    padding: 0;
+    /* set font size */
+    font-size: 15px;
+    /* set cursor to pointer */
+    cursor: pointer;
+    /* remove border */
+    border: none;
+    position: absolute;
+    right: 10px;
+
+  }
+
+  .info-button {
+    position: absolute;
+    background-color: transparent;
+    top: 0;
+    right: 0;
+    cursor: pointer;
+    /* put it in a circular boarder */
+    border-radius: 50%;
+    /* set the size of the button */
+    width: 10px;
+    height: 20px;
+    /* make the text blue */
+    color: blue;
+}
