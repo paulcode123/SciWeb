@@ -1,0 +1,24 @@
+/* Main section styles */
+main {
+    margin-top: 100px; /* Space for the fixed header */
+    padding: 50px;
+    background-image: url('Spider.png');
+    background-repeat: repeat; /* Repeat the background image */
+    background-size: 150px; /* Increase the size of the background image */
+    /* text-align: center; /* Center the text */
+    font-family: 'Roboto', sans-serif;
+    height: 100vh; /* Set height to 100% of the viewport height */
+    display: flex; /* Use flexbox to center content vertically */
+    flex-direction: column; /* Arrange content in a column */
+    justify-content: center; /* Center vertically */
+  }
+
+h1 {
+  text-align: center;
+}
+
+section {
+  padding-left: 200px;
+  padding-right: 200px;
+  line-height: 1.5;
+}
