@@ -1,7 +1,7 @@
 # Import necessary libraries
 
 # Flask is a web framework for Python that allows backend-frontend communication
-from flask import Flask, render_template, request, session
+from flask import Flask, render_template, request, session, jsonify
 # json is a library for parsing and creating JSON data
 import json
 # requests is a library for getting info from the web
@@ -12,7 +12,6 @@ import datetime
 import re
 # googleapiclient is a library for working with Google APIs(Getting data from Google Sheets in this case)
 from googleapiclient.discovery import build
-
 
 # Get functions from other files
 from database import get_data, post_data, update_data, delete_data, download_file, upload_file
@@ -333,6 +332,22 @@ def get_impact():
   total_points = sum([int(grade['value']) for grade in category_grades])
   print("total_points", total_points)
   return json.dumps({"current_grade": current_grade, "total_points": total_points, "category_weight": weights[data['class'].lower()][data['category'].lower()]})
+
+@app.route('/api/remove-student', methods=['POST'])
+def remove_student():
+    data = request.json
+    sheet = data.get('sheet')
+    row_val = data.get('row_val')
+    row_name = data.get('row_name')
+    
+    success = delete_data("Classes", row_val, "id", session, sheetdb_url, allow_demo_change)
+
+    if success:
+        # Respond with a success message
+        return jsonify(success=True, message="Student removed successfully"), 200
+    else:
+        # Respond with an error message
+        return jsonify(success=False, message="Could not remove the student"), 400
 
 @app.route('/get-file', methods=['POST'])
 def get_file():

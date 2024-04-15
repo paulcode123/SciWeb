@@ -4,7 +4,6 @@
 <link rel="stylesheet" href="/static/chatBox.css">
 <link rel="stylesheet" href="/static/navbar.css">
 <head>
-  
     <title>SciWeb {{ class_name }}</title>
     <link rel="icon" href="/static/media/favicon.png" type="image/x-icon">
 </head>
@@ -84,14 +83,10 @@
       <input type="text" id="message-input" placeholder="Type your message...">
       <button id="clear">❌</button>
       <button id="send-button">Send</button>
-      <input type="file" id="upload" style="display: none;">
-      <label for="upload" id="uploadLabel">📁</label>
-      
-    </div>
-    <img scr="" id="testimg">
-    <!-- Add any additional HTML content here -->
-  
-  
+      <button onclick="leaveClass()">Leave Class</button>
+
+      <!-- Link to your JavaScript file where leaveClass function is defined -->
+  </div>
   <script src="/static/user_data.js"></script>
   <script src="/static/class.js"></script>
   <script src="/static/chatBox.js"></script>
