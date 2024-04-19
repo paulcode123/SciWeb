@@ -164,15 +164,9 @@ function element_click(node){
 }
 
 //get data of preexisting diagram and add element properties
-fetch('/notebook', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ data: window.location.href.slice(-13, -9) })
-})
-.then(response => response.json())
-.then(rawdata => {
+async function main(){
+const rawdata = await fetchRequest('/notebook', {data: window.location.href.slice(-13, -9)})
+
   
   //get raw data
   insights = rawdata['insights']
@@ -281,12 +275,9 @@ lines.forEach(line => {
 });
   }
   document.getElementById('loadingWheel').style.display = "none";   
-})
-.catch(error => {
-  console.error('An error occurred in notebook.js:' +error);
-});
+}
 
-
+main()
 
 
 
@@ -454,27 +445,17 @@ function get_children(parent, txts) {
 }
 
 
-function postNotebook(){
+async function postNotebook(){
   var id = window.location.href.slice(-13, -9);
   //var data = [section_name, text_box_content, =, ..., [subsection]]
   var empty = [];
   var text_data = get_children(container, empty)
   console.log(text_data)
   data = {'data': {'classID': id, 'innerHTML': container.innerHTML, 'text': text_data}}
-  fetch('/post-notebook', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(data)
-})
-.then(response => response.text())
-.then(result => {
+  const result = await fetchRequest('/post-notebook', data)
+  
     console.log(result)
-})
-.catch(error => {
-    console.log('An error occurred:', error);
-});
+
 }
 
   const insightContainer = document.getElementById("insights_container");

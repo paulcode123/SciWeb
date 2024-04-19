@@ -10,24 +10,14 @@ var ip;
 
 
 
-function send_data(userId) {
+async function send_data(userId) {
 console.log(userId);
 
-fetch('/home-ip', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
+data = await fetchRequest('/home-ip', userId)
 
-  body: userId
-})
-  .then(response => response.json())
-  .then(data => {
-    console.log(data["Name"])
-    set_data(data['Name'])
-  })
+console.log(data["Name"])
+set_data(data['Name'])
 }
-
 
 function get_ip(){
 

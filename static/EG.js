@@ -12,27 +12,19 @@ const Pullbutton = document.querySelector('#Jupull');
 //add event listener to the pull button
 Pullbutton.addEventListener('click', pullfromJupiter);
 
-function pullfromJupiter(){
+async function pullfromJupiter(){
   console.log("pulling from Jupiter")
   // make loading wheel visible
   document.getElementById('loadingWheel').style.visibility = "visible";
   const osis = document.getElementById('osis').value;
   const password = document.getElementById('password').value;
   //Send to python with fetch request
-  fetch('/jupiter', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({"osis": osis, "password": password})
-})
-.then(response => response.json())
-.then(data => {
+  const data = await fetchRequest('/jupiter', {"osis": osis, "password": password});
+  
   console.log("got response")
   grades = data;
   createGradesTable(grades);
   document.getElementById('loadingWheel').style.visibility = "hidden";
-})
 }
 
 //When the user selects a class, update the category dropdown with the categories for that class
@@ -150,21 +142,8 @@ for (let i = 0; i < pasted.length; i += 2) {
 
 
 
-function post_grades(grades){
-  fetch('/post-grades', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(grades)
-})
-.then(response => response.text())
-.then(result => {
-    console.log(result);  // Log the response from Python
-})
-.catch(error => {
-    console.log('An error occurred:', error);
-});
+async function post_grades(grades){
+  await fetchRequest('/post-grades', grades);
 }
 
 
@@ -331,38 +310,18 @@ function getPropertyByIndex(index) {
 }
 // Create the grades table
 
-function update_grades(id, grades){
-  fetch('/update-grades', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({"grades":grades, "rowid": id})
-})
-.then(response => response.text())
-.then(result => {
-    console.log(result);  // Log the response from Python
-})
-.catch(error => {
-    console.log('An error occurred:', error);
-});
+async function update_grades(id, grades){
+  await fetchRequest('/update-grades', {"grades":grades, "rowid": id});
 }
 
 // add event listener
 document.getElementById('DeleteGrades').addEventListener('click', DeleteGrades);
-function DeleteGrades(){
-  fetch('/delete-grades', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({"osis": osis})
-})
-.then(response => response.text())
-.then(result => {
+async function DeleteGrades(){
+  const result = await fetchRequest('/delete-grades', {"osis": osis});
+  
     // hide button
     document.getElementById('DeleteGrades').style.visibility = "hidden";
     // remove grades from table
     document.getElementById('gradesBody').innerHTML = '';
-})
+
 }

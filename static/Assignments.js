@@ -1,29 +1,29 @@
 
 //add event lister to button with id=authorizeGclass to redirect to /init_oauth
-document.getElementById('authorizeGclass').addEventListener('click', function() {
-  window.location.href = "/init_oauth";
-});
+// document.getElementById('authorizeGclass').addEventListener('click', function() {
+//   window.location.href = "/init_oauth";
+// });
 
 //create a fetch request to /get-gclasses to get the user's classes from google classroom, then log them to the console
-document.getElementById('getGclasses').addEventListener('click', function() {
-  fetch('/get-gclasses', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      data: {"data":"none"}
+// document.getElementById('getGclasses').addEventListener('click', function() {
+//   fetch('/get-gclasses', {
+//     method: 'POST',
+//     headers: {
+//         'Content-Type': 'application/json'
+//     },
+//     body: JSON.stringify({
+//       data: {"data":"none"}
       
-    })
-})
-  .then(response => response.json())
-  .then(data => {
-    console.log(data);
-  })
-  .catch(error => {
-    console.log('Assignments.js: An error occurred:' +error);
-  });
-});
+//     })
+// })
+//   .then(response => response.json())
+//   .then(data => {
+//     console.log(data);
+//   })
+//   .catch(error => {
+//     console.log('Assignments.js: An error occurred:' +error);
+//   });
+// });
 
 //add the assignments to the page
 function display_assignments(assignmentList, classList){
@@ -49,7 +49,7 @@ console.log(in_user_classes)
       assignmentItem.innerHTML = `
         <h3>Due ${assignmentData.due}</h3>
         <p>Class ${class_name}
-        <p>Type: ${assignmentData.categories}</p>
+        <p>Type: ${assignmentData.category}</p>
         <p>Name: ${assignmentData.name}</p>
       `;
       //add an event listener to each assignment div so that when the user clicks on it, they are taken to the assignment page
@@ -65,16 +65,9 @@ console.log(in_user_classes)
 
 
 //fetch the assignments from the database
-function get_assignment(){
-  fetch('/data', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ data: "Assignments, FILTERED Classes" })
-})
-.then(response => response.json())
-.then(data => {
+async function get_assignment(){
+  var data = await fetchRequest('/data', { data: "Assignments, FILTERED Classes" })
+  
   
   
   assignmentList = data['Assignments']
@@ -83,11 +76,6 @@ function get_assignment(){
   display_assignments(assignmentList, classList)
   document.getElementById('loadingWheel').style.display = "none";
   
-  
-})
-.catch(error => {
-  console.log('Assignments.js: An error occurred:' +error);
-});
 }
 get_assignment()
 

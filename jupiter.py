@@ -70,8 +70,8 @@ def jupapi_output_to_grades(data, session, sheetdb_url, allow_demo_change):
   osis_list = [str(grade['OSIS']) for grade in grades_data]
   # If the user's osis is already in the osis column, update, otherwise post
   if str(session['user_data']['osis']) in osis_list:
-    update_data(session['user_data']['osis'], "OSIS", grades_obj, "GradeData", session, sheetdb_url, allow_demo_change)
-  post_data("GradeData", grades_obj, sheetdb_url, allow_demo_change)
+    update_data(session['user_data']['osis'], "OSIS", grades_obj, "GradeData")
+  post_data("GradeData", grades_obj)
   print(len(grades))
   return grades
   
@@ -95,9 +95,11 @@ def jupapi_output_to_classes(data, session, sheetdb_url, allow_demo_change):
     categories = []
     for cat in raw_cat:
       categories.extend([cat["name"], cat["weight"]*100])
+    
     # if class_name and teacher match a class in class_data, update the class with the user's osis
     for class_info in class_data:
-      if not(class_info["name"] == class_name and class_info["teacher"] == teacher and class_info["schedule"] == schedule):
+      # check if the class exists in the db
+      if not("name" in class_info and class_info["name"] == class_name and class_info["teacher"] == teacher and class_info["schedule"] == schedule):
         continue
       if str(session['user_data']['osis']) in class_info["OSIS"]:
         class_exists = True
@@ -116,11 +118,9 @@ def jupapi_output_to_classes(data, session, sheetdb_url, allow_demo_change):
       #generate 4 digit random number
       id = random.randint(1000, 9999)
       class_info = {"period": "", "teacher": teacher, "name": class_name, "OSIS": session['user_data']['osis'], "assignments": "", "description": "", "id": id, "schedule": c["schedule"], "categories": categories}
-      to_post.append(class_info)
+      post_data("Classes", class_info)
 
-  # if to_post is not empty...
-  if to_post:
-    post_data("Classes", to_post, sheetdb_url, allow_demo_change)
+  
     
   
 
@@ -129,19 +129,22 @@ def get_grades(session):
   #filter for osis
   has_grades = False
   for grade in data:
-    print(session['user_data']['osis'], grade['OSIS'])
+    
     if str(grade['OSIS']) == str(session['user_data']['osis']):
       line = grade
       has_grades = True
   
   if not has_grades:
     return {"date": "1/1/2021", "score": 0, "value": 0, "class": "No grades entered", "category": "No grades entered", "name": "None"}
-
+  
   grades = []
-  for i in range(1, len(line)):
+  # get how many elements are in the dictionary
+  num_elements = len(line)
+  
+  for i in range(1, num_elements-1):
     cell = line[str(i)]
     #convert from string to list of dictionaries
-    cell = json.loads(cell)
+    # cell = json.loads(cell)
     grades.extend(cell)
   #convert date of each grade from format m/dd to mm/dd/yyyy
   
@@ -151,7 +154,7 @@ def get_grades(session):
     date = str(grade['date'])
     
     #If date="None" or score is of type Nonetype
-    if date == "None" or type(grade['score']) == type(None):
+    if date == "None" or date=="" or type(grade['score']) == type(None):
       continue
     
     date = convert_date(date)
@@ -165,6 +168,8 @@ def get_grades(session):
 def convert_date(date_str):
     # Current date
     current_date = datetime.datetime.now()
+    # add 5 days to the current date
+    current_date = current_date + datetime.timedelta(days=5)
     current_year = current_date.year
     
     # Parse the input date string and add the current year

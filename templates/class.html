@@ -48,10 +48,16 @@
     <li><a href="/Login" id="profile">Login</a></li>
   </ul>
   <div id="loadingWheel"></div>
+  <div id="head">
     <h1>Welcome to {{ class_name }}</h1>
     <h3 id="description"></h3>
     <div id="user-list"></div>
     <div id="assignmentList"></div>
+    <br>
+    </div>
+    <!-- create input image upload element with a label "🖼️" -->
+    <input type="file" id="imgupload" style="display: none;">
+    <label for="imgupload" id="uploadLabel">🖼️</label>
     <br>
   <button id="createBtn">Create Assignment</button>
 
@@ -90,8 +96,11 @@
     </div>
     <img scr="" id="testimg">
     <!-- Add any additional HTML content here -->
-  
-  
+  <script>
+    // Set class_img, passed into the template from the server, as a js variable
+    var class_img_b64 = "{{ class_img }}";
+  </script>
+  <script src="/static/util.js"></script>
   <script src="/static/user_data.js"></script>
   <script src="/static/class.js"></script>
   <script src="/static/chatBox.js"></script>

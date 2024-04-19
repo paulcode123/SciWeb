@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html>
-<link rel="stylesheet" href="/static/chatBox.css">
 <link rel="stylesheet" href="/static/navbar.css">
 <head>
   
-    <title>SciWeb {{ assignment_name }}</title>
+    <title>SciWeb {{ courseName }} Reviews</title>
     <link rel="icon" href="/static/media/favicon.png" type="image/x-icon">
 </head>
 <body>
@@ -47,46 +46,16 @@
     <li><a href="/Login" id="profile">Login</a></li>
   </ul>
   <!-- <div id="loadingWheel"></div> -->
-    <h1>{{ assignment_name }} Assignment Page</h1>
-    <h3 id="description"></h3>
-    <p id="class-name"></p>
-    <p id="due-date"></p>
-    <p id="points"></p>
-    <p id="categories"></p>
-
-  <br>
-  <h2>Assignment Score modeler:</h2>
-    <input type="range" id="slider" min="40" max="100" value="50">
-    <p id="slider-value">If score is: 90</p>
-    <p id="category-impact">+0.0%</p>
-    <p id="class-impact">+0.0%</p>
-
-    <div id="chat-box">
-    <button id="refresh-chat">🔄</button>
-    <ul id="message-list"></ul>
-    <div id="image-container"></div>
-    <div id="input-container">
-      <input type="text" id="message-input" placeholder="Type your message...">
-      <button id="clear">❌</button>
-      <button id="send-button">Send</button>
-      <input type="file" id="upload" style="display: none;">
-      <label for="upload" id="uploadLabel">📁</label>
-    </div>
-    <div id="loadingWheel"></div>
-  
+    <h1>{{ courseName }} Reviews</h1>
     
-    <!-- Add any additional HTML content here -->
   
-  <script>
+  <script type="text/javascript">
 
-var assignmentData = JSON.parse('{{ assignment_data|tojson|safe }}');
-var locationData = assignmentData;
+var courseData = '{{ courseData|tojson|safe }}';
 
   </script>
   <script src="/static/util.js"></script>
   <script src="/static/user_data.js"></script>
-  <script src="/static/chatBox.js"></script>
-  <script src="/static/assignment.js"></script>
   
 </body>
 </html>

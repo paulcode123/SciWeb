@@ -84,55 +84,35 @@ assignmentForm.addEventListener('submit', (e) => {
 function post_assignment(data){
   var new_row = classData
   new_row['assignments'] = new_row['assignments'] + data['id']
-  fetch('/post-assignment', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      data: {"data":data, "classid": classData['id'], "newrow": new_row}
-      
-    })
-})
-.then(response => response.json())
-.then(data => {
+  var a = fetchRequest('/post-assignment', {data: data, classid: classData['id'], newrow: new_row});
   location.reload();
-  })
 }
 
 
 
-function get_assignment(){
-
-  fetch('/data', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ data: "Assignments, FILTERED Classes" })
-})
-.then(response => response.json())
-.then(data => {
-  
+async function get_assignment(){
+  var data = await fetchRequest('/data', {data: "Assignments, FILTERED Classes"});
   var classId = window.location.href.slice(-4);
   var assignmentList = data['Assignments']
   classData = data['Classes'];
-  console.log(classId);
-  classData = classData.find(item => item.id === classId);
+  console.log(data)
+  classData = classData.find(item => item.id == classId);
   
   display_classes(assignmentList, classData);
   display_NB_btn(classData);
   add_user_bubbles(classData);
   optionSelected(classData);
+  setImageEl(classData)
+  // if classData['img'] != "", set the background image of the div to the base64 image string
+  if(class_img_b64 != ""){
+    // use the base64 image string to set the background image of the div
+    document.getElementById('head').style.backgroundImage = "url('data:image/png;base64," + class_img_b64 + "')";
+  }
   document.getElementById('loadingWheel').style.display = "none";
-})
-.catch(error => {
-  console.error('An error occurred in class.js :' +error);
-});
 }
 get_assignment()
 
-function display_classes(assignmentList, classList){
+function display_classes(assignmentList, classData){
   const assignmentListContainer = document.getElementById('assignmentList');
     assignmentList.forEach(assignmentData => {
       if(!(assignmentData['class']==classData['id'])){return;}
@@ -162,8 +142,7 @@ function optionSelected(classes){
   var categories = classes['categories']
   
   if(categories){
-    
-  categories = JSON.parse(categories).filter(item => typeof item === 'string');
+    categories = categories.filter(item => typeof item === 'string');
     
   var categoryElement = document.getElementById("assignmentType")
   // Remove all existing options
@@ -180,4 +159,29 @@ categoryElement.appendChild(newOption);
   }
   
   }
+}
+
+async function setImageEl(classes){
+// add event listener to image upload input element with id="imgupload" to send a fetch request to /upload-file route
+document.getElementById('imgupload').addEventListener('change', async function() {
+  // const formData = new FormData();
+  // convert to Base64 with the getBase64 function
+  var img = await getBase64(this.files[0]);
+  // generate random 8 digit number
+  let id = Math.floor(Math.random() * 90000000) + 10000000;
+  const data = await fetchRequest('/upload-file', {file: img, name: id});
+  
+    console.log(data);
+    updateClassPic(id, classes);
+  
+});
+}
+
+async function updateClassPic(id, classes){
+  class_id = classes['id']
+  classes['img'] = id
+  const data = await fetchRequest('/update_data', {"row_value": class_id, "row_name": "id", "new_value": classes, "sheet": "Classes"});
+    console.log(data);
+    location.reload();
+  
 }

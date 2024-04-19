@@ -36,43 +36,25 @@ const categoryCheckboxes = document.getElementById("categoryCheckboxes");
     });
 
 
-function post_goal(goal){
-  fetch('/post-goal', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({"goal":goal})
-})
-.then(response => response.text())
-.then(result => {
-    console.log(result);  // Log the response from Python
-})
-.catch(error => {
-    console.log('An error occurred:', error);
-});
+async function post_goal(goal){
+  const result = await fetchRequest('/post-goal', {"goal":goal});
+  console.log(result);  // Log the response from Python
 }
 
 // Get the classes for the user
-fetch('/data', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ data: 'FILTERED Classes' })
-})
-.then(response => response.json())
-.then(data => {
-  var rawclasses = data['Classes']
-  const classes = rawclasses.filter(item => item.OSIS.includes(osis));
+async function main(){
+  const data = await fetchRequest('/data', { data: 'FILTERED Classes' });
+
+  var classes = data['Classes']
+  console.log(classes)
   setClassOptions(classes)
   
   document.getElementById("classDropdown").addEventListener("change", () => {optionSelected(classes)});
   document.getElementById('loadingWheel').style.display = "none";  
-})
-.catch(error => {
-  console.log('An error occurred:' +error);
-});
+
+
+}
+main()
 
 // Set the options for the class dropdown
 function setClassOptions(filteredClasses){

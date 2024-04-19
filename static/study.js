@@ -67,50 +67,34 @@ function userPrompt(){
 }
 
 //get data from py
-function getData(){
-  fetch('/data', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ data: "FILTERED Classes, Name, Notebooks, FILTERED Study" })
-  })
-  .then(response => response.json())
-  .then(data => {
-    classList = data["Classes"];
-    osis = data['Name']['osis'];
-    notebooks = data['Notebooks'];
-    study = data['Study'];
-    //sort classes for user osis
-    console.log(osis);
-    // console.log(classList);
-    const userClasses = classList.filter((item) => item.OSIS.includes(osis));
-    var userStudy = study.filter((item) => item.OSIS.includes(osis));
-    if (userStudy.length != 0){
-      userStudy = userStudy[0]['Q&As'].split("///");
-    }
-    var class_names = userClasses.map((item) => item.name);
-    var class_ids = userClasses.map((item) => item.id);
-    var notebooks = notebooks.filter((item) => class_ids.includes(item.classID));
-    console.log(class_names);
-    main(class_names, class_ids, notebooks, userStudy);
-  })
+async function getData(){
+  data = await fetchRequest('/data', { data: "FILTERED Classes, Name, Notebooks, FILTERED Study" })
+  
+  classList = data["Classes"];
+  osis = data['Name']['osis'];
+  notebooks = data['Notebooks'];
+  study = data['Study'];
+  //sort classes for user osis
+  console.log(osis);
+  // console.log(classList);
+  const userClasses = classList.filter((item) => item.OSIS.includes(osis));
+  var userStudy = study.filter((item) => item.OSIS.includes(osis));
+  if (userStudy.length != 0){
+    userStudy = userStudy[0]['Q&As'].split("///");
+  }
+  var class_names = userClasses.map((item) => item.name);
+  var class_ids = userClasses.map((item) => item.id);
+  var notebooks = notebooks.filter((item) => class_ids.includes(item.classID));
+  console.log(class_names);
+  main(class_names, class_ids, notebooks, userStudy);
+
 }
 
-function updateUserStudy(userStudy){
+async function updateUserStudy(userStudy){
   //updates user study in db
   userStudy = userStudy.join("///");
-  fetch('/updateStudy', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ data: userStudy })
-  })
-  .then(response => response.json())
-  .then(data => {
-    console.log(data);
-  })
+  data = await fetchRequest('/updateStudy', { data: userStudy })
+  console.log(data);
 }
 
 function parseClassResponse(inputElement, divElement, classes){

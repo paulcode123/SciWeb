@@ -28,7 +28,10 @@ var classList = 0;
       // Filter the class list based on the input values
       //get the period, teacher, and name of each class
       const filteredOptions = classList.filter(classData => {
-        const { period, teacher, name} = classData;
+        console.log(classData);
+        var { period, teacher, name} = classData;
+        console.log(period, teacher, name);
+        period = period.toString();
         //return true if the period, teacher, and name of the class match the input values
         return period.includes(periodValue) && teacher.toLowerCase().includes(teacherValue) && name.toLowerCase().includes(nameValue);
       });
@@ -81,7 +84,7 @@ classForm.addEventListener('submit', function(event) {
   var update = 0;
   //for each class in the existing class list, if the period, class, and teacher match the input values, add the user's osis to the class's osis
 for (var i = 0; i < classList.length; i++) {
-  if (classList[i].period === periodInput && classList[i].teacher === teacherInput) {
+  if ((classList[i].period).toString() === periodInput && classList[i].teacher === teacherInput) {
     classList[i].OSIS = classList[i].OSIS + ", " + osis;
     update = classList[i].id; 
     post_classes(classList[i], update);
@@ -130,6 +133,7 @@ parts.forEach(part => {
 function display_classes(classList, user_data){
   const classListContainer = document.getElementById('classList');
     //for each class in the database...
+    console.log(classList)
     classList.forEach(classData => {
       //if the user's osis is not in the class's osis list, skip the class
       if(!((classData.OSIS).includes(user_data['osis']))){return;}
@@ -137,13 +141,16 @@ function display_classes(classList, user_data){
       const classItem = document.createElement('div');
       classItem.classList.add('class-item');
       classItem.innerHTML = `
-        <h3>Period ${classData.period}</h3>
+        <h3>${classData.name}</h3>
         <p>Teacher: ${classData.teacher}</p>
-        <p>Name: ${classData.name}</p>
+        <p>Period ${classData.period}</p>
       `;
       // if the class is clicked, go to the class page
       classItem.addEventListener('click', () => {
-        window.location.href = "/class/" + classData.name + classData.id;
+        // set classname as classData.name with all of the numbers and spaces removed
+        let classname = classData.name.replace(/\s/g, '');
+        classname = classname.replace(/[0-9]/g, '');
+        window.location.href = "/class/" + classname + classData['id'];
       });
       //add the class element to the class list container
       classListContainer.appendChild(classItem);
@@ -155,18 +162,10 @@ function display_classes(classList, user_data){
 setTimeout(() => {
       init_fetch()
     }, 0.1);
-function init_fetch(){
+async function init_fetch(){
   console.log("in init_fetch")
-fetch('/data', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ data: "Classes, Name" }) //get Classes and Name data from the database
-})
-.then(response => response.json())
-.then(data => {
-  
+  const data = await fetchRequest('/data', { data: 'Classes, Name' });
+
   
   classList = data['Classes']
   user_data = data['Name']
@@ -174,30 +173,11 @@ fetch('/data', {
   display_classes(classList, user_data)
   document.getElementById('loadingWheel').style.display = "none";
   
-  
-})
-.catch(error => {
-  console.log('An error occurred:' +error);
-});
 }
 
 //if the user joined or created a class, update the class sheet in the database
-function post_classes(data, update){
-
-  fetch('/post-classes', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      update:update,
-      class: data
-      
-    })
-})
-.then(response => response.json())
-.then(data => {
-  console.log(data);
+async function post_classes(data, update){
+  await fetchRequest('/post-classes', {update:update, class: data});
   location.reload();
-  })
+  
 }

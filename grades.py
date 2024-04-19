@@ -46,10 +46,10 @@ def get_min_max(grades, user_data, classes, extend_to_goals=False, interval=10):
     grades = filter_grades(grades, user_data, classes)
     goals = get_data("Goals")
     print("len(grades)", len(grades), "len goals", len(goals))
-    if len(grades) == 0 or len(goals) == 0:
+    if len(grades) == 0:
         return 0,0,0
     # If min and max dates include goals, then add goal dates to the list of dates
-    if extend_to_goals:
+    if extend_to_goals and len(goals) > 0:
       # This should be changed to only include goals for the classes being graphed
       user_goals = filter_goals(goals, user_data, classes)
       goal_dates = [
@@ -61,7 +61,7 @@ def get_min_max(grades, user_data, classes, extend_to_goals=False, interval=10):
     dates = [
         datetime.datetime.strptime(grade['date'], '%m/%d/%Y').date() for grade in grades
     ]
-    if extend_to_goals:
+    if extend_to_goals and len(goals) > 0:
       dates.extend(goal_dates)  # Include goal dates in the list
 
     if len(dates) == 0:
@@ -87,10 +87,9 @@ def get_weights(classes_data, osis):
     if not str(osis) in class_info['OSIS']:
       continue
     name = class_info['name'].lower()
-    categories_str = class_info['categories'].lower()
+    # Get the categories for the class, lowercase
+    categories = [str(category).lower() for category in class_info['categories']]
     
-    # Parse the JSON-like string into a Python list
-    categories = json.loads(categories_str)
     
     # Create a dictionary to store weights
     weight_dict = {}
@@ -98,7 +97,7 @@ def get_weights(classes_data, osis):
     # Iterate over the list in pairs (category, weight)
     for i in range(0, len(categories), 2):
         category = categories[i]
-        weight = categories[i + 1] / 100.0  # Convert the percentage to a decimal
+        weight = float(categories[i + 1]) / 100.0  # Convert the percentage to a decimal
         
         weight_dict[category.lower()] = weight
     
@@ -238,7 +237,10 @@ def make_category_groups(class_data):
   #Get all categories across all classes
   categories = []
   for class_info in class_data:
-    categories.extend(json.loads(class_info['categories'].lower()))
+    # convert all elements of categories to lowercase
+    cat = [str(category).lower() for category in class_info['categories']]
+
+    categories.extend(cat)
   #remove every other element of categories, starting with the one at index 1
   categories = categories[::2]
 

@@ -4,21 +4,14 @@ var tbody;
 var grades;
 var times;
 
-fetch('/GAsetup', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ data: '' })
-})
-.then(response => response.json())
-.then(data => {
+async function main(){
+  const data = await fetchRequest('/GAsetup', { data: '' });
+
     var classes = data['Classes']
     var categories = data['categories']
-    classes = classes.filter(item => item.OSIS.includes(osis));
     var class_div = document.getElementById("classes")
     var categories_div = document.getElementById("categories")
-
+    console.log(classes)
     for(let x=0;x<classes.length;x++){
       // var child_label = document.createElement("label");
       let text = document.createElement("label");
@@ -63,10 +56,49 @@ for(let x=0;x<categories.length;x++){
       label.appendChild(input);
       categories_div.appendChild(label);
     }
-  })
-.catch(error => {
-  console.error('An error occurred:' +error);
-});
+
+    const progress_data = await fetchRequest('/goals_progress', { data: '' });
+    
+      container_element = document.getElementById("GoalProgressContainer")
+      for (let i = 0; i < progress_data.length; i++) {
+        const goal = progress_data[i];
+        const goalElement = document.createElement("div");
+        goalElement.className = "goal";
+        var dateBar = document.createElement('progress');
+        var gradeBar = document.createElement('progress');
+        var br = document.createElement('br');
+        
+        dateBar.value = parseFloat(goal.percent_time_passed);
+        dateBar.max = 1;
+        
+        gradeBar.value = parseFloat(goal.percent_grade_change);
+        gradeBar.max = 1;
+    
+        // code to round to 1 decimal place: Math.round(num * 10) / 10
+    
+        var title = document.createElement('h3');
+        title.textContent = "Your goal for "+goal.class+" "+goal.category;
+        var datesText = document.createElement('p');
+        datesText.textContent = "Date set: " + goal.date_set+" | Target date: " + goal.goal_date;
+    
+        var gradesText = document.createElement('p');
+        gradesText.textContent = "Grade when set: " + Math.round(goal.grade_when_set*100)/100+" | Target grade: " + goal.goal_grade;
+    
+        var trajectory = document.createElement('p');
+        trajectory.textContent = "Current Trajectory by goal date: " + Math.round(goal.current_grade_trajectory*100)/100;
+    
+        goalElement.appendChild(title);
+        goalElement.appendChild(datesText);
+        goalElement.appendChild(dateBar);
+        goalElement.appendChild(br);
+        goalElement.appendChild(gradesText);
+        goalElement.appendChild(gradeBar);
+        goalElement.appendChild(trajectory);
+        container_element.appendChild(goalElement);
+      }
+      
+  }
+  main()
 setTimeout(function() {
 
   graph_data(["all", "All"], 15);
@@ -240,18 +272,10 @@ document.getElementById('loadingWheel').style.visibility = "hidden";
 
 };
 
-function graph_data(classes, specificity) {
+async function graph_data(classes, specificity) {
   
+const data = await fetchRequest('/grades_over_time', {classes: classes, specificity: specificity});
 
-fetch('/grades_over_time', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({classes: classes, specificity: specificity})
-})
-.then(response => response.json())
-.then(data => {
   
   
   grades = JSON.stringify(data['grade_spread']);
@@ -277,10 +301,7 @@ fetch('/grades_over_time', {
   
   create_graph(grades, times, name, goals, max_date, goal_set_coords, grade_points);
   
-})
-.catch(error => {
-  console.error('An error occurred:' +error);
-});
+
 }
 
 document.getElementById("class-form").addEventListener("submit", function(event) {
@@ -335,70 +356,17 @@ function displayInsights(insights) {
   
 }
 
-fetch('/goals_progress', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ data: '' })
-})
-.then(response => response.json())
-.then(data => {
-  container_element = document.getElementById("GoalProgressContainer")
-  for (let i = 0; i < data.length; i++) {
-    const goal = data[i];
-    const goalElement = document.createElement("div");
-    goalElement.className = "goal";
-    var dateBar = document.createElement('progress');
-    var gradeBar = document.createElement('progress');
-    var br = document.createElement('br');
-    
-    dateBar.value = parseFloat(goal.percent_time_passed);
-    dateBar.max = 1;
-    
-    gradeBar.value = parseFloat(goal.percent_grade_change);
-    gradeBar.max = 1;
 
-    // code to round to 1 decimal place: Math.round(num * 10) / 10
 
-    var title = document.createElement('h3');
-    title.textContent = "Your goal for "+goal.class+" "+goal.category;
-    var datesText = document.createElement('p');
-    datesText.textContent = "Date set: " + goal.date_set+" | Target date: " + goal.goal_date;
-
-    var gradesText = document.createElement('p');
-    gradesText.textContent = "Grade when set: " + Math.round(goal.grade_when_set*100)/100+" | Target grade: " + goal.goal_grade;
-
-    var trajectory = document.createElement('p');
-    trajectory.textContent = "Current Trajectory by goal date: " + Math.round(goal.current_grade_trajectory*100)/100;
-
-    goalElement.appendChild(title);
-    goalElement.appendChild(datesText);
-    goalElement.appendChild(dateBar);
-    goalElement.appendChild(br);
-    goalElement.appendChild(gradesText);
-    goalElement.appendChild(gradeBar);
-    goalElement.appendChild(trajectory);
-    container_element.appendChild(goalElement);
-  }
-  })
-
-  function getInsights(){
-    document.getElementById('loadingWheel').style.visibility = "visible";
-  fetch('/insights', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ data: '' })
-})
-.then(response => response.json())
-.then(data => {
+async function getInsights(){
+  document.getElementById('loadingWheel').style.visibility = "visible";
+  const data = await fetchRequest('/insights', { data: '' });
+  
   
   
   displayInsights(data);
   document.getElementById('loadingWheel').style.visibility = "hidden";
-})
+
   }
 
 

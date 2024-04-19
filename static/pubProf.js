@@ -1,16 +1,6 @@
-function postFriend(data){
-    fetch('/accept-friend', {
-      method: 'POST',
-      headers: {
-          'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(data)
-  })
-  .then(response => response.text())
-  .then(result => {
-      var a = result;  // Log the response from Python
-      
-  })
+async function postFriend(data){
+    await fetchRequest('/post-friend', data)
+    
   }
   function inviteFriend(){
     let location = window.location.href;

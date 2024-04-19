@@ -1,3 +1,5 @@
+
+
 console.log("CourseSelection.js loaded");
 const color_key = {
     'science': 'rgb(255, 99, 132)',
@@ -17,24 +19,20 @@ const color_key = {
 }
 // const categories = ['science', 'math', 'english', 'history', 'language', 'elective', 'lunch', 'free', 'research', 'chem', 'bio', 'physics', 'CS', 'AP']
 //write fetch request to /data for Courses sheet
-fetch('/data', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ data: "Courses" })
-    })
-    .then(response => response.json())
-    .then(data => {
+async function main(){
+    const data = await fetchRequest('/data', { data: "Courses" });
+
         var courses = data['Courses']
+        // if grade is not defined, set it to 404
+        if (typeof grade === 'undefined'){
+            grade = 404
+        }
         display_courses(courses)
         set_event_listeners(courses)
         set_search(courses)
-    })
-    .catch(error => {
-        console.error('An error occurred in Home.js :' +error);
-    });
-
+    
+}
+main()
 //display the courses in the courses container
 function display_courses(courses){
     var courseListContainer = document.getElementById('classList');

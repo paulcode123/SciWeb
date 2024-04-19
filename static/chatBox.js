@@ -135,36 +135,14 @@ inputField.addEventListener('keydown', function(event) {
 
 // receive_messages(['hello', 'world'])
 //post messages to py database
-function post_message(message){
-  
-
-fetch('/post-message', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      data: {"data":message}
-      
-    })
-})
-.then(response => response.json())
-.then(data => {
-  get_messages()
-  })
+async function post_message(message){
+var a = await fetchRequest('/post-message', {data: message});
+await get_messages()
 }
+
 //get messages from py
-function get_messages(){
-  
-  fetch('/data', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ data: "Chat, Users, FILTERED Classes" })
-})
-.then(response => response.json())
-.then(data => {
+async function get_messages(){
+  var data = await fetchRequest('/data', {data: "Chat, Users, FILTERED Classes"});
   
   var messages = data['Chat']
   var users = data['Users']
@@ -172,11 +150,6 @@ function get_messages(){
   
   receive_messages(messages, users);
   return true;
-})
-.catch(error => {
-  console.error('An error occurred in get_messages(), chatBox.js:' +error);
-  return false;
-});
 }
 
 
@@ -215,73 +188,43 @@ function renderImage(image) {
   document.getElementById('image-container').appendChild(img);
 }
 
-async function getBase64(file) {
-  return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file); // Converts the file to Base64
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = error => reject(error);
-  });
-}
 
 // Create function for fetch request to get-file route
-function getFile(fileId) {
+async function getFile(fileId) {
   // Return the fetch promise chain
-  return fetch('/get-file', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ file: fileId })
-  })
-  .then(response => {
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    return response.json();
-  })
-  .then(data => {
-    // Assuming `data.file` is the image or file data you want
-    let file = data.file;
-    let type;
-    // console.log(file.slice(11, 14));
-    if(file.includes('pngbase64')){
-      type = 'png';
-      file = file.replace('dataimage/pngbase64', 'data:image/png;base64,');
-      file = file.slice(0, -1);
-    }
-    else if(file.includes('jpegbase64')){
-      type = 'jpeg';
-      file = file.replace('dataimage/jpegbase64', 'data:image/jpeg;base64,');
-    }
-    else if(file.includes('pdfbase64')){
-      type = 'pdf';
-      file = file.replace('dataapplication/pdfbase64', 'data:application/pdf;base64,');
-    }
-    else{
-      console.log('Error: File type not supported', file);
-    }
-    
-    
-    return [file, type]; // This will be the resolved value of the promise
-  });
+  var response = await fetchRequest('/get-file', {file: fileId});
+  
+  // Assuming `data.file` is the image or file data you want
+  let file = data.file;
+  let type;
+  // console.log(file.slice(11, 14));
+  if(file.includes('pngbase64')){
+    type = 'png';
+    file = file.replace('dataimage/pngbase64', 'data:image/png;base64,');
+    file = file.slice(0, -1);
+  }
+  else if(file.includes('jpegbase64')){
+    type = 'jpeg';
+    file = file.replace('dataimage/jpegbase64', 'data:image/jpeg;base64,');
+  }
+  else if(file.includes('pdfbase64')){
+    type = 'pdf';
+    file = file.replace('dataapplication/pdfbase64', 'data:application/pdf;base64,');
+  }
+  else{
+    console.log('Error: File type not supported', file);
+  }
+  
+  
+  return [file, type]; // This will be the resolved value of the promise
+
 }
 
 
 // Create function for fetch request to upload-file route
-function uploadFile(xfile, id) {
-  fetch('/upload-file', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ file: xfile, name: id })
-  })
-  .then(response => response.json())
-  .then(data => {
-    // Display the image
-    return data;
-  });
+async function uploadFile(xfile, id) {
+  var data = await fetchRequest('/upload-file', {file: xfile, name: id});
+  return data;
 }
 
 function base64ToBlob(base64, type = 'application/octet-stream') {

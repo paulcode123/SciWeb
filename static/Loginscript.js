@@ -46,25 +46,13 @@ form.addEventListener('submit', function(event) {
 
 
 
-function post_login(data){
+async function post_login(data){
+  const result = await fetchRequest('/post-login', data);
   
-  fetch('/post-login', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(data)
-})
-.then(response => response.text())
-.then(result => {
-    var a = result;  // Log the response from Python
-    //redirect to home page: index.hmtl
+  
     window.location.href = "/";
 
-})
-.catch(error => {
-    console.log('An error occurred:', error);
-});
+
 }
 
   

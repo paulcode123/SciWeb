@@ -98,16 +98,10 @@ function get_classes_ids(classes){
 
 
 //Create a fetch request to /data to get Chat, Classes, and Assignments data
+async function main(){
 console.log("fetching data")
-fetch('/data', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ data: "Chat, FILTERED Classes, Assignments" })
-})
-.then(response => response.json())
-.then(data => {
+const data = await fetchRequest('/data', { data: "Chat, FILTERED Classes, Assignments" });
+
   console.log("got data")
   //Store the data in variables
   var messages = data['Chat']
@@ -118,8 +112,5 @@ fetch('/data', {
   show_recent_messages(messages, classes, assignments);
   console.log("done")
   return true;
-})
-.catch(error => {
-  console.error('An error occurred in Home.js: ' +error);
-  return false;
-});
+}
+main();

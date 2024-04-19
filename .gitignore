@@ -1,3 +1,7 @@
 SciWeb_API_secret.json
 api_keys.json
 gclassrm.json
+service_key.json
+static/credentials.json
+# add __pycache__ to .gitignore
+__pycache__/
