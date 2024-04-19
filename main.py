@@ -103,6 +103,10 @@ def classes():
 def getstart():
   return render_template('GetStart.html')
 
+@app.route('/Terms')
+def terms():
+  return render_template('terms.html')
+
 @app.route('/Assignments')
 def assignments():
   return render_template('Assignments.html')
