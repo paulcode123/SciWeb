@@ -235,11 +235,19 @@ def fetch_data():
   # Split the requested sheets into a list
   sheets = sheets.split(", ")
   response = {}
+
   for sheet in sheets:
+    # if trying to get just the user's data, call the get_name function
     if sheet=="Name":
       response[sheet] = get_name()
+    # if trying to get data from sheet, but only rows where OSIS column includes the user's osis
     elif "FILTERED" in sheet:
+      # if session['user_data'] is not defined, throw an error
+      if 'user_data' not in session:
+        return json.dumps({"error": "User data not found"})
+      # get the sheet name without the "FILTERED " prefix
       sheet_name = sheet.replace("FILTERED ", "")
+      # special case for the Grades, since it's not a normal sheet: it must be processed differently
       if sheet_name=="Grades":
         response[sheet_name] = get_grades(session)
       else:
@@ -247,8 +255,6 @@ def fetch_data():
         # if data is of type NoneType, return an empty list
         if data == None:
           return json.dumps({})
-        print("data", data)
-        print("type", type(data))
         if sheet_name=="Friends":
           #send if the user's osis is in the OSIS or targetOSIS of the row
           response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in item['OSIS'] or str(session['user_data']['osis']) in item['targetOSIS']]
@@ -275,6 +281,11 @@ def update_data_route():
   update_data(data['row_value'], data['row_name'], data['data'], data['sheet'])
   return json.dumps({"message": "success"})
 
+@app.route('/delete_data', methods=['POST'])
+def delete_data_route():
+  data = request.json
+  delete_data(data['row_value'], data['row_name'], data['sheet'])
+  return json.dumps({"message": "success"})
 
 @app.route('/goals_progress', methods=['POST'])
 def get_goals_progress():
@@ -608,9 +619,9 @@ def get_insights(prompts):
 }
   insights = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
   insights = insights.json()
-  print("raw insights: "+str(insights))
+  # print("raw insights: "+str(insights))
   insights = insights['choices'][0]['message']['content']
-  print("insights: "+str(insights))
+  # print("insights: "+str(insights))
   return insights
   
 

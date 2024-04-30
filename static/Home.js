@@ -113,4 +113,23 @@ const data = await fetchRequest('/data', { data: "Chat, FILTERED Classes, Assign
   console.log("done")
   return true;
 }
+
+// Register service worker for the app
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/static/service-worker.js').then(function(registration) {
+      // Registration was successful
+      console.log('ServiceWorker registration successful with scope: ', registration.scope);
+    }, function(err) {
+      // registration failed :(
+      console.log('ServiceWorker registration failed: ', err);
+    }).catch(function(err) {
+      console.log(err)
+    });
+  });
+} else {
+  console.log('Service workers are not supported.');
+}
+
+
 main();

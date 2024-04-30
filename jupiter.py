@@ -143,8 +143,10 @@ def get_grades(session):
   
   for i in range(1, num_elements-1):
     cell = line[str(i)]
-    #convert from string to list of dictionaries
-    # cell = json.loads(cell)
+    #if cell isn't already a dict, convert from string to list of dictionaries
+    if type(cell) == str:
+      cell = json.loads(cell)
+    
     grades.extend(cell)
   #convert date of each grade from format m/dd to mm/dd/yyyy
   

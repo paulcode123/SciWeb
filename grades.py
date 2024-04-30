@@ -14,7 +14,7 @@ def filter_grades(grades, user_data, classes):
     return []
   try:
     #filter grades for matching osis'
-    grades = [grade for grade in grades if grade['OSIS'] == user_data['osis']]
+    grades = [grade for grade in grades if int(grade['OSIS']) == int(user_data['osis'])]
     if len(grades) == 0:
       print("no grades match osis")
       return []
@@ -45,7 +45,7 @@ def get_min_max(grades, user_data, classes, extend_to_goals=False, interval=10):
     
     grades = filter_grades(grades, user_data, classes)
     goals = get_data("Goals")
-    print("len(grades)", len(grades), "len goals", len(goals))
+    # print("len(grades)", len(grades), "len goals", len(goals))
     if len(grades) == 0:
         return 0,0,0
     # If min and max dates include goals, then add goal dates to the list of dates
@@ -57,7 +57,7 @@ def get_min_max(grades, user_data, classes, extend_to_goals=False, interval=10):
       ]
       
     #get dates from grades
-    print(grades[0])
+    # print(grades[0])
     dates = [
         datetime.datetime.strptime(grade['date'], '%m/%d/%Y').date() for grade in grades
     ]
@@ -65,12 +65,12 @@ def get_min_max(grades, user_data, classes, extend_to_goals=False, interval=10):
       dates.extend(goal_dates)  # Include goal dates in the list
 
     if len(dates) == 0:
-        print("error: no grades found")
+        print("error: no grades found, returning 0, 0, 0")
         return 0, 0, 0
     min_date = min(dates)
     max_date = max(dates)
-    print("max_date", max_date)
-    print("new_max_date", max_date + datetime.timedelta(days=(((max_date-min_date).days)/interval)))
+    # print("max_date", max_date)
+    # print("new_max_date", max_date + datetime.timedelta(days=(((max_date-min_date).days)/interval)))
     #11/30
     #11/6
     max_date = max_date + datetime.timedelta(days=(((max_date-min_date).days)/interval))
@@ -88,9 +88,15 @@ def get_weights(classes_data, osis):
       continue
     name = class_info['name'].lower()
     # Get the categories for the class, lowercase
-    categories = [str(category).lower() for category in class_info['categories']]
     
     
+    # if categories is a string, convert to json
+    if type(class_info['categories']) == str:
+      categories_str = class_info['categories'].lower()
+      categories = json.loads(categories_str)
+    else:
+      categories = [str(category).lower() for category in class_info['categories']]
+      
     # Create a dictionary to store weights
     weight_dict = {}
     
@@ -105,14 +111,17 @@ def get_weights(classes_data, osis):
   return weights
 
 # Calculate the user's grades over time
-def process_grades(grades, classes, user_data, classes_data, interval=10):
+def process_grades(allgrades, classes, user_data, classes_data, interval=10):
+  print("in process_grades")
   #filter grades based on class
-  grades = filter_grades(grades, user_data, classes)
+  grades = filter_grades(allgrades, user_data, classes)
+  print("in process_grades: grades filtered from length", len(allgrades), "to", len(grades))
   # Get the minimum and maximum dates of the user's grades and goals
   min_date, max_date, z = get_min_max(grades, user_data, classes, True, interval)
   #Get the minium and maximum dates of just the user's grades
-  mi, mx, g = get_min_max(grades, user_data, classes)
-  if min_date == 0:
+  mi, mx, g = get_min_max(grades, user_data, classes, False, interval)
+  print("in process_grades: min_date inc goals", min_date, "max_date", max_date, "min_date exc. goals", mi, "max_date", mx)
+  if mi == 0:
     return 0, []
   # Generate 10 evenly spaced dates between the minimum and maximum dates
   date_range = np.linspace(min_date.toordinal(),
