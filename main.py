@@ -537,16 +537,6 @@ def delete_grades():
   delete_data(session['user_data']['osis'] , "OSIS", "GradeData")
   return json.dumps({"data": "success"})
 
-# When the user creates an assignment, the database is updated
-@app.route('/post-assignment', methods=['POST'])
-def postAssignment():
-  data = request.json
-  print(data)
-  # Add the assignment to the Assignments sheet
-  post_data("Assignments", data['data'])
-  # Also, update the Classes sheet to include the assignment
-  update_data(data['classid'], "id", data["newrow"], "Classes")
-  return json.dumps('success')
 
 # When the user creates a goal, it's posted to the Goals sheet
 @app.route('/post-goal', methods=['POST'])
@@ -566,7 +556,10 @@ def postMessage():
 @app.route('/post-notebook', methods=['POST'])
 def postNotebook():
   data = request.json
-  update_data(data['data']['classID'], 'classID', data, "Notebooks")
+  if data['data']['exists'] == True:
+    update_data(data['data']['classID'], 'classID', data, "Notebooks")
+  else:
+    post_data("Notebooks", data['data'])
   return json.dumps({"data": 'success'})
 
 
@@ -609,7 +602,7 @@ def get_name(ip=None):
 def get_insights(prompts):
   
   headers = {
-    'Authorization': f'Bearer {vars['openAIAPI']}',
+    'Authorization': f"Bearer {vars['openAIAPI']}",
     'Content-Type': 'application/json'
 }
   

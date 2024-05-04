@@ -11,7 +11,7 @@ from flask import session
 def get_data_gsheet(sheet):
   from main import init
   vars = init()
-  ranges = [f'{sheet}!A:{vars['max_column']}']
+  ranges = [f"{sheet}!A:{vars['max_column']}"]
   request = vars['service'].spreadsheets().values().batchGet(
     spreadsheetId=vars['spreadsheet_id'], ranges=ranges, majorDimension='ROWS')
 
@@ -211,6 +211,11 @@ def get_data(collection):
   return get_data_firebase(collection)
 
 def post_data(collection, data):
+    print("posting data")
+    from main import init
+    vars = init()
+    if vars['database'] == 'gsheet':
+      return post_data_gsheet(collection, data)
     return post_firebase_data(collection, data)
 
 def update_data(row_val, row_name, new_row, collection):

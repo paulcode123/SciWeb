@@ -9,9 +9,12 @@ function receive_messages(messages, users) {
   clearMessages()
   // Loop through all the messages and display them
   messages.forEach(message => {
+    // if data in messages, set message to data
+    if (message.data){
     message = message.data;
+    }
     //if the message is in the current class, display it
-    console.log(message, message['location'], classId.toString())
+    // console.log(message, message['location'], classId.toString())
     if ((message['location']).toString() == classId.toString()) {
       
       let listItem = document.createElement('li');

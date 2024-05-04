@@ -16,25 +16,34 @@
 //       -subsection
 //   -section
 
+
 //define preexisting elements from HTML
 var current_dgm = null;
 var remove = false;
 var container = document.getElementById('tabs');
 var create_sec_button = document.getElementById('create_section');
+var notebook_exists = false;
 
+//add event listener to create section button
 create_sec_button.addEventListener('click', () => new_section(container));
 
 //define functions to add elements
 function textField(parent){
-  const textField = document.createElement('textarea')
+  let textField = document.createElement('textarea')
   textField.type = 'text';
+  textField.className = 'text_field'
   parent.appendChild(textField)
 }
 
+function pqField(parent){
+  let pqField = document.createElement('input')
+  pqField.type = 'text';
+  pqField.className = 'pq_field'
+  parent.appendChild(pqField)
+}
 
 function diagram(parent){
-  
-  const diagram = document.createElement('div')
+  let diagram = document.createElement('div')
   diagram.className = 'dgm';
   diagram.addEventListener('click', function() {
     current_dgm = diagram
@@ -43,9 +52,10 @@ function diagram(parent){
   parent.appendChild(diagram);
 }
 
+
 //allow images to be pasted into the diagram
 function allow_image_paste_in(diagram){
-  
+  // when the user pastes an image, create an img element and append it to the div
   diagram.addEventListener('paste', function(event) {
     var items = (event.clipboardData || event.originalEvent.clipboardData).items;
     console.log(JSON.stringify(items)); // logs all clipboard items for debugging
@@ -89,6 +99,7 @@ function add_toggle_EL(button, tabContent){
 //define function to add section
 function new_section(parent){
   console.log(container)
+
   //create main tab
   const newTab = document.createElement('div');
   newTab.className = 'tab';
@@ -117,6 +128,7 @@ function new_section(parent){
     //when clicked, create new section with current section as parent
     add_sec_button.addEventListener('click', () => new_section(tabBody));
     tabContent.appendChild(add_sec_button);
+
     //add button to create text field and set properties
     const add_text_field = document.createElement('button');
     add_text_field.className = 'btn';
@@ -125,6 +137,15 @@ function new_section(parent){
     add_text_field.addEventListener('click', () => textField(tabContent));
     //add textfield to tabContent div
     tabBody.appendChild(add_text_field);
+
+    //add button to create text field and set properties
+    const add_pq_field = document.createElement('button');
+    add_pq_field.className = 'btn';
+    add_pq_field.textContent = 'Add Practice Question';
+    //when clicked, create textfield with predefined function
+    add_pq_field.addEventListener('click', () => pqField(tabContent));
+    //add textfield to tabContent div
+    tabBody.appendChild(add_pq_field);
 
     //do same for diagram as we did for textbox above
     const add_diagram = document.createElement('button');
@@ -273,6 +294,7 @@ nodes.forEach(node => {
 lines.forEach(line => {
   element_click(line)
 });
+  notebook_exists = true;
   }
   document.getElementById('loadingWheel').style.display = "none";   
 }
@@ -420,38 +442,52 @@ container.addEventListener('mousemove', (e) => {
     }
 });
 
-function get_children(parent, txts) {
-  var text_elements = txts;
-  const childElements = parent.children;
-  // console.log(parent)
-  for (let i = 0; i < childElements.length; i++) {
-    if (childElements[i].className != 'tab'){
-      continue;
-    }
-    var content_divs = childElements[i].children[2].children[0];
-    var section_name = childElements[i].children[1].value;
-    // console.log(section_name)
-    text_elements.push(section_name)
-    // console.log(content_divs)
-    
-    var textareas = content_divs.querySelectorAll('textarea');
-    for (let i = 0; i < textareas.length; i++) {
-    // console.log(textareas[i].value);
-    text_elements.push(textareas[i].value)
+// function to get all text values of the notebook
+function get_children(parent, txts, target_class) {
+  //check if parent's class matches target class
+  if (parent.className == target_class){
+    //if it does, add the innerHTML to the txts array
+    txts.push(parent.value)
+    return txts
   }
-  text_elements = get_children(childElements[i].children[2], text_elements)
+
+  //get children of parent
+  const childElements = parent.children;
+
+  //if parent has no children, return the txts array
+  if (childElements.length == 0){return txts}
+
+  //loop through all children of the parent and call this function on each child
+  for (let i = 0; i < childElements.length; i++) {
+    txts = get_children(childElements[i], txts, target_class)
+  }
+  return txts
 }
-  return text_elements
+
+//make a recurring function that loops through all children of the parent and sets the data-text property of each input element to the value of the input element
+function set_input_text(parent){
+  //if the parent is an input element, set the data-text property to the value of the input element
+  if (parent.tagName == 'INPUT'){
+    parent.setAttribute('data-text', parent.value)
+  }
+  const childElements = parent.children;
+  for (let i = 0; i < childElements.length; i++) {
+    set_input_text(childElements[i])
+  }
+
 }
 
 
 async function postNotebook(){
   var id = window.location.href.slice(-13, -9);
-  //var data = [section_name, text_box_content, =, ..., [subsection]]
-  var empty = [];
-  var text_data = get_children(container, empty)
-  console.log(text_data)
-  data = {'data': {'classID': id, 'innerHTML': container.innerHTML, 'text': text_data}}
+ 
+  set_input_text(container)
+  var text_data = get_children(container, [], 'text_field')
+  var pq_data = get_children(container, [], 'pq_field')
+  console.log('text data:', text_data)
+  console.log('pq data:', pq_data)
+
+  data = {'data': {'classID': id, 'innerHTML': container.innerHTML, 'text': text_data, 'practice_questions': pq_data, 'exists': notebook_exists}}
   const result = await fetchRequest('/post-notebook', data)
   
     console.log(result)

@@ -1,8 +1,6 @@
-// classData is predefined in the html
-// console.log("class.js classData: "+classData)
-// create user bubbles
-// console.log(document.getElementById("description"))
+
 var classData = null;
+//display the class notebook button and description
 function display_NB_btn(classData){
   console.log(classData)
 document.getElementById("description").textContent = classData['description'];
@@ -23,13 +21,10 @@ document.getElementById('openNBcont').appendChild(button);
 
 
 
-
-
-
+//add user bubbles to the class page, with links to the user's profile page
 function add_user_bubbles(classData){
 var userListContainer = document.getElementById('user-list');
   console.log(classData)
-// members = classData['OSIS'].split(", ")
 //set members as a list of osis values, taking only the numbers and not any combination of spaces and commas in between
 members = classData['OSIS'].split(/[\s,]+/).filter(item => item.length > 0);
 
@@ -66,11 +61,13 @@ assignmentForm.addEventListener('submit', (e) => {
   const name = document.getElementById('name').value;
   const due = document.getElementById('due').value;
   const type = document.getElementById('assignmentType').value;
+  const points = document.getElementById('points').value;
   document.getElementById("assignmentForm").reset();
   // Create and display the object containing the name and due date values
   const assignmentObj = {
     name: name,
     category: type,
+    points: points,
     due: due,
     id: Math.floor(Math.random() * 10000),
     class: classData['id'],
@@ -83,11 +80,11 @@ assignmentForm.addEventListener('submit', (e) => {
 
 function post_assignment(data){
   var new_row = classData
-  new_row['assignments'] = new_row['assignments'] + data['id']
-  var a = fetchRequest('/post-assignment', {data: data, classid: classData['id'], newrow: new_row});
+  new_row['assignments'] = new_row['assignments'] + ", "+data['id']
+  fetchRequest('/post_data', {data: data, sheet: "Assignments"});
+  fetchRequest('/update_data', {"row_value": classData['id'], "row_name": "id", "data": new_row, "sheet": "Classes"});
   location.reload();
 }
-
 
 
 async function get_assignment(){
@@ -98,7 +95,7 @@ async function get_assignment(){
   console.log(data)
   classData = classData.find(item => item.id == classId);
   
-  display_classes(assignmentList, classData);
+  display_assignments(assignmentList, classData);
   display_NB_btn(classData);
   add_user_bubbles(classData);
   optionSelected(classData);
@@ -112,7 +109,7 @@ async function get_assignment(){
 }
 get_assignment()
 
-function display_classes(assignmentList, classData){
+function display_assignments(assignmentList, classData){
   const assignmentListContainer = document.getElementById('assignmentList');
     assignmentList.forEach(assignmentData => {
       if(!(assignmentData['class']==classData['id'])){return;}
@@ -136,12 +133,16 @@ function display_classes(assignmentList, classData){
 
 
 
-function optionSelected(classes){
+function optionSelected(classData){
     
-  console.log(classes);
-  var categories = classes['categories']
+  console.log(classData);
+  var categories = classData['categories']
   
   if(categories){
+    // convert categories to json if it is a string
+    if(typeof categories === 'string'){
+      categories = JSON.parse(categories);
+    }
     categories = categories.filter(item => typeof item === 'string');
     
   var categoryElement = document.getElementById("assignmentType")
