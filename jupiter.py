@@ -57,7 +57,9 @@ def jupapi_output_to_grades(data, session, sheetdb_url, allow_demo_change):
     for a in assignments:
       # generate 4 digit random number
       id = random.randint(1000, 9999)
-      grades.append({"name": a["name"], "date": a["due"], "score": a["score"], "value": a["points"], "class": c["name"], "category": a["category"], "OSIS": session['user_data']['osis'], "id": id})
+      date = a["due"]
+      date = convert_date(date)
+      grades.append({"name": a["name"], "date": date, "score": a["score"], "value": a["points"], "class": c["name"], "category": a["category"], "OSIS": session['user_data']['osis'], "id": id})
   #To avoid size issues, split the grades into groups of 100 assignments each
   grades_split = [grades[i:i + 100] for i in range(0, len(grades), 100)]
 
@@ -71,7 +73,8 @@ def jupapi_output_to_grades(data, session, sheetdb_url, allow_demo_change):
   # If the user's osis is already in the osis column, update, otherwise post
   if str(session['user_data']['osis']) in osis_list:
     update_data(session['user_data']['osis'], "OSIS", grades_obj, "GradeData")
-  post_data("GradeData", grades_obj)
+  else:
+    post_data("GradeData", grades_obj)
   print(len(grades))
   return grades
   
@@ -168,6 +171,8 @@ def get_grades(session):
 
 
 def convert_date(date_str):
+    if date_str == "" or date_str == None:
+        return date_str
     # Current date
     current_date = datetime.datetime.now()
     # add 5 days to the current date
@@ -175,8 +180,13 @@ def convert_date(date_str):
     current_year = current_date.year
     
     # Parse the input date string and add the current year
-    input_date_with_current_year = datetime.datetime.strptime(date_str + f"/{current_year}", "%m/%d/%Y")
-    
+    try:
+      if "202" in date_str:
+        input_date_with_current_year = datetime.datetime.strptime(date_str, "%m/%d/%Y")
+      else:
+        input_date_with_current_year = datetime.datetime.strptime(date_str + f"/{current_year}", "%m/%d/%Y")
+    except:
+      print("Error parsing date", date_str)
     # If the resulting date is in the future, subtract one year
     if input_date_with_current_year > current_date:
         input_date_with_current_year = input_date_with_current_year.replace(year=current_year - 1)

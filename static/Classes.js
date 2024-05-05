@@ -140,6 +140,7 @@ function display_classes(classList, user_data){
       //otherwise, create a div for the class and add it to the class list container
       const classItem = document.createElement('div');
       classItem.classList.add('class-item');
+      classItem.style.backgroundColor = classData.color;
       classItem.innerHTML = `
         <h3>${classData.name}</h3>
         <p>Teacher: ${classData.teacher}</p>

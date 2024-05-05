@@ -200,7 +200,7 @@ async function getFile(fileId) {
   var response = await fetchRequest('/get-file', {file: fileId});
   
   // Assuming `data.file` is the image or file data you want
-  let file = data.file;
+  let file = response.file;
   let type;
   // console.log(file.slice(11, 14));
   if(file.includes('pngbase64')){

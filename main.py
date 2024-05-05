@@ -126,13 +126,12 @@ def class_page(classurl):
   class_data = next((row for row in classes if str(row['id']) == str(id)), None)
   print(classes[4]['id'], str(id), str(classes[4]['id']) == str(id))
   print(class_data)
-  class_img = ""
-  if 'img' in class_data and class_data['img'] != "":
-    class_img = download_file("sciweb-files", class_data['img'])
+  # class_img = ""
+  # if 'img' in class_data and class_data['img'] != "":
+  #   class_img = download_file("sciweb-files", class_data['img'])
   return render_template('class.html',
                          class_name=class_name,
-                         class_data=class_data,
-                         class_img=class_img)
+                         class_data=class_data)
 
 # For class notebooks of specific classes
 @app.route('/class/<classurl>/notebook')
@@ -421,7 +420,9 @@ def upload_file_route():
 #When the user logs in, their data is posted to the Users sheet
 @app.route('/post-login', methods=['POST'])
 def postLogin(): 
-  data = request.json
+  raw_data = request.json
+  data = raw_data['data']
+  mode = raw_data['mode']
   session['ip_add'] = data['IP']
   logins = get_data("Users")
   #remove the user's ip addresses from all other accounts
@@ -434,16 +435,18 @@ def postLogin():
   #     else:
   #       update_data(row['osis'], 'osis', row, "Users")
       
-  # if the user has logged in before, update their IP address    
-  for row in logins:
-    # If the user's osis is already in the Users sheet...
-    if row['password'] == data['password'] and row['first_name'] == data['first_name']:
-      # Add their new IP address to the list of IP addresses
-      data['IP'] = f"{session['ip_add']}, {row['IP']}"
-      # Update the user's data in the Users sheet
-      update_data(row['password'], 'password', data, "Users")
-      session['user_data'] = row
-      return json.dumps({"data": "success"})
+  # if the user has logged in before, update their IP address
+  if mode == "Login":    
+    for row in logins:
+      # If the user's osis is already in the Users sheet...
+      if row['password'] == data['password'] and row['first_name'] == data['first_name']:
+        # Add their new IP address to the list of IP addresses
+        data['IP'] = f"{session['ip_add']}, {row['IP']}"
+        # Update the user's data in the Users sheet
+        update_data(row['password'], 'password', data, "Users")
+        session['user_data'] = row
+        return json.dumps({"data": "success"})
+    return json.dumps({"data": "failure"})
   
   # If the user has not logged in before, add their data to the Users sheet
   session['user_data'] = data

@@ -101,3 +101,25 @@ input[type="submit"]:hover {
       margin: 5px 0 0;
       font-size: 14px;
     }
+
+    .container {
+      display: flex;
+
+    }
+    
+    #classimgcontainer {
+      /* Set width to auto and height to 200px */
+      height: 200px;
+      overflow: hidden; /* Ensure the image doesn't overflow */
+    }
+    
+    #classimgcontainer img {
+      /* Set height to 100% to fill container, and let width adjust accordingly */
+      height: 100%;
+      width: auto;
+    }
+
+    #head {
+      flex-grow: 1; /* Allow the head div to grow and take remaining space */
+    }
+    

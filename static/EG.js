@@ -205,6 +205,8 @@ function createGradesTable(grades) {
   if (grades.length>1) {
     document.getElementById('DeleteGrades').style.visibility = "visible";
   }
+  // sort grades by date from most recent to least recent
+  grades.sort((a, b) => new Date(b.date) - new Date(a.date));
   for (let i = 0; i < grades.length; i++) {
     const row = document.createElement('tr');
 

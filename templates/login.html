@@ -57,17 +57,22 @@
     <li><a href="/Login" id="profile">Login</a></li>
   </ul>
   <div id="loadingWheel"></div>
+  <h1>Sign-up / Login</h1>
+  
   <form id="login-form">
-    <h1>Login</h1>
+    <div id="toggleSlider" class="slider" onclick="toggleSlider()">
+      <span id="sliderText" class="slider-text">Log-In</span>
+    </div>
+    <br>
 
     <label for="fname">First Name</label>
-    <input type="text" id="fname" name="fname" placeholder="Enter your first name" required>
+    <input type="text" id="fname" name="fname" placeholder="Enter your first name" autocomplete="given-name" required>
 
     <label for="lname">Last Name</label>
-    <input type="text" id="lname" name="lname" placeholder="Enter your last name" required>
+    <input type="text" id="lname" name="lname" placeholder="Enter your last name" autocomplete="family-name">
 
     <label for="email">Password</label>
-    <input type="text" id="password" name="password" placeholder="Enter your password" required>
+    <input type="text" id="password" name="password" placeholder="Enter your password" autocomplete="current-password">
 
     <label for="grade">Grade</label>
     <input type="number" id="grade" name="grade" placeholder="Enter your grade" required>

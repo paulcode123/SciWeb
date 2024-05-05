@@ -1,3 +1,5 @@
+var toggleMode = "Login";
+
 //hide loading wheel
 document.getElementById("loadingWheel").style.display = "none";
 const form = document.getElementById('login-form');
@@ -28,14 +30,14 @@ form.addEventListener('submit', function(event) {
   const osis = Math.floor(Math.random() * 9000000)+1000000;
   document.getElementById("login-form").reset();
   
-  post_login({
+  post_login({data:{
     "first_name": fname, 
     "last_name": lname, 
     "osis": osis, 
     "grade": grade,
     "password": password,
     "IP": ip
-  });
+  }, mode: toggleMode});
   
 
   
@@ -48,17 +50,39 @@ form.addEventListener('submit', function(event) {
 
 async function post_login(data){
   const result = await fetchRequest('/post-login', data);
-  
-  
+
+    if(result['data']=="success"){
     window.location.href = "/";
+    }else{
+      alert("Invalid login credentials");
+      document.getElementById("loadingWheel").style.display = "none";
+      // clear form
+      document.getElementById("login-form").reset();
+    }
 
 
 }
 
-  
-
-// to push, type "git push origin main" into the shell
-
+function toggleSlider() {
+  var slider = document.getElementById("toggleSlider");
+  var text = document.getElementById("sliderText");
+  var passwordfield = document.getElementById("password");
+  if (slider.classList.contains("on")) {
+    slider.classList.remove("on");
+    text.textContent = "Log-In";
+    text.classList.remove("right");
+    text.classList.add("left");
+    toggleMode = "Login";
+    passwordfield.autocomplete = "current-password";
+  } else {
+    slider.classList.add("on");
+    text.textContent = "Sign-Up";
+    text.classList.remove("left");
+    text.classList.add("right");
+    toggleMode = "Signup";
+    passwordfield.autocomplete = "new-password";
+  }
+}
 
 
 
