@@ -116,7 +116,7 @@ parts.forEach(part => {
     teacher: teacherInput,
     name: nameInput,
     OSIS: osis,
-    id: Math.floor(Math.random() * 9000)+1000, // Generate a random ID between 1000 and 9999
+    id: (Math.floor(Math.random() * 9000)+1000).toString(), // Generate a random ID between 1000 and 9999
     categories: result
   };
 
@@ -132,11 +132,13 @@ parts.forEach(part => {
 //display the classes that the user is a member of
 function display_classes(classList, user_data){
   const classListContainer = document.getElementById('classList');
+  const userosis = user_data['osis'].toString();
     //for each class in the database...
     console.log(classList)
     classList.forEach(classData => {
       //if the user's osis is not in the class's osis list, skip the class
-      if(!((classData.OSIS).includes(user_data['osis']))){return;}
+      let classosiss = classData.OSIS.toString();
+      if(!(classosiss.includes(userosis))){return;}
       //otherwise, create a div for the class and add it to the class list container
       const classItem = document.createElement('div');
       classItem.classList.add('class-item');

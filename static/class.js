@@ -115,8 +115,9 @@ function display_assignments(assignmentList, classData){
       
       const assignmentItem = document.createElement('div');
       assignmentItem.classList.add('assignment-item');
+      const dueDate = processDate(assignmentData.due);
       assignmentItem.innerHTML = `
-        <h3>Due ${assignmentData.due}</h3>
+        <h3>Due ${dueDate}</h3>
         <p>Type: ${assignmentData.category}</p>
         <p>Name: ${assignmentData.name}</p>
       `;
@@ -218,7 +219,10 @@ function make_color_opaque(hex){
 }
 
 async function set_class_img(img){
-  if (img == ""){return;}
+  // if img is "" or not a string, return
+  if (img == "" || typeof img !== 'string'){
+    return;
+  }
   let response = await fetchRequest('/get-file', {file: img});
   let b64 = response.file;
   if(b64.includes('pngbase64')){

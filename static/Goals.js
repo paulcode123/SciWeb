@@ -23,8 +23,8 @@ const categoryCheckboxes = document.getElementById("categoryCheckboxes");
         "date": goalDate,
         "grade": goalGrade,
         "date_set": new Date().toLocaleDateString(),
-        "OSIS": osis,
-        "id": Math.floor(Math.random() * 10000)
+        "OSIS": osis.toString(),
+        "id": (Math.floor(Math.random() * 10000)).toString()
       }
       post_goal(goal);
 
@@ -48,8 +48,9 @@ async function main(){
   var classes = data['Classes']
   console.log(classes)
   setClassOptions(classes)
-  
-  document.getElementById("classDropdown").addEventListener("change", () => {optionSelected(classes)});
+  console.log("setting EL")
+  classDropdown.addEventListener("change", () => {optionSelected(classes)});
+  console.log("EL set")
   document.getElementById('loadingWheel').style.display = "none";  
 
 
@@ -58,7 +59,6 @@ main()
 
 // Set the options for the class dropdown
 function setClassOptions(filteredClasses){
-  
     const selectElement = document.getElementById("classDropdown");
     for(let x=0; x<filteredClasses.length; x++){
       // Create a new option element
@@ -72,7 +72,7 @@ function setClassOptions(filteredClasses){
 
 // Remove the "Please add classes first" option
 if(filteredClasses.length != 0){
-selectElement.removeChild(selectElement.querySelector('option[value="default"]'));
+// selectElement.removeChild(selectElement.querySelector('option[value="default"]'));
 // add "all" option to selectElement
 const newOption = document.createElement("option");
 newOption.value = "all";
@@ -86,7 +86,7 @@ selectElement.appendChild(newOption);
 
 //After the user has selected a class, display the associated category dropdown
   function optionSelected(classes){
-    
+    console.log("in optionSelected")
     console.log(classes);
     var selectedClass = document.getElementById("classDropdown").value;
     var categoryElement = document.getElementById("categoryDropdown");
@@ -101,8 +101,11 @@ selectElement.appendChild(newOption);
     var categories = classes.filter(item => item.name == selectedClass)[0].categories;
     
     if(categories){
-      
-    categories = JSON.parse(categories).filter(item => typeof item === 'string');
+      if (typeof categories === 'string'){
+        categories = JSON.parse(categories);
+      }
+      categories = categories.filter(item => typeof item === 'string');
+    
       
     
     // Remove all existing options

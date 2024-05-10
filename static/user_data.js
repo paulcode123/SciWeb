@@ -95,7 +95,7 @@ function set_data(data){
   logged_in = true;
   first_name = JSON.stringify(data["first_name"]).slice(1, -1);
   last_name = JSON.stringify(data["last_name"]);
-  osis = parseInt(JSON.stringify(data["osis"]));
+  osis = parseInt(data["osis"]);
   console.log(osis)
   grade = parseInt(data["grade"])
   console.log(grade)

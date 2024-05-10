@@ -592,3 +592,14 @@ function img_resize_draggable(img){
   window.addEventListener('touchend', dragEnd, false);
   window.addEventListener('touchmove', drag, false);
 }
+
+// Add an event listener to the imageUpload input element
+const imageUpload = document.getElementById('imageInput');
+imageUpload.addEventListener('change', (e) => {
+  var image = e.target.files[0];
+  // convert to base64
+  getBase64(image).then(data => {
+  // When an image is uploaded, send it to the server to be processed
+  fetchRequest('/process-notebook-image', {image: data})
+  });
+});

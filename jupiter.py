@@ -110,7 +110,7 @@ def jupapi_output_to_classes(data, session, sheetdb_url, allow_demo_change):
       else:
         class_info["OSIS"] = str(session['user_data']['osis']) + ", " + class_info["OSIS"]
         # update_data(class_info["id"], "id", class_info, "Classes", session, sheetdb_url, allow_demo_change)
-        update_data(class_info["id"], "id", class_info, "Classes", session, sheetdb_url, allow_demo_change)
+        update_data(class_info["id"], "id", class_info, "Classes")
         
         class_exists = True
         break
@@ -120,7 +120,7 @@ def jupapi_output_to_classes(data, session, sheetdb_url, allow_demo_change):
     if not class_exists:
       #generate 4 digit random number
       id = random.randint(1000, 9999)
-      class_info = {"period": "", "teacher": teacher, "name": class_name, "OSIS": session['user_data']['osis'], "assignments": "", "description": "", "id": id, "schedule": c["schedule"], "categories": categories}
+      class_info = {"period": "", "teacher": teacher, "name": class_name, "OSIS": session['user_data']['osis'], "assignments": "", "description": "", "id": str(id), "schedule": c["schedule"], "categories": categories}
       post_data("Classes", class_info)
 
   
@@ -166,7 +166,7 @@ def get_grades(session):
     
     grade['date'] = date
     dated_grades.append(grade)
-  print(dated_grades[:10])
+  # print(dated_grades[:10])
   return dated_grades
 
 

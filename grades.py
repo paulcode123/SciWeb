@@ -84,7 +84,7 @@ def get_weights(classes_data, osis):
 
   for class_info in classes_data:
     # if osis does not match user data, continue
-    if not str(osis) in class_info['OSIS']:
+    if not str(osis) in str(class_info['OSIS']):
       continue
     name = class_info['name'].lower()
     # Get the categories for the class, lowercase
@@ -146,7 +146,7 @@ def process_grades(allgrades, classes, user_data, classes_data, interval=10):
   return date_range, grade_spread
 
 # Calculate grade at given date
-def calculate_grade(time, data, weights):
+def calculate_grade(time, data, weights, return_class_grades=False):
   categories = {}
   
   # For each assignment(with grade) in the data...
@@ -176,6 +176,7 @@ def calculate_grade(time, data, weights):
 
   totalGrade = 0
   classCount = 0
+  classGrades = {}
 # For each class in the categories dictionary...
   for className, classData in categories.items():
     # Initialize the class's grade, category count, and weight sum
@@ -196,10 +197,13 @@ def calculate_grade(time, data, weights):
       totalGrade += classGrade / weightSum
 
       classCount += 1
+      classGrades[className] = (classGrade / weightSum)*100
 
   if classCount > 0:
-
-    return totalGrade * 100 / classCount
+    finalGrade = totalGrade*100 / classCount
+    if return_class_grades:
+      return finalGrade, classGrades
+    return finalGrade
   else:
     return 0
 
@@ -287,3 +291,39 @@ def decode_category_groups(category_groups):
   print("input", category_groups, "components", components)
   return components
   
+def get_stats(grades, classes):
+  # get current GPA(avg of rounded class grades), raw average
+  grades = filter_grades(grades, session['user_data'], ["all", "All"])
+  weights = get_weights(classes, session['user_data']['osis'])
+  current_date = datetime.datetime.now().date()
+  raw_avg, current_grades = calculate_grade(current_date, grades, weights, return_class_grades=True)
+  raw_avg = round(raw_avg, 2)
+  # get the GPA by taking the average of the rounded class grades
+  gpa = round(sum([round(grade) for grade in current_grades.values()])/len(current_grades), 2)
+
+  # calculate the grade from 30 days ago
+  thirty_days_ago = current_date - datetime.timedelta(days=30)
+  t30_avg, t30_grades = calculate_grade(thirty_days_ago, grades, weights, return_class_grades=True)
+  t30_avg = round(t30_avg, 3)
+
+  # Calculate the change in grades for each class
+  grade_changes = {}
+  for class_name, grade in current_grades.items():
+    if class_name in t30_grades:
+      grade_changes[class_name] = round(grade - t30_grades[class_name], 3)
+
+  # Find the most improved class and most worsened class
+  most_improved_class = max(grade_changes, key=grade_changes.get)
+  most_worsened_class = min(grade_changes, key=grade_changes.get)
+
+  # calculate the change in avg from the past 30 days
+  avg_change = raw_avg - t30_avg
+  avg_change = round(avg_change, 2)
+
+  # filter grades for only those from the past 30 days
+  grades_past_30_days = [grade for grade in grades if datetime.datetime.strptime(grade['date'], '%m/%d/%Y').date() >= thirty_days_ago]
+  past30_avg = calculate_grade(current_date, grades_past_30_days, weights)
+  past30_avg = round(past30_avg, 2)
+
+  return {"gpa": gpa, "raw_avg": raw_avg, "avg_change": avg_change, "most_improved_class": most_improved_class, "most_worsened_class": most_worsened_class, "past30_avg": past30_avg, "t30_avg": t30_avg, "grade_changes": grade_changes}
+

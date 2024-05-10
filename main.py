@@ -13,11 +13,20 @@ import re
 # googleapiclient is a library for working with Google APIs(Getting data from Google Sheets in this case)
 from googleapiclient.discovery import build
 
+# for images
+import base64
+from io import BytesIO
+from PIL import Image
+
+import openai
+
+
+
 
 # Get functions from other files
 from database import get_data, post_data, update_data, delete_data, download_file, upload_file, init_firebase
 from classroom import init_oauth, oauth2callback, list_courses
-from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups
+from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups, get_stats
 from goals import calculate_goal_progress, get_goals
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades
 
@@ -259,7 +268,7 @@ def fetch_data():
           response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in item['OSIS'] or str(session['user_data']['osis']) in item['targetOSIS']]
         else:
           #Otherwise, filter the data for the user's osis
-          response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in item['OSIS']]
+          response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in str(item['OSIS'])]
     elif sheet=="Users":
       #only include the first 3 columns of the Users sheet, first_name, last_name, and osis
       data = get_data(sheet)
@@ -277,7 +286,8 @@ def post_data_route():
 @app.route('/update_data', methods=['POST'])
 def update_data_route():
   data = request.json
-  update_data(data['row_value'], data['row_name'], data['data'], data['sheet'])
+  response = update_data(data['row_value'], data['row_name'], data['data'], data['sheet'])
+  print("response", response)
   return json.dumps({"message": "success"})
 
 @app.route('/delete_data', methods=['POST'])
@@ -362,11 +372,13 @@ def post_ga_grades():
 @app.route('/GAsetup', methods=['POST'])
 def GA_setup():
   classes = get_data("Classes")
+  grades = get_grades(session)
   #filter classes for the user's osis
-  classes = [item for item in classes if str(session['user_data']['osis']) in item['OSIS']]
+  classes = [item for item in classes if str(session['user_data']['osis']) in str(item['OSIS'])]
   categories = make_category_groups(classes)
-  
-  return json.dumps({"Classes": classes, "categories": categories})
+  stats = get_stats(grades, classes)
+  print("categories: ", categories)
+  return json.dumps({"Classes": classes, "categories": categories, "stats": stats})
 
 @app.route('/get-gclasses', methods=['POST'])
 def get_gclasses():
@@ -374,6 +386,26 @@ def get_gclasses():
   classes = list_courses()
   print("classes", classes)
   return json.dumps(classes)
+
+@app.route('/process-notebook-image', methods=['POST'])
+def process_notebook_image():
+  data = request.json
+  base64_img = data['image']
+  base64_img = base64_img.split(",")[1]
+  # correct the padding of the base64 string
+  padding_needed = 4 - (len(base64_img) % 4)
+  if padding_needed:
+      base64_img += '=' * padding_needed
+  # Decode the base64 string to bytes
+  image_data = base64.b64decode(base64_img)
+  # Convert the bytes to an image
+  image = Image.open(BytesIO(image_data))
+  prompt = [{"role":"system", "content": "Given the file ID of the image of a worksheet or textbook, list the specific topics covered in it."}, {"role":"user", "content": "file ID: <<fid>>"}]
+  # Get insights from the AI
+  insights = get_insights(prompt, image_data)
+  print("insights", insights)
+  return json.dumps(insights)
+  
 
 # Post grades entered in the Enter Grades page to the Grades sheet
 @app.route('/post-grades', methods=['POST'])
@@ -404,6 +436,7 @@ def get_impact():
 @app.route('/get-file', methods=['POST'])
 def get_file():
   data = request.json
+  print(data)
   # Get the file from the bucket
   base64 = download_file("sciweb-files", data['file'])
   return json.dumps({"file": str(base64)})
@@ -441,9 +474,9 @@ def postLogin():
       # If the user's osis is already in the Users sheet...
       if row['password'] == data['password'] and row['first_name'] == data['first_name']:
         # Add their new IP address to the list of IP addresses
-        data['IP'] = f"{session['ip_add']}, {row['IP']}"
-        # Update the user's data in the Users sheet
-        update_data(row['password'], 'password', data, "Users")
+        row['IP'] = f"{session['ip_add']}, {row['IP']}"
+        
+        update_data(row['password'], 'password', row, "Users")
         session['user_data'] = row
         return json.dumps({"data": "success"})
     return json.dumps({"data": "failure"})
@@ -619,8 +652,6 @@ def get_insights(prompts):
   insights = insights['choices'][0]['message']['content']
   # print("insights: "+str(insights))
   return insights
-  
-
   
 
 #uncomment to run locally, comment to deploy

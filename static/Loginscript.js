@@ -7,14 +7,14 @@ console.log("loginscript ip:"+ip);
 function demo(){
   document.getElementById("loadingWheel").style.display = "block";
   console.log(ip)
-  post_login({
+  post_login({data: {
     "first_name": "Demo", 
     "last_name": "Account", 
     "osis": "3428756",
     "password": "password",
     "grade": "15",
     "IP": ip
-  });
+  }, mode: "Login"});
 }
 form.addEventListener('submit', function(event) {
   document.getElementById("loadingWheel").style.display = "block";
@@ -67,6 +67,9 @@ function toggleSlider() {
   var slider = document.getElementById("toggleSlider");
   var text = document.getElementById("sliderText");
   var passwordfield = document.getElementById("password");
+  var gradefield = document.getElementById("grade");
+  var lastnamefield = document.getElementById("lname");
+
   if (slider.classList.contains("on")) {
     slider.classList.remove("on");
     text.textContent = "Log-In";
@@ -74,6 +77,12 @@ function toggleSlider() {
     text.classList.add("left");
     toggleMode = "Login";
     passwordfield.autocomplete = "current-password";
+    // hide grade and last name fields
+    gradefield.style.display = "none";
+    lastnamefield.style.display = "none";
+    // make sure these fields are not required
+    gradefield.required = false;
+    lastnamefield.required = false;
   } else {
     slider.classList.add("on");
     text.textContent = "Sign-Up";
@@ -81,6 +90,12 @@ function toggleSlider() {
     text.classList.add("right");
     toggleMode = "Signup";
     passwordfield.autocomplete = "new-password";
+    // show grade and last name fields
+    gradefield.style.display = "block";
+    lastnamefield.style.display = "block";
+    // make sure these fields are required
+    gradefield.required = true;
+    lastnamefield.required = true;
   }
 }
 
