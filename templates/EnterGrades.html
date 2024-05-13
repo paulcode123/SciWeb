@@ -39,7 +39,7 @@
       <div class="dropdown-content">
         <a href="/Classes">Classes</a>
         <a href="/Assignments">Assignments</a>
-        <a href="#">Leagues</a>
+        <a href="/Leagues">Leagues</a>
         <a href="#">Questions</a>
       </div>
     </li>
@@ -61,8 +61,12 @@
     <br>
     <div id="pullJup">
     <input type="number" id="osis" placeholder="OSIS"></input><br>
-    <input type="password" id="password" placeholder="Jupiter Password"></input><br>
-    <p>By pulling grades from Jupiter, you agree to our <a target="_blank" href="https://docs.google.com/document/d/1lhb14Q6I_U5Tj7EFQUM2bF0cNlkBF_6_4zce6fF70L0/edit?usp=sharing">Terms and Conditions</a></p>
+    <input type="password" id="password" placeholder="Jupiter Password" autocomplete="off"></input> <br>
+    <input type="checkbox" id="addclasses"><label for="addclasses">Join my Classes</label><br>
+    <input type="checkbox" id="encrypt">
+    <label for="encrypt">Encrypt my Grades data <small>(This may disable some features)</small></label><br>
+    <br>
+    <p>By pulling grades from Jupiter, you agree to our <a target="_blank" href="/Terms">Terms and Conditions</a></p>
     <button id="Jupull">Pull from Jupiter</button>
   </div>
     <button id="DeleteGrades">Delete Saved Grades</button>

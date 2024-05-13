@@ -123,3 +123,12 @@ input[type="submit"]:hover {
       flex-grow: 1; /* Allow the head div to grow and take remaining space */
     }
     
+    #joinBtn {
+      padding: 10px 20px;
+      background-color: #337ab7;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      display: none;
+    }

@@ -12,7 +12,7 @@ def calculate_goal_progress(session):
   goals = get_data("Goals")
   goals = filter_goals(goals, session['user_data'], 'any')
   classes = get_data("Classes")
-  grades = get_grades(session)
+  grades = get_grades()
   
   weights = get_weights(classes, session['user_data']['osis'])
   progress = []

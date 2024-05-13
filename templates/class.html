@@ -35,7 +35,7 @@
       <div class="dropdown-content">
         <a href="/Classes">Classes</a>
         <a href="/Assignments">Assignments</a>
-        <a href="#">Leagues</a>
+        <a href="/Leagues">Leagues</a>
         <a href="#">Questions</a>
       </div>
     </li>
@@ -54,6 +54,7 @@
   <div id="classimgcontainer"></div>
   <div id="head">
     <h1>{{ class_name }}</h1>
+    <button id="joinBtn">Join Class</button>
     <h3 id="description"></h3>
     <div id="user-list"></div>
     <div id="assignmentList"></div>
@@ -93,8 +94,9 @@
       <input type="submit" value="Submit">
     </form>
   </div>
-  <br>
+  <br><br>
   <div id="openNBcont"></div>
+  <br>
   <div id="chat-box">
     <button id="refresh-chat">🔄</button>
     <ul id="message-list"></ul>

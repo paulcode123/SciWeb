@@ -1,0 +1,72 @@
+#leagueForm{
+    margin-top: 20px;
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-bottom: 20px;
+    padding: 20px;
+    border: 1px solid black;
+    border-radius: 10px;
+    background-color: #336e4a;
+    display: none;
+}
+
+/* submit button styles */
+#submit{
+    margin-top: 10px;
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-bottom: 20px;
+    padding: 10px;
+    border: 1px solid black;
+    border-radius: 10px;
+    background-color: #11634a;
+}
+
+#submit:hover{
+    background-color: #02340c;
+}
+
+/* create league button that shows the form */
+#createLeague{
+    margin-top: 20px;
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-bottom: 20px;
+    padding: 10px;
+    border: 1px solid black;
+    border-radius: 10px;
+    background-color: #336e4a;
+}
+
+/* hover effect */
+#createLeague:hover{
+    background-color: #02340c;
+}
+
+/* add styles to all checkboxes */
+input[type="checkbox"]{
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-bottom: 10px;
+    /* make it bigger */
+    transform: scale(1.5);
+}
+
+/* add styles to all labels  */
+/* label{
+    padding: 10px;
+    border: 1px solid black;
+    border-radius: 10px;
+    background-color: #2b48a0;
+    margin-left: 20px;
+} */
+
+/* add styles to all text inputs  */
+input[type="text"]{
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid black;
+    border-radius: 10px;
+}

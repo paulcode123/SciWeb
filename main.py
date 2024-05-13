@@ -18,7 +18,7 @@ import base64
 from io import BytesIO
 from PIL import Image
 
-import openai
+# import openai
 
 
 
@@ -49,7 +49,7 @@ def init():
                   'v4',
                   developerKey=vars['gSheet_api_key'],
   discoveryServiceUrl=vars['DISCOVERY_SERVICE_URL'])
-  vars['max_column'] = "K"
+  vars['max_column'] = "O"
   vars['AppSecretKey'] = keys["AppSecretKey"]
   # firebase or gsheet
   vars['database'] = 'gsheet'
@@ -107,6 +107,10 @@ def study():
 @app.route('/Classes')
 def classes():
   return render_template('Classes.html')
+
+@app.route('/Leagues')
+def leagues():
+  return render_template('Leagues.html')
 
 @app.route('/GetStart')
 def getstart():
@@ -171,7 +175,10 @@ def public_profile(userid):
   profiles = get_data("Profiles")
   
   profile = next((row for row in profiles if str(row['OSIS']) == str(userid)), None)
-  
+  # if profile is not found, return an error without a separate page
+  if profile == None:
+    return json.dumps({"error": "Profile not found"})
+
   
   #Get just first name, last name, grade, and osis of the user, still as a dictionary
   user_data = next(
@@ -204,12 +211,19 @@ def course_reviews(courseid):
 # Get the user's IP address, connects to the user_data.js function
 @app.route('/home-ip', methods=['POST'])
 def get_home_ip():
-
+  r = request.json
+  userId = r['userId']
+  grades_key = r['grades_key']
+  print("grades_key", grades_key)
+  if 'user_data' not in session:
+    return json.dumps({'Name': ["Login", 404]})
+  session['user_data']['grades_key'] = str(grades_key)
+  print("grades_key", session['user_data']['grades_key'])
   if 'ip_add' not in session:
     # store the ip address in the session
-    session['ip_add'] = request.json
-    print(request.json)
-  print("ip from get_home_ip is:", session['ip_add'])
+    session['ip_add'] = userId
+    
+  print("ip from get_home_ip is:", session['ip_add'], "grades_key", grades_key)
   # return the user's data given their IP address
   return json.dumps({'Name': get_name(str(session['ip_add']))})
 
@@ -220,8 +234,11 @@ def Jupiter():
   # get_gclassroom_api_data()
   data = request.json
   classes= run_puppeteer_script(data['osis'], data['password'])
-  jupapi_output_to_classes(classes, session, vars['sheetdb_url'], True)
-  grades = jupapi_output_to_grades(classes, session, vars['sheetdb_url'], True)
+  if str(data['addclasses'])=="True":
+    jupapi_output_to_classes(classes)
+  print(data['encrypt'])
+  session['user_data']['grades_key'] = str(data['encrypt'])
+  grades = jupapi_output_to_grades(classes, data['encrypt'])
   return json.dumps(grades)
 
 @app.route('/init_oauth', methods=['POST', 'GET'])
@@ -257,7 +274,7 @@ def fetch_data():
       sheet_name = sheet.replace("FILTERED ", "")
       # special case for the Grades, since it's not a normal sheet: it must be processed differently
       if sheet_name=="Grades":
-        response[sheet_name] = get_grades(session)
+        response[sheet_name] = get_grades()
       else:
         data = get_data(sheet_name)
         # if data is of type NoneType, return an empty list
@@ -310,7 +327,7 @@ def get_AI():
 def get_insights_ga():
   classes_data = get_data("Classes")
   user_data = get_name()
-  grades = get_grades(session)
+  grades = get_grades()
   grade_spreads = []
 
   grade_spread = process_grades(grades, ["all", "All"], user_data, classes_data)
@@ -343,7 +360,8 @@ def post_ga_grades():
   # Get User, Class, and Grade data
   classes_data = get_data("Classes")
   # grades = get_data("Grades")
-  grades = get_grades(session)
+  grades = get_grades()
+  print("len grades in post_ga_grades", len(grades))
   
   
   user_data = get_name()
@@ -372,7 +390,7 @@ def post_ga_grades():
 @app.route('/GAsetup', methods=['POST'])
 def GA_setup():
   classes = get_data("Classes")
-  grades = get_grades(session)
+  grades = get_grades()
   #filter classes for the user's osis
   classes = [item for item in classes if str(session['user_data']['osis']) in str(item['OSIS'])]
   categories = make_category_groups(classes)
@@ -418,7 +436,7 @@ def receive_grades():
 def get_impact():
   data = request.json
   
-  grades = get_grades(session)
+  grades = get_grades()
   classes = get_data("Classes")
   category_grades = filter_grades(grades, session['user_data'], [data['class'], data['category']])
   
@@ -654,7 +672,7 @@ def get_insights(prompts):
   return insights
   
 
-#uncomment to run locally, comment to deploy
+#uncomment to run locally, comment to deploy. Before deploying, change db to firebase, add new packages to requirements.txt
 
 if __name__ == '__main__':
   app.run(host='localhost', port=8080)

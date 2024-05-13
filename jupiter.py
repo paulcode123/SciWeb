@@ -5,6 +5,7 @@ import datetime
 import requests
 from database import get_data, update_data, post_data, delete_data
 import re
+from flask import session
 
 
 def run_puppeteer_script(osis, password):
@@ -49,7 +50,7 @@ def run_puppeteer_script(osis, password):
     return None
 
 
-def jupapi_output_to_grades(data, session, sheetdb_url, allow_demo_change):
+def jupapi_output_to_grades(data, encrypt):
   grades = []
   classes= data["courses"]
   for c in classes:
@@ -59,26 +60,35 @@ def jupapi_output_to_grades(data, session, sheetdb_url, allow_demo_change):
       id = random.randint(1000, 9999)
       date = a["due"]
       date = convert_date(date)
-      grades.append({"name": a["name"], "date": date, "score": a["score"], "value": a["points"], "class": c["name"], "category": a["category"], "OSIS": session['user_data']['osis'], "id": id})
+      # if score is None, make it 'null'
+      score = a["score"] if a["score"] != None else "null"
+      grades.append({"name": a["name"], "date": date, "score": score, "value": a["points"], "class": c["name"], "category": a["category"], "OSIS": session['user_data']['osis'], "id": id})
   #To avoid size issues, split the grades into groups of 100 assignments each
   grades_split = [grades[i:i + 100] for i in range(0, len(grades), 100)]
 
-  grades_obj = {"OSIS": session['user_data']['osis']}
+  grades_obj = {"OSIS": str(session['user_data']['osis']), "encrypted": "False"}
+
   #modify the line above to include all the grades
   for i in range(0, len(grades_split)):
-    grades_obj[str(i+1)] = grades_split[i]
+    grade_fragment = grades_split[i]
+    if encrypt != "none":
+      print("encrypting")
+      grade_fragment = encrypt_grades(str(grade_fragment), int(encrypt))
+      grades_obj["encrypted"] = "True"
+    grades_obj[str(i+1)] = grade_fragment
+   
   #get list of all values in 'OSIS' column
   grades_data = get_data("GradeData")
   osis_list = [str(grade['OSIS']) for grade in grades_data]
   # If the user's osis is already in the osis column, update, otherwise post
   if str(session['user_data']['osis']) in osis_list:
-    update_data(session['user_data']['osis'], "OSIS", grades_obj, "GradeData")
+    update_data(str(session['user_data']['osis']), "OSIS", grades_obj, "GradeData")
   else:
     post_data("GradeData", grades_obj)
-  print(len(grades))
+ 
   return grades
   
-def jupapi_output_to_classes(data, session, sheetdb_url, allow_demo_change):
+def jupapi_output_to_classes(data):
   #this function suggests which classes the user should create or join based on their jupiter classes
   #for each class, if the class exists in class_data, update the db it with the user's osis in the 'OSIS' col of that class
   # If the class does not yet exist, add the class to the db: {"teacher": teacher name, "name": class name, "OSIS": user's osis, "id": random 4 digit number, "period": period, "categories": [name, weight, name, weight, ...]}
@@ -127,7 +137,7 @@ def jupapi_output_to_classes(data, session, sheetdb_url, allow_demo_change):
     
   
 
-def get_grades(session):
+def get_grades():
   data = get_data("GradeData")
   #filter for osis
   has_grades = False
@@ -141,32 +151,63 @@ def get_grades(session):
     return {"date": "1/1/2021", "score": 0, "value": 0, "class": "No grades entered", "category": "No grades entered", "name": "None"}
   
   grades = []
-  # get how many elements are in the dictionary
-  num_elements = len(line)
+
+  # get the line dict without the osis and encrypted keys
+  gline = {key: line[key] for key in line if key != "OSIS" and key != "encrypted" and key != "docid"}
+  # get the highest number of the keys in the line dict
+  num_elements = max([int(key) for key in gline.keys()])+1
   
-  for i in range(1, num_elements-1):
-    cell = line[str(i)]
-    #if cell isn't already a dict, convert from string to list of dictionaries
-    if type(cell) == str:
-      cell = json.loads(cell)
+  # convert string to boolean
+  encrypted = line['encrypted'] == "True"
+  if encrypted:
+    if 'grades_key' not in session['user_data'] or session['user_data']['grades_key'] == "none":
+        print("No grades key")
+        return []
     
-    grades.extend(cell)
+    for i in range(1, num_elements):
+      cell = line[str(i)]
+      cell = decrypt_grades(cell, int(session['user_data']['grades_key']))
+      # convert single quotes to double quotes
+      cell = cell.replace("{'", '{"')
+      cell = cell.replace("':", '":')
+      cell = cell.replace(", '", ', "')
+      cell = cell.replace("'}", '"}')
+      cell = cell.replace(": '", ': "')
+      cell = cell.replace("',", '",')
+      
+      cell = json.loads(cell)
+      for grade in cell:
+        if grade['score'] == 'null':
+          grade['score'] = None
+      grades.extend(cell)
+  else:
+    for i in range(1, num_elements):
+      cell = line[str(i)]
+      if type(cell) == str:
+        cell = json.loads(cell)
+      grades.extend(cell)
+  
   #convert date of each grade from format m/dd to mm/dd/yyyy
   
   dated_grades = []
   for grade in grades:
+    # if category is NoneType, print
+    if type(grade['category']) == type(None) or type(grade['score']) == type('m') or type(grade['score']) == type(None):
+      # print("NoneType", grade)
+      continue
+    
     #convert date to datetime object
     date = str(grade['date'])
     
     #If date="None" or score is of type Nonetype
-    if date == "None" or date=="" or type(grade['score']) == type(None):
+    if date == "None" or date=="":
       continue
     
     date = convert_date(date)
     
     grade['date'] = date
     dated_grades.append(grade)
-  # print(dated_grades[:10])
+  # print(len(dated_grades), len(grades))
   return dated_grades
 
 
@@ -194,3 +235,31 @@ def convert_date(date_str):
     # Return the formatted date string without leading zeros in a platform-independent way
     return f"{input_date_with_current_year.month}/{input_date_with_current_year.day}/{input_date_with_current_year.year}"
 
+
+def encrypt_grades(plain_text, number):
+    # Convert the number to bytes
+    key_bytes = number.to_bytes((number.bit_length() + 7) // 8, byteorder='big')
+    
+    # Convert the plain text to bytes
+    plain_bytes = plain_text.encode()
+    
+    # XOR each byte of the plain text with the key
+    encrypted_bytes = bytearray()
+    for i in range(len(plain_bytes)):
+        encrypted_bytes.append(plain_bytes[i] ^ key_bytes[i % len(key_bytes)])
+    
+    return encrypted_bytes.hex()
+
+def decrypt_grades(cipher_text, number):
+    # Convert the number to bytes
+    key_bytes = number.to_bytes((number.bit_length() + 7) // 8, byteorder='big')
+    
+    # Convert the hexadecimal string back to bytes
+    encrypted_bytes = bytearray.fromhex(cipher_text)
+    
+    # XOR each byte of the cipher text with the key
+    decrypted_bytes = bytearray()
+    for i in range(len(encrypted_bytes)):
+        decrypted_bytes.append(encrypted_bytes[i] ^ key_bytes[i % len(key_bytes)])
+    
+    return decrypted_bytes.decode()

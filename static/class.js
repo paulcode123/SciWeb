@@ -22,21 +22,27 @@ document.getElementById('openNBcont').appendChild(button);
 
 
 //add user bubbles to the class page, with links to the user's profile page
-function add_user_bubbles(classData){
+function add_user_bubbles(classData, users){
 var userListContainer = document.getElementById('user-list');
   console.log(classData)
 //set members as a list of osis values, taking only the numbers and not any combination of spaces and commas in between
-members = classData['OSIS'].split(/[\s,]+/).filter(item => item.length > 0);
+const members = classData['OSIS'].split(/[\s,]+/).filter(item => item.length > 0);
 
-members.forEach(function(user) {
+for(let x=0; x<members.length; x++){
+    let name = users.find(item => item.osis == members[x]);
+    // if name is not found, skip this iteration
+    if(name == undefined){
+      continue;
+    }
+    name = name['first_name'];
     var userBubble = document.createElement('div');
-    userBubble.textContent = user;
+    userBubble.textContent = name;
     userBubble.classList.add('user-bubble');
     userBubble.addEventListener('click', function() {
-        window.location.href = '/users/' + user; // link to profile page
+        window.location.href = '/users/' + members[x]; //link to the user's profile page
     });
     userListContainer.appendChild(userBubble);
-});
+}
 }
 
 
@@ -88,7 +94,7 @@ function post_assignment(data){
 
 
 async function get_assignment(){
-  var data = await fetchRequest('/data', {data: "Assignments, FILTERED Classes"});
+  var data = await fetchRequest('/data', {data: "Assignments, Classes, Name, Users"});
   var classId = window.location.href.slice(-4);
   var assignmentList = data['Assignments']
   classData = data['Classes'];
@@ -99,9 +105,10 @@ async function get_assignment(){
   set_class_img(classData['img'])
   display_assignments(assignmentList, classData);
   display_NB_btn(classData);
-  add_user_bubbles(classData);
+  add_user_bubbles(classData, data['Users']);
   optionSelected(classData);
   setImageEl(classData)
+  show_Join(data['Name'], classData);
   // if classData['img'] != "", set the background image of the div to the base64 image string
   
   document.getElementById('loadingWheel').style.display = "none";
@@ -238,4 +245,27 @@ async function set_class_img(img){
   classimg.src = b64;
   console.log(b64)
   document.getElementById('classimgcontainer').appendChild(classimg)
+}
+
+// show_join() function: if the user is logged in but not in the class, show the join button
+function show_Join(user, classData){
+  const joinBtn = document.getElementById('joinBtn');
+  if (user[1] == 404){
+    return;
+  }
+  if (classData['OSIS'].includes(user['osis'])){
+    return;
+  }
+  joinBtn.style.display = 'block';
+  join_class(classData, user);
+}
+
+// add event listener to join button
+function join_class(classData, user){
+  document.getElementById('joinBtn').addEventListener('click', async function() {
+    var new_row = classData;
+    new_row['OSIS'] = new_row['OSIS'] + ", "+user['osis']
+    fetchRequest('/update_data', {"row_value": classData['id'], "row_name": "id", "data": new_row, "sheet": "Classes"});
+    location.reload();
+  });
 }
