@@ -69,6 +69,8 @@ function toggleSlider() {
   var passwordfield = document.getElementById("password");
   var gradefield = document.getElementById("grade");
   var lastnamefield = document.getElementById("lname");
+  var lnamelabel = document.getElementById("lnamelabel");
+  var gradelabel = document.getElementById("gradelabel");
 
   if (slider.classList.contains("on")) {
     slider.classList.remove("on");
@@ -80,6 +82,8 @@ function toggleSlider() {
     // hide grade and last name fields
     gradefield.style.display = "none";
     lastnamefield.style.display = "none";
+    lnamelabel.style.display = "none";
+    gradelabel.style.display = "none";
     // make sure these fields are not required
     gradefield.required = false;
     lastnamefield.required = false;
@@ -93,6 +97,8 @@ function toggleSlider() {
     // show grade and last name fields
     gradefield.style.display = "block";
     lastnamefield.style.display = "block";
+    lnamelabel.style.display = "block";
+    gradelabel.style.display = "block";
     // make sure these fields are required
     gradefield.required = true;
     lastnamefield.required = true;

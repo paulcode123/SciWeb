@@ -26,7 +26,7 @@ from PIL import Image
 # Get functions from other files
 from database import get_data, post_data, update_data, delete_data, download_file, upload_file, init_firebase
 from classroom import init_oauth, oauth2callback, list_courses
-from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups, get_stats
+from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups, get_stats, update_leagues
 from goals import calculate_goal_progress, get_goals
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades
 
@@ -158,6 +158,16 @@ def notebook_page(classurl):
                          class_name=class_name,
                          class_data=class_data)
 
+# League page, for specific leagues
+@app.route('/league/<leagueid>')
+def league_page(leagueid):
+  leagues = get_data("Leagues")
+  league_data = next(
+    (row for row in leagues if int(row['id']) == int(leagueid)), None)
+  league_name = league_data['Name']
+  return render_template('league.html',
+                         league_name=league_name)
+
 # Assignment page, for specific assignments
 @app.route('/assignment/<assignmentid>')
 def assignment_page(assignmentid):
@@ -236,9 +246,11 @@ def Jupiter():
   classes= run_puppeteer_script(data['osis'], data['password'])
   if str(data['addclasses'])=="True":
     jupapi_output_to_classes(classes)
-  print(data['encrypt'])
+  
   session['user_data']['grades_key'] = str(data['encrypt'])
   grades = jupapi_output_to_grades(classes, data['encrypt'])
+  if str(data['updateLeagues'])=="True":
+    update_leagues(grades)
   return json.dumps(grades)
 
 @app.route('/init_oauth', methods=['POST', 'GET'])
@@ -280,9 +292,23 @@ def fetch_data():
         # if data is of type NoneType, return an empty list
         if data == None:
           return json.dumps({})
+        
+        # if the sheet is one of these exceptions that require special filtering
         if sheet_name=="Friends":
           #send if the user's osis is in the OSIS or targetOSIS of the row
           response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in item['OSIS'] or str(session['user_data']['osis']) in item['targetOSIS']]
+        elif sheet_name=="Assignments":
+          # send if item['class'] is the id for any of the rows in response['Classes']
+          class_ids = [item['id'] for item in response['Classes']]
+          response[sheet_name] = [item for item in data if item['class'] in class_ids]
+        elif sheet_name=="FClasses":
+          #send all of the classes that the user's friends are in
+          friend_osises = [item['targetOSIS'] for item in data if str(session['user_data']['osis']) in item['OSIS']] + [item['OSIS'] for item in data if str(session['user_data']['osis']) in item['targetOSIS']]
+          r = []
+          classes = get_data("Classes")
+          for friend in friend_osises:
+            r += [item for item in classes if friend in item['OSIS']]
+          response[sheet_name] = r
         else:
           #Otherwise, filter the data for the user's osis
           response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in str(item['OSIS'])]

@@ -20,6 +20,7 @@ async function pullfromJupiter(){
   const password = document.getElementById('password').value;
   const addClasses = document.getElementById('addclasses').checked;
   const encrypt = document.getElementById('encrypt').checked;
+  const updateLeagues = document.getElementById('updateLeagues').checked;
   console.log(encrypt)
   // if encrypt is checked, generate a key and set it as a cookie
   var key="none"
@@ -29,7 +30,7 @@ async function pullfromJupiter(){
     document.cookie = "gradeKey="+key;
   }
   //Send to python with fetch request
-  const data = await fetchRequest('/jupiter', {"osis": osis, "password": password, "addclasses": addClasses, "encrypt": key});
+  const data = await fetchRequest('/jupiter', {"osis": osis, "password": password, "addclasses": addClasses, "encrypt": key, "updateLeagues": updateLeagues});
   
   console.log("got response")
   grades = data;

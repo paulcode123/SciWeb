@@ -70,3 +70,25 @@ input[type="text"]{
     border: 1px solid black;
     border-radius: 10px;
 }
+
+#addUsers, #userList {
+    display: inline-block;
+}
+
+.userEl {
+    padding:3px;
+    border: 1px solid black;
+    border-radius: 3px;
+    background-color: #2b48a0;
+    cursor: pointer;
+}
+
+.leagueEl {
+    padding:40px;
+    border: 1px solid black;
+    border-radius: 3px;
+    background-color: #2b48a0;
+    cursor: pointer;
+    width: 60%;
+}
+

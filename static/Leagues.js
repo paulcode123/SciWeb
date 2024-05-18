@@ -1,41 +1,82 @@
 // add event listener to create league button to show league form
 const createLeagueButton = document.getElementById('createLeague');
 const leagueForm = document.getElementById('leagueForm');
+const userList = document.getElementById('userList');
+const user_add_field = document.getElementById('addUsers');
+console.log(userList);
 
 createLeagueButton.addEventListener('click', () => {
     leagueForm.style.display = 'block';
     });
 
-// hide loading wheel
-document.getElementById('loadingWheel').style.display = 'none';
+
 
 async function main() {
     // get all leagues
-    const data = await fetchRequest('/data', { data: "Users, Leagues, Name" })
+    const data = await fetchRequest('/data', { data: "Users, FILTERED Leagues, Name" })
     const leagues = data.Leagues;
     const users = data.Users;
+    
     set_create_user_add_EL(users);
+    displayLeagues(leagues);
+    // hide loading wheel
+    document.getElementById('loadingWheel').style.display = 'none';
 }
+main();
 
-function set_create_user_add_EL(users){
-    const user_add_field = document.getElementById('addUsers');
-    // add event listener to user_add_field to show users that match the query
-    user_add_field.addEventListener('input', () => {
-        var possible_users = [];
-        // loop through all users: to see if they include the query. When only one user matches the query, add the user to the list of users to be added to the league
-        users.forEach(user => {
-            if((user.first_name + user.last_name).includes(user_add_field.value)){
-                possible_users.push(user);
-            }
+
+function displayLeagues(leagues) {
+    console.log(leagues);
+    // get league list
+    const leagueList = document.getElementById('leagueList');
+    // loop through all leagues
+    leagues.forEach(league => {
+        // create league element
+        const leagueEl = document.createElement('div');
+        // add to class
+        leagueEl.classList.add('leagueEl');
+        // add text
+        leagueEl.innerText = league.Name;
+        // redirect to league page when clicked
+        leagueEl.addEventListener('click', () => {
+            window.location.href = `/league/${league.id}`;
         });
-        if (possible_users.length == 1){
-            const userEl = document.createElement('div');
-            // add to class
-            userEl.classList.add('userEl');
-            // add text
-            userEl.innerText = possible_users[0].first_name + " " + possible_users[0].last_name;
-            // add to user_add_field
-            user_add_field.appendChild(userEl);
-        }
+        // add to leagueList
+        leagueList.appendChild(leagueEl);
     });
 }
+
+// add event listener when form is submitted
+leagueForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const leagueName = document.getElementById('leagueName').value;
+    const activitiesChecklist = document.getElementById('activityOptions')
+    var leagueUsers = [osis];
+    // loop through all users in userList
+    userList.childNodes.forEach(user => {
+        // add user to leagueUsers
+        leagueUsers.push(user.value);
+    });
+    leagueUsers = leagueUsers.join(", ");
+    // list all of the checked activities
+    const leagueActivities = [];
+    activitiesChecklist.childNodes.forEach(activity => {
+        // if element is a label
+        if(activity.nodeName != "LABEL"){
+            return;
+        }
+        activity = activity.childNodes[0];
+        
+        if(activity.checked){
+            
+            // push id of element value to leagueActivities
+            leagueActivities.push(activity.id);
+        }
+    });
+    // make random 8 digit id
+    const id = Math.floor(Math.random() * 100000000);
+    // create league
+    await fetchRequest('/post_data', {"sheet": "Leagues", "data": {"Name": leagueName, "OSIS": leagueUsers, "Activities": leagueActivities, "id": id}});
+    //reload page
+    location.reload();
+});

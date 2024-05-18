@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
-<link rel="stylesheet" href="/static/class.css">
+<link rel="stylesheet" href="/static/league.css">
 <link rel="stylesheet" href="/static/chatBox.css">
 <link rel="stylesheet" href="/static/navbar.css">
 <head>
   
-    <title>SciWeb {{ class_name }}</title>
+    <title>SciWeb {{ league_name }}</title>
     <link rel="icon" href="/static/media/favicon.png" type="image/x-icon">
     <link rel="manifest" href="/static/manifest.json">
 
@@ -53,8 +53,8 @@
   <div class="container">
   <div id="classimgcontainer"></div>
   <div id="head">
-    <h1>{{ class_name }}</h1>
-    <button id="joinBtn">Join Class</button>
+    <h1>{{ league_name }} League</h1>
+    <button id="joinBtn">Join League</button>
     <h3 id="description"></h3>
     <div id="user-list"></div>
     <div id="assignmentList"></div>
@@ -71,32 +71,12 @@
     <button id="savecolor" style="display: none;">Save Color</button>
 
     <br>
-  <button id="createBtn">Create Assignment</button>
+  
 
-  <div id="formContainer" style="display: none;">
-    <form id="assignmentForm">
-      <label for="name">Name:</label>
-      <input type="text" id="name" name="name" required>
-
-      <label for="due">Due Date:</label>
-      <input type="date" id="due" name="due" required>
-      <label for="points">Points:</label>
-      <input type="number" id="points" name="points" required>
-      <label for="assignmentType">Type:</label>
-    <select id="assignmentType" name="assignmentType">
-      <option value="default">Loading Classes</option>
-      
-    </select>
-    
-      <br>
-      
-    
-      <input type="submit" value="Submit">
-    </form>
-  </div>
+  
+  
   <br><br>
-  <div id="openNBcont"></div>
-  <br>
+  
   <div id="chat-box">
     <button id="refresh-chat">🔄</button>
     <ul id="message-list"></ul>
@@ -114,7 +94,7 @@
   <script src="/static/util.js"></script>
   <script src="/static/user_data.js"></script>
   <script src="/static/setdesign.js"></script>
-  <script src="/static/class.js"></script>
+  <script src="/static/league.js"></script>
   <script src="/static/chatBox.js"></script>
   
 </body>

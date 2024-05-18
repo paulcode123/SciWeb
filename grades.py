@@ -327,3 +327,5 @@ def get_stats(grades, classes):
 
   return {"gpa": gpa, "raw_avg": raw_avg, "avg_change": avg_change, "most_improved_class": most_improved_class, "most_worsened_class": most_worsened_class, "past30_avg": past30_avg, "t30_avg": t30_avg, "grade_changes": grade_changes}
 
+def update_leagues(grades):
+  pass

@@ -64,17 +64,21 @@
         <label for="leagueName">League Name:</label>
         <input type="text" id="leagueName" name="leagueName"><br>
         <!-- activities(checkboxes) -->
-        <label for="activities">Activities:</label><br>
+        <label for="activities">Activities:</label>
+        <div id="activityOptions">
         <label for="GOTC"><input type="checkbox" class="activities" name="activities" id="GOTC">Grades over time Chart</label><br>
         <label for="GPAlb"><input type="checkbox" class="activities" name="activities" id="GPAlb">GPA leaderboard</label><br>
         <label for="RIlb"><input type="checkbox" class="activities" name="activities" id="RIlb">Recent Improvement Leaderboard</label><br>
         <label for="Glb"><input type="checkbox" class="activities" name="activities" id="Glb">Goals Leaderboard</label><br>
         <label for="RAS"><input type="checkbox" class="activities" name="activities" id="RAS">Recent Assessment Share</label><br>
         <label for="SS"><input type="checkbox" class="activities" name="activities" id="SS">Stat Share</label><br>
-        <label for="R"><input type="checkbox" class="activities" name="activities" id="R">Reactions</label><br>
+        <label for="R"><input type="checkbox" class="activities" name="activities" id="R">Reactions</label>
+        </div>
         <!-- add users -->
         <label for="addUsers">Add Users:</label>
-        <input type="text" id="addUsers" name="addUsers"><br>
+        <input type="text" id="addUsers" name="addUsers">
+        <div id="userList"></div>
+        <br>
       <input type="submit" value="Submit" id="submit">
   </form>
   <br>

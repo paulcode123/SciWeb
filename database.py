@@ -8,7 +8,7 @@ import json
 from flask import session
 
 #get data from Google Sheets API
-def get_data_gsheet(sheet):
+def get_data_gsheet(sheet, row_name, row_val):
   from main import init
   vars = init()
   ranges = [f"{sheet}!A:{vars['max_column']}"]
@@ -26,12 +26,10 @@ def get_data_gsheet(sheet):
     for index, value in enumerate(row):
       header = headers[index]
       row_data[header] = value
-    data.append(row_data)
-  # convert to json: not just the list, but every dictionary in the list
-  # data = json.dumps(data)
-  # print type of data[0]
-  print(type(data[0]))
-  # print("from gsheet", data)
+    # if row_name != "", filter by row_name and row_val
+    if row_name == "" or row_data[row_name] == str(row_val):
+      data.append(row_data)
+  
   return data
 
 
@@ -114,7 +112,7 @@ def init_firebase():
     cred = credentials.Certificate('service_key.json')
     firebase_admin.initialize_app(cred)
 
-def get_data_firebase(collection):
+def get_data_firebase(collection, row_name, row_val):
     print(collection)
     # Initialize Firestore DB
     db = firestore.client()
@@ -127,7 +125,10 @@ def get_data_firebase(collection):
     
     # Attempt to get documents from the collection
     try:
-        docs = collection_ref.stream()
+        if row_name == "":
+            docs = collection_ref.stream()
+        else:
+            docs = collection_ref.where(row_name, '==', [str(row_val)]).stream()
         for doc in docs:
             # Each doc is a DocumentSnapshot, convert to dict and append to results
             doc_dict = doc.to_dict()
@@ -203,12 +204,12 @@ def delete_data_firebase(row_val, row_name, collection):
 
     return deleted_documents
 
-def get_data(collection):
+def get_data(collection, row_name="", row_val=""):
   from main import init
   vars = init()
   if vars['database'] == 'gsheet':
-    return get_data_gsheet(collection)
-  return get_data_firebase(collection)
+    return get_data_gsheet(collection, row_name, row_val)
+  return get_data_firebase(collection, row_name, row_val)
 
 def post_data(collection, data):
     print("posting data")

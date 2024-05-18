@@ -51,6 +51,7 @@ def run_puppeteer_script(osis, password):
 
 
 def jupapi_output_to_grades(data, encrypt):
+  print("jupapi_output_to_grades")
   grades = []
   classes= data["courses"]
   for c in classes:
