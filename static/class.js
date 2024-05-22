@@ -183,7 +183,7 @@ categoryElement.appendChild(newOption);
 }
 function leaveClass() {
   var classId = window.location.href.slice(-4);
-  const dataToSend = {"row_val":classId}
+  const dataToSend = {"row_value":classId, "row_name":id, "data":osis};
 
   // if (!classData || typeof osis === 'undefined' || !classId) {
   //     console.log(classData,osis,classId)
@@ -199,7 +199,7 @@ function leaveClass() {
   //     classId: classId
   // };
 
-  fetch('/api/delete_data', {
+  fetch('/update-data', {
       method: 'POST',
       headers: {
           'Content-Type': 'application/json'
@@ -234,24 +234,3 @@ function leaveClass() {
   //     OSIS: updatedOSISColumn,
   //     classId: classId
   // };
-
-  fetch('/api/remove-student', {
-      method: 'POST',
-      headers: {
-          'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(dataToSend)
-  })
-  .then(response => {
-      if (!response.ok) {
-          throw new Error('Network response was not ok');
-      }
-      return response.json();
-  })
-  .then(data => {
-      console.log('Success:', data);
-      window.location.href = '/classes'; 
-  })
-  .catch((error) => {
-      console.error('Error:', error);
-  });
