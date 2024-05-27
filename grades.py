@@ -5,6 +5,7 @@ import numpy as np
 import json
 import ast
 
+from database import update_data
 
 #filter grades for those matching user osis and classes among those being graphed
 def filter_grades(grades, user_data, classes):
@@ -25,11 +26,12 @@ def filter_grades(grades, user_data, classes):
   classes = [c.lower() if c != "All" else c for c in classes]
 
     
-  grades = [
-    grade for grade in grades
-    if ((grade['class'].lower() in classes) or ('all' in classes)) and ((grade['category'].lower() in classes) or ('All' in classes))
-  ]
-
+  fgrades = []
+  for grade in grades:
+    if ((grade['class'].lower() in classes) or ('all' in classes)) and ((grade['category'].lower() in classes) or ('All' in classes)):
+      fgrades.append(grade)  
+  
+  print("in filter_grades: grades filtered from length", len(grades), "to", len(fgrades), "with filters", classes)
   # grades = []
   # for grade in grades:
   #   for c in classes:
@@ -111,27 +113,37 @@ def get_weights(classes_data, osis):
   return weights
 
 # Calculate the user's grades over time
-def process_grades(allgrades, classes, user_data, classes_data, interval=10):
+def process_grades(allgrades, classes, user_data, classes_data, interval=10, s_min_date=None, s_max_date=None):
   print("in process_grades")
   #filter grades based on class
   grades = filter_grades(allgrades, user_data, classes)
-  print("in process_grades: grades filtered from length", len(allgrades), "to", len(grades))
-  # Get the minimum and maximum dates of the user's grades and goals
-  min_date, max_date, z = get_min_max(grades, user_data, classes, True, interval)
-  #Get the minium and maximum dates of just the user's grades
-  mi, mx, g = get_min_max(grades, user_data, classes, False, interval)
-  print("in process_grades: min_date inc goals", min_date, "max_date", max_date, "min_date exc. goals", mi, "max_date", mx)
-  if mi == 0:
-    return 0, []
-  # Generate 10 evenly spaced dates between the minimum and maximum dates
-  date_range = np.linspace(min_date.toordinal(),
-                           max_date.toordinal(),
-                           num=interval,
-                           dtype=int)
-  evenly_spaced_dates = [datetime.date.fromordinal(d) for d in date_range]
-  #Throw out the dates that are past mx, the maximum date of the user's grades
-  evenly_spaced_dates = [date for date in evenly_spaced_dates if date <= mx]
+  
+  if not s_min_date:
+    # Get the minimum and maximum dates of the user's grades and goals
+    min_date, max_date, z = get_min_max(grades, user_data, classes, True, interval)
+    #Get the minium and maximum dates of just the user's grades
+    mi, mx, g = get_min_max(grades, user_data, classes, False, interval)
+    print("in process_grades: min_date inc goals", min_date, "max_date", max_date, "min_date exc. goals", mi, "max_date", mx)
+    if mi == 0:
+      return 0, []
+    
+    # Generate 10 evenly spaced dates between the minimum and maximum dates
+    date_range = np.linspace(min_date.toordinal(),
+                            max_date.toordinal(),
+                            num=interval,
+                            dtype=int)
+    evenly_spaced_dates = [datetime.date.fromordinal(d) for d in date_range]
+    #Throw out the dates that are past mx, the maximum date of the user's grades
+    evenly_spaced_dates = [date for date in evenly_spaced_dates if date <= mx]
+  else:
+    # Generate 10 evenly spaced dates between the minimum and maximum dates
+    date_range = np.linspace(s_min_date.toordinal(),
+                            s_max_date.toordinal(),
+                            num=interval,
+                            dtype=int)
+    evenly_spaced_dates = [datetime.date.fromordinal(d) for d in date_range]
 
+  
   weights = get_weights(classes_data, user_data['osis'])
 
   # get grades for each date
@@ -211,7 +223,7 @@ def get_grade_points(grades, user_data, classes):
   #Get the ordinal date and score/value of every grade in the given classes
   grades = filter_grades(grades, user_data, classes)
   weights = get_weights(get_data('Classes'), user_data['osis'])
-  print("weights", weights)
+  # print("weights", weights)
   grade_points = []
   category_weight_sums = {}
   for grade in grades:
@@ -327,5 +339,65 @@ def get_stats(grades, classes):
 
   return {"gpa": gpa, "raw_avg": raw_avg, "avg_change": avg_change, "most_improved_class": most_improved_class, "most_worsened_class": most_worsened_class, "past30_avg": past30_avg, "t30_avg": t30_avg, "grade_changes": grade_changes}
 
-def update_leagues(grades):
-  pass
+def update_leagues(grades, classes):
+  from goals import calculate_goal_progress
+
+  print("in update_leagues")
+  # filter the leagues for those that the user is in and get all of the activities that need to be calculated
+  leagues = get_data("Leagues")
+  fleagues = []
+  distinct_activities = []
+  for league in leagues:
+    if str(session['user_data']['osis']) in league['OSIS']:
+      fleagues.append(league)
+      activities = json.loads(league['Activities'])
+      distinct_activities.extend(activities)
+
+  
+  # if the league permissions include the grades over time chart, calculate the user's grade over time
+  if "GOTC" in distinct_activities:
+    # standardize the min and max dates by setting min_date to the previous september 10th and max_date to the current date
+    now = datetime.datetime.now()
+    if now.month < 9 or (now.month == 9 and now.day < 10):
+      min_date = datetime.date(datetime.datetime.now().year-1, 9, 10)
+    else:
+      min_date = datetime.date(datetime.datetime.now().year, 9, 10)
+    max_date = now.date()
+    dr, grade_spread = process_grades(grades, ["all", "All"], session['user_data'], classes, 15, min_date, max_date)
+    print(dr)
+  # Grade Leaderboard
+  if "Glb" in distinct_activities:
+    goalp = calculate_goal_progress(session)
+  # recent assessment share
+  if "RAS" in distinct_activities:
+    # filter grades for assessment category and the past 30 days
+    fgrades = []
+    if not 'category_groups' in session:
+      assessment_categories = make_category_groups(classes)
+    assessment_categories = session['category_groups']['Assessments']
+    for grade in grades:
+      if grade['category'] in assessment_categories and datetime.datetime.strptime(grade['date'], '%m/%d/%Y').date() >= datetime.datetime.now().date() - datetime.timedelta(days=30):
+        fgrades.append(grade)
+  # For RIlb, GPAlb, get the user's stats
+  stats = get_stats(grades, classes)
+
+  # update the database with the calculated data
+  to_compile = {"GOTC": grade_spread, "GPAlb": stats['gpa'], "RIlb": stats['avg_change'], "Glb": goalp, "RAS": fgrades}
+  for league in fleagues:
+    for activity in to_compile.keys():
+      if not activity in league['Activities']:
+        continue
+      if activity in league and league[activity] != "":
+        la = league[activity]
+        la = la.replace("'", '"')
+        content = json.loads(la)
+        content[session['user_data']['osis']] = to_compile[activity]
+        league[activity] = str(content)
+      else:
+        if activity != "GOTC":
+          league[activity] = str({session['user_data']['first_name']: to_compile[activity]})
+        else:
+          league[activity] = str({'dates': str(dr), session['user_data']['first_name']: to_compile[activity]})
+
+    update_data(league['id'], 'id', league, 'Leagues')
+  
