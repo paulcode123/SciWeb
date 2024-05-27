@@ -29,6 +29,7 @@ from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups, get_stats, update_leagues
 from goals import calculate_goal_progress, get_goals
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades
+from study import study_response
 
 #get api keys from static/api_keys.json file
 
@@ -346,7 +347,7 @@ def get_goals_progress():
 # Function to return insights to the Study page
 @app.route('/AI', methods=['POST'])
 def get_AI():
-  return json.dumps(get_insights(request.json['data']))
+  return json.dumps(study_response(request.json['data']))
 
 #function to generate insights and return them to the Grade Analysis page
 @app.route('/insights', methods=['POST'])
