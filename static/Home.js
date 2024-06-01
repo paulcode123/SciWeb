@@ -4,8 +4,49 @@ document.getElementById('scrolltodash').addEventListener('click', function() {
         behavior: 'smooth'
     });
 });
+//bell schedule, values in total minutes of day example: 2AM would be 120 minutes
+var bellSchedule = [0, 485, 531, 577, 625, 671, 717, 763, 809, 855, 902]
+var thursBellSchedule = [0, 486, 530, 574, 618, 633, 677, 721, 765, 809, 853, 897]
+// Create function to show date + time
+function getDate(){
+  var today = new Date();
+  var time = today.getMinutes + (today.getHours * 60);
+  isThursday = today.getDay() === 4;
+  if (isThursday == true){
+    for(let i = 0; i < thursBellSchedule.length; i++){
+      if (time < thursBellSchedule[i + 1]){
+        return i
+      }
+    }
+  } else {
+    for(let i = 0; i < bellSchedule.length; i++){
+      if (time < bellScheduleellSchedule[i + 1]){
+        return i
+        
+      }
+    }
+  }
 
+}
+function updateTime(){
+  var period = getDate()
+  var today = new Date();
+  var time = today.getMinutes + (today.getHours * 60)
+  var isThursday = today.getDay() === 4;
+  if (isThursday == true){
+    var timeRemaining = thursBellSchedule[period + 1] - time;
+  } else{
+    var timeRemaining = bellSchedule[period + 1] - time;
+  }
+  return timeRemaining;
 
+}
+function hTimer() {
+  var minRemaining = updateTime();
+  var secRemaining = minRemaining % 60;
+  var minDisplay = Math.floor(minRemaining / 60);
+  document.getElementById("timer").textContent = minDisplay + ":" + (secRemaining < 10 ? "0" : "") + secRemaining;
+}
 
 // Create function show_recent_messages to display the number and location of messages that were sent in the last 24 hours in classes and assignments that the user is in
 function show_recent_messages(messages, classes, assignments){
@@ -95,7 +136,16 @@ function get_classes_ids(classes){
   }
   return ids;
 }
-
+window.onload = function() {
+  setInterval(hTimer, 1000);
+  hTimer();
+  
+  console.log("Its always around me, all this noise but Not nearly as loud as the voice sayin Let it happen, let it happenIt's gonna feel so good Just let it happen, let it happen. Im a heartbreakerstomperliterallyeverywhereatonce")
+  
+} 
+window.addEventListener("DOMContentLoaded", (event) => {
+  console.log("DOM fully loaded and parsed, going with whatg i always longed forrrrrrr feel like a brandnew person making the same msitakes");
+});
 
 //Create a fetch request to /data to get Chat, Classes, and Assignments data
 async function main(){
@@ -112,6 +162,9 @@ const data = await fetchRequest('/data', { data: "Chat, FILTERED Classes, Assign
   show_recent_messages(messages, classes, assignments);
   console.log("done")
   return true;
+  
+
+
 }
 
 // Register service worker for the app
