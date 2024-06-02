@@ -29,7 +29,7 @@ from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups, get_stats, update_leagues
 from goals import calculate_goal_progress, get_goals
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades
-from study import study_response
+from study import study_response, get_insights
 
 #get api keys from static/api_keys.json file
 
@@ -264,6 +264,8 @@ def oauth2callback_handler():
   token = oauth2callback()
   print("session", session['credentials'])
   return redirect(url_for('assignments'))
+
+
 # This function is called from many JS files to get data from specific sheets
 # The requested sheets are passed in as a list: eg. "Grades, Classes"
 # It returns the data from the requested sheet
@@ -452,12 +454,6 @@ def process_notebook_image():
   return json.dumps(insights)
   
 
-# Post grades entered in the Enter Grades page to the Grades sheet
-@app.route('/post-grades', methods=['POST'])
-def receive_grades():
-  data = request.json
-  post_data("Grades", data)
-  return 'Data received successfully'
 
 @app.route('/impact', methods=['POST'])
 def get_impact():
@@ -493,6 +489,7 @@ def upload_file_route():
   # Upload the file to the bucket
   upload_file("sciweb-files", data['file'], data['name'])
   return json.dumps({"message": "success"})
+
 
 
 #When the user logs in, their data is posted to the Users sheet
@@ -548,13 +545,6 @@ def get_notebook():
   response = {"notebook":notebooks, 'insights': insights}
   return json.dumps(response)
 
-# If the user changes their info on the profile page, update the Users sheet
-@app.route('/update-login', methods=['POST'])
-def updateLogin():
-  data = request.json
-  
-  update_data(str(data['osis']), 'osis', data, "Users")
-  return json.dumps({"data": "success"})
 
 #accept friend request
 @app.route('/accept-friend', methods=['POST'])
@@ -572,76 +562,6 @@ def acceptFriend():
     
   post_data("Friends", data)
   return json.dumps({"data": "success"})
-
-#update public profile
-@app.route('/update-public-profile', methods=['POST'])
-def updatePublicProfile():
-  data = request.json
-  update_data(str(data['OSIS']), 'OSIS', data, "Profiles")
-  return json.dumps({"data": "success"})
-
-# After every couple of questions that the user answers on the study page, their questions and answers are logged to the Study sheet
-@app.route('/updateStudy', methods=['POST'])
-def updateStudy():
-  data = request.json
-  data = data['data']
-  user_data = get_name()
-  osis = user_data['osis']
-  update_data(osis, 'OSIS', [{"OSIS": osis, "Q&As": data}], "Study")
-  return json.dumps('success')
-
-#If a user joins or creates a class, the class data is posted to the Classes sheet
-@app.route('/post-classes', methods=['POST'])
-def receive_Classes():
-  data = request.json
-  print("receive_classes data", data)
-  # update=0 means the class is new, update=1 means the class is being joined
-  if data["update"] == 0:
-    post_data("Classes", data['class'])
-  else:
-    # add the user's osis to the class's list of osis
-    update_data(data["update"], "id", data['class'], "Classes")
-
-  return json.dumps({"data": "success"})
-
-# If the user edits one of their grades on the Enter Grades page, it's updated in the Grades sheet
-@app.route('/update-grades', methods=['POST'])
-def update_grades():
-  data = request.json
-  update_data(data['rowid'], "id", data['grades'], "Grades")
-  return json.dumps({"data": "success"})
-
-#If the user clicks the delete saved grades button, delete their grades from the Grades sheet
-@app.route('/delete-grades', methods=['POST'])
-def delete_grades():
-  data = request.json
-  delete_data(session['user_data']['osis'] , "OSIS", "GradeData")
-  return json.dumps({"data": "success"})
-
-
-# When the user creates a goal, it's posted to the Goals sheet
-@app.route('/post-goal', methods=['POST'])
-def postGoal():
-  data = request.json
-  post_data("Goals", data)
-  return json.dumps({"data": 'success'})
-
-# When the user types a message into the chat, it's posted to the Chat sheet
-@app.route('/post-message', methods=['POST'])
-def postMessage():
-  data = request.json
-  post_data("Chat", data)
-  return json.dumps({"data": 'success'})
-
-# When the user saves a notebook after changing it, it's posted to the Notebooks sheet
-@app.route('/post-notebook', methods=['POST'])
-def postNotebook():
-  data = request.json
-  if data['data']['exists'] == True:
-    update_data(data['data']['classID'], 'classID', data, "Notebooks")
-  else:
-    post_data("Notebooks", data['data'])
-  return json.dumps({"data": 'success'})
 
 
 #Function to get the user's name from Users data
@@ -679,25 +599,7 @@ def get_name(ip=None):
 
 
 
-# Query the LLM API to get insights
-def get_insights(prompts):
-  
-  headers = {
-    'Authorization': f"Bearer {vars['openAIAPI']}",
-    'Content-Type': 'application/json'
-}
-  
-  payload = {
-    "model": "gpt-3.5-turbo",
-    "messages": prompts
-}
-  insights = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
-  insights = insights.json()
-  # print("raw insights: "+str(insights))
-  insights = insights['choices'][0]['message']['content']
-  # print("insights: "+str(insights))
-  return insights
-  
+
 
 #uncomment to run locally, comment to deploy. Before deploying, change db to firebase, add new packages to requirements.txt
 

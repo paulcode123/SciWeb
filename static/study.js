@@ -1,3 +1,5 @@
+// const { type } = require("os");
+
 //get study container element from HTML
 var studyContainer = document.getElementById("study-container");
 var div = null;
@@ -49,18 +51,21 @@ function userPrompt(){
   return [input, div]
 }
 
-function set_class(){
-  container = studyContainer.children[1];
+async function set_class(r){
+  
+  const container = studyContainer.children[1]
   var classbox = document.createElement('div');
   container.appendChild(classbox);
   //Display the class the user chose by showing the names of the classes and having a box move from one class to the next until the chosen one is boxed
-  for (let x = 0; x < classes.length; x++){
+  for (let x = 0; x < r['classes'].length; x++){
     pclass = document.createElement('span');
     pclass.style.fontSize = "17px";
     pclass.style.marginRight = '5px';
     pclass.style.border = "2px solid white";
     classbox.appendChild(pclass);
-    typeOut(classes[x], pclass, 15);
+    n = r['classes'][x]['name'];
+    console.log(n);
+    typeOut(n, pclass, 15);
   }
   //For every child element in classbox...
   for (let x = 0; x < classbox.children.length; x++){
@@ -71,11 +76,61 @@ function set_class(){
       classbox.children[x-1].style.border = "2px solid white";
     }
     //break if the current class is the chosen class
-    if (x == i){
+    if (x == r['index']){
       break;
     }
 }
+  if(r['topics']=="no data"){
+    chatBotPrompt("The notebook for this class has not been created yet. Click here to add content: ");
+    var element = studyContainer.children[2];
+    classId = r['classes'][r['index']]['id'];
+    // add a link to the end of the prompt that will take the user to the notebook creation page
+    var a = document.createElement('a');
+    a.href = `/notebook/${classId}`;
+    a.textContent = "Add Content";
+    element.appendChild(a);
+  }
+  chatBotPrompt("Select which categories you'd like to study");
+  [input, div] = userPrompt();
+  topics = r['topics']
+  // Given list topics in format ['topic1', '>subtopic1', '>subtopic2', 'topic2', '>subtopic1', '>subtopic2'], display indented checkboxes for each topic and subtopic
+  topics.forEach(topic => {
+    const level = (topic.match(/>/g) || []).length;
+    const label = topic.replace(/>/g, '').trim();
+    
+    const div = document.createElement('div');
+    div.className = `indent-${level}`;
+    
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = label;
+    checkbox.name = label;
+    // set margin left to 4 spaces for each level of indentation
+    checkbox.style.marginLeft = `${level * 20}px`;
+    
+    const labelElement = document.createElement('label');
+    labelElement.htmlFor = label;
+    labelElement.textContent = label;
+    
+    div.appendChild(checkbox);
+    div.appendChild(labelElement);
+    studyContainer.children[3].appendChild(div);
+});
+while(!entered){
+  await sleep(100);
 }
+const selectedTopics = [];
+for (let i = 0; i < topics.length; i++) {
+  const topic = topics[i].replace(/>/g, '').trim();
+  const checkbox = document.getElementById(topic);
+  if (checkbox.checked) {
+    selectedTopics.push(i);
+  }
+}
+input.disabled = true;
+  return selectedTopics;
+}
+
 
 
 
@@ -88,8 +143,9 @@ async function main(previous_response){
   // hide loading wheel
   document.getElementById("loadingWheel").style.display = "none";
   if (question_num == 1){
-    set_class()
+    var user_response = await set_class(prompt)
   }
+  else{
   // type out the prompt
   chatBotPrompt(prompt);
   //set up user input
@@ -98,10 +154,14 @@ async function main(previous_response){
   while(!entered){
     await sleep(100);
   }
+  // make input box uneditable
+  input.disabled = true;
+  //get user response
+  var user_response = input.value;
+}
   // show loading wheel
   document.getElementById("loadingWheel").style.display = "block";
-  //get user response
-  let user_response = input.value;
+  
   question_num++;
   //call main again with user response
   main(user_response);

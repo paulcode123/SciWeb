@@ -17,7 +17,7 @@ async function main() {
     const leagues = data.Leagues;
     const users = data.Users;
     
-    set_create_user_add_EL(users);
+    set_create_user_add_EL(users, user_add_field, userList);
     displayLeagues(leagues);
     // hide loading wheel
     document.getElementById('loadingWheel').style.display = 'none';

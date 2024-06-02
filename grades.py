@@ -161,6 +161,9 @@ def calculate_grade(time, data, weights, return_class_grades=False):
       categories[datum["class"]] = {}
     # If the category has not yet been added to the class's dictionary, add it, and initialize the category's data
     if datum["category"] not in categories[datum["class"]]:
+      if datum["category"].lower() not in weights[datum["class"].lower()]:
+        print("Strange error: category not in weights")
+        continue
       categories[datum["class"]][datum["category"]] = {
         "scoreSum": 0,
         "valueSum": 0,
@@ -228,7 +231,9 @@ def get_grade_points(grades, user_data, classes):
     else:
       category_weight_sum = category_weight_sums[class_upper][grade['category']]
     #Change first letter of class to uppercase
-    
+    if grade["category"].lower() not in weights[grade["class"].lower()]:
+        print("Strange error: category not in weights")
+        continue
     category_weight = weights[grade['class'].lower()][(grade['category'].lower())]
     relative_weight = (weight/(category_weight_sum*category_weight))*1000
 

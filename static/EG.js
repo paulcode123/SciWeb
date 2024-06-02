@@ -149,12 +149,9 @@ for (let i = 0; i < pasted.length; i += 2) {
 });
 
 
-// Using setTimeout
-
-
 
 async function post_grades(grades){
-  await fetchRequest('/post-grades', grades);
+  await fetchRequest('/post_data', {"sheet": "Grades", "data": grades});
 }
 
 
@@ -173,7 +170,7 @@ fetch('/data', {
   
   grades = data['Grades']
   var rawclasses = data['Classes']
-  const classes = rawclasses.filter(item => item.OSIS.includes(osis));
+  const classes = rawclasses.filter(item => (item.OSIS.toString()).includes(osis));
   setClassOptions(classes)
   for(let z=1;z<6;z++){
 document.getElementById("class"+z).addEventListener("change", () => {optionSelected(z, classes)});
@@ -325,13 +322,13 @@ function getPropertyByIndex(index) {
 // Create the grades table
 
 async function update_grades(id, grades){
-  await fetchRequest('/update-grades', {"grades":grades, "rowid": id});
+  await fetchRequest('/update_data', {"sheet": "Grades", "data": grades, "row_name": "id", "row_value": id});
 }
 
 // add event listener
 document.getElementById('DeleteGrades').addEventListener('click', DeleteGrades);
 async function DeleteGrades(){
-  const result = await fetchRequest('/delete-grades', {"osis": osis});
+  const result = await fetchRequest('/delete_data', {"sheet": "Grades", "row_value": osis, "row_name": "osis"});
   
     // hide button
     document.getElementById('DeleteGrades').style.visibility = "hidden";
@@ -339,3 +336,4 @@ async function DeleteGrades(){
     document.getElementById('gradesBody').innerHTML = '';
 
 }
+

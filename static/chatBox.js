@@ -147,19 +147,28 @@ inputField.addEventListener('keydown', function(event) {
 // receive_messages(['hello', 'world'])
 //post messages to py database
 async function post_message(message){
-var a = await fetchRequest('/post-message', {data: message});
+var a = await fetchRequest('/post_data', {sheet: 'Chat', data: message});
 await get_messages()
 }
 
 //get messages from py
 async function get_messages(){
-  var data = await fetchRequest('/data', {data: "FILTERED Chat, Users, FILTERED Classes"});
+  // set group_name equal to either class, or league, depending on the url of the page
+  if(window.location.href.includes('class')){
+    group_name = 'Classes';
+  }
+  else if(window.location.href.includes('league')){
+    group_name = 'Leagues';
+  }
+
+  var data = await fetchRequest('/data', {data: `FILTERED Chat, Users, FILTERED ${group_name}`});
   
   var messages = data['Chat']
   var users = data['Users']
-  const classes = data['Classes']
+  const group = data[group_name]
   // filter for the class where id = classId
-  current_class = classes.filter(classObj => classObj.id == classId)[0];
+  console.log(classId, group)
+  current_class = group.filter(classObj => classObj.id == classId)[0];
   
   receive_messages(messages, users);
   return true;

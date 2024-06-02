@@ -88,4 +88,5 @@ get_assignment()
 
 
 
-
+// filter classes data where period is 3
+data['Classes'].filter(classObj => classObj.period == 3)

@@ -488,11 +488,16 @@ async function postNotebook(){
   console.log('pq data:', pq_data)
 
   data = {'data': {'classID': id, 'innerHTML': container.innerHTML, 'text': text_data, 'practice_questions': pq_data, 'exists': notebook_exists}}
-  const result = await fetchRequest('/post-notebook', data)
-  
+  if (notebook_exists == true){
+    const result = await fetchRequest('/update_data', {'data': data, "sheet": "Notebooks", "row_name": "classID", "row_value": id})
+  }
+  else{
+    const result = await fetchRequest('/post_data', {'data': data, "sheet": "Notebooks"})
+  }
     console.log(result)
 
 }
+
 
   const insightContainer = document.getElementById("insights_container");
 
