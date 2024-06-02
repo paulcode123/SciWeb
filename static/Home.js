@@ -7,11 +7,15 @@ document.getElementById('scrolltodash').addEventListener('click', function() {
 //bell schedule, values in total minutes of day example: 2AM would be 120 minutes
 var bellSchedule = [0, 485, 531, 577, 625, 671, 717, 763, 809, 855, 902]
 var thursBellSchedule = [0, 486, 530, 574, 618, 633, 677, 721, 765, 809, 853, 897]
+
+
 // Create function to show date + time
-function getDate(){
+function getPeriod(){
+  // get the time in minutes since midnight
   var today = new Date();
-  var time = today.getMinutes + (today.getHours * 60);
-  isThursday = today.getDay() === 4;
+  var time = today.getMinutes() + (today.getHours() * 60)
+  console.log(time)
+  var isThursday = (today.getDay() === 4);
   if (isThursday == true){
     for(let i = 0; i < thursBellSchedule.length; i++){
       if (time < thursBellSchedule[i + 1]){
@@ -20,18 +24,19 @@ function getDate(){
     }
   } else {
     for(let i = 0; i < bellSchedule.length; i++){
-      if (time < bellScheduleellSchedule[i + 1]){
+      if (time < bellSchedule[i + 1]){
         return i
         
       }
     }
   }
-
 }
+
 function updateTime(){
-  var period = getDate()
+  var period = getPeriod()
+  console.log(period)
   var today = new Date();
-  var time = today.getMinutes + (today.getHours * 60)
+  var time = today.getMinutes() + (today.getHours() * 60)
   var isThursday = today.getDay() === 4;
   if (isThursday == true){
     var timeRemaining = thursBellSchedule[period + 1] - time;
@@ -42,10 +47,10 @@ function updateTime(){
 
 }
 function hTimer() {
-  var minRemaining = updateTime();
-  var secRemaining = minRemaining % 60;
-  var minDisplay = Math.floor(minRemaining / 60);
-  document.getElementById("timer").textContent = minDisplay + ":" + (secRemaining < 10 ? "0" : "") + secRemaining;
+  var minRemaining = updateTime(); - 1
+  // get the number of seconds remaining in the current minute: i.e. if the time is 12:34:56, this will return 4
+  var secRemaining = 60-(new Date().getSeconds());
+  document.getElementById("timer").textContent = minRemaining + ":" + secRemaining;
 }
 
 // Create function show_recent_messages to display the number and location of messages that were sent in the last 24 hours in classes and assignments that the user is in
@@ -53,13 +58,13 @@ function show_recent_messages(messages, classes, assignments){
   //Create a variable to store the data in format [{location: assignment and/or class, num_messages: number of messages sent in the last 24 hours, id: id of the assignment or class}]
   var locations = [];
   var class_ids = get_classes_ids(classes);
-  console.log(class_ids)
+  
   //Iterate over all messages
   for (const message of messages) {
     var in_classes = in_user_classes(message.location, classes);
     var in_assignments = in_user_assignments(class_ids, assignments, message.location);
     var recent = is_recent(message.timestamp);
-    console.log(in_classes, in_assignments, recent)
+    
     //Check if the message was sent in the last 24 hours
     if (recent && (in_classes !== false || in_assignments !== false)){
       //Check if the location of the message is already in the locations list
@@ -149,10 +154,10 @@ window.addEventListener("DOMContentLoaded", (event) => {
 
 //Create a fetch request to /data to get Chat, Classes, and Assignments data
 async function main(){
-console.log("fetching data")
+
 const data = await fetchRequest('/data', { data: "Chat, FILTERED Classes, Assignments" });
 
-  console.log("got data")
+  
   //Store the data in variables
   var messages = data['Chat']
   var classes = data['Classes']
@@ -160,7 +165,7 @@ const data = await fetchRequest('/data', { data: "Chat, FILTERED Classes, Assign
   
   
   show_recent_messages(messages, classes, assignments);
-  console.log("done")
+  
   return true;
   
 
