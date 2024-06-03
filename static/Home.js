@@ -104,7 +104,7 @@ fetch('/data', {
   headers: {
     'Content-Type': 'application/json'
   },
-  body: JSON.stringify({ data: "Chat, FILTERED Classes, Assignments, Grades" })
+  body: JSON.stringify({ data: "Chat, FILTERED Classes, Assignments, FILTERED Grades" })
 })
 .then(response => response.json())
 .then(data => {
@@ -126,7 +126,7 @@ fetch('/data', {
 });
 
 function display_recent_scores(grades) {
-  const recentScoresDiv = document.getElementById('recent-scores');
+  const recentScoresDiv = document.getElementById('recent_scores');
   recentScoresDiv.innerHTML = ''; // Clear existing content
 
   function is_recent(timestamp){

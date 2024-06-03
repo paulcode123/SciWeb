@@ -236,20 +236,46 @@ def fetch_data():
   # Split the requested sheets into a list
   sheets = sheets.split(", ")
   response = {}
+
   for sheet in sheets:
+    # if trying to get just the user's data, call the get_name function
     if sheet=="Name":
       response[sheet] = get_name()
+    # if trying to get data from sheet, but only rows where OSIS column includes the user's osis
     elif "FILTERED" in sheet:
+      # if session['user_data'] is not defined, throw an error
+      if 'user_data' not in session:
+        return json.dumps({"error": "User data not found"})
+      # get the sheet name without the "FILTERED " prefix
       sheet_name = sheet.replace("FILTERED ", "")
-      data = get_data(sheet_name)
-      if sheet_name=="Friends":
-        #send if the user's osis is in the OSIS or targetOSIS of the row
-        response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in item['OSIS'] or str(session['user_data']['osis']) in item['targetOSIS']]
-      elif sheet_name=="Grades":
-        response[sheet_name] = get_grades(session)
+      # special case for the Grades, since it's not a normal sheet: it must be processed differently
+      if sheet_name=="Grades":
+        response[sheet_name] = get_grades()
       else:
-        #Otherwise, filter the data for the user's osis
-        response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in item['OSIS']]
+        data = get_data(sheet_name)
+        # if data is of type NoneType, return an empty list
+        if data == None:
+          return json.dumps({})
+        
+        # if the sheet is one of these exceptions that require special filtering
+        if sheet_name=="Friends":
+          #send if the user's osis is in the OSIS or targetOSIS of the row
+          response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in item['OSIS'] or str(session['user_data']['osis']) in item['targetOSIS']]
+        elif sheet_name=="Assignments":
+          # send if item['class'] is the id for any of the rows in response['Classes']
+          class_ids = [item['id'] for item in response['Classes']]
+          response[sheet_name] = [item for item in data if item['class'] in class_ids]
+        elif sheet_name=="FClasses":
+          #send all of the classes that the user's friends are in
+          friend_osises = [item['targetOSIS'] for item in data if str(session['user_data']['osis']) in item['OSIS']] + [item['OSIS'] for item in data if str(session['user_data']['osis']) in item['targetOSIS']]
+          r = []
+          classes = get_data("Classes")
+          for friend in friend_osises:
+            r += [item for item in classes if friend in item['OSIS']]
+          response[sheet_name] = r
+        else:
+          #Otherwise, filter the data for the user's osis
+          response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in str(item['OSIS'])]
     elif sheet=="Users":
       #only include the first 3 columns of the Users sheet, first_name, last_name, and osis
       data = get_data(sheet)
