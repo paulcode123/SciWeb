@@ -97,14 +97,14 @@ function get_classes_ids(classes){
 }
 
 
-//Create a fetch request to /data to get Chat, Classes, and Assignments data
+//Create a fetch request to /data to get Chat, Classes, Assignments, Grades data
 console.log("fetching data")
 fetch('/data', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
   },
-  body: JSON.stringify({ data: "Chat, FILTERED Classes, Assignments" })
+  body: JSON.stringify({ data: "Chat, FILTERED Classes, Assignments, Grades" })
 })
 .then(response => response.json())
 .then(data => {
@@ -116,6 +116,7 @@ fetch('/data', {
   
   
   show_recent_messages(messages, classes, assignments);
+  display_recent_scores(data.Grades);
   console.log("done")
   return true;
 })
@@ -123,3 +124,75 @@ fetch('/data', {
   console.error('An error occurred in Home.js: ' +error);
   return false;
 });
+
+function display_recent_scores(grades) {
+  const recentScoresDiv = document.getElementById('recent-scores');
+  recentScoresDiv.innerHTML = ''; // Clear existing content
+
+  function is_recent(timestamp){
+    //Check if the timestamp is less than 24 hours ago
+    if (timestamp > Date.now() - 86400000){
+      return true;
+    }
+    return false;
+  }
+
+  grades.forEach(grade => {
+      const gradeDate = new Date(grade.date);
+      if (gradeDate >= past48Hours) {
+          // Create a card for each recent grade
+          const scoreCard = document.createElement('div');
+          scoreCard.className = 'score-card';
+
+          // Assignment name
+          const assignmentName = document.createElement('h3');
+          assignmentName.textContent = grade.assignment_name;
+          scoreCard.appendChild(assignmentName);
+
+          // Score
+          const score = document.createElement('p');
+          score.textContent = `Score: ${grade.score}`;
+          scoreCard.appendChild(score);
+
+          // Class and category
+          const classLink = document.createElement('a');
+          classLink.href = `/class/${grade.class_id}`;
+          classLink.textContent = grade.class_name;
+          scoreCard.appendChild(classLink);
+
+          const category = document.createElement('p');
+          category.textContent = `Category: ${grade.category}`;
+          scoreCard.appendChild(category);
+
+          // Impact on grades and GPA
+          const impact = calculate_impact(grade, data.grades);
+          const impactText = document.createElement('p');
+          impactText.textContent = `Impact on GPA: ${impact.gpaImpact}, Class Grade: ${impact.classImpact}, Category Grade: ${impact.categoryImpact}`;
+          scoreCard.appendChild(impactText);
+
+          // Append score card to the recent scores div
+          recentScoresDiv.appendChild(scoreCard);
+      }
+  });
+}
+
+// Function to calculate the impact of a grade
+function calculate_impact(grade, allGrades) {
+  const classGrades = allGrades.filter(g => g.class_id === grade.class_id);
+  const categoryGrades = classGrades.filter(g => g.category === grade.category);
+
+  let totalScore = 0, totalWeight = 0;
+  categoryGrades.forEach(g => {
+      totalScore += g.score * g.weight;
+      totalWeight += g.weight;
+  });
+
+  const newTotalScore = totalScore + (grade.score * grade.weight);
+  const newTotalWeight = totalWeight + grade.weight;
+
+  const classImpact = (newTotalScore / newTotalWeight).toFixed(2);
+  const gpaImpact = (classImpact / 25).toFixed(2);  // Assume GPA scale factor
+  const categoryImpact = (grade.score / newTotalWeight).toFixed(2);
+
+  return { gpaImpact, classImpact, categoryImpact };
+}

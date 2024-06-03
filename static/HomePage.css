@@ -70,3 +70,24 @@ p {
   background-color: #f1f1f1;
   transform: scale(1.1);
 }
+
+#recent-scores {
+  margin-top: 20px;
+}
+
+.score-card {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 10px;
+  background-color: #f9f9f9;
+}
+
+.score-card h3 {
+  margin: 0;
+  font-size: 1.2em;
+}
+
+.score-card p {
+  margin: 5px 0;
+}

@@ -1,5 +1,10 @@
 # Import necessary libraries
 
+import sys
+print(sys.executable)
+import flask
+print("Flask is installed and importable!")
+
 # Flask is a web framework for Python that allows backend-frontend communication
 from flask import Flask, render_template, request, session, redirect, url_for
 # json is a library for parsing and creating JSON data
