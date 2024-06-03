@@ -251,7 +251,8 @@ def Jupiter():
   session['user_data']['grades_key'] = str(data['encrypt'])
   grades = jupapi_output_to_grades(classes, data['encrypt'])
   if str(data['updateLeagues'])=="True":
-    update_leagues(grades)
+    classes = get_data("Classes")
+    update_leagues(grades, classes)
   return json.dumps(grades)
 
 @app.route('/init_oauth', methods=['POST', 'GET'])

@@ -86,7 +86,9 @@ def jupapi_output_to_grades(data, encrypt):
     update_data(str(session['user_data']['osis']), "OSIS", grades_obj, "GradeData")
   else:
     post_data("GradeData", grades_obj)
- 
+
+  # filter out grades where grade["score"] = 'null' or grade["date"] = ''
+  grades = [grade for grade in grades if grade['score'] != 'null' and grade['date'] != '']
   return grades
   
 def jupapi_output_to_classes(data):
