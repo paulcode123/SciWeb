@@ -11,7 +11,7 @@ from flask import session
 def get_data_gsheet(sheet):
   from main import init
   vars = init()
-  ranges = [f'{sheet}!A:{vars['max_column']}']
+  ranges = [f"{sheet}!A:{vars['max_column']}"]
   request = vars['service'].spreadsheets().values().batchGet(
     spreadsheetId=vars['spreadsheet_id'], ranges=ranges, majorDimension='ROWS')
 

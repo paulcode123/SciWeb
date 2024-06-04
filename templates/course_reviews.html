@@ -48,9 +48,40 @@
     <li><a href="/Login" id="profile">Login</a></li>
   </ul>
   <!-- <div id="loadingWheel"></div> -->
+
+
     <h1>{{ courseName }} Reviews</h1>
-    
+    <div id = "reviewBoard"> </div>
+      <div id="reviwContent"> 
+        <h3 style = " color: gray; text-decoration: bold; text-align: center;"> Add A Review </h3> 
+        <h4> Workload Rating </h4>
+        <input type="number" id ="workRating" min=" 1" max="10"></input> 
+        <br> 
+        <h4>Workload Review</h4>
+        <input type="text" id="workReview"></input>
+        <hr>
+        <h4>Enjoyment Rating </h4>
+        <input type="number" id="enjoymentRating" min="1" max="10"></input>
+        <br> 
+        <h4> Enjoyment Review </h4>
+        <input type="text" id="enjoymentReview"></input> 
+        <hr> 
+        <h4> Difficulty Rating </h4>
+        <input type="number" id="difficultyRating" min = "1" max = "10"></input> 
+        <br> 
+        <h4> Difficulty Review </h4>
+        <input type="text" id="difficultyReview"></input> 
+        <button id="courseReviewSubmit">Submit</button>
+
   
+
+
+    
+
+
+
+      </div>
+
   <script type="text/javascript">
 
 var courseData = '{{ courseData|tojson|safe }}';
@@ -58,6 +89,8 @@ var courseData = '{{ courseData|tojson|safe }}';
   </script>
   <script src="/static/util.js"></script>
   <script src="/static/user_data.js"></script>
+  <script src="review.js"></script> 
+  
   
 </body>
 </html>

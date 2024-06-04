@@ -609,7 +609,7 @@ def get_name(ip=None):
 def get_insights(prompts):
   
   headers = {
-    'Authorization': f'Bearer {vars['openAIAPI']}',
+    'Authorization': f"Bearer {vars['openAIAPI']}",
     'Content-Type': 'application/json'
 }
   
