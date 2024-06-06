@@ -27,15 +27,19 @@ def study_response(previous_response):
         print("topics: "+str(topics))
         return {"index": index, "topics": topics, "classes": classes}
     else:
-        print(session['study']['question_number'])
+        if session["study"]["question_number"] == 1:
+            session["study"]["topics"] = previous_response
+        session["study"]["question_number"] += 1
+        print(session['study'])
         return 'pass'
+    
 
 def parse_class_name(response, classes):
     class_list = [item["name"] for item in classes]
     prompt = [{"role": "system", "content": "Give the index of the given list that most closely matches the class name."}, {"role": "user", "content": "list: "+str(class_list)+", name: "+response}]
     response = get_insights(prompt)
-    # remove periods from response
-    response = response.replace(".", "")
+    # remove all punctuation from the response
+    response = response.replace(",", "").replace(".", "")
     print("response: "+str(response))
     # if there is a number in the response, get the first number that appears in the response
     index=None

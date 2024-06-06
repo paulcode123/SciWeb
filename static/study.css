@@ -24,3 +24,10 @@
     width: 100%; /* Optional: Make the input box expand to fill the div horizontally */
   
 }
+
+body {
+  background-image: url('/static/media/SBbgd.png'); /* URL of the background image */
+  background-size: cover; /* Cover the entire page */
+  /* background-position: center; Center the image */
+  background-repeat: no-repeat; /* Do not repeat the image */
+}

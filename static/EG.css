@@ -64,7 +64,31 @@ input[type="text"] {
 
 /* div containing fields and button to pull grades from jupiter */
 #pullJup{
-  background-color: #aaf7bf;
+  border-radius: 5px;
+  border-width: 2px;
+  border-color: #4CAF50;
   padding: 20px;
   border-radius: 5px;
+}
+
+.loading-bar-container {
+  width: 80%;
+  background-color: #ddd;
+  border-radius: 25px;
+  overflow: hidden;
+}
+
+.loading-bar {
+  height: 30px;
+  width: 0;
+  background-color: #4caf50;
+  border-radius: 25px 0 0 25px;
+  display: none;
+}
+
+body{
+  background-image: url('/static/media/EGbgd.png'); /* URL of the background image */
+  background-size: cover; /* Cover the entire page */
+  background-position: center; /* Center the image */
+  background-repeat: no-repeat; /* Do not repeat the image */
 }

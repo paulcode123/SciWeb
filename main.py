@@ -61,9 +61,11 @@ def init():
 vars = init()
 
 app = Flask(__name__)
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_PERMANENT'] = False
 
 # App secret key for session management
-app.secret_key = vars["AppSecretKey"]
+app.config['SECRET_KEY'] = vars["AppSecretKey"]
 generate_grade_insights = True
 
 #initialize the front end: all of the HTML/CCS/JS files

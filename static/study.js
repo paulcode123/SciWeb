@@ -124,7 +124,7 @@ for (let i = 0; i < topics.length; i++) {
   const topic = topics[i].replace(/>/g, '').trim();
   const checkbox = document.getElementById(topic);
   if (checkbox.checked) {
-    selectedTopics.push(i);
+    selectedTopics.push(topics[i]);
   }
 }
 input.disabled = true;

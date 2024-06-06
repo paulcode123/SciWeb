@@ -7,3 +7,4 @@ gunicorn
 google-cloud-storage
 firebase-admin
 pillow
+beautifulsoup4

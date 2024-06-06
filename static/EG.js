@@ -13,6 +13,7 @@ const Pullbutton = document.querySelector('#Jupull');
 Pullbutton.addEventListener('click', pullfromJupiter);
 
 async function pullfromJupiter(){
+  start_loading(12);
   console.log("pulling from Jupiter")
   // make loading wheel visible
   document.getElementById('loadingWheel').style.visibility = "visible";
@@ -337,3 +338,16 @@ async function DeleteGrades(){
 
 }
 
+function start_loading(time){
+const loadingBar = document.querySelector('.loading-bar');
+loadingBar.style.display = 'block';
+let width = 0;
+const interval = setInterval(function() {
+  if (width >= 100) {
+    clearInterval(interval);
+  } else {
+    width++;
+    loadingBar.style.width = width + '%';
+  }
+}, time*10); // 100ms interval for 10 seconds total
+}

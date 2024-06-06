@@ -12,13 +12,16 @@ body {
     /* Add some basic styles to the navigation bar */
     ul.navbar {
       list-style-type: none;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background-color: #333;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #333;
+    display: flex; /* Add flexbox */
+    align-items: center; /* Align items vertically */
+    /* position: relative; */
     }
 
-    ul.navbar li {
+    ul.navbar li:not(#profile) {
       float: left;
     }
 
@@ -74,6 +77,13 @@ body {
 
     .dropdown:hover .dropdown-content {
       display: block;
+    }
+
+    #profile{
+      /* move to right side of the div */
+      position: absolute;
+      right: 0;
+      top: 0;
     }
 
     #loadingWheel {
