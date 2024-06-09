@@ -3,11 +3,9 @@
 <link rel="stylesheet" href="/static/chatBox.css">
 <link rel="stylesheet" href="/static/navbar.css">
 <head>
-  
     <title>SciWeb {{ assignment_name }}</title>
     <link rel="icon" href="/static/media/favicon.png" type="image/x-icon">
     <link rel="manifest" href="/static/manifest.json">
-
 </head>
 <body>
   <ul class="navbar">
@@ -18,7 +16,6 @@
         <a href="/EnterGrades">Enter</a>
         <a href="/GradeAnalysis">Analyse</a>
         <a href="/Goals">Goals</a>
-        
       </div>
     </li>
     <li class="dropdown">
@@ -43,27 +40,42 @@
       <div class="dropdown-content">
         <a href="/Pitch">Pitch</a>
         <a href="/GetStart">Getting Started</a>
-        
       </div>
     </li>
     <li><a href="/Login" id="profile">Login</a></li>
   </ul>
-  <!-- <div id="loadingWheel"></div> -->
-    <h1>{{ assignment_name }} Assignment Page</h1>
-    <h3 id="description"></h3>
-    <p id="class-name"></p>
-    <p id="due-date"></p>
-    <p id="points"></p>
-    <p id="categories"></p>
+
+  <h1>{{ assignment_name }} Assignment Page</h1>
+  <h3 id="description"></h3>
+  <p id="class-name"></p>
+  <p id="due-date"></p>
+  <p id="points"></p>
+  <p id="categories"></p>
 
   <br>
   <h2>Assignment Score modeler:</h2>
-    <input type="range" id="slider" min="40" max="100" value="50">
-    <p id="slider-value">If score is: 90</p>
-    <p id="category-impact">+0.0%</p>
-    <p id="class-impact">+0.0%</p>
+  <input type="range" id="slider" min="40" max="100" value="50">
+  <p id="slider-value">If score is: 90</p>
+  <p id="category-impact">+0.0%</p>
+  <p id="class-impact">+0.0%</p>
 
-    <div id="chat-box">
+  <h2>Time Stats:</h2>
+  <p>Percent Completion:</p>
+  <input type="range" id="percent-completion" min="0" max="100" value="0">
+  
+  <p>Time Spent:</p>
+  <input type="range" id="time-spent" min="0" max="100" value="0">
+  
+  <p>Difficulty:</p>
+  <input type="range" id="difficulty" min="0" max="100" value="0">
+  
+  <button id="update-button" style="margin-top: 10px;">Update</button>
+  
+  <p id="avg-difficulty">Average Difficulty: 0.0</p>
+  <p id="avg-percent-completion">Average Percent Completion: 0.0%</p>
+  <p id="avg-time-spent">Average Time Spent: 0.0 hours</p>
+
+  <div id="chat-box">
     <button id="refresh-chat">🔄</button>
     <ul id="message-list"></ul>
     <div id="image-container"></div>
@@ -75,20 +87,15 @@
       <label for="upload" id="uploadLabel">📁</label>
     </div>
     <div id="loadingWheel"></div>
-  
-    
-    <!-- Add any additional HTML content here -->
-  
+  </div>
+
   <script>
-
-var assignmentData = JSON.parse('{{ assignment_data|tojson|safe }}');
-var locationData = assignmentData;
-
+    var assignmentData = JSON.parse('{{ assignment_data|tojson|safe }}');
+    var locationData = assignmentData;
   </script>
   <script src="/static/util.js"></script>
   <script src="/static/user_data.js"></script>
   <script src="/static/chatBox.js"></script>
   <script src="/static/assignment.js"></script>
-  
 </body>
 </html>

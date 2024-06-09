@@ -31,6 +31,33 @@ from goals import calculate_goal_progress, get_goals
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades
 
 #get api keys from static/api_keys.json file
+<<<<<<< Updated upstream
+=======
+keys = json.load(open('api_keys.json'))  
+
+
+
+
+# Function to initialize the Google Sheets API
+def init_gapi():
+  spreadsheet_id = '1k7VOAgZY9FVdcyVFaQmY_iW_DXvYQluosM2LYL2Wmc8'
+  # API key for accessing the Google Sheets API: find it in the "Getting Started with Contributing" document
+  # Remember to keep it secret, and don't publish it to GitHub
+  api_key = keys["GoogleAPIKey"]
+
+  # URL for the SheetDB API, for POST requests
+  sheetdb_url = 'https://sheetdb.io/api/v1/y0fswwtbyapbd'
+
+  DISCOVERY_SERVICE_URL = 'https://sheets.googleapis.com/$discovery/rest?version=v4'
+
+  service = build('sheets',
+                  'v4',
+                  developerKey=api_key,
+  discoveryServiceUrl=DISCOVERY_SERVICE_URL)
+  max_column = "K"
+
+  return spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column
+>>>>>>> Stashed changes
 
 init_firebase()
 # Initialize other variables
