@@ -386,18 +386,27 @@ def update_leagues(grades, classes):
   # For RIlb, GPAlb, get the user's stats
   stats = get_stats(grades, classes)
 
+  #TODO: Add another if statement for the distributions acitivity. filter grades for assessments and store in a variable
+
+
+
   # update the database with the calculated data
   to_compile = {"GOTC": grade_spread, "GPAlb": stats['gpa'], "RIlb": stats['avg_change'], "Glb": goalp, "RAS": fgrades}
   for league in fleagues:
     for activity in to_compile.keys():
       if not activity in league['Activities']:
         continue
+      # if the column for that activity is not empty, update the data
       if activity in league and league[activity] != "":
         la = league[activity]
         la = la.replace("'", '"')
         content = json.loads(la)
+        if activity == "Dist":
+          #TODO: add the assessment grades from that class to the list for the corresponding assessment. This will take a lot of figuring out.
+          continue
         content[session['user_data']['osis']] = to_compile[activity]
         league[activity] = str(content)
+      # if the column for that activity is empty, create a new dictionary
       else:
         if activity != "GOTC":
           league[activity] = str({session['user_data']['first_name']: to_compile[activity]})

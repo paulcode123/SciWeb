@@ -66,9 +66,12 @@ function post_assignment(data){
 
 
 async function get_assignment(){
+  // TODO: update the following line to get the leagues sheet, filtered by user OSIS
   var data = await fetchRequest('/data', {data: "Assignments, Classes, Name, Users"});
   var classId = window.location.href.slice(-4);
   var assignmentList = data['Assignments']
+  // TODO: set a variable to the leagues data
+
   classData = data['Classes'];
   console.log(data)
   classData = classData.find(item => item.id == classId);
@@ -82,7 +85,8 @@ async function get_assignment(){
   setImageEl(classData, "Classes")
   set_color_EL("Classes", classData)
   show_Join(data['Name'], classData, "Classes");
-  // if classData['img'] != "", set the background image of the div to the base64 image string
+  // TODO: call update_JCL_button with the leagues data
+  
   
   document.getElementById('loadingWheel').style.display = "none";
 }
@@ -140,4 +144,28 @@ categoryElement.appendChild(newOption);
   }
   
   }
+}
+
+// TODO: in the Leagues sheet of the database, add a column for distributions
+
+function create_class_league(){
+  // TODO: call the /post_data endpoint to create a new league for the class. Use your brain to figure out what all of the column values should be. (Col G-M leave blank.)
+
+  return
+}
+
+function join_class_league(league){
+  // TODO: call the /update_data endpoint to add the user to the league. Only change the OSIS column to include the user's OSIS.
+  return
+}
+
+function update_JCL_button(leagues){
+  // TODO: if a league for the class doesn't yet exist, rename the button to "Create Class League"
+  // then add an event listener to the button that will call create_class_league
+  // if a league for the class does exist, and the user is already a member, hide the button
+  // then add an event listener to the button that will call join_class_league, passing in the correct league from the leagues data
+
+
+  
+  return
 }

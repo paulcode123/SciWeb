@@ -5,6 +5,7 @@ async function main(){
     const leagueData = data['Leagues'].find(league => league['id'] == league_id);
     set_leaderboards(leagueData)
     set_graph(leagueData)
+    // TODO: call set_distributions function with the league data
     set_class_img(leagueData['img'])
     add_user_bubbles(leagueData, data['Users']);
     setImageEl(leagueData, "Leagues")
@@ -110,6 +111,9 @@ function set_graph(leagueData){
     const ctx = document.getElementById('myChart').getContext('2d');
     new Chart(ctx, config);
 }
+
+// TODO: create set_distributions function, a create a smooth line histogram of the distributions for each assessment.
+
 
 function getRandomColor() {
     const letters = '0123456789ABCDEF';
