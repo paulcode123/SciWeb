@@ -35,7 +35,7 @@
       <div class="dropdown-content">
         <a href="/Classes">Classes</a>
         <a href="/Assignments">Assignments</a>
-        <a href="#">Leagues</a>
+        <a href="/Leagues">Leagues</a>
         <a href="#">Questions</a>
       </div>
     </li>
@@ -50,16 +50,26 @@
     <li><a href="/Login" id="profile">Login</a></li>
   </ul>
   <div id="loadingWheel"></div>
+  <div class="container">
+  <div id="classimgcontainer"></div>
   <div id="head">
-    <h1>Welcome to {{ class_name }}</h1>
+    <h1>{{ class_name }}</h1>
+    <button id="joinBtn">Join Class</button>
     <h3 id="description"></h3>
     <div id="user-list"></div>
     <div id="assignmentList"></div>
     <br>
     </div>
+    </div>
     <!-- create input image upload element with a label "🖼️" -->
     <input type="file" id="imgupload" style="display: none;">
     <label for="imgupload" id="uploadLabel">🖼️</label>
+
+    <!-- create color input with paint emoji label -->
+    <label for="color" id="colorLabel">🎨</label>
+    <input type="color" id="color" value="#000000" style="display: none;">
+    <button id="savecolor" style="display: none;">Save Color</button>
+
     <br>
   <button id="createBtn">Create Assignment</button>
 
@@ -70,6 +80,8 @@
 
       <label for="due">Due Date:</label>
       <input type="date" id="due" name="due" required>
+      <label for="points">Points:</label>
+      <input type="number" id="points" name="points" required>
       <label for="assignmentType">Type:</label>
     <select id="assignmentType" name="assignmentType">
       <option value="default">Loading Classes</option>
@@ -82,8 +94,9 @@
       <input type="submit" value="Submit">
     </form>
   </div>
-  <br>
+  <br><br>
   <div id="openNBcont"></div>
+  <br>
   <div id="chat-box">
     <button id="refresh-chat">🔄</button>
     <ul id="message-list"></ul>
@@ -97,13 +110,10 @@
       
     </div>
     <img scr="" id="testimg">
-    <!-- Add any additional HTML content here -->
-  <script>
-    // Set class_img, passed into the template from the server, as a js variable
-    var class_img_b64 = "{{ class_img }}";
-  </script>
+    
   <script src="/static/util.js"></script>
   <script src="/static/user_data.js"></script>
+  <script src="/static/setdesign.js"></script>
   <script src="/static/class.js"></script>
   <script src="/static/chatBox.js"></script>
   

@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html>
+<link rel="stylesheet" href="/static/league.css">
 <link rel="stylesheet" href="/static/chatBox.css">
 <link rel="stylesheet" href="/static/navbar.css">
 <head>
   
-    <title>SciWeb {{ assignment_name }}</title>
+    <title>SciWeb {{ league_name }}</title>
     <link rel="icon" href="/static/media/favicon.png" type="image/x-icon">
     <link rel="manifest" href="/static/manifest.json">
 
@@ -48,22 +49,35 @@
     </li>
     <li><a href="/Login" id="profile">Login</a></li>
   </ul>
-  <!-- <div id="loadingWheel"></div> -->
-    <h1>{{ assignment_name }} Assignment Page</h1>
+  <div id="loadingWheel"></div>
+  <div class="container">
+  <div id="classimgcontainer"></div>
+  <div id="head">
+    <h1>{{ league_name }} League</h1>
+    <button id="joinBtn">Join League</button>
     <h3 id="description"></h3>
-    <p id="class-name"></p>
-    <p id="due-date"></p>
-    <p id="points"></p>
-    <p id="categories"></p>
+    <div id="user-list"></div>
+    <div id="assignmentList"></div>
+    <br>
+    </div>
+    </div>
+    <!-- create input image upload element with a label "🖼️" -->
+    <input type="file" id="imgupload" style="display: none;">
+    <label for="imgupload" id="uploadLabel">🖼️</label>
 
-  <br>
-  <h2>Assignment Score modeler:</h2>
-    <input type="range" id="slider" min="40" max="100" value="50">
-    <p id="slider-value">If score is: 90</p>
-    <p id="category-impact">+0.0%</p>
-    <p id="class-impact">+0.0%</p>
+    <!-- create color input with paint emoji label -->
+    <label for="color" id="colorLabel">🎨</label>
+    <input type="color" id="color" value="#000000" style="display: none;">
+    <button id="savecolor" style="display: none;">Save Color</button>
 
-    <div id="chat-box">
+    <br>
+  
+
+  
+  
+  <br><br>
+  
+  <div id="chat-box">
     <button id="refresh-chat">🔄</button>
     <ul id="message-list"></ul>
     <div id="image-container"></div>
@@ -73,22 +87,15 @@
       <button id="send-button">Send</button>
       <input type="file" id="upload" style="display: none;">
       <label for="upload" id="uploadLabel">📁</label>
+      
     </div>
-    <div id="loadingWheel"></div>
-  
+    <img scr="" id="testimg">
     
-    <!-- Add any additional HTML content here -->
-  
-  <script>
-
-var assignmentData = JSON.parse('{{ assignment_data|tojson|safe }}');
-var locationData = assignmentData;
-
-  </script>
   <script src="/static/util.js"></script>
   <script src="/static/user_data.js"></script>
+  <script src="/static/setdesign.js"></script>
+  <script src="/static/league.js"></script>
   <script src="/static/chatBox.js"></script>
-  <script src="/static/assignment.js"></script>
   
 </body>
 </html>

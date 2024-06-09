@@ -10,10 +10,14 @@ var ip;
 
 
 
-async function send_data(userId) {
-console.log(userId);
-
-data = await fetchRequest('/home-ip', userId)
+async function send_data(userId, grades_key) {
+console.log(userId, grades_key);
+// if grades_key is null, set it to "none"
+if (grades_key == null) {
+  console.log("grades_key is null")
+  grades_key = "none"
+}
+data = await fetchRequest('/home-ip', {"userId": userId, "grades_key": grades_key})
 
 console.log(data["Name"])
 set_data(data['Name'])
@@ -22,12 +26,13 @@ set_data(data['Name'])
 function get_ip(){
 
 const storedUserID = getCookie('user_id');
+const grades_key = getCookie('gradeKey');
 
         if (storedUserID) {
             // User has a stored user ID, log it to the console
             console.log('Found User ID:', storedUserID);
           ip = storedUserID
-            send_data(storedUserID)
+            send_data(storedUserID, grades_key)
         } else {
             // Generate a random 4-digit user ID
             const newUserID = generateUserID();
@@ -38,7 +43,7 @@ const storedUserID = getCookie('user_id');
             // Log the new user ID to the console
             console.log('New User ID:', newUserID);
           ip = newUserID
-            send_data(newUserID)
+            send_data(newUserID, grades_key)
         }
 }
 
@@ -95,7 +100,7 @@ function set_data(data){
   logged_in = true;
   first_name = JSON.stringify(data["first_name"]).slice(1, -1);
   last_name = JSON.stringify(data["last_name"]);
-  osis = parseInt(JSON.stringify(data["osis"]));
+  osis = parseInt(data["osis"]);
   console.log(osis)
   grade = parseInt(data["grade"])
   console.log(grade)

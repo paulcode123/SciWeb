@@ -4,13 +4,14 @@
 <head>
   <title>{{ class_name }} Notebook</title>
   
-  <link rel="icon" href="https://sciweb.c26pn.repl.co/static/media/favicon.png" type="image/x-icon">
+  <link rel="icon" href="/static/media/favicon.png" type="image/x-icon">
   
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/static/notebook.css">
   <link rel="stylesheet" href="/static/navbar.css">
   <link rel="manifest" href="/static/manifest.json">
+  
 
     
     
@@ -40,7 +41,7 @@
       <div class="dropdown-content">
         <a href="/Classes">Classes</a>
         <a href="/Assignments">Assignments</a>
-        <a href="#">Leagues</a>
+        <a href="/Leagues">Leagues</a>
         <a href="#">Questions</a>
       </div>
     </li>
@@ -56,6 +57,10 @@
   </ul>
   <div id="loadingWheel"></div>
   <h1>{{ class_name }} Notebook</h1>
+  <input type="file" accept="image/*" capture="environment" id="imageInput" style="display: none;">
+  <!-- add a label that's a camera emoji -->
+  <label for="imageInput" style="font-size: 50px;">📷</label>
+  <br>
   <button id="create_section" class='btn'>New Section</button>
   <div id="tabs"></div>
   

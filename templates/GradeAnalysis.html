@@ -12,6 +12,7 @@
 
 </head>
 
+
 <body>
   <ul class="navbar">
     <li><a href="/">Home</a></li>
@@ -37,7 +38,7 @@
       <div class="dropdown-content">
         <a href="/Classes">Classes</a>
         <a href="/Assignments">Assignments</a>
-        <a href="#">Leagues</a>
+        <a href="/Leagues">Leagues</a>
         <a href="#">Questions</a>
       </div>
     </li>
@@ -62,8 +63,7 @@
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <div id="myGraph"></div>
     <br><br>
-    <div id="myHistogram"></div>
-
+    
 
     <div id="loadingWheel"></div>
    <form id="class-form">
@@ -88,6 +88,40 @@
   <h1 id="error-message"></h1>
 </form>
     <br>
+    <div id="StatsContainer">
+      <div class="number-box">
+        <h2>GPA</h2>
+        <p class="number" id="s1">--</p>
+        <p class="caption">As it appears on report card</p>
+    </div>
+    <div class="number-box">
+        <h2>Raw Avg</h2>
+        <p class="number" id="s2">--</p>
+        <p class="caption">More volatile and exact</p>
+    </div>
+    <div class="number-box">
+        <h2>Recent Change</h2>
+        <p class="number" id="s3">--</p>
+        <p class="caption">Raw average change over the past 30 days</p>
+    </div>
+    <div class="number-box">
+        <h2>Most Improved</h2>
+        <p class="number" id="s4">--</p>
+        <p class="caption">Class with largest grade increase over the past 30 days</p>
+    </div>
+    <div class="number-box">
+        <h2>Focus On...</h2>
+        <p class="number" id="s5">--</p>
+        <p class="caption">Biggest dip over the past 30 days</p>
+    </div>
+    <div class="number-box">
+        <h2>Recent Grade</h2>
+        <p class="number" id="s6">--</p>
+        <p class="caption">Non-cumulative grade over the past 30 days</p>
+    </div>
+    </div>
+
+    <div id="myHistogram"></div>
     
     <div id="GoalProgressContainer"></div>
     <div id="RecentScoresContainer"></div>

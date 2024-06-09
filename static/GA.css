@@ -89,3 +89,37 @@ h1 {
   margin-right: 10px;
   display: inline-block;
 }
+
+#StatsContainer {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* Ensures two columns */
+  gap: 20px; /* Space between columns and rows */
+  padding: 20px; /* Padding around the entire grid */
+  box-sizing: border-box; /* Ensures padding does not affect width calculation */
+  width: 100%; /* Ensures the grid takes up the full width of the container */
+}
+
+
+.number-box {
+  background: #f4f4f4; /* Light grey background for visibility */
+  padding: 20px;
+  /* text-align: center; */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Adds subtle shadow for depth */
+  width: 40%; /* Ensures the box takes up the full width of the column */
+}
+
+.number {
+  font-size: 48px;
+  font-weight: bold;
+  margin: 10px 0;
+}
+
+.caption {
+  font-size: 16px;
+}
+
+h2 {
+  font-size: 24px;
+  margin: 10px 0;
+}
+

@@ -18,8 +18,19 @@ async function pullfromJupiter(){
   document.getElementById('loadingWheel').style.visibility = "visible";
   const osis = document.getElementById('osis').value;
   const password = document.getElementById('password').value;
+  const addClasses = document.getElementById('addclasses').checked;
+  const encrypt = document.getElementById('encrypt').checked;
+  const updateLeagues = document.getElementById('updateLeagues').checked;
+  console.log(encrypt)
+  // if encrypt is checked, generate a key and set it as a cookie
+  var key="none"
+  if(encrypt == true){
+    console.log("encrypting")
+    key = Math.floor(Math.random() * 10000000000000000);
+    document.cookie = "gradeKey="+key;
+  }
   //Send to python with fetch request
-  const data = await fetchRequest('/jupiter', {"osis": osis, "password": password});
+  const data = await fetchRequest('/jupiter', {"osis": osis, "password": password, "addclasses": addClasses, "encrypt": key, "updateLeagues": updateLeagues});
   
   console.log("got response")
   grades = data;
@@ -204,6 +215,9 @@ function createGradesTable(grades) {
   tableBody.innerHTML = ''; // Clear any existing rows
   if (grades.length>1) {
     document.getElementById('DeleteGrades').style.visibility = "visible";
+  
+  // sort grades by date from most recent to least recent
+  grades.sort((a, b) => new Date(b.date) - new Date(a.date));
   }
   for (let i = 0; i < grades.length; i++) {
     const row = document.createElement('tr');

@@ -1,6 +1,8 @@
 // const { get } = require("http");
 
-// let locationData = null;
+// const { send } = require("process");
+var current_class = "undefined";
+
 var classId = window.location.href.slice(-4)
 // Function to receive and display messages in the chat box
 function receive_messages(messages, users) {
@@ -9,9 +11,12 @@ function receive_messages(messages, users) {
   clearMessages()
   // Loop through all the messages and display them
   messages.forEach(message => {
+    // if data in messages, set message to data
+    if (message.data){
     message = message.data;
+    }
     //if the message is in the current class, display it
-    console.log(message, message['location'], classId.toString())
+    // console.log(message, message['location'], classId.toString())
     if ((message['location']).toString() == classId.toString()) {
       
       let listItem = document.createElement('li');
@@ -22,7 +27,7 @@ function receive_messages(messages, users) {
       let senderName = 'default';
       
       for (let i = 0; i < users.length; i++) {
-        if (users[i].osis == message.OSIS) {
+        if (users[i].osis == message.sender) {
           senderName = users[i].first_name;
           break;
         }
@@ -79,6 +84,7 @@ function clearMessages() {
 
 // Handle sending a message
 function sendMessage() {
+  console.log('Sending message...');
   // If image is uploaded, send the image
   var message = '';
   if (document.getElementById('upload').files.length > 0) {
@@ -95,7 +101,8 @@ function sendMessage() {
     let chat = {
       text: message,
       location: classId,
-      OSIS: osis,
+      sender: osis,
+      OSIS: current_class.OSIS,
       id: Math.floor(Math.random() * 10000),
       timestamp: Date.now()
     }
@@ -111,15 +118,17 @@ return;
   message = inputField.value;
   inputField.value = '';
   
-  console.log('Message:', message);
+  console.log('Message:', message, current_class);
   
   let chat = {
     text: message,
     location: classId,
-    OSIS: osis,
+    sender: osis,
+    OSIS: current_class['OSIS'],
     id: Math.floor(Math.random() * 10000),
     timestamp: Date.now()
   }
+  console.log(chat);
   post_message(chat)
 }
 
@@ -144,11 +153,13 @@ await get_messages()
 
 //get messages from py
 async function get_messages(){
-  var data = await fetchRequest('/data', {data: "Chat, Users, FILTERED Classes"});
+  var data = await fetchRequest('/data', {data: "FILTERED Chat, Users, FILTERED Classes"});
   
   var messages = data['Chat']
   var users = data['Users']
-  locationData = data['Classes']
+  const classes = data['Classes']
+  // filter for the class where id = classId
+  current_class = classes.filter(classObj => classObj.id == classId)[0];
   
   receive_messages(messages, users);
   return true;
@@ -197,7 +208,7 @@ async function getFile(fileId) {
   var response = await fetchRequest('/get-file', {file: fileId});
   
   // Assuming `data.file` is the image or file data you want
-  let file = data.file;
+  let file = response.file;
   let type;
   // console.log(file.slice(11, 14));
   if(file.includes('pngbase64')){

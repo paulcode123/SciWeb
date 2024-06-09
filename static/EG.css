@@ -43,11 +43,11 @@ input[type="text"] {
 }
 
 #osis{
-  width:10%;
+  width:100px;
 }
 
 #password{
-  width: 10%;
+  width: 100px;
 }
 
 #DeleteGrades{
@@ -60,4 +60,11 @@ input[type="text"] {
 /* turn background color black on hover */
 #DeleteGrades:hover {
   background-color: black;
+}
+
+/* div containing fields and button to pull grades from jupiter */
+#pullJup{
+  background-color: #aaf7bf;
+  padding: 20px;
+  border-radius: 5px;
 }

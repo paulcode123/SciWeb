@@ -35,6 +35,8 @@ function display_assignments(assignmentList, classList){
         
         if (item.id === assignmentData['class']) {
             class_name = item.name;
+            class_id = item.id.toString();
+            class_color = item.color;
             
             in_user_classes = true;
         }
@@ -46,9 +48,11 @@ console.log(in_user_classes)
 //create a div element for each assignment
       const assignmentItem = document.createElement('div');
       assignmentItem.classList.add('assignment-item');
+      assignmentItem.style.backgroundColor = class_color;
+      const duedate = processDate(assignmentData.due);
       assignmentItem.innerHTML = `
-        <h3>Due ${assignmentData.due}</h3>
-        <p>Class ${class_name}
+        <h3>Due ${duedate}</h3>
+        <p><a href="/class/${class_name+class_id}">Class: ${class_name}</a></p>
         <p>Type: ${assignmentData.category}</p>
         <p>Name: ${assignmentData.name}</p>
       `;
@@ -62,6 +66,8 @@ console.log(in_user_classes)
     });
   
 }
+
+
 
 
 //fetch the assignments from the database

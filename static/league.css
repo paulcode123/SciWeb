@@ -1,0 +1,40 @@
+#joinBtn {
+    padding: 10px 20px;
+    background-color: #337ab7;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: none;
+  }
+
+  .container {
+    display: flex;
+
+  }
+  
+  #classimgcontainer {
+    /* Set width to auto and height to 200px */
+    height: 200px;
+    overflow: hidden; /* Ensure the image doesn't overflow */
+  }
+  
+  #classimgcontainer img {
+    /* Set height to 100% to fill container, and let width adjust accordingly */
+    height: 100%;
+    width: auto;
+  }
+
+  /* styles for user bubbles */
+.user-bubble {
+    display: inline-block;
+    margin: 5px;
+    padding: 10px;
+    background-color: green;
+    border-radius: 20px;
+    cursor: pointer;
+}
+
+.user-bubble:hover {
+    background-color: turquoise;
+}

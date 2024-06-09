@@ -6,3 +6,4 @@ google_auth_oauthlib
 gunicorn
 google-cloud-storage
 firebase-admin
+pillow

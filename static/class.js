@@ -1,8 +1,6 @@
-// classData is predefined in the html
-// console.log("class.js classData: "+classData)
-// create user bubbles
-// console.log(document.getElementById("description"))
+
 var classData = null;
+//display the class notebook button and description
 function display_NB_btn(classData){
   console.log(classData)
 document.getElementById("description").textContent = classData['description'];
@@ -20,31 +18,6 @@ button.addEventListener("click", function() {
 // Append the button to the document body or any desired element
 document.getElementById('openNBcont').appendChild(button);
 }
-
-
-
-
-
-
-function add_user_bubbles(classData){
-var userListContainer = document.getElementById('user-list');
-  console.log(classData)
-// members = classData['OSIS'].split(", ")
-//set members as a list of osis values, taking only the numbers and not any combination of spaces and commas in between
-members = classData['OSIS'].split(/[\s,]+/).filter(item => item.length > 0);
-
-members.forEach(function(user) {
-    var userBubble = document.createElement('div');
-    userBubble.textContent = user;
-    userBubble.classList.add('user-bubble');
-    userBubble.addEventListener('click', function() {
-        window.location.href = '/users/' + user; // link to profile page
-    });
-    userListContainer.appendChild(userBubble);
-});
-}
-
-
 
 //add class form
 const createBtn = document.getElementById('createBtn');
@@ -66,11 +39,13 @@ assignmentForm.addEventListener('submit', (e) => {
   const name = document.getElementById('name').value;
   const due = document.getElementById('due').value;
   const type = document.getElementById('assignmentType').value;
+  const points = document.getElementById('points').value;
   document.getElementById("assignmentForm").reset();
   // Create and display the object containing the name and due date values
   const assignmentObj = {
     name: name,
     category: type,
+    points: points,
     due: due,
     id: Math.floor(Math.random() * 10000),
     class: classData['id'],
@@ -83,44 +58,46 @@ assignmentForm.addEventListener('submit', (e) => {
 
 function post_assignment(data){
   var new_row = classData
-  new_row['assignments'] = new_row['assignments'] + data['id']
-  var a = fetchRequest('/post-assignment', {data: data, classid: classData['id'], newrow: new_row});
+  new_row['assignments'] = new_row['assignments'] + ", "+data['id']
+  fetchRequest('/post_data', {data: data, sheet: "Assignments"});
+  fetchRequest('/update_data', {"row_value": classData['id'], "row_name": "id", "data": new_row, "sheet": "Classes"});
   location.reload();
 }
 
 
-
 async function get_assignment(){
-  var data = await fetchRequest('/data', {data: "Assignments, FILTERED Classes"});
+  var data = await fetchRequest('/data', {data: "Assignments, Classes, Name, Users"});
   var classId = window.location.href.slice(-4);
   var assignmentList = data['Assignments']
   classData = data['Classes'];
   console.log(data)
   classData = classData.find(item => item.id == classId);
-  
-  display_classes(assignmentList, classData);
+  // set head to classData['color']
+  document.getElementById('head').style.backgroundColor = classData['color'];
+  set_class_img(classData['img'])
+  display_assignments(assignmentList, classData);
   display_NB_btn(classData);
-  add_user_bubbles(classData);
+  add_user_bubbles(classData, data['Users']);
   optionSelected(classData);
-  setImageEl(classData)
+  setImageEl(classData, "Classes")
+  set_color_EL("Classes", classData)
+  show_Join(data['Name'], classData, "Classes");
   // if classData['img'] != "", set the background image of the div to the base64 image string
-  if(class_img_b64 != ""){
-    // use the base64 image string to set the background image of the div
-    document.getElementById('head').style.backgroundImage = "url('data:image/png;base64," + class_img_b64 + "')";
-  }
+  
   document.getElementById('loadingWheel').style.display = "none";
 }
 get_assignment()
 
-function display_classes(assignmentList, classData){
+function display_assignments(assignmentList, classData){
   const assignmentListContainer = document.getElementById('assignmentList');
     assignmentList.forEach(assignmentData => {
       if(!(assignmentData['class']==classData['id'])){return;}
       
       const assignmentItem = document.createElement('div');
       assignmentItem.classList.add('assignment-item');
+      const dueDate = processDate(assignmentData.due);
       assignmentItem.innerHTML = `
-        <h3>Due ${assignmentData.due}</h3>
+        <h3>Due ${dueDate}</h3>
         <p>Type: ${assignmentData.category}</p>
         <p>Name: ${assignmentData.name}</p>
       `;
@@ -136,12 +113,16 @@ function display_classes(assignmentList, classData){
 
 
 
-function optionSelected(classes){
+function optionSelected(classData){
     
-  console.log(classes);
-  var categories = classes['categories']
+  console.log(classData);
+  var categories = classData['categories']
   
   if(categories){
+    // convert categories to json if it is a string
+    if(typeof categories === 'string'){
+      categories = JSON.parse(categories);
+    }
     categories = categories.filter(item => typeof item === 'string');
     
   var categoryElement = document.getElementById("assignmentType")
@@ -159,29 +140,4 @@ categoryElement.appendChild(newOption);
   }
   
   }
-}
-
-async function setImageEl(classes){
-// add event listener to image upload input element with id="imgupload" to send a fetch request to /upload-file route
-document.getElementById('imgupload').addEventListener('change', async function() {
-  // const formData = new FormData();
-  // convert to Base64 with the getBase64 function
-  var img = await getBase64(this.files[0]);
-  // generate random 8 digit number
-  let id = Math.floor(Math.random() * 90000000) + 10000000;
-  const data = await fetchRequest('/upload-file', {file: img, name: id});
-  
-    console.log(data);
-    updateClassPic(id, classes);
-  
-});
-}
-
-async function updateClassPic(id, classes){
-  class_id = classes['id']
-  classes['img'] = id
-  const data = await fetchRequest('/update_data', {"row_value": class_id, "row_name": "id", "new_value": classes, "sheet": "Classes"});
-    console.log(data);
-    location.reload();
-  
 }

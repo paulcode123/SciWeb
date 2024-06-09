@@ -228,8 +228,11 @@ let [inputElement, divElement] = userPrompt()
   let i = parseInt(ai_response.match(/\d+/)[0], 10)
   let studyClass = classes[i]
   let studyClassID = class_ids[i]
-  let notebookText = notebooks.filter((item) => item.classID == studyClassID)[0]['text'];
-  console.log(notebooks.filter((item) => item.classID == studyClassID));
+  let notebook = notebooks.filter((item) => item.classID == studyClassID)[0];
+  let notebookText = notebook.text;
+  let notebookhtml = notebook.innerHTML;
+  
+  console.log(notebook);
   var classbox = document.createElement('div');
   divElement.appendChild(classbox);
   //Display the class the user chose by showing the names of the classes and having a box move from one class to the next until the chosen one is boxed
@@ -237,8 +240,9 @@ let [inputElement, divElement] = userPrompt()
     pclass = document.createElement('span');
     pclass.style.fontSize = "17px";
     pclass.style.marginRight = '5px';
+    pclass.style.border = "2px solid white";
     classbox.appendChild(pclass);
-    typeOut(classes[x], pclass, 7);
+    typeOut(classes[x], pclass, 15);
   }
   //For every child element in classbox...
   for (let x = 0; x < classbox.children.length; x++){
@@ -246,7 +250,7 @@ let [inputElement, divElement] = userPrompt()
     classbox.children[x].style.border = "2px solid green";
     //unbox the previous class
     if (x != 0){
-      classbox.children[x-1].style.border = "none";
+      classbox.children[x-1].style.border = "2px solid white";
     }
     //break if the current class is the chosen class
     if (x == i){
@@ -262,6 +266,11 @@ let [inputElement, divElement] = userPrompt()
   //get user input: which topic to study for
   chatBotPrompt("What topic/unit in "+studyClass+" would you like to study?");
   [inputElement, divElement] = userPrompt()
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(notebookhtml, 'text/html');
+  // get the parent element of doc.body
+  const docElement = doc.body;
+  divElement.appendChild(display_topics(docElement));
   while(entered == false){
     await sleep(500);
   }
@@ -278,3 +287,46 @@ let [inputElement, divElement] = userPrompt()
   typeOut("relevant topics in notebook=>"+subtopics, pclass, 15);
   return subtopics;
 }
+
+
+function display_topics(parent) {
+  console.log(parent)
+  // Create a container for the output
+  const output = document.createElement('div');
+
+  // Indent the output container from the parent element to show hierarchy
+  output.style.marginLeft = '20px';
+
+  // Iterate through children of the tab element
+  for (let index = 0; index < parent.children.length; index++) {
+      let tab = parent.children[index];
+      //if the tab is not of class tab, return
+      if (!tab.className.includes("tab")){
+        continue;
+      }
+      // Create a checkbox for the main section
+      const sectionCheckbox = document.createElement('input');
+      sectionCheckbox.type = 'checkbox';
+      sectionCheckbox.id = `section-${index}`;
+
+      // Create a label for the checkbox
+      const sectionLabel = document.createElement('label');
+      sectionLabel.htmlFor = `section-${index}`;
+      let input = tab.querySelector('input[type="name"]');
+      
+      sectionLabel.textContent = input.dataset.text || "Unnamed Section";
+      console.log(input);
+
+      // Append checkbox and label to the output container
+      output.appendChild(sectionCheckbox);
+      output.appendChild(sectionLabel);
+      // Add a line break for visual separation
+      output.appendChild(document.createElement('br'));
+      output.appendChild(display_topics(tab.children[2]));
+  };
+
+  // Append the output container to the body or any other desired part of the page
+  return output;
+}
+
+

@@ -2,13 +2,19 @@
 .assignment-item {
       margin-bottom: 10px;
       padding: 10px;
-      background-color: #f5f5f5;
+      background-color: #7acaff;
       border-radius: 4px;
       cursor: pointer;
+      width:60%;
+      /* center horizontally on page */
+      margin-left: auto;
+      margin-right: auto;
+      /* center text horizontally within div */
+      text-align: center;
     }
 
     .assignment-item:hover {
-      background-color: #e0e0e0;
+      background-color: #66b3ff;
     }
 
     .assignment-item h3 {
@@ -20,3 +26,7 @@
       margin: 5px 0 0;
       font-size: 14px;
     }
+
+    /* #assignmentList {
+      
+    } */

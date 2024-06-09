@@ -9,6 +9,26 @@ async function main(){
 
     var classes = data['Classes']
     var categories = data['categories']
+    var stats = data['stats']
+    setClasses(classes, categories)
+    setStats(stats)
+    setGoalProgress()
+}
+
+function setStats(stats){
+  console.log(stats)
+  // set p tags to stats
+  document.getElementById("s1").textContent = stats["gpa"] + "%"
+  document.getElementById("s2").textContent = stats["raw_avg"] + "%"
+  document.getElementById("s3").textContent = stats["avg_change"] + "%"
+  document.getElementById("s4").textContent = stats["most_improved_class"]
+  // get the next sibling of the p tag and set the text content to stats[grade_changes][class_name]
+  document.getElementById("s4").nextElementSibling.textContent += "(+"+stats["grade_changes"][stats["most_improved_class"]]+"%)"
+  document.getElementById("s5").textContent = stats["most_worsened_class"]
+  document.getElementById("s5").nextElementSibling.textContent += "("+stats["grade_changes"][stats["most_worsened_class"]]+"%)"
+  document.getElementById("s6").textContent = stats["past30_avg"] + "%"
+}
+function setClasses(classes, categories){
     var class_div = document.getElementById("classes")
     var categories_div = document.getElementById("categories")
     console.log(classes)
@@ -37,7 +57,8 @@ async function main(){
       text.appendChild(checkbox);
       class_div.appendChild(text);
     }
-  
+
+    console.log(categories)
 for(let x=0;x<categories.length;x++){
       let label = document.createElement("label");
       let input = document.createElement("input");
@@ -56,49 +77,53 @@ for(let x=0;x<categories.length;x++){
       label.appendChild(input);
       categories_div.appendChild(label);
     }
+}
 
+async function setGoalProgress(){
     const progress_data = await fetchRequest('/goals_progress', { data: '' });
     
-      container_element = document.getElementById("GoalProgressContainer")
-      for (let i = 0; i < progress_data.length; i++) {
-        const goal = progress_data[i];
-        const goalElement = document.createElement("div");
-        goalElement.className = "goal";
-        var dateBar = document.createElement('progress');
-        var gradeBar = document.createElement('progress');
-        var br = document.createElement('br');
-        
-        dateBar.value = parseFloat(goal.percent_time_passed);
-        dateBar.max = 1;
-        
-        gradeBar.value = parseFloat(goal.percent_grade_change);
-        gradeBar.max = 1;
-    
-        // code to round to 1 decimal place: Math.round(num * 10) / 10
-    
-        var title = document.createElement('h3');
-        title.textContent = "Your goal for "+goal.class+" "+goal.category;
-        var datesText = document.createElement('p');
-        datesText.textContent = "Date set: " + goal.date_set+" | Target date: " + goal.goal_date;
-    
-        var gradesText = document.createElement('p');
-        gradesText.textContent = "Grade when set: " + Math.round(goal.grade_when_set*100)/100+" | Target grade: " + goal.goal_grade;
-    
-        var trajectory = document.createElement('p');
-        trajectory.textContent = "Current Trajectory by goal date: " + Math.round(goal.current_grade_trajectory*100)/100;
-    
-        goalElement.appendChild(title);
-        goalElement.appendChild(datesText);
-        goalElement.appendChild(dateBar);
-        goalElement.appendChild(br);
-        goalElement.appendChild(gradesText);
-        goalElement.appendChild(gradeBar);
-        goalElement.appendChild(trajectory);
-        container_element.appendChild(goalElement);
-      }
+    console.log(progress_data)
+    container_element = document.getElementById("GoalProgressContainer")
+    for (let i = 0; i < progress_data.length; i++) {
+      const goal = progress_data[i];
+      const goalElement = document.createElement("div");
+      goalElement.className = "goal";
+      var dateBar = document.createElement('progress');
+      var gradeBar = document.createElement('progress');
+      var br = document.createElement('br');
       
-  }
-  main()
+      dateBar.value = parseFloat(goal.percent_time_passed);
+      dateBar.max = 1;
+      
+      gradeBar.value = parseFloat(goal.percent_grade_change);
+      gradeBar.max = 1;
+  
+      // code to round to 1 decimal place: Math.round(num * 10) / 10
+  
+      var title = document.createElement('h3');
+      title.textContent = "Your goal for "+goal.class+" "+goal.category;
+      var datesText = document.createElement('p');
+      datesText.textContent = "Date set: " + goal.date_set+" | Target date: " + goal.goal_date;
+  
+      var gradesText = document.createElement('p');
+      gradesText.textContent = "Grade when set: " + Math.round(goal.grade_when_set*100)/100+" | Target grade: " + goal.goal_grade;
+  
+      var trajectory = document.createElement('p');
+      trajectory.textContent = "Current Trajectory by goal date: " + Math.round(goal.current_grade_trajectory*100)/100;
+  
+      goalElement.appendChild(title);
+      goalElement.appendChild(datesText);
+      goalElement.appendChild(dateBar);
+      goalElement.appendChild(br);
+      goalElement.appendChild(gradesText);
+      goalElement.appendChild(gradeBar);
+      goalElement.appendChild(trajectory);
+      container_element.appendChild(goalElement);
+    }    
+}
+
+main()
+
 setTimeout(function() {
 
   graph_data(["all", "All"], 15);
