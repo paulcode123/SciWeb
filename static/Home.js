@@ -21,6 +21,9 @@ function getPeriod(){
       if (time < thursBellSchedule[i + 1]){
         return i
       }
+      else if (i < 500){
+        return 0
+      }
     }
   } else {
     for(let i = 0; i < bellSchedule.length; i++){
@@ -28,10 +31,22 @@ function getPeriod(){
         return i
         
       }
+      else if (i < 460){
+        return 0
+      }
     }
   }
 }
-
+function datechecker(){
+  var today = new Date();
+  if(today.getMinutes() > 500 || today.getDay() == 0 || today.getDay() == 6){
+    return false
+  }
+  else{
+    return true
+  }
+  
+}
 function updateTime(){
   var period = getPeriod()
   console.log(period)
@@ -47,10 +62,14 @@ function updateTime(){
 
 }
 function hTimer() {
-  var minRemaining = updateTime(); - 1
-  // get the number of seconds remaining in the current minute: i.e. if the time is 12:34:56, this will return 4
-  var secRemaining = 60-(new Date().getSeconds());
-  document.getElementById("timer").textContent = minRemaining + ":" + secRemaining;
+  if (datechecker() === true){
+    var minRemaining = updateTime(); - 1
+    var secRemaining = 60-(new Date().getSeconds());
+    document.getElementById("timer").textContent = minRemaining + ":" + secRemaining;
+  }
+  else if (datachecker() === false){
+    document.getElementById("timer").textContent = "No School :D";
+  }
 }
 
 // Create function show_recent_messages to display the number and location of messages that were sent in the last 24 hours in classes and assignments that the user is in
