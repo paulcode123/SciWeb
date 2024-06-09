@@ -118,6 +118,7 @@ function new_section(parent){
   const tabName = document.createElement('input');
   tabName.placeholder = `{Add section name here}`;
   tabName.type = 'name';
+  tabName.className = 'text_field';
   //add input box as an element of the main tab
   newTab.appendChild(tabName)
   
@@ -234,7 +235,7 @@ const diagrams = container.querySelectorAll('.dgm');
   }
 // for each section name input box/textbox, but the correct text value in it
 //get list of text values for textbox content
-if(data.text){
+if(data.text && data.text.length > 0){
 text_values = JSON.parse(data.text);
 
   for(let i=0; i<input.length; i++){
@@ -444,21 +445,15 @@ container.addEventListener('mousemove', (e) => {
 
 // function to get all text values of the notebook
 function get_children(parent, txts, target_class) {
-  //check if parent's class matches target class
+  // if the parent matches the target class, add the text value to the txts array
   if (parent.className == target_class){
-    //if it does, add the innerHTML to the txts array
     txts.push(parent.value)
-    return txts
   }
-
-  //get children of parent
+  // get all children of the parent element
   const childElements = parent.children;
-
-  //if parent has no children, return the txts array
-  if (childElements.length == 0){return txts}
-
-  //loop through all children of the parent and call this function on each child
+  // loop through all children
   for (let i = 0; i < childElements.length; i++) {
+    // recursively call the function on each child element
     txts = get_children(childElements[i], txts, target_class)
   }
   return txts
@@ -487,7 +482,10 @@ async function postNotebook(){
   console.log('text data:', text_data)
   console.log('pq data:', pq_data)
 
-  data = {'data': {'classID': id, 'innerHTML': container.innerHTML, 'text': text_data, 'practice_questions': pq_data, 'exists': notebook_exists}}
+  text_data = JSON.stringify(text_data)
+  pq_data = JSON.stringify(pq_data)
+
+  data = {'classID': id, 'innerHTML': container.innerHTML, 'text': text_data, 'practice_questions': pq_data, 'exists': notebook_exists}
   if (notebook_exists == true){
     const result = await fetchRequest('/update_data', {'data': data, "sheet": "Notebooks", "row_name": "classID", "row_value": id})
   }

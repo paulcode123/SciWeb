@@ -38,7 +38,7 @@ def filter_grades(grades, user_data, classes):
   #     if ((c.lower() == grade['class'].lower()) or (c == 'all')) and ()
   #       grades.append(grade)
     
-  return grades
+  return fgrades
 
 
 # Get the minimum and maximum dates of the user's grades

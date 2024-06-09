@@ -18,7 +18,7 @@ body {
     background-color: #333;
     display: flex; /* Add flexbox */
     align-items: center; /* Align items vertically */
-    /* position: relative; */
+    width: 100vw; /* Set width to 100% of viewport width */
     }
 
     ul.navbar li:not(#profile) {
@@ -52,6 +52,21 @@ body {
       font-family: inherit;
       margin: 0;
     }
+
+    /* For devices with screen width greater than 768px (typical laptop size), set the width to 16px */
+@media (min-width: 768px) {
+  .dropdown-btn {
+      padding: 14px 16px;
+  }
+}
+
+/* For devices with screen width less than or equal to 768px, set the width to screen width divided by 6 */
+@media (max-width: 768px) {
+  .dropdown-btn {
+      padding: 14px calc(100vw / 40);
+  }
+}
+
 
     .dropdown-content {
       display: none;

@@ -53,7 +53,7 @@ def init():
   vars['max_column'] = "O"
   vars['AppSecretKey'] = keys["AppSecretKey"]
   # firebase or gsheet
-  vars['database'] = 'gsheet'
+  vars['database'] = 'firebase'
   vars['allow_demo_change'] = True
   
   return vars
@@ -542,7 +542,7 @@ def get_notebook():
   for item in notebooks:
     if item['classID'] == id:
         prompt = [{"role":"system", "content": "Generate 3 practice questions based on this text"},
-                  {"role":"user", "content": item['text']}]
+                  {"role":"user", "content": str(item['text'])}]
         insights = get_insights(prompt)
         break  # Stop the loop once 'a' is found
   response = {"notebook":notebooks, 'insights': insights}
