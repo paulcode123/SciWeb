@@ -10,6 +10,7 @@ from flask import session
 #get data from Google Sheets API
 def get_data_gsheet(sheet, row_name, row_val):
   from main import init
+  print("getting data from gsheet", sheet)
   vars = init()
   ranges = [f"{sheet}!A:{vars['max_column']}"]
   request = vars['service'].spreadsheets().values().batchGet(
@@ -113,7 +114,7 @@ def init_firebase():
     firebase_admin.initialize_app(cred)
 
 def get_data_firebase(collection, row_name, row_val):
-    print(collection)
+    print("getting data from firebase: ", collection)
     # Initialize Firestore DB
     db = firestore.client()
 

@@ -33,9 +33,15 @@ async function pullfromJupiter(){
   const data = await fetchRequest('/jupiter', {"osis": osis, "password": password, "addclasses": addClasses, "encrypt": key, "updateLeagues": updateLeagues});
   
   console.log("got response")
+  document.getElementById('loadingWheel').style.visibility = "hidden";
+  // if data is a dict with error key, show error message
+  if(data['error']){
+    alert(data['error']);
+  }
+  else{
   grades = data;
   createGradesTable(grades);
-  document.getElementById('loadingWheel').style.visibility = "hidden";
+  }
 }
 
 //When the user selects a class, update the category dropdown with the categories for that class

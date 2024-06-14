@@ -31,35 +31,12 @@ from goals import calculate_goal_progress, get_goals
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades
 
 #get api keys from static/api_keys.json file
-<<<<<<< Updated upstream
-=======
 keys = json.load(open('api_keys.json'))  
 
 
 
 
-# Function to initialize the Google Sheets API
-def init_gapi():
-  spreadsheet_id = '1k7VOAgZY9FVdcyVFaQmY_iW_DXvYQluosM2LYL2Wmc8'
-  # API key for accessing the Google Sheets API: find it in the "Getting Started with Contributing" document
-  # Remember to keep it secret, and don't publish it to GitHub
-  api_key = keys["GoogleAPIKey"]
 
-  # URL for the SheetDB API, for POST requests
-  sheetdb_url = 'https://sheetdb.io/api/v1/y0fswwtbyapbd'
-
-  DISCOVERY_SERVICE_URL = 'https://sheets.googleapis.com/$discovery/rest?version=v4'
-
-  service = build('sheets',
-                  'v4',
-                  developerKey=api_key,
-  discoveryServiceUrl=DISCOVERY_SERVICE_URL)
-  max_column = "K"
-
-  return spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column
->>>>>>> Stashed changes
-
-init_firebase()
 # Initialize other variables
 def init():
   vars = {}
@@ -271,6 +248,8 @@ def Jupiter():
   # get_gclassroom_api_data()
   data = request.json
   classes= run_puppeteer_script(data['osis'], data['password'])
+  if classes == "WrongPass":
+    return json.dumps({"error": "Incorrect credentials"})
   if str(data['addclasses'])=="True":
     jupapi_output_to_classes(classes)
   
@@ -383,14 +362,15 @@ def get_insights_ga():
   grades = get_grades()
   grade_spreads = []
 
-  grade_spread = process_grades(grades, ["all", "All"], user_data, classes_data)
+  grade_spread = process_grades(grades, user_data, classes_data)
   # If the user is graphing all of their classes, allow insights to be generated for each class individually by getting the user's grades for each class to pass to the AI
   
   matching_classes = [item['name'] for item in classes_data if session['user_data']['osis'] in item['OSIS']]
   
   for item in matching_classes:
     # Get the user's grades for the class
-    t, g = process_grades(grades, [item.lower(), "All"], user_data, classes_data)
+    fgrades = filter_grades(grades, user_data, [item.lower(), "All"])
+    t, g = process_grades(fgrades, user_data, classes_data)
     # If the user has grades for the class, add the class and the grades to the list of grade spreads
     if type(t)!='int':
       grade_spreads.append(item+": "+str(g))
@@ -405,26 +385,32 @@ def get_insights_ga():
 # Function to return grades to the Grade Analysis page
 @app.route('/grades_over_time', methods=['POST'])
 def post_ga_grades():
+  print("in grades over time")
   data = request.json
   classes = data['classes']
   classes = decode_category_groups(classes)
   print("specificity", data['specificity'])
   specificity = int(data['specificity'])
   # Get User, Class, and Grade data
+  print('before get classes')
   classes_data = get_data("Classes")
+  print('after get classes')
   # grades = get_data("Grades")
-  grades = get_grades()
-  print("len grades in post_ga_grades", len(grades))
+  unfiltered_grades = get_grades()
+  grades = filter_grades(unfiltered_grades, session['user_data'], classes)
   
-  
-  user_data = get_name()
-  grade_points = get_grade_points(grades, user_data, classes)
+  try:
+    user_data = get_name()
+    grade_points = get_grade_points(grades, user_data, classes_data)
 
-  # Calculate the user's grades over time, return the grades at their corresponding dates
-  times, grade_spread = process_grades(grades, classes, user_data, classes_data, specificity)
+    # Calculate the user's grades over time, return the grades at their corresponding dates
+    times, grade_spread = process_grades(grades, user_data, classes_data, specificity)
 
-  # Get the goals that the user has set, and create objects to overlay on the graph
-  goals, set_coords, max_date = get_goals(classes, user_data, grades, times, grade_spread)
+    # Get the goals that the user has set, and create objects to overlay on the graph
+    goals, set_coords, max_date = get_goals(classes, user_data, grades, times, grade_spread)
+  except Exception as e:
+    print("Error in grades over time", e)
+    return json.dumps({"error": "You have encountered an error :( Please contact pauln30@nycstudents.net with this text:    " + str(e)})
   # Create a dictionary to return the calculated data to the frontend
   response_data = {
     "times": times.tolist(),

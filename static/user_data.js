@@ -113,8 +113,13 @@ console.log(osis)
 else{
   logged_in = false;
   // if the user is on the home page, redirect to the Pitch page
-  if(window.location.pathname == "/"){
+  loc = window.location.pathname
+  if(loc == "/"){
     window.location.href = "/Pitch"
+  }
+  else if(loc != "/Login" && loc != "/Pitch" && loc != "/GetStart"){
+    // if the user is on the Pitch page, redirect to the login page
+    window.location.href = "/Login"
   }
 }
 }
