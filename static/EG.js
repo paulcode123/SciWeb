@@ -13,6 +13,7 @@ const Pullbutton = document.querySelector('#Jupull');
 Pullbutton.addEventListener('click', pullfromJupiter);
 
 async function pullfromJupiter(){
+  start_loading(12);
   console.log("pulling from Jupiter")
   // make loading wheel visible
   document.getElementById('loadingWheel').style.visibility = "visible";
@@ -31,7 +32,11 @@ async function pullfromJupiter(){
   }
   //Send to python with fetch request
   const data = await fetchRequest('/jupiter', {"osis": osis, "password": password, "addclasses": addClasses, "encrypt": key, "updateLeagues": updateLeagues});
-  
+  document.getElementById('loadingWheel').style.visibility = "hidden";
+  if(data['error']){
+    alert(data['error']);
+  }
+  else{
   console.log("got response")
   document.getElementById('loadingWheel').style.visibility = "hidden";
   // if data is a dict with error key, show error message
@@ -42,6 +47,7 @@ async function pullfromJupiter(){
   grades = data;
   createGradesTable(grades);
   }
+}
 }
 
 //When the user selects a class, update the category dropdown with the categories for that class
@@ -155,12 +161,9 @@ for (let i = 0; i < pasted.length; i += 2) {
 });
 
 
-// Using setTimeout
-
-
 
 async function post_grades(grades){
-  await fetchRequest('/post-grades', grades);
+  await fetchRequest('/post_data', {"sheet": "Grades", "data": grades});
 }
 
 
@@ -179,7 +182,7 @@ fetch('/data', {
   
   grades = data['Grades']
   var rawclasses = data['Classes']
-  const classes = rawclasses.filter(item => item.OSIS.includes(osis));
+  const classes = rawclasses.filter(item => (item.OSIS.toString()).includes(osis));
   setClassOptions(classes)
   for(let z=1;z<6;z++){
 document.getElementById("class"+z).addEventListener("change", () => {optionSelected(z, classes)});
@@ -331,17 +334,31 @@ function getPropertyByIndex(index) {
 // Create the grades table
 
 async function update_grades(id, grades){
-  await fetchRequest('/update-grades', {"grades":grades, "rowid": id});
+  await fetchRequest('/update_data', {"sheet": "Grades", "data": grades, "row_name": "id", "row_value": id});
 }
 
 // add event listener
 document.getElementById('DeleteGrades').addEventListener('click', DeleteGrades);
 async function DeleteGrades(){
-  const result = await fetchRequest('/delete-grades', {"osis": osis});
+  const result = await fetchRequest('/delete_data', {"sheet": "Grades", "row_value": osis, "row_name": "osis"});
   
     // hide button
     document.getElementById('DeleteGrades').style.visibility = "hidden";
     // remove grades from table
     document.getElementById('gradesBody').innerHTML = '';
 
+}
+
+function start_loading(time){
+const loadingBar = document.querySelector('.loading-bar');
+loadingBar.style.display = 'block';
+let width = 0;
+const interval = setInterval(function() {
+  if (width >= 100) {
+    clearInterval(interval);
+  } else {
+    width++;
+    loadingBar.style.width = width + '%';
+  }
+}, time*10); // 100ms interval for 10 seconds total
 }

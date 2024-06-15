@@ -30,3 +30,10 @@
     /* #assignmentList {
       
     } */
+
+    body{
+      background-image: url('/static/media/Asnmtbgt.png'); /* URL of the background image */
+      background-size: cover; /* Cover the entire page */
+      background-position: center; /* Center the image */
+      background-repeat: no-repeat; /* Do not repeat the image */
+    }

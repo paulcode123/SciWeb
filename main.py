@@ -12,6 +12,7 @@ import datetime
 import re
 # googleapiclient is a library for working with Google APIs(Getting data from Google Sheets in this case)
 from googleapiclient.discovery import build
+import traceback
 
 # for images
 import base64
@@ -29,6 +30,7 @@ from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups, get_stats, update_leagues
 from goals import calculate_goal_progress, get_goals
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades
+from study import study_response, get_insights
 
 #get api keys from static/api_keys.json file
 keys = json.load(open('api_keys.json'))  
@@ -56,7 +58,7 @@ def init():
   vars['max_column'] = "O"
   vars['AppSecretKey'] = keys["AppSecretKey"]
   # firebase or gsheet
-  vars['database'] = 'gsheet'
+  vars['database'] = 'firebase'
   vars['allow_demo_change'] = True
   
   return vars
@@ -64,9 +66,11 @@ def init():
 vars = init()
 
 app = Flask(__name__)
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_PERMANENT'] = False
 
 # App secret key for session management
-app.secret_key = vars["AppSecretKey"]
+app.config['SECRET_KEY'] = vars["AppSecretKey"]
 generate_grade_insights = True
 
 #initialize the front end: all of the HTML/CCS/JS files
@@ -107,6 +111,10 @@ def pitch():
 @app.route('/Study')
 def study():
   return render_template('Study.html')
+
+@app.route('/Battle')
+def battle():
+  return render_template('Battle.html')
 
 @app.route('/Classes')
 def classes():
@@ -256,7 +264,8 @@ def Jupiter():
   session['user_data']['grades_key'] = str(data['encrypt'])
   grades = jupapi_output_to_grades(classes, data['encrypt'])
   if str(data['updateLeagues'])=="True":
-    update_leagues(grades)
+    classes = get_data("Classes")
+    update_leagues(grades, classes)
   return json.dumps(grades)
 
 @app.route('/init_oauth', methods=['POST', 'GET'])
@@ -269,6 +278,8 @@ def oauth2callback_handler():
   token = oauth2callback()
   print("session", session['credentials'])
   return redirect(url_for('assignments'))
+
+
 # This function is called from many JS files to get data from specific sheets
 # The requested sheets are passed in as a list: eg. "Grades, Classes"
 # It returns the data from the requested sheet
@@ -352,7 +363,7 @@ def get_goals_progress():
 # Function to return insights to the Study page
 @app.route('/AI', methods=['POST'])
 def get_AI():
-  return json.dumps(get_insights(request.json['data']))
+  return json.dumps(study_response(request.json['data']))
 
 #function to generate insights and return them to the Grade Analysis page
 @app.route('/insights', methods=['POST'])
@@ -396,21 +407,26 @@ def post_ga_grades():
   classes_data = get_data("Classes")
   print('after get classes')
   # grades = get_data("Grades")
-  unfiltered_grades = get_grades()
-  grades = filter_grades(unfiltered_grades, session['user_data'], classes)
+  raw_grades = get_grades()
+  user_data = get_name()
+  grades = filter_grades(raw_grades, user_data, classes)
+  print("len grades in post_ga_grades", len(grades))
+  
   
   try:
-    user_data = get_name()
-    grade_points = get_grade_points(grades, user_data, classes_data)
+    grade_points = get_grade_points(grades, user_data, classes)
 
     # Calculate the user's grades over time, return the grades at their corresponding dates
-    times, grade_spread = process_grades(grades, user_data, classes_data, specificity)
-
+    times, grade_spread = process_grades(grades, classes, user_data, classes_data, specificity)
+    
     # Get the goals that the user has set, and create objects to overlay on the graph
     goals, set_coords, max_date = get_goals(classes, user_data, grades, times, grade_spread)
+
   except Exception as e:
-    print("Error in grades over time", e)
-    return json.dumps({"error": "You have encountered an error :( Please contact pauln30@nycstudents.net with this text:    " + str(e)})
+    # get detailed error message
+    error_message = traceback.format_exc()
+    print("Error in post_ga_grades:", error_message)
+    return json.dumps({"error": "You have encountered an error :( Please contact pauln30@nycstudents.net with this text:    "+error_message})
   # Create a dictionary to return the calculated data to the frontend
   response_data = {
     "times": times.tolist(),
@@ -464,12 +480,6 @@ def process_notebook_image():
   return json.dumps(insights)
   
 
-# Post grades entered in the Enter Grades page to the Grades sheet
-@app.route('/post-grades', methods=['POST'])
-def receive_grades():
-  data = request.json
-  post_data("Grades", data)
-  return 'Data received successfully'
 
 @app.route('/impact', methods=['POST'])
 def get_impact():
@@ -505,6 +515,7 @@ def upload_file_route():
   # Upload the file to the bucket
   upload_file("sciweb-files", data['file'], data['name'])
   return json.dumps({"message": "success"})
+
 
 
 #When the user logs in, their data is posted to the Users sheet
@@ -554,19 +565,12 @@ def get_notebook():
   for item in notebooks:
     if item['classID'] == id:
         prompt = [{"role":"system", "content": "Generate 3 practice questions based on this text"},
-                  {"role":"user", "content": item['text']}]
+                  {"role":"user", "content": str(item['text'])}]
         insights = get_insights(prompt)
         break  # Stop the loop once 'a' is found
   response = {"notebook":notebooks, 'insights': insights}
   return json.dumps(response)
 
-# If the user changes their info on the profile page, update the Users sheet
-@app.route('/update-login', methods=['POST'])
-def updateLogin():
-  data = request.json
-  
-  update_data(str(data['osis']), 'osis', data, "Users")
-  return json.dumps({"data": "success"})
 
 #accept friend request
 @app.route('/accept-friend', methods=['POST'])
@@ -584,76 +588,6 @@ def acceptFriend():
     
   post_data("Friends", data)
   return json.dumps({"data": "success"})
-
-#update public profile
-@app.route('/update-public-profile', methods=['POST'])
-def updatePublicProfile():
-  data = request.json
-  update_data(str(data['OSIS']), 'OSIS', data, "Profiles")
-  return json.dumps({"data": "success"})
-
-# After every couple of questions that the user answers on the study page, their questions and answers are logged to the Study sheet
-@app.route('/updateStudy', methods=['POST'])
-def updateStudy():
-  data = request.json
-  data = data['data']
-  user_data = get_name()
-  osis = user_data['osis']
-  update_data(osis, 'OSIS', [{"OSIS": osis, "Q&As": data}], "Study")
-  return json.dumps('success')
-
-#If a user joins or creates a class, the class data is posted to the Classes sheet
-@app.route('/post-classes', methods=['POST'])
-def receive_Classes():
-  data = request.json
-  print("receive_classes data", data)
-  # update=0 means the class is new, update=1 means the class is being joined
-  if data["update"] == 0:
-    post_data("Classes", data['class'])
-  else:
-    # add the user's osis to the class's list of osis
-    update_data(data["update"], "id", data['class'], "Classes")
-
-  return json.dumps({"data": "success"})
-
-# If the user edits one of their grades on the Enter Grades page, it's updated in the Grades sheet
-@app.route('/update-grades', methods=['POST'])
-def update_grades():
-  data = request.json
-  update_data(data['rowid'], "id", data['grades'], "Grades")
-  return json.dumps({"data": "success"})
-
-#If the user clicks the delete saved grades button, delete their grades from the Grades sheet
-@app.route('/delete-grades', methods=['POST'])
-def delete_grades():
-  data = request.json
-  delete_data(session['user_data']['osis'] , "OSIS", "GradeData")
-  return json.dumps({"data": "success"})
-
-
-# When the user creates a goal, it's posted to the Goals sheet
-@app.route('/post-goal', methods=['POST'])
-def postGoal():
-  data = request.json
-  post_data("Goals", data)
-  return json.dumps({"data": 'success'})
-
-# When the user types a message into the chat, it's posted to the Chat sheet
-@app.route('/post-message', methods=['POST'])
-def postMessage():
-  data = request.json
-  post_data("Chat", data)
-  return json.dumps({"data": 'success'})
-
-# When the user saves a notebook after changing it, it's posted to the Notebooks sheet
-@app.route('/post-notebook', methods=['POST'])
-def postNotebook():
-  data = request.json
-  if data['data']['exists'] == True:
-    update_data(data['data']['classID'], 'classID', data, "Notebooks")
-  else:
-    post_data("Notebooks", data['data'])
-  return json.dumps({"data": 'success'})
 
 
 #Function to get the user's name from Users data
@@ -691,25 +625,7 @@ def get_name(ip=None):
 
 
 
-# Query the LLM API to get insights
-def get_insights(prompts):
-  
-  headers = {
-    'Authorization': f"Bearer {vars['openAIAPI']}",
-    'Content-Type': 'application/json'
-}
-  
-  payload = {
-    "model": "gpt-3.5-turbo",
-    "messages": prompts
-}
-  insights = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
-  insights = insights.json()
-  # print("raw insights: "+str(insights))
-  insights = insights['choices'][0]['message']['content']
-  # print("insights: "+str(insights))
-  return insights
-  
+
 
 #uncomment to run locally, comment to deploy. Before deploying, change db to firebase, add new packages to requirements.txt
 

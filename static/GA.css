@@ -123,3 +123,9 @@ h2 {
   margin: 10px 0;
 }
 
+body{
+  background-image: url('/static/media/GAbgd.png'); /* URL of the background image */
+  background-size: cover; /* Cover the entire page */
+  background-position: center; /* Center the image */
+  background-repeat: no-repeat; /* Do not repeat the image */
+}

@@ -31,7 +31,7 @@
       <div class="dropdown-content">
         <a href="#">Write</a>
         <a href="/Study">Study</a>
-        <a href="#">Predict</a>
+        <a href="/Battle">Battle</a>
       </div>
     </li>
     <li class="dropdown">
@@ -53,6 +53,7 @@
     </li>
     <li><a href="/Login" id="profile">Login</a></li>
   </ul>
+  <div id="notification-container"></div>
 
   <main>
     <div id="loadingWheel"></div>
@@ -69,10 +70,13 @@
     <br>
     <p>By pulling grades from Jupiter, you agree to our <a target="_blank" href="/Terms">Terms and Conditions</a></p>
     <button id="Jupull">Pull from Jupiter</button>
+    <div class="loading-bar-container">
+      <div class="loading-bar"></div>
+    </div>
   </div>
     <button id="DeleteGrades">Delete Saved Grades</button>
     <!-- get user osis number -->
-    <br><br><br><br>
+    <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
     
     
     <form id='gradeform'>
@@ -211,6 +215,7 @@
 
 <script src="/static/util.js"></script>
 <script src="/static/user_data.js"></script>
+  <script src="/static/notifications.js" type="module"></script>
 <script src="static/EG.js" type="module"></script>
 <!-- <script src="/src/index.js"></script> -->
 <!-- <script src="{{ url_for('static', filename='dist/index.js') }}"></script> -->

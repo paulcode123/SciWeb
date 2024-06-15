@@ -5,6 +5,7 @@ import numpy as np
 import json
 import ast
 
+from database import update_data
 
 #filter grades for those matching user osis and classes among those being graphed
 def filter_grades(grades, user_data, classes):
@@ -25,18 +26,19 @@ def filter_grades(grades, user_data, classes):
   classes = [c.lower() if c != "All" else c for c in classes]
 
     
-  grades = [
-    grade for grade in grades
-    if ((grade['class'].lower() in classes) or ('all' in classes)) and ((grade['category'].lower() in classes) or ('All' in classes))
-  ]
-
+  fgrades = []
+  for grade in grades:
+    if ((grade['class'].lower() in classes) or ('all' in classes)) and ((grade['category'].lower() in classes) or ('All' in classes)):
+      fgrades.append(grade)  
+  
+  print("in filter_grades: grades filtered from length", len(grades), "to", len(fgrades), "with filters", classes)
   # grades = []
   # for grade in grades:
   #   for c in classes:
   #     if ((c.lower() == grade['class'].lower()) or (c == 'all')) and ()
   #       grades.append(grade)
     
-  return grades
+  return fgrades
 
 
 # Get the minimum and maximum dates of the user's grades
@@ -111,16 +113,16 @@ def get_weights(classes_data, osis):
   return weights
 
 # Calculate the user's grades over time
-def process_grades(grades, user_data, classes_data, interval=10, s_min_date=None, s_max_date=None):
+def process_grades(allgrades, classes, user_data, classes_data, interval=10, s_min_date=None, s_max_date=None):
   print("in process_grades")
   #filter grades based on class
-  
+  grades = filter_grades(allgrades, user_data, classes)
   
   if not s_min_date:
     # Get the minimum and maximum dates of the user's grades and goals
-    min_date, max_date, z = get_min_max(grades, user_data, True, interval)
+    min_date, max_date, z = get_min_max(grades, user_data, classes, True, interval)
     #Get the minium and maximum dates of just the user's grades
-    mi, mx, g = get_min_max(grades, user_data, False, interval)
+    mi, mx, g = get_min_max(grades, user_data, classes, False, interval)
     print("in process_grades: min_date inc goals", min_date, "max_date", max_date, "min_date exc. goals", mi, "max_date", mx)
     if mi == 0:
       return 0, []
@@ -141,6 +143,7 @@ def process_grades(grades, user_data, classes_data, interval=10, s_min_date=None
                             dtype=int)
     evenly_spaced_dates = [datetime.date.fromordinal(d) for d in date_range]
 
+  
   weights = get_weights(classes_data, user_data['osis'])
 
   # get grades for each date
@@ -171,6 +174,9 @@ def calculate_grade(time, data, weights, return_class_grades=False, all_dates=Fa
       categories[datum["class"]] = {}
     # If the category has not yet been added to the class's dictionary, add it, and initialize the category's data
     if datum["category"] not in categories[datum["class"]]:
+      if datum["category"].lower() not in weights[datum["class"].lower()]:
+        print("Strange error: category not in weights")
+        continue
       categories[datum["class"]][datum["category"]] = {
         "scoreSum": 0,
         "valueSum": 0,
@@ -237,7 +243,9 @@ def get_grade_points(grades, user_data, classes_data):
     else:
       category_weight_sum = category_weight_sums[class_upper][grade['category']]
     #Change first letter of class to uppercase
-    
+    if grade["category"].lower() not in weights[grade["class"].lower()]:
+        print("Strange error: category not in weights")
+        continue
     category_weight = weights[grade['class'].lower()][(grade['category'].lower())]
     relative_weight = (weight/(category_weight_sum*category_weight))*1000
 
@@ -378,27 +386,18 @@ def update_leagues(grades, classes):
   # For RIlb, GPAlb, get the user's stats
   stats = get_stats(grades, classes)
 
-  #TODO: Add another if statement for the distributions acitivity. filter grades for assessments and store in a variable
-
-
-
   # update the database with the calculated data
   to_compile = {"GOTC": grade_spread, "GPAlb": stats['gpa'], "RIlb": stats['avg_change'], "Glb": goalp, "RAS": fgrades}
   for league in fleagues:
     for activity in to_compile.keys():
       if not activity in league['Activities']:
         continue
-      # if the column for that activity is not empty, update the data
       if activity in league and league[activity] != "":
         la = league[activity]
         la = la.replace("'", '"')
         content = json.loads(la)
-        if activity == "Dist":
-          #TODO: add the assessment grades from that class to the list for the corresponding assessment. This will take a lot of figuring out.
-          continue
         content[session['user_data']['osis']] = to_compile[activity]
         league[activity] = str(content)
-      # if the column for that activity is empty, create a new dictionary
       else:
         if activity != "GOTC":
           league[activity] = str({session['user_data']['first_name']: to_compile[activity]})

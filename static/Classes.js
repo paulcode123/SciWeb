@@ -180,7 +180,13 @@ async function init_fetch(){
 
 //if the user joined or created a class, update the class sheet in the database
 async function post_classes(data, update){
-  await fetchRequest('/post-classes', {update:update, class: data});
+  if (update === 0){
+    response = await fetchRequest('/post_data', {"sheet": "Classes", "data": data});
+  }
+  else{
+    response = await fetchRequest('/update_data', {"sheet": "Classes", "data": data, "row_name": 'id', "row_value": data.id});
+  }  
+  console.log(response);
   location.reload();
   
 }

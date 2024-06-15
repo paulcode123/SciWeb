@@ -37,7 +37,7 @@ const categoryCheckboxes = document.getElementById("categoryCheckboxes");
 
 
 async function post_goal(goal){
-  const result = await fetchRequest('/post-goal', {"goal":goal});
+  const result = await fetchRequest('/post_data', {"sheet": "Goals", "data": goal});
   console.log(result);  // Log the response from Python
 }
 
