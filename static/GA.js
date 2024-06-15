@@ -301,8 +301,11 @@ async function graph_data(classes, specificity) {
   
 const data = await fetchRequest('/grades_over_time', {classes: classes, specificity: specificity});
 
-  
-  
+  if ("error" in data) {
+    const errorMessage = document.getElementById("error");
+    errorMessage.textContent = data["error"];
+    return;
+  }
   grades = JSON.stringify(data['grade_spread']);
   times = JSON.stringify(data['times']);
   goals = data['goals'];

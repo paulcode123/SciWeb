@@ -247,6 +247,8 @@ def Jupiter():
   # get_gclassroom_api_data()
   data = request.json
   classes= run_puppeteer_script(data['osis'], data['password'])
+  if classes == "WrongPass":
+    return json.dumps({"error": "Incorrect Credentials"})
   if str(data['addclasses'])=="True":
     jupapi_output_to_classes(classes)
   
@@ -362,14 +364,15 @@ def get_insights_ga():
   grades = get_grades()
   grade_spreads = []
 
-  grade_spread = process_grades(grades, ["all", "All"], user_data, classes_data)
+  grade_spread = process_grades(grades, user_data, classes_data)
   # If the user is graphing all of their classes, allow insights to be generated for each class individually by getting the user's grades for each class to pass to the AI
   
   matching_classes = [item['name'] for item in classes_data if session['user_data']['osis'] in item['OSIS']]
   
   for item in matching_classes:
     # Get the user's grades for the class
-    t, g = process_grades(grades, [item.lower(), "All"], user_data, classes_data)
+    fgrades = filter_grades(grades, user_data, [item.lower(), "All"])
+    t, g = process_grades(fgrades, user_data, classes_data)
     # If the user has grades for the class, add the class and the grades to the list of grade spreads
     if type(t)!='int':
       grade_spreads.append(item+": "+str(g))
@@ -392,18 +395,24 @@ def post_ga_grades():
   # Get User, Class, and Grade data
   classes_data = get_data("Classes")
   # grades = get_data("Grades")
-  grades = get_grades()
+  raw_grades = get_grades()
+  user_data = get_name()
+  grades = filter_grades(raw_grades, user_data, classes)
   print("len grades in post_ga_grades", len(grades))
   
   
-  user_data = get_name()
-  grade_points = get_grade_points(grades, user_data, classes)
+  try:
+    grade_points = get_grade_points(grades, user_data, classes)
 
-  # Calculate the user's grades over time, return the grades at their corresponding dates
-  times, grade_spread = process_grades(grades, classes, user_data, classes_data, specificity)
+    # Calculate the user's grades over time, return the grades at their corresponding dates
+    times, grade_spread = process_grades(grades, classes, user_data, classes_data, specificity)
 
-  # Get the goals that the user has set, and create objects to overlay on the graph
-  goals, set_coords, max_date = get_goals(classes, user_data, grades, times, grade_spread)
+    # Get the goals that the user has set, and create objects to overlay on the graph
+    goals, set_coords, max_date = get_goals(classes, user_data, grades, times, grade_spread)
+
+  except Exception as e:
+    print("Error in post_ga_grades:", e)
+    return json.dumps({"error": "You have encountered an error :( Please contact pauln30@nycstudents.net with this text:    "+str(e)})
   # Create a dictionary to return the calculated data to the frontend
   response_data = {
     "times": times.tolist(),

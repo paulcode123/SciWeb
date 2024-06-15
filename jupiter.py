@@ -40,7 +40,8 @@ def run_puppeteer_script(osis, password):
 
     # for course in output:
     #   course = course.split("Category ")[1:]
-    
+    if "name" in output and output["name"] == "Incorrect credentials":
+      return "WrongPass"
     
     return output
     # print(result)

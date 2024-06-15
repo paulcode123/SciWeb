@@ -32,11 +32,16 @@ async function pullfromJupiter(){
   }
   //Send to python with fetch request
   const data = await fetchRequest('/jupiter', {"osis": osis, "password": password, "addclasses": addClasses, "encrypt": key, "updateLeagues": updateLeagues});
-  
+  document.getElementById('loadingWheel').style.visibility = "hidden";
+  if(data['error']){
+    alert(data['error']);
+  }
+  else{
   console.log("got response")
   grades = data;
   createGradesTable(grades);
-  document.getElementById('loadingWheel').style.visibility = "hidden";
+  }
+  
 }
 
 //When the user selects a class, update the category dropdown with the categories for that class

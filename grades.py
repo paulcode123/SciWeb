@@ -45,8 +45,9 @@ def filter_grades(grades, user_data, classes):
 def get_min_max(grades, user_data, classes, extend_to_goals=False, interval=10):
     from goals import filter_goals
     
-    grades = filter_grades(grades, user_data, classes)
-    goals = get_data("Goals")
+    
+    if extend_to_goals:
+      goals = get_data("Goals")
     # print("len(grades)", len(grades), "len goals", len(goals))
     if len(grades) == 0:
         return 0,0,0
