@@ -10,6 +10,7 @@ def study_response(previous_response):
     if previous_response == "start":
         session["study"]={}
         session["study"]["question_number"] = 0
+        session.modified = True
         # study mode used to set system prompt: challenge_user or play_dumb
         session["study"]["mode"] = "play_dumb"
         session.modified = True

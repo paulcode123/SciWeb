@@ -12,6 +12,7 @@ import datetime
 import re
 # googleapiclient is a library for working with Google APIs(Getting data from Google Sheets in this case)
 from googleapiclient.discovery import build
+import traceback
 
 # for images
 import base64
@@ -106,6 +107,10 @@ def pitch():
 @app.route('/Study')
 def study():
   return render_template('Study.html')
+
+@app.route('/Battle')
+def battle():
+  return render_template('Battle.html')
 
 @app.route('/Classes')
 def classes():
@@ -406,13 +411,15 @@ def post_ga_grades():
 
     # Calculate the user's grades over time, return the grades at their corresponding dates
     times, grade_spread = process_grades(grades, classes, user_data, classes_data, specificity)
-
+    
     # Get the goals that the user has set, and create objects to overlay on the graph
     goals, set_coords, max_date = get_goals(classes, user_data, grades, times, grade_spread)
 
   except Exception as e:
-    print("Error in post_ga_grades:", e)
-    return json.dumps({"error": "You have encountered an error :( Please contact pauln30@nycstudents.net with this text:    "+str(e)})
+    # get detailed error message
+    error_message = traceback.format_exc()
+    print("Error in post_ga_grades:", error_message)
+    return json.dumps({"error": "You have encountered an error :( Please contact pauln30@nycstudents.net with this text:    "+error_message})
   # Create a dictionary to return the calculated data to the frontend
   response_data = {
     "times": times.tolist(),

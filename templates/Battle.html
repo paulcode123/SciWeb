@@ -1,13 +1,18 @@
 <!DOCTYPE html>
 <html>
+<link rel="stylesheet" href="static/Battle.css">
+<link rel="stylesheet" href="static/navbar.css">
+
 <head>
-  <link rel="stylesheet" href="static/navbar.css">
-  <title>SciWeb Getting Started</title>
+  <title>SciWeb Battle</title>
   <link rel="icon" href="static/media/favicon.png" type="image/x-icon">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="manifest" href="/static/manifest.json">
 
-  
+
 </head>
+
 <body>
   <ul class="navbar">
     <li><a href="/">Home</a></li>
@@ -17,7 +22,7 @@
         <a href="/EnterGrades">Enter</a>
         <a href="/GradeAnalysis">Analyse</a>
         <a href="/Goals">Goals</a>
-
+        
       </div>
     </li>
     <li class="dropdown">
@@ -42,20 +47,26 @@
       <div class="dropdown-content">
         <a href="/Pitch">Pitch</a>
         <a href="/GetStart">Getting Started</a>
-
+        
       </div>
     </li>
     <li><a href="/Login" id="profile">Login</a></li>
   </ul>
   <div id="notification-container"></div>
-<h1>Getting Started</h1>
-<br>
-<h3>To get started, you will need to create an account. To do this, click the <a href="/Login">Login</a> button at the top of the page. Once you have logged in, you can join your classes or create new classes, enter your grades, and analyse your grades. </h3>
-<br>
-<h3>To try out the tools, you can also try out the demo account by <a href="/Login">Logging in</a> and clicking the use demo account button. This will give you demo data for you to try out the various tools that SciWeb offers</h3>
-<script src="/static/util.js"></script>
+  <main>
+    <div id="loadingWheel"></div>
+    
+  </main>
+
+ <!-- Include Firebase App (required)
+   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+   Include Firebase Firestore (required)
+   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script> -->
+   
+  <script src="/static/util.js"></script>
 <script src="/static/user_data.js"></script>
   <script src="/static/notifications.js" type="module"></script>
-
+ <script src="/static/Battle.js" type="module"></script>
 </body>
+
 </html>

@@ -51,6 +51,28 @@ function userPrompt(){
   return [input, div]
 }
 
+function set_common_answers(){
+// add buttons for "Next Question", "Hint", and "I don't know"
+//When pressed, fill in the input box with the corresponding response and set entered to true
+//Remove any previous buttons
+  var buttons = document.getElementsByClassName("common_button");
+  while (buttons.length > 0){
+    buttons[0].remove();
+  }
+  var common_answers = ["Next Question", "Hint", "I don't know"];
+  for (let x = 0; x < common_answers.length; x++){
+    var button = document.createElement('button');
+    button.textContent = common_answers[x];
+    button.classList.add("common_button");
+    button.onclick = function() {
+      input.value = common_answers[x];
+      entered = true;
+    }
+    studyContainer.appendChild(button);
+  }
+
+}
+
 async function set_class(r){
   
   const container = studyContainer.children[1]
@@ -148,6 +170,9 @@ async function main(previous_response){
   else{
   // type out the prompt
   chatBotPrompt(prompt);
+  if(question_num > 2){
+    set_common_answers();
+  }
   //set up user input
   let [input, div] = userPrompt();
   //wait for user to press enter

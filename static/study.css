@@ -31,3 +31,17 @@ body {
   /* background-position: center; Center the image */
   background-repeat: no-repeat; /* Do not repeat the image */
 }
+
+.common_button{
+  background-color: #4CAF50; /* Green background */
+  border: none; /* Remove borders */
+  color: white; /* White text */
+  text-align: center; /* Center the text */
+  text-decoration: none; /* Remove underline */
+  display: inline-block; /* Display as a block element */
+  font-size: 16px; /* Increase font size */
+  margin: 4px 2px; /* Add some margin */
+  cursor: pointer; /* Add a pointer cursor on mouse-over */
+  border-radius: 10px; /* Rounded corners */
+  padding: 10px 24px; /* Add some padding */
+}

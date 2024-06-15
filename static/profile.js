@@ -253,6 +253,7 @@ function acceptFriend(friend) {
 }
 async function postFriend(data){
   await fetchRequest('/post_data', {"sheet": "Friends", "data": data})
+  await fetchRequest('/post_data', {"sheet": "Notifications", "data": {"target": "3428756", "text":userData.first_name+"has sent you a friend request", "type": "frReq", "id": (Math.floor(Math.random() * 10000)).toString()}})
   //reload page
   location.reload();
 }
@@ -276,9 +277,9 @@ document.getElementById('search-bar').addEventListener('input', function(event) 
         userDiv.textContent = full_name;
         userDiv.addEventListener('click', () => {
           let data = {
-            "OSIS": userData.osis,
+            "OSIS": userData.osis.toString(),
             "status": "pending",
-            "targetOSIS": user.osis,
+            "targetOSIS": user.osis.toString(),
             "id": (Math.floor(Math.random() * 10000)).toString()
           }
           postFriend(data);
