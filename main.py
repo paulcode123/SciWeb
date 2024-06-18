@@ -38,7 +38,7 @@ keys = json.load(open('api_keys.json'))
 
 
 
-
+init_firebase()
 # Initialize other variables
 def init():
   vars = {}
@@ -58,7 +58,7 @@ def init():
   vars['max_column'] = "O"
   vars['AppSecretKey'] = keys["AppSecretKey"]
   # firebase or gsheet
-  vars['database'] = 'firebase'
+  vars['database'] = 'gsheet'
   vars['allow_demo_change'] = True
   
   return vars
@@ -106,7 +106,7 @@ def profile():
 
 @app.route('/Pitch')
 def pitch():
-  return render_template('Pitch.html')
+  return render_template('Pitch2.html')
 
 @app.route('/Study')
 def study():
@@ -114,7 +114,7 @@ def study():
 
 @app.route('/Battle')
 def battle():
-  return render_template('Battle.html')
+  return render_template('Battles.html')
 
 @app.route('/Classes')
 def classes():
@@ -225,6 +225,10 @@ def course_reviews(courseid):
   course_data = json.loads(json.dumps(course_data))
   return render_template('course_reviews.html',
                          courseData=course_data, courseName=course_data['Name'])
+
+@app.route('/battle/<battleid>')
+def battle_page(battleid):
+  return render_template('battle.html')
 # This concludes initializing the front end
 
 #The following route functions post/get data to/from JS files
@@ -291,6 +295,7 @@ def fetch_data():
   response = {}
 
   for sheet in sheets:
+    print("sheet", sheet)
     # if trying to get just the user's data, call the get_name function
     if sheet=="Name":
       response[sheet] = get_name()
@@ -414,7 +419,7 @@ def post_ga_grades():
   
   
   try:
-    grade_points = get_grade_points(grades, user_data, classes)
+    grade_points = get_grade_points(grades, user_data, classes_data)
 
     # Calculate the user's grades over time, return the grades at their corresponding dates
     times, grade_spread = process_grades(grades, classes, user_data, classes_data, specificity)
@@ -446,6 +451,11 @@ def post_ga_grades():
 def GA_setup():
   classes = get_data("Classes")
   grades = get_grades()
+  # if there are no grades, return an error
+  # if grades is a dictionary with a key 'class' and the value is 'No grades entered', return an error
+  if 'class' in grades and grades['class'] == 'No grades entered':
+    print("No grades found in GA_setup")
+    return json.dumps({"error": "Enter your grades before analyzing them"})
   #filter classes for the user's osis
   classes = [item for item in classes if str(session['user_data']['osis']) in str(item['OSIS'])]
   categories = make_category_groups(classes)

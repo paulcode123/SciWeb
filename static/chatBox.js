@@ -156,12 +156,18 @@ async function get_messages(){
   // set group_name equal to either class, or league, depending on the url of the page
   if(window.location.href.includes('class')){
     group_name = 'Classes';
+    sheet_name = group_name;
   }
   else if(window.location.href.includes('league')){
     group_name = 'Leagues';
+    sheet_name = group_name;
+  }
+  else{
+    group_name = 'Assignments'
+    sheet_name = 'Classes, FILTERED Assignments';
   }
 
-  var data = await fetchRequest('/data', {data: `FILTERED Chat, Users, FILTERED ${group_name}`});
+  var data = await fetchRequest('/data', {data: `FILTERED Chat, Users, FILTERED ${sheet_name}`});
   
   var messages = data['Chat']
   var users = data['Users']

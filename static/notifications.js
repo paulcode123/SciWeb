@@ -1,10 +1,11 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+export { init_firebase_communication};
 
 function init_firebase_communication() {
     // Your web app's Firebase configuration
     var firebaseConfig = {
-        
+      
     };
 
     const app = initializeApp(firebaseConfig);
@@ -30,10 +31,11 @@ function listen_notfs(db){
       });
     });
 
+    let initialLoad = true; // Flag to check if it's the initial load
     onSnapshot(chatRef, (snapshot) => {
         snapshot.docChanges().forEach((change) => {
           let message = change.doc.data();
-          if (change.type === "added" && message.OSIS.includes(osis)) {
+          if (change.type === "added" && message.OSIS.includes(osis) && !initialLoad) {
               
             console.log("New message: ", message);
             let not = {"id": message.id, "text": message.text, "type": "message"};
@@ -45,6 +47,7 @@ function listen_notfs(db){
             }
           }
         });
+        initialLoad = false; // Set the flag to false after the initial load
       });
 }
 

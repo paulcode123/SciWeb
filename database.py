@@ -85,7 +85,8 @@ def upload_file(bucket_name, base64_string, destination_blob_name):
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(str(destination_blob_name))
 
-    content = base64.urlsafe_b64decode(base64_string + '==')  # Adding a fixed padding. This will be ignored if not needed.
+    padding = '=' * ((4 - len(base64_string) % 4) % 4)
+    content = base64.urlsafe_b64decode(base64_string + padding)
     
     # Use the blob.upload_from_string method to upload the binary content
     blob.upload_from_string(content)

@@ -7,6 +7,15 @@ var times;
 async function main(){
   const data = await fetchRequest('/GAsetup', { data: '' });
 
+    if(data['error']){
+      const errorMessage = document.getElementById("error");
+      errorMessage.textContent = data['error'];
+      // hide loading wheel
+      document.getElementById('loadingWheel').style.visibility = "hidden";
+      // stop any further execution
+      window.stop();
+      return;
+    }
     var classes = data['Classes']
     var categories = data['categories']
     var stats = data['stats']

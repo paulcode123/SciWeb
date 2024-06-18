@@ -83,7 +83,7 @@ def get_min_max(grades, user_data, classes=None, extend_to_goals=False, interval
 def get_weights(classes_data, osis):
   #convert grading categories in classes data to weights
   weights = {}
-
+  print(classes_data)
   for class_info in classes_data:
     # if osis does not match user data, continue
     if not str(osis) in str(class_info['OSIS']):

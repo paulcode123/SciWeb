@@ -47,7 +47,7 @@ assignmentForm.addEventListener('submit', (e) => {
     category: type,
     points: points,
     due: due,
-    id: Math.floor(Math.random() * 10000),
+    id: Math.floor(Math.random() * 10000).toString(),
     class: classData['id'],
     class_name: classData['name']
   };

@@ -183,6 +183,10 @@ fetch('/data', {
   grades = data['Grades']
   var rawclasses = data['Classes']
   const classes = rawclasses.filter(item => (item.OSIS.toString()).includes(osis));
+  if(classes.length == 0){
+    // check "Join Classes" checkbox in jupiter form to add classes
+    document.getElementById('addclasses').checked = true;
+  }
   setClassOptions(classes)
   for(let z=1;z<6;z++){
 document.getElementById("class"+z).addEventListener("change", () => {optionSelected(z, classes)});

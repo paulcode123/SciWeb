@@ -60,9 +60,9 @@ function set_EL(assignment) {
     assignment[assignment['user_osis']] = document.getElementById('slider').value;  // Assuming user's OSIS is stored in the assignment object
 
     // Call fetchRequest to update the data
-    await fetchRequest('/update_date', {
+    await fetchRequest('/update_data', {
       row_name: "id",
-      row_value: assignment.id,
+      row_value: assignment.id.toString(),
       data: assignment,
       sheet: "Assignments"
     });
