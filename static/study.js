@@ -104,13 +104,16 @@ async function set_class(r){
 }
   if(r['topics']=="no data"){
     chatBotPrompt("The notebook for this class has not been created yet. Click here to add content: ");
-    var element = studyContainer.children[2];
-    classId = r['classes'][r['index']]['id'];
+
+    class_obj = r['classes'][r['index']];
+    classId = class_obj['id'].toString();
+    className = class_obj['name'];
     // add a link to the end of the prompt that will take the user to the notebook creation page
     var a = document.createElement('a');
-    a.href = `/notebook/${classId}`;
+    a.href = `/class/${className+classId}/notebook`;
     a.textContent = "Add Content";
-    element.appendChild(a);
+    //insert in studyContainer after element at index 2
+    studyContainer.insertBefore(a, studyContainer.children[3]);
   }
   chatBotPrompt("Select which categories you'd like to study");
   [input, div] = userPrompt();

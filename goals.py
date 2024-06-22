@@ -79,6 +79,7 @@ def get_goals(classes, user_data, grades, times, grade_spread, extend_to_goals=F
     grade_spreadc = [float(grade) for grade in grade_spread if grade != 'none']
 
     #make times and grade_spreadc the same length by removing the last elements of times
+    print("times", times)
     timesc = times[:len(grade_spreadc)]
    #calculate grade when set given grades and times: interpolate
     print("date_set_ordinal", date_set_ordinal, "times", timesc, "grades", grade_spreadc)

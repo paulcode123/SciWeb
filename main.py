@@ -106,7 +106,7 @@ def profile():
 
 @app.route('/Pitch')
 def pitch():
-  return render_template('Pitch2.html')
+  return render_template('About/Pitch.html')
 
 @app.route('/Study')
 def study():
@@ -139,6 +139,22 @@ def assignments():
 @app.route('/CourseSelection')
 def course_selection():
   return render_template('CourseSelection.html')
+
+@app.route('/Join')
+def join():
+  return render_template('About/Join.html')
+
+@app.route('/Features/AI')
+def ai_features():
+  return render_template('About/AI.html')
+
+@app.route('/Features/Social')
+def social_features():
+  return render_template('About/Social.html')
+
+@app.route('/Features/Analytic')
+def analytic_features():
+  return render_template('About/Analytic.html')
 
 # The following routes are pages for specific classes and assignments
 @app.route('/class/<classurl>')
@@ -244,6 +260,7 @@ def get_home_ip():
   if 'user_data' not in session:
     return json.dumps({'Name': ["Login", 404]})
   session['user_data']['grades_key'] = str(grades_key)
+  session.modified = True
   print("grades_key", session['user_data']['grades_key'])
   if 'ip_add' not in session:
     # store the ip address in the session
@@ -260,6 +277,7 @@ def Jupiter():
   # get_gclassroom_api_data()
   data = request.json
   classes= run_puppeteer_script(data['osis'], data['password'])
+  
   if classes == "WrongPass":
     return json.dumps({"error": "Incorrect credentials"})
   if str(data['addclasses'])=="True":
@@ -276,6 +294,12 @@ def Jupiter():
 def init_oauth_handler():
   response = init_oauth()
   return response
+
+@app.route('/submit', methods=['POST'])
+def submit():
+  data = request.json
+  post_data("Join", data)
+  return json.dumps({"message": "success"})
 
 @app.route('/oauth2callback', methods=['GET'])
 def oauth2callback_handler():
@@ -376,24 +400,28 @@ def get_insights_ga():
   classes_data = get_data("Classes")
   user_data = get_name()
   grades = get_grades()
-  grade_spreads = []
+  grade_spreads = {}
 
-  grade_spread = process_grades(grades, user_data, classes_data)
-  # If the user is graphing all of their classes, allow insights to be generated for each class individually by getting the user's grades for each class to pass to the AI
+  grade_spreads["All"] = process_grades(grades, user_data, classes_data)
+  # If the user is graphing all of their classes, allow insights to be generated for each class and category individually by getting the user's grades for each class to pass to the AI
+  weights = get_weights(classes_data, user_data['osis'])
   
-  matching_classes = [item['name'] for item in classes_data if session['user_data']['osis'] in item['OSIS']]
-  
-  for item in matching_classes:
-    # Get the user's grades for the class
-    fgrades = filter_grades(grades, user_data, [item.lower(), "All"])
-    t, g = process_grades(fgrades, user_data, classes_data)
-    # If the user has grades for the class, add the class and the grades to the list of grade spreads
-    if type(t)!='int':
-      grade_spreads.append(item+": "+str(g))
+  for className in weights:
+    for category in weights[className]:
+    # Get the user's grades for the class and category
+      fgrades = filter_grades(grades, user_data, [className.lower(), category.lower()])
+      t, g = process_grades(fgrades, user_data, classes_data, extend_to_goals=False)
+      # If the user has grades for the class, add the class and the grades to the list of grade spreads
+      if type(t)!='int':
+        grade_spreads[className+" "+category] = g
+    # do it for the class as a whole
+    fgrades = filter_grades(grades, user_data, [className.lower(), "All"])
+    t, g = process_grades(fgrades, user_data, classes_data, extend_to_goals=False)
+    grade_spreads[className] = g
     
   # Generate the insights
-  prompt = [{"role":"system", "content": "You are an advisor to a high school student, and your job is to curate 5 insightful and specific ways in which the students grades over time in individual classes influence their overall grade, and what they should focus their efforts on improving. Write a numbered list and nothing else."},
-            {"role": "user", "content": "total: "+str(grade_spread)+"factors: "+str(grade_spreads)}]
+  prompt = [{"role":"system", "content": "You are an advisor to a high school student, and your job is to curate 5 insightful and specific areas for the student to focus on. You will get lists of the student's grades for a given class/category at 10 sequential times during the year. Write a numbered list and nothing else."},
+            {"role": "user", "content": str(grade_spreads)}]
   
   insights = get_insights(prompt)
   return json.dumps(insights)
@@ -405,12 +433,9 @@ def post_ga_grades():
   data = request.json
   classes = data['classes']
   classes = decode_category_groups(classes)
-  print("specificity", data['specificity'])
   specificity = int(data['specificity'])
   # Get User, Class, and Grade data
-  print('before get classes')
   classes_data = get_data("Classes")
-  print('after get classes')
   # grades = get_data("Grades")
   raw_grades = get_grades()
   user_data = get_name()
@@ -422,8 +447,8 @@ def post_ga_grades():
     grade_points = get_grade_points(grades, user_data, classes_data)
 
     # Calculate the user's grades over time, return the grades at their corresponding dates
-    times, grade_spread = process_grades(grades, classes, user_data, classes_data, specificity)
-    
+    times, grade_spread = process_grades(grades, user_data, classes_data, specificity)
+    print("grade_spread", grade_spread, "times", times)
     # Get the goals that the user has set, and create objects to overlay on the graph
     goals, set_coords, max_date = get_goals(classes, user_data, grades, times, grade_spread)
 
@@ -431,6 +456,9 @@ def post_ga_grades():
     # get detailed error message
     error_message = traceback.format_exc()
     print("Error in post_ga_grades:", error_message)
+    # post error message to Errors sheet in the database
+    e = "Error in post_ga_grades: "+error_message
+    post_data("Errors", {"error": e, "OSIS": user_data['osis']})
     return json.dumps({"error": "You have encountered an error :( Please contact pauln30@nycstudents.net with this text:    "+error_message})
   # Create a dictionary to return the calculated data to the frontend
   response_data = {

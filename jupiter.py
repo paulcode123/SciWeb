@@ -89,7 +89,7 @@ def jupapi_output_to_grades(data, encrypt):
     post_data("GradeData", grades_obj)
 
   # filter out grades where grade["score"] = 'null' or grade["date"] = ''
-  grades = [grade for grade in grades if grade['score'] != 'null' and grade['date'] != '']
+  grades = [grade for grade in grades if grade['score'] != 'null']
   return grades
   
 def jupapi_output_to_classes(data):
@@ -97,14 +97,17 @@ def jupapi_output_to_classes(data):
   #for each class, if the class exists in class_data, update the db it with the user's osis in the 'OSIS' col of that class
   # If the class does not yet exist, add the class to the db: {"teacher": teacher name, "name": class name, "OSIS": user's osis, "id": random 4 digit number, "period": period, "categories": [name, weight, name, weight, ...]}
   
-  to_post = []
+  # get the classes data from the db
   class_data = get_data("Classes")
-  
+  # get the user's classes from the jupiter data
   classes = data["courses"]
+
+  # for each class in the user's jupiter data, check if the class exists in the db
   for c in classes:
     class_exists = False
     class_name = c["name"]
     
+    # get the teacher's last name
     teacher = c["teacher"]
     teacher = teacher.split(" ")[-1]
     schedule = c["schedule"]
@@ -118,6 +121,7 @@ def jupapi_output_to_classes(data):
       # check if the class exists in the db
       if not("name" in class_info and class_info["name"] == class_name and class_info["teacher"] == teacher and class_info["schedule"] == schedule):
         continue
+      # check if the user is already in the class
       if str(session['user_data']['osis']) in class_info["OSIS"]:
         class_exists = True
         break
@@ -216,10 +220,11 @@ def get_grades():
 
 
 def convert_date(date_str):
-    if date_str == "" or date_str == None:
-        return date_str
     # Current date
     current_date = datetime.datetime.now()
+    if date_str == "" or date_str == None:
+        #set the date to 9/10
+        date_str = "9/10"
     # add 5 days to the current date
     current_date = current_date + datetime.timedelta(days=5)
     current_year = current_date.year

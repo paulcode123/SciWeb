@@ -248,3 +248,53 @@
 			._parallax();
 
 })(jQuery);
+
+// add on click event listener to all three buttons with class "timecom"
+document.querySelectorAll('.timecom').forEach(item => {
+	item.addEventListener('click', event => {
+		// remove primary from classlist of the buttons
+		document.querySelectorAll('.timecom').forEach(item => {
+			item.classList.remove('primary');
+		});
+		// add primary to classlist of the clicked button
+		item.classList.add('primary');
+	});
+})
+
+// add event listener to the form "Joinform" for submit event
+document.getElementById('Joinform').addEventListener('submit', async function(event) {
+	// prevent the default form submission
+	event.preventDefault();
+	// get the value of the selected button
+	var selected = document.querySelector('.timecom.primary').textContent;
+	// get the value of the input field
+	var email = document.getElementById('email').value;
+	// get name value
+	var name = document.getElementById('name').value;
+	// get department dropdown value
+	var department = document.getElementById('category').value;
+	var grade = getSelectedValue()
+	var skills = document.getElementById('skills').value;
+	var gain = document.getElementById('gain').value;
+	await fetchRequest("/post_data", {"sheet": "Join", "data": {"name": name, "email": email, "department": department, "grade": grade, "skills": skills, "gain": gain, "time": selected}})
+	// hide the form and show the success message
+	document.getElementById('Joinform').style.display = 'none';
+	document.getElementById('success').style.display = 'block';
+})
+
+
+
+// Function to get the value of the selected radio button
+function getSelectedValue() {
+	// Get all radio buttons with the name 'priority'
+var radios = document.getElementsByName('priority');
+    for (var i = 0; i < radios.length; i++) {
+        if (radios[i].checked) {
+            // Get the corresponding label for the selected radio button
+            var label = document.querySelector(`label[for='${radios[i].id}']`);
+            return label.textContent;
+        }
+    }
+}
+
+	
