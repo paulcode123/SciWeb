@@ -67,7 +67,7 @@ function post_assignment(data){
 
 async function get_assignment(){
   // TODO: update the following line to get the leagues sheet, filtered by user OSIS
-  var data = await fetchRequest('/data', {data: "Assignments, Classes, Leagues, Name, Users"});
+  var data = await fetchRequest('/data', {data: "Assignments, Classes, FILTERED Leagues, Name, Users"});
   var classId = window.location.href.slice(-4);
   var assignmentList = data['Assignments']
   // TODO: set a variable to the leagues data
