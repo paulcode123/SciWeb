@@ -383,15 +383,22 @@ def update_leagues(grades, classes):
     for grade in grades:
       if grade['category'] in assessment_categories and datetime.datetime.strptime(grade['date'], '%m/%d/%Y').date() >= datetime.datetime.now().date() - datetime.timedelta(days=30):
         fgrades.append(grade)
+
+
+  #TODO: Add another if statement for the distributions acitivity. filter grades for assessments and store in a variable
+  if 'DISTS' in distinct_activities:
+        # Filter grades for assessments and store in a variable
+        distribution_grades = []
+        assessment_categories = session['category_groups']['Assessments']
+        for grade in grades:
+            if grade['category'] in assessment_categories:
+                distribution_grades.append(grade)
+
   # For RIlb, GPAlb, get the user's stats
   stats = get_stats(grades, classes)
 
-  #TODO: Add another if statement for the distributions acitivity. filter grades for assessments and store in a variable
-
-
-
   # update the database with the calculated data
-  to_compile = {"GOTC": grade_spread, "GPAlb": stats['gpa'], "RIlb": stats['avg_change'], "Glb": goalp, "RAS": fgrades}
+  to_compile = {"GOTC": grade_spread, "GPAlb": stats['gpa'], "RIlb": stats['avg_change'], "Glb": goalp, "RAS": fgrades, "DISTS": distribution_grades,}
   for league in fleagues:
     for activity in to_compile.keys():
       if not activity in league['Activities']:
@@ -403,6 +410,13 @@ def update_leagues(grades, classes):
         content = json.loads(la)
         if activity == "Dist":
           #TODO: add the assessment grades from that class to the list for the corresponding assessment. This will take a lot of figuring out.
+          if to_compile[activity] != "":
+                    la = league[activity]
+                    if activity == "DISTS":
+                        league[activity] = []
+                        for grade in to_compile[activity]:
+                            content = {session['user_data']['osis']: grade['score']}
+                            league[activity].append(content)
           continue
         content[session['user_data']['osis']] = to_compile[activity]
         league[activity] = str(content)

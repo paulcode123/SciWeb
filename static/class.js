@@ -67,11 +67,11 @@ function post_assignment(data){
 
 async function get_assignment(){
   // TODO: update the following line to get the leagues sheet, filtered by user OSIS
-  var data = await fetchRequest('/data', {data: "Assignments, Classes, Name, Users"});
+  var data = await fetchRequest('/data', {data: "Assignments, Classes, Leagues, Name, Users"});
   var classId = window.location.href.slice(-4);
   var assignmentList = data['Assignments']
   // TODO: set a variable to the leagues data
-
+  var leaguesData = data['Leagues'];
   classData = data['Classes'];
   console.log(data)
   classData = classData.find(item => item.id == classId);
@@ -86,7 +86,7 @@ async function get_assignment(){
   set_color_EL("Classes", classData)
   show_Join(data['Name'], classData, "Classes");
   // TODO: call update_JCL_button with the leagues data
-  
+  update_JCL_button(leaguesData);
   
   document.getElementById('loadingWheel').style.display = "none";
 }
