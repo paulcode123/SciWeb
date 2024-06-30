@@ -10,6 +10,9 @@ var thursBellSchedule = [0, 486, 530, 574, 618, 633, 677, 721, 765, 809, 853, 89
 
 
 // Create function to show date + time
+function setPeriod(){
+
+}
 function getPeriod(){
   // get the time in minutes since midnight
   var today = new Date();
@@ -164,7 +167,7 @@ window.onload = function() {
   setInterval(hTimer, 1000);
   hTimer();
   
-  console.log("Its always around me, all this noise but Not nearly as loud as the voice sayin Let it happen, let it happenIt's gonna feel so good Just let it happen, let it happen. Im a heartbreakerstomperliterallyeverywhereatonce")
+  console.log("Its always around me, all this noise but Not nearly as loud as the voice sayin Let it happen, let it happenIt's gonna feel so good Just let it happen, let it happen. Ie")
   
 } 
 window.addEventListener("DOMContentLoaded", (event) => {

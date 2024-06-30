@@ -297,6 +297,16 @@ def fetch_data():
         if sheet_name=="Friends":
           #send if the user's osis is in the OSIS or targetOSIS of the row
           response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in item['OSIS'] or str(session['user_data']['osis']) in item['targetOSIS']]
+        elif sheet_name =="FClasses":
+          #sebd all classes that users firends are in
+            firend_osises = [item['targetOSIS'] for item in data if
+          str(session['user_data']['osis']) in item['OSIS']] + [item['OSIS'] for 
+          item in data if str (session['user_data']['osis']) in item['targetOSIS']]
+            r = []
+            classes = get_data("Classes")
+            for friend in friend_osises:
+              r += [item for item in classes if friend in item['OSIS']]
+            response[sheet_name] = r
         elif sheet_name=="Assignments":
           # send if item['class'] is the id for any of the rows in response['Classes']
           class_ids = [item['id'] for item in response['Classes']]
