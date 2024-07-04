@@ -228,6 +228,7 @@ function createGradesTable(grades) {
   tableBody.innerHTML = ''; // Clear any existing rows
   if (grades.length>1) {
     document.getElementById('DeleteGrades').style.visibility = "visible";
+    document.getElementById('OpenGA').style.visibility = "visible";
   
   // sort grades by date from most recent to least recent
   grades.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -348,6 +349,7 @@ async function DeleteGrades(){
   
     // hide button
     document.getElementById('DeleteGrades').style.visibility = "hidden";
+    document.getElementById('OpenGA').style.visibility = "hidden";
     // remove grades from table
     document.getElementById('gradesBody').innerHTML = '';
 
@@ -365,4 +367,18 @@ const interval = setInterval(function() {
     loadingBar.style.width = width + '%';
   }
 }, time*10); // 100ms interval for 10 seconds total
+}
+
+// add event listener to button with it toggleGradeForm to show form with id 'gradeform' and change last char of button text from > to v
+document.getElementById('toggleGradeForm').addEventListener('click', toggleGradeForm);
+function toggleGradeForm(){
+  const form = document.getElementById('gradeform');
+  const button = document.getElementById('toggleGradeForm');
+  if(button.textContent.slice(-1) == '>'){
+    form.style.display = 'block';
+    button.textContent = button.textContent.slice(0, -1) + 'v';
+  } else {
+    form.style.display = 'none';
+    button.textContent = button.textContent.slice(0, -1) + '>';
+  }
 }

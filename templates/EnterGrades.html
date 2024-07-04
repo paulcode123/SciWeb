@@ -61,8 +61,8 @@
     <p>Pull your grades directly from Jupiter, or enter/edit them manually</p>
     <br>
     <div id="pullJup">
-    <input type="number" id="osis" placeholder="OSIS"></input><br>
-    <input type="password" id="password" placeholder="Jupiter Password" autocomplete="off"></input> <br>
+    <input type="number" id="osis" placeholder="OSIS" autocomplete="tel"></input><br>
+    <input type="password" id="password" placeholder="Jupiter Password" autocomplete="bday-month"></input> <br>
     <input type="checkbox" id="addclasses"><label for="addclasses">Join my Classes</label><br>
     <input type="checkbox" id="encrypt">
     <label for="encrypt">Encrypt my Grades data <small>(This may disable some features)</small></label><br>
@@ -75,10 +75,12 @@
     </div>
   </div>
     <button id="DeleteGrades">Delete Saved Grades</button>
+    <a href="/GradeAnalysis" id="OpenGA" class="button">Analyze Grades</a>
     <!-- get user osis number -->
     <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
     
-    
+    <button id="toggleGradeForm">Enter Grades Manually ></button>
+    <br><br>
     <form id='gradeform'>
       
  <table>

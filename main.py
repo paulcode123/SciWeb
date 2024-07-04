@@ -436,6 +436,8 @@ def post_ga_grades():
   specificity = int(data['specificity'])
   # Get User, Class, and Grade data
   classes_data = get_data("Classes")
+  # filter for the user's osis in OSIS column
+  classes_data = [item for item in classes_data if str(session['user_data']['osis']) in str(item['OSIS'])]
   # grades = get_data("Grades")
   raw_grades = get_grades()
   user_data = get_name()

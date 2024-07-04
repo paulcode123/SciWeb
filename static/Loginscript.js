@@ -71,6 +71,7 @@ function toggleSlider() {
   var lastnamefield = document.getElementById("lname");
   var lnamelabel = document.getElementById("lnamelabel");
   var gradelabel = document.getElementById("gradelabel");
+  var submitbutton = document.getElementById("submit");
 
   if (slider.classList.contains("on")) {
     slider.classList.remove("on");
@@ -78,6 +79,7 @@ function toggleSlider() {
     text.classList.remove("right");
     text.classList.add("left");
     toggleMode = "Login";
+    submitbutton.value = "Log In";
     passwordfield.autocomplete = "current-password";
     // hide grade and last name fields
     gradefield.style.display = "none";
@@ -93,6 +95,7 @@ function toggleSlider() {
     text.classList.remove("left");
     text.classList.add("right");
     toggleMode = "Signup";
+    submitbutton.value = "Sign Up";
     passwordfield.autocomplete = "new-password";
     // show grade and last name fields
     gradefield.style.display = "block";

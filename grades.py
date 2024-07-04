@@ -175,7 +175,7 @@ def calculate_grade(time, data, weights, return_class_grades=False, all_dates=Fa
     # If the category has not yet been added to the class's dictionary, add it, and initialize the category's data
     if datum["category"] not in categories[datum["class"]]:
       if datum["category"].lower() not in weights[datum["class"].lower()]:
-        print("Strange error: category not in weights")
+        print("Strange error: category "+ datum['category'].lower() + " not in weights: " + str(weights[datum["class"].lower()]) + " for class " + datum["class"].lower())
         continue
       categories[datum["class"]][datum["category"]] = {
         "scoreSum": 0,
@@ -274,7 +274,7 @@ def make_category_groups(class_data):
   #remove every other element of categories, starting with the one at index 1
   categories = categories[::2]
 
-  prompt = "For each category given, sort it into the group that is the best match: Assessments, Midyear/Final, Participation, or Homework. Return only an array of form {'Assessments': [component1, component2, ...], ...}:"+str(categories)
+  prompt = "For each category given, sort it into the group that is the best match: Assessments, Midyear/Final, Participation, or Homework. Return only an array of form {'Assessments': [component1, component2, ...], 'Midyear/Final': [...], ...}:"+str(categories)
   full_prompt = [{"role":"system", "content": prompt}]
   response = get_insights(full_prompt)
   # print(response)
@@ -355,7 +355,11 @@ def update_leagues(grades, classes):
   for league in leagues:
     if str(session['user_data']['osis']) in league['OSIS']:
       fleagues.append(league)
-      activities = json.loads(league['Activities'])
+      # if activities is a string, convert to json
+      if type(league['Activities']) == str:
+        activities = json.loads(league['Activities'])
+      else:
+        activities = league['Activities']
       distinct_activities.extend(activities)
 
   
@@ -387,7 +391,14 @@ def update_leagues(grades, classes):
   stats = get_stats(grades, classes)
 
   # update the database with the calculated data
-  to_compile = {"GOTC": grade_spread, "GPAlb": stats['gpa'], "RIlb": stats['avg_change'], "Glb": goalp, "RAS": fgrades}
+  to_compile = {
+    "GOTC": locals().get('grade_spread', None),
+    "GPAlb": locals().get('stats', {}).get('gpa', None),
+    "RIlb": locals().get('stats', {}).get('avg_change', None),
+    "Glb": locals().get('goalp', None),
+    "RAS": locals().get('fgrades', None)
+}
+  
   for league in fleagues:
     for activity in to_compile.keys():
       if not activity in league['Activities']:

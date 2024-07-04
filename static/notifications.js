@@ -5,7 +5,13 @@ export { init_firebase_communication};
 function init_firebase_communication() {
     // Your web app's Firebase configuration
     var firebaseConfig = {
-      
+      apiKey: "AIzaSyAj7iUJlTR_JDvq62rmfe6eZZXvtsO8Cac",
+      authDomain: "sturdy-analyzer-381018.firebaseapp.com",
+      projectId: "sturdy-analyzer-381018",
+      storageBucket: "sturdy-analyzer-381018.appspot.com",
+      messagingSenderId: "800350153500",
+      appId: "1:800350153500:web:3da9c736e97b9f582928d9",
+      measurementId: "G-TGW6CJ0H1Q"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -35,6 +41,7 @@ function listen_notfs(db){
     onSnapshot(chatRef, (snapshot) => {
         snapshot.docChanges().forEach((change) => {
           let message = change.doc.data();
+          console.log(message)
           if (change.type === "added" && message.OSIS.includes(osis) && !initialLoad) {
               
             console.log("New message: ", message);
