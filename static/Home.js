@@ -62,14 +62,15 @@ function updateTime(){
 
 }
 function hTimer() {
-  if (datechecker() === true){
+  
     var minRemaining = updateTime(); - 1
     var secRemaining = 60-(new Date().getSeconds());
+    
+    // if secRemaining is less than 10, add a 0 in front of it
+    if (secRemaining < 10){
+      secRemaining = "0" + secRemaining;
+    }
     document.getElementById("timer").textContent = minRemaining + ":" + secRemaining;
-  }
-  else if (datachecker() === false){
-    document.getElementById("timer").textContent = "No School :D";
-  }
 }
 
 // Create function show_recent_messages to display the number and location of messages that were sent in the last 24 hours in classes and assignments that the user is in
@@ -161,8 +162,12 @@ function get_classes_ids(classes){
   return ids;
 }
 window.onload = function() {
+  if (datechecker() === true){
   setInterval(hTimer, 1000);
-  hTimer();
+  }
+  else{
+    document.getElementById("timer").textContent = "No School :D";
+  }
   
   console.log("Its always around me, all this noise but Not nearly as loud as the voice sayin Let it happen, let it happenIt's gonna feel so good Just let it happen, let it happen. Im a heartbreakerstomperliterallyeverywhereatonce")
   
