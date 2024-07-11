@@ -410,16 +410,12 @@ def update_leagues(grades, classes):
         content = json.loads(la)
         if activity == "Dist":
           #TODO: add the assessment grades from that class to the list for the corresponding assessment. This will take a lot of figuring out.
-          if to_compile[activity] != "":
-                    la = league[activity]
-                    if activity == "DISTS":
-                        league[activity] = []
-                        for grade in grades:
-                          if grade['category'] in assessment_categories:
-                              assessment_name = grade['name']
-                              if assessment_name not in distribution_grades:
-                                  distribution_grades[assessment_name] = []
-                              distribution_grades[assessment_name].append(grade['score'])
+          if len(distribution_grades) != 0:
+              for grade in distribution_grades:
+                    assessment_name = grade['name']
+                    if assessment_name not in la:
+                        la[assessment_name] = []
+                    distribution_grades[assessment_name].append(grade['score'])
           continue
         content[session['user_data']['osis']] = to_compile[activity]
         league[activity] = str(content)
