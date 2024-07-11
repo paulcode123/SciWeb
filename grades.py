@@ -414,9 +414,12 @@ def update_leagues(grades, classes):
                     la = league[activity]
                     if activity == "DISTS":
                         league[activity] = []
-                        for grade in to_compile[activity]:
-                            content = {session['user_data']['osis']: grade['score']}
-                            league[activity].append(content)
+                        for grade in grades:
+                          if grade['category'] in assessment_categories:
+                              assessment_name = grade['name']
+                              if assessment_name not in distribution_grades:
+                                  distribution_grades[assessment_name] = []
+                              distribution_grades[assessment_name].append(grade['score'])
           continue
         content[session['user_data']['osis']] = to_compile[activity]
         league[activity] = str(content)
