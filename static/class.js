@@ -7,7 +7,7 @@ document.getElementById("description").textContent = classData['description'];
 
 var button = document.createElement("button");
 var href = "/class/"+classData['name']+classData['id']+"/notebook";
-button.textContent = "Open Class Notebook";
+button.textContent = "➡️📒";
 button.id = "openNB";
 button.addEventListener("click", function() {
         // Navigate to the specified URL

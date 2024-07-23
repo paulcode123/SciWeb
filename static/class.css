@@ -68,11 +68,13 @@ input[type="submit"]:hover {
 
 #openNB {
   padding: 10px 20px;
-  background-color: black;
+  border-color: black;
+  
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
+  font-size: 10px;
 }
 
 #openNB:hover {
@@ -131,4 +133,11 @@ input[type="submit"]:hover {
       border-radius: 4px;
       cursor: pointer;
       display: none;
+    }
+
+    body {
+      background-image: url('/static/media/classbgd.png'); /* URL of the background image */
+      background-size: cover; /* Cover the entire page */
+      /* background-position: center; Center the image */
+      /* background-repeat: no-repeat; Do not repeat the image */
     }

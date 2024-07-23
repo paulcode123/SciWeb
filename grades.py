@@ -21,7 +21,7 @@ def filter_grades(grades, user_data, classes):
       return []
   except TypeError as e:
     print("TypeError in filter_grades", e)
-    print(grades)
+    # print(grades)
   
   #filter grades for matching classes
   classes = [c.lower() if c != "All" else c for c in classes]
@@ -45,7 +45,7 @@ def filter_grades(grades, user_data, classes):
 # Get the minimum and maximum dates of the user's grades
 def get_min_max(grades, user_data, classes=None, extend_to_goals=False, interval=10):
     from goals import filter_goals
-    
+    print("in get_min_max")
     if extend_to_goals:
       goals = get_data("Goals")
     # print("len(grades)", len(grades), "len goals", len(goals))
@@ -73,7 +73,7 @@ def get_min_max(grades, user_data, classes=None, extend_to_goals=False, interval
         return 0, 0, 0
     min_date = min(dates)
     max_date = max(dates)
-    print("max_date", max_date, "min_date", min_date)
+    # print("max_date", max_date, "min_date", min_date)
     # print("new_max_date", max_date + datetime.timedelta(days=(((max_date-min_date).days)/interval)))
     #11/30
     #11/6
@@ -83,6 +83,7 @@ def get_min_max(grades, user_data, classes=None, extend_to_goals=False, interval
     return min_date, max_date, grades
 
 def get_weights(classes_data, osis):
+  print("in get_weights")
   #convert grading categories in classes data to weights
   weights = {}
 
@@ -160,6 +161,7 @@ def process_grades(grades, user_data, classes_data, interval=10, s_min_date=None
 
 # Calculate grade at given date
 def calculate_grade(time, data, weights, return_class_grades=False, all_dates=False):
+  print("in calculate_grade")
   categories = {}
   
   # For each assignment(with grade) in the data...
@@ -221,9 +223,10 @@ def calculate_grade(time, data, weights, return_class_grades=False, all_dates=Fa
       return finalGrade, classGrades
     return finalGrade
   else:
-    return 0
+    return 100
 
 def get_grade_points(grades, user_data, classes_data):
+  print("in get_grade_points")
   #Get the ordinal date and score/value of every grade in the given classes
   weights = get_weights(classes_data, user_data['osis'])
   # print("weights", weights)
@@ -263,6 +266,7 @@ def get_grade_points(grades, user_data, classes_data):
   return grade_points
 
 def make_category_groups(class_data):
+  print("in make_category_groups")
   from main import get_insights
   #Get all categories across all classes
   categories = []
@@ -292,6 +296,7 @@ def make_category_groups(class_data):
   return grouped_categories
   
 def decode_category_groups(category_groups):
+  print("in decode_category_groups")
   if category_groups[1] == "All":
     # print("dcg exit")
     return category_groups
@@ -302,13 +307,14 @@ def decode_category_groups(category_groups):
   #replace each category group name with it's components
   for category in category_names:
     c = session['category_groups'][category]
-    print("c", c)
+    # print("c", c)
     components.extend(c)
 
-  print("input", category_groups, "components", components)
+  # print("input", category_groups, "components", components)
   return components
   
 def get_stats(grades, classes):
+  print("in get_stats")
   # get current GPA(avg of rounded class grades), raw average
   grades = filter_grades(grades, session['user_data'], ["all", "All"])
   weights = get_weights(classes, session['user_data']['osis'])
@@ -373,7 +379,7 @@ def update_leagues(grades, classes):
       min_date = datetime.date(datetime.datetime.now().year, 9, 10)
     max_date = now.date()
     dr, grade_spread = process_grades(grades, session['user_data'], classes, 15, min_date, max_date)
-    print(dr)
+    # print(dr)
   # Grade Leaderboard
   if "Glb" in distinct_activities:
     goalp = calculate_goal_progress(session)
@@ -417,3 +423,61 @@ def update_leagues(grades, classes):
 
     update_data(league['id'], 'id', league, 'Leagues')
   
+
+def get_compliments(grades, classes, days=60):
+  print("in get_compliments")
+  # This function finds the 5 individual grades with the largest impact on the user's GPA in the past 10 days
+  # It then chooses a different metric for each grade to complement the user on
+  # For example, it increased the classes' grade by x%, it increased that category's grade by y%, a score of a on your next assignment will get your grade up to a b, etc.
+
+  # filter grades for only those from the past 10 days
+  now = datetime.datetime.now()
+  ten_days_ago = now - datetime.timedelta(days=days)
+  recent_grades = [grade for grade in grades if datetime.datetime.strptime(grade['date'], '%m/%d/%Y').date() >= ten_days_ago.date()]
+  # get the impact of each grade on the user's GPA
+  weights = get_weights(classes, session['user_data']['osis'])
+  for grade in recent_grades:
+    grade['impact'] = get_grade_impact(grade, grades, weights)
+
+  # sort the grades by impact
+  recent_grades.sort(key=lambda x: x['impact'][2], reverse=True)
+  # get the 5 grades with the largest impact
+  best_grades = recent_grades[:5]
+  # make sure all 5 of them have a positive impact, or else recall the function with a larger number of days
+  if best_grades[-1]['impact'][2] < 0:
+    return get_compliments(grades, classes, days+5)
+  complements = []
+  complements.append("Great work on " + best_grades[0]['name'] + " in " + best_grades[0]['class'] + "! It increased your "+best_grades[0]['class']+" grade by " + str(round(best_grades[0]['impact'][1], 2)) + "%.")
+  complements.append("You're doing great in " + best_grades[1]['class'] + "! " + best_grades[1]['name'] + " increased your "+best_grades[1]['category']+" grade by " + str(round(best_grades[1]['impact'][0], 2)) + "%. Getting a score of " + str(round(best_grades[1]['impact'][3], 2)) + " on your next one will bump your "+best_grades[1]['category']+" grade up to a " + str(round(best_grades[1]['impact'][4], 2)) + ".")
+  complements.append("Nice job on " + best_grades[2]['name'] + " in " + best_grades[2]['class'] + "! It increased your GPA by " + str(round(best_grades[2]['impact'][2], 2)) + ".")
+  complements.append("You're doing great in " + best_grades[3]['class'] + "! " + best_grades[3]['name'] + " increased your "+best_grades[3]['category']+" grade by " + str(round(best_grades[3]['impact'][0], 2)) + "%. Getting a score of " + str(round(best_grades[3]['impact'][3], 2)) + " on your next one will bump your "+best_grades[3]['category']+" grade up to a " + str(round(best_grades[3]['impact'][4], 2)) + ".")
+  complements.append("Great work on " + best_grades[4]['name'] + " in " + best_grades[4]['class'] + "! It increased your "+best_grades[4]['class']+" grade by " + str(round(best_grades[4]['impact'][1], 2)) + "%.")
+  return complements
+
+                 
+
+def get_grade_impact(grade, grades, weights):
+  print("in get_grade_impact")
+  category_weight = weights[grade['class'].lower()][(grade['category'].lower())]
+  num_classes = len(weights)
+  grade_score = float(grade['score'])
+  grade_value = float(grade['value'])
+  # filter grades for the category and class of the grade
+  fgrades = [g for g in grades if g['category'] == grade['category'] and g['class'] == grade['class']]
+  # get the current category grade
+  score_sum = sum([float(g['score']) for g in fgrades])
+  value_sum = sum([float(g['value']) for g in fgrades])
+  current_category_grade = score_sum/value_sum*100
+  cat_impact = (grade_score/grade_value*100 - current_category_grade)*grade_value/value_sum
+  class_impact = cat_impact*category_weight/100
+  GPA_impact = class_impact/num_classes
+  # get grade needed on next, equally weighted assignment to bump category grade up to next multiple of 0.5
+  next_mult = round(current_category_grade*2)/2
+  if float(next_mult) == float(current_category_grade):
+    next_mult += 0.5
+  next_grade = (next_mult*(value_sum+grade_value)/100 - score_sum)
+  # if cat_impact > 0.2:
+  #   print("cat_impact", cat_impact, "class_impact", class_impact, "GPA_impact", GPA_impact, "next_grade", next_grade, "next_mult", next_mult, "current_category_grade", current_category_grade, "score_sum", score_sum, "value_sum", value_sum, "grade_score", grade_score, "grade_value", grade_value)
+  return [cat_impact, class_impact, GPA_impact, next_grade, next_mult]
+
+

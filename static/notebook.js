@@ -118,7 +118,7 @@ function new_section(parent){
   const tabName = document.createElement('input');
   tabName.placeholder = `{Add section name here}`;
   tabName.type = 'name';
-  tabName.className = 'text_field';
+  tabName.className = 'name_field';
   //add input box as an element of the main tab
   newTab.appendChild(tabName)
   
@@ -158,6 +158,7 @@ function new_section(parent){
     tabBody.appendChild(tabContent);
     //add tabBody as element of main tab
     newTab.appendChild(tabBody);
+    newTab.className = 'tab';
 
     //add main tab as element of parent div
     parent.appendChild(newTab);
@@ -235,14 +236,15 @@ const diagrams = container.querySelectorAll('.dgm');
   }
 // for each section name input box/textbox, but the correct text value in it
 //get list of text values for textbox content
-if(data.text && data.text.length > 0){
-text_values = JSON.parse(data.text);
 
-  for(let i=0; i<input.length; i++){
-    input[i].value = text_values[i]
-  }
+// for data.content, put everything in quotes into a list, i.e. data.content = {(m"p"dfeqaf"df"{ => text_list = ['p', 'df']
+let text_values = data.content.match(/"(.*?)"/g).map(function(val) {
+  return val.replace(/"/g, '');
+});
+
+for(let i=0; i<input.length; i++){
+  input[i].value = text_values[i]
 }
-
 // for each button...
   for(let i=0; i<buttons.length; i++){
     //if it's a toggle button
@@ -302,8 +304,24 @@ lines.forEach(line => {
 
 main()
 
-
-
+function extract_text(parent, txts){
+  //if key of parent dict includes 'text', add the text values to the txts array
+  if (Object.keys(parent).includes('text')){
+    txts.push(parent.text)
+  }
+  //get all children of the parent element
+  const childElements = parent.children;
+  //if child elements doesn't exist, return txts
+  if (!childElements){
+    return txts
+  }
+  //loop through all children
+  for (let i = 0; i < childElements.length; i++) {
+    //recursively call the function on each child element
+    txts = extract_text(childElements[i], txts)
+  }
+  return txts
+}
 //create diagram box
 function createNode(x, y, current_dgm) {
     console.log("node created")
@@ -472,20 +490,57 @@ function set_input_text(parent){
 
 }
 
+function get_structure(parent_section){
+  // organize content into form: [{section_name: [{subsection_name: {text: [text1, text2, ...], pq: [pq1, pq2, ...], diagrams: [diagram1, diagram2, ...]}}]]
+
+  // create a new section object
+  let section = {}
+
+  // get the name of the section
+  console.log(parent_section)
+  let section_name = parent_section.querySelector('.name_field').value
+  // add the section name to the section object
+  section[section_name] = []
+
+  // get all children of the parent section that have class 'text_field', or 'pq_field'
+  let text_fields = parent_section.querySelectorAll('.text_field')
+  let pq_fields = parent_section.querySelectorAll('.pq_field')
+  let text_values = []
+  let pq_values = []
+  for (let i = 0; i < text_fields.length; i++){
+    text_values.push(text_fields[i].value)
+  }
+  for (let i = 0; i < pq_fields.length; i++){
+    pq_values.push(pq_fields[i].value)
+  }
+
+  // add the text and pq fields to the section object
+  section[section_name].push({'text': text_values, 'pq': pq_values})
+
+  // call the function on all subsections of the parent section
+  let subsections = parent_section.querySelectorAll('.tab')
+  for (let i = 0; i < subsections.length; i++){
+    let subsec = subsections[i]
+    console.log(subsec)
+    section[section_name].push(get_structure(subsec))
+  }
+  return section
+}
+
 
 async function postNotebook(){
   var id = window.location.href.slice(-13, -9);
- 
-  set_input_text(container)
-  var text_data = get_children(container, [], 'text_field')
-  var pq_data = get_children(container, [], 'pq_field')
-  console.log('text data:', text_data)
-  console.log('pq data:', pq_data)
+//  call get_structure on each child of the container element
+  let structure = []
+  let children = container.children
+  for (let i = 0; i < children.length; i++){
+    console.log(children[i])
+    structure.push(get_structure(children[i]))
+  }
+  // convert the structure object to a string
+  structure = JSON.stringify(structure)
 
-  text_data = JSON.stringify(text_data)
-  pq_data = JSON.stringify(pq_data)
-
-  data = {'classID': id, 'innerHTML': container.innerHTML, 'text': text_data, 'practice_questions': pq_data, 'exists': notebook_exists}
+  data = {'classID': id, 'innerHTML': container.innerHTML, 'content': structure}
   if (notebook_exists == true){
     const result = await fetchRequest('/update_data', {'data': data, "sheet": "Notebooks", "row_name": "classID", "row_value": id})
   }

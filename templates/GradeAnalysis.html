@@ -62,6 +62,30 @@
     <!-- element for error text, give red inline styling -->
     <p id="error" style="color: red;"></p>
     </form>
+    <br>
+
+
+
+    <div class="carousel-container">
+      <div class="carousel" id="crs">
+          <!-- <img src="https://via.placeholder.com/800x400?text=Image+1" alt="Image 1">
+          <img src="https://via.placeholder.com/800x400?text=Image+2" alt="Image 2">
+          <img src="https://via.placeholder.com/800x400?text=Image+3" alt="Image 3">
+          <img src="https://via.placeholder.com/800x400?text=Image+4" alt="Image 4"> -->
+      </div>
+      <button class="arrow left" onclick="moveSlide(-1)">&#10094;</button>
+      <button class="arrow right" onclick="moveSlide(1)">&#10095;</button>
+      <div class="dots">
+          <span class="dot" onclick="currentSlide(0)"></span>
+          <span class="dot" onclick="currentSlide(1)"></span>
+          <span class="dot" onclick="currentSlide(2)"></span>
+          <span class="dot" onclick="currentSlide(3)"></span>
+      </div>
+  </div>
+  <br>
+
+
+
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <div id="myGraph"></div>
     <br><br>

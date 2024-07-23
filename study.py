@@ -39,7 +39,7 @@ def study_response(previous_response):
         if session["study"]["question_number"] == 2:
             if "challenge" in previous_response.lower():
                 session["study"]["mode"] = "challenge_user"
-            elif "play" in previous_response.lower():
+            elif "dumb" in previous_response.lower():
                 session["study"]["mode"] = "play_dumb"
             session["study"]["history"] = load_study_history()
         session["study"]["history"].append({"role": "user", "content": previous_response})
@@ -72,17 +72,20 @@ def parse_class_name(response, classes):
     return class_name, index
 
 # recursive function run from get_notebook_topics
-def extract_data_text(element, level=0):
+def get_section_titles(dict, level=0):
     data_texts = []
-    input_element = element.find('input', {'data-text': True})
-    if input_element:
-        prefix = '>' * level
-        data_texts.append(prefix + input_element['data-text'])
+    prefix = '>' * level
+    # get the key and value of the dictionary
+    key = list(dict.keys())[0]
+    value = dict[key]
+    data_texts.append(prefix + key)
 
-    # Find all nested divs with class 'tab'
-    nested_tabs = element.find_all('div', class_='tab', recursive=True)
-    for nested_tab in nested_tabs:
-        data_texts.extend(extract_data_text(nested_tab, level + 1))
+    # Find all nested sections
+    
+    for nested_tab in value:
+        tab_key = (nested_tab.keys())[0]
+        if tab_key != "text" and tab_key != "pq":
+            data_texts += get_section_titles(nested_tab, level + 1)
     
     return data_texts
 
@@ -93,14 +96,9 @@ def get_notebook_topics(classId):
     if len(notebook) == 0:
         return 'no data'
     notebook = notebook[0]
-    html = notebook["innerHTML"]
-    soup = BeautifulSoup(html, 'html.parser')
-    top_level_tabs = soup.find_all('div', class_='tab', recursive=False)
-    data_text_list = []
-    for tab in top_level_tabs:
-        data_text_list.extend(extract_data_text(tab))
+    
 
-    return data_text_list
+    return notebook["content"]
 
 # Query the LLM API to get insights
 def get_insights(prompts):
@@ -160,6 +158,6 @@ def save_study_history():
 # Get the system prompt for the study session
 def get_system_prompt():
     if session["study"]["mode"] == "challenge_user":
-        return "Generate 1 practice question that will challenge the user's understanding of the topics: " + ", ".join(session["study"]["topics"])
+        return "Generate 1 practice question that will challenge the user's understanding of one of these topics: " + ", ".join(session["study"]["topics"])
     elif session["study"]["mode"] == "play_dumb":
-        return "Play dumb and ask the user to explain the topics: " + ", ".join(session["study"]["topics"])
+        return "Play dumb and ask the user to explain something related to one of these topics: " + ", ".join(session["study"]["topics"])

@@ -1,8 +1,13 @@
 var form;
 var tbody;
-
 var grades;
+
 var times;
+var weights;
+var grade_spreads;
+var grades;
+var val_sums;
+
 
 async function main(){
   const data = await fetchRequest('/GAsetup', { data: '' });
@@ -16,12 +21,24 @@ async function main(){
       window.stop();
       return;
     }
-    var classes = data['Classes']
-    var categories = data['categories']
-    var stats = data['stats']
-    setClasses(classes, categories)
+    console.log(data)
+    // data includes Weights, times, grade_spreads, grades, categories, stats, compliments
+    weights = data["Weights"];
+    times = data["times"];
+    grade_spreads = data["grade_spreads"];
+    grades = data["grades"];
+    categories = data["categories"];
+    stats = data["stats"];
+    compliments = data["compliments"];
+    val_sums = data["cat_value_sums"];
+
+    setClasses(weights, categories)
     setStats(stats)
-    setGoalProgress()
+    // setGoalProgress()
+    setCompliments(compliments)
+    
+    draw_gotc(grade_spreads, times, weights, grades, ['All', 'all'], val_sums)
+    
 }
 
 function setStats(stats){
@@ -37,7 +54,8 @@ function setStats(stats){
   document.getElementById("s5").nextElementSibling.textContent += "("+stats["grade_changes"][stats["most_worsened_class"]]+"%)"
   document.getElementById("s6").textContent = stats["past30_avg"] + "%"
 }
-function setClasses(classes, categories){
+function setClasses(weights, categories){
+    var classes = Object.keys(weights)
     var class_div = document.getElementById("classes")
     var categories_div = document.getElementById("categories")
     console.log(classes)
@@ -48,10 +66,10 @@ function setClasses(classes, categories){
       let checkmark = document.createElement("span");
 
       checkbox.type = 'checkbox';
-      checkbox.value = classes[x].name.toLowerCase();
+      checkbox.value = classes[x].toLowerCase();
       checkbox.name = 'class';
 
-      text.textContent = "     "+ classes[x].name;
+      text.textContent = "     "+ classes[x];
       text.className = 'custom-checkbox';
 
       checkmark.className = 'checkmark';
@@ -72,7 +90,7 @@ for(let x=0;x<categories.length;x++){
       let label = document.createElement("label");
       let input = document.createElement("input");
       input.type = 'checkbox'
-      input.value = "[CAT]" + categories[x];
+      input.value = categories[x];
       label.textContent = "     "+ categories[x];
       input.name = 'class'
       label.className = 'custom-checkbox';
@@ -133,119 +151,236 @@ async function setGoalProgress(){
 
 main()
 
-setTimeout(function() {
-
-  graph_data(["all", "All"], 15);
-}, 300); // 100 milliseconds = 0.1 seconds
-function create_graph(grades, times, name, goals, max_date, goal_set_coords, grade_points){
+// gotc = grades over time chart
+function draw_gotc(grade_spreads, times, weights, grades, cat, val_sums, goals=null, goal_set_coords=null){
   
 const canvas = document.querySelector('#myGraph');
 
-// Clean grade and time data
-times = times.slice(1, -1);
-grades = grades.slice(1, -1);
-times = times.split(",");
-grades = grades.split(",");
-
-console.log(grades)
-console.log(times)
 
 // Convert dates from ordinal(eg. 79432) to strings(eg. 12/31/2021)
 let dateStrings = [];
 for (let i = 0; i < times.length; i++) {
-  let date = new Date(0);
-  date.setUTCDate(times[i]);
-  let day = date.getUTCDate().toString();
-  let month = (date.getUTCMonth()+1).toString(); // Add 1 to convert from 0-indexed to 1-indexed
-  let year = (date.getUTCFullYear()-1969).toString();
-  let dateString = month + "/" + day + "/" + year;
-  dateStrings.push(dateString);
+  
+  dateStrings.push(serialToDate(times[i]));
 }
 
+// Filter grades for cla(class) and cat(category) into grade_points
+let grade_points = [];
+for (let i = 0; i < grades.length; i++) {
+  let grade = grades[i];
+  console.log(cat.includes('all') && cat.includes('All'))
+  
+  if ((cat.includes(grade['class']) || cat.includes('all')) && (cat.includes(grade['category']) || cat.includes('All'))) {
+    grade_points.push(grade);
+  }
+}
+console.log(grade_points)
 
-// Main grade line
-const trace = {
-  x: times,
-  y: grades,
-  mode: 'lines',
-  line: {
-    color: '#2c7e8f'
+// Filter grade_spreads for cla(class) and cat(category) grade_spreads
+let spreads = [];
+let spread_names = [];
+let w = [];
+for (const spread_class in grade_spreads) {
+  for (const spread_category in grade_spreads[spread_class]) {
+    let spread = grade_spreads[spread_class][spread_category];
+    // if cla includes spread['class'] or all AND cat includes spread['category'] or all, add spread to spreads
+    if ((cat.includes(spread_class) || cat.includes('all')) && (cat.includes(spread_category) || cat.includes('All'))) {
+      spreads.push(spread);
+      spread_names.push(spread_class + " " + spread_category);
+      w.push(weights[spread_class][spread_category]);
+    }
   }
 }
 
+
+// Graph all the spreads as lines over times
+let spreadTraces = [];
+for (let i = 0; i < spreads.length; i++) {
+  // generate random color
+  let randomColor = Math.floor(Math.random()*16777215).toString(16);
+  let spread = spreads[i];
+  let trace = {
+    x: times,
+    y: spread,
+    mode: 'lines',
+    line: {
+      color: randomColor,
+      width: 1
+    },
+    name: spread_names[i]
+  };
+  spreadTraces.push(trace);
+}
+
+grade_points_dates = grade_points.map(point => point['date']);
+grade_point_sizes = grade_points.map(point => {
+  score = point['score'];
+  value = point['value'];
+  category = point['category'].toLowerCase();
+  class_name = point['class'].toLowerCase();
+  cat_weight = weights[class_name][category];
+  cat_grade = grade_spreads[class_name][category][-1];
+  cat_val_sum = val_sums[class_name][category];
+  return (value/cat_val_sum)*cat_weight;
+});
+
 const scatterPlotTrace = {
   // Get all the x coordinates from grade_points
-  x: grade_points.map(point => point[0]), 
-  y: grade_points.map(point => point[1]),
+  x: grade_points_dates,
+  // convert point['date'] to ordinal date
+  y: grade_points.map(point => point['score']/point['value']*100),
   mode: 'markers', // This makes it a scatter plot
   type: 'scatter', // Explicitly stating the plot type is optional but can be helpful
   marker: {
     color: 'rgba(255, 127, 14, 0.5)', // Example color
-    size: grade_points.map(point => point[2]) // This sets the size of the markers
+    size: grade_points.map(point => point['value']/5) // This sets the size of the markers
   },
-  text: grade_points.map(point => point[3]), // An array of strings for hover text, one for each point
-  hoverinfo: 'text' // Specify to show only the custom text on hover
+  text: grade_points.map(point => point['name']), // An array of strings for hover text, one for each point
+  hoverinfo: 'text', // Specify to show only the custom text on hover
+  name: 'Individual Grades(click to show)',
+  visible: 'legendonly'
 };
 
-// Create the data array
-var data = [trace, scatterPlotTrace];
+spreadTraces.unshift(scatterPlotTrace)
 
 // Get number of instances of 'none' in grades
 // let noneCount = grades.filter(grade => grade === '"none"').length;
 // console.log(noneCount)
   // For each goal, have a dotted line going from the rightmost point on the grades line to the corresponding goal
-  for (let i = 0; i < goals.length; i++) {
-    let goal = goals[i];
-    let x = [goal_set_coords[i][0], goal.x];
-    let y = [goal_set_coords[i][1], goal.y];
-    let goalTrace = {
-      x: x,
-      y: y,
-      mode: 'lines',
-      line: {
-        color: 'darkgreen',
-        dash: 'dot'
-      }
-    };
-    data.push(goalTrace);
+  // for (let i = 0; i < goals.length; i++) {
+  //   let goal = goals[i];
+  //   let x = [goal_set_coords[i][0], goal.x];
+  //   let y = [goal_set_coords[i][1], goal.y];
+  //   let goalTrace = {
+  //     x: x,
+  //     y: y,
+  //     mode: 'lines',
+  //     line: {
+  //       color: 'darkgreen',
+  //       dash: 'dot'
+  //     }
+  //   };
+  //   data.push(goalTrace);
     // data.push(goal);
-  }
+  // }
 
-console.log(data)
 
 
 // Define the goal zone
 
-console.log(goals)
-console.log(max_date)
-min_grade = Math.min(...grades.filter(value => value !== '"none"').map(Number));
-console.log(min_grade)
-min_x = min_grade-(0.3*(100-min_grade))
+// console.log(goals)
+// console.log(max_date)
+// min_grade = Math.min(...grades.filter(value => value !== '"none"').map(Number));
+// console.log(min_grade)
+// min_x = min_grade-(0.3*(100-min_grade))
 
-console.log(dateStrings)
+// console.log(dateStrings)
 
+// combine times and grade_point_dates
+all_dates = times.concat(grade_points_dates)
+min_x = Math.min(...all_dates)
+max_x = Math.max(...all_dates)
+console.log(min_x, max_x)
 // Define the layout
 const layout = {
-  title: name,
+  title: "Grades Over Time",
   xaxis: {
     title: 'Date',
     tickvals: times,
     ticktext: dateStrings,
-    // range: [dateStrings[0], max_date]
+    range: [min_x - 3, max_x + 3]
   },
   yaxis: {
     title: 'Grades',
-    // make max value 100, while leaving min value the lowest point on the graph
-    range: [min_x, 100.3]
   },
   displayModeBar: false,
   //shapes: goals // Add the goal zone shape
-  images: goals
+  // images: goals
 };
 
-console.log(layout)
+// create final, combined line: at each timepoint, sum the weighted grade_spreads
+let final = [];
+for (let i = 0; i < times.length; i++) {
+  let gradesum = 0;
+  let weightsum = 0;
+  for (let j = 0; j < spreads.length; j++) {
+    gradesum += spreads[j][i]*w[j];
+    weightsum += w[j];
+  }
+  sum = gradesum/weightsum;
+  final.push(sum);
+}
+console.log(final)
+
+
+// create an array with a copy of dict {y: final} for each spread
+let finalTraces = [];
+let numTraces = [];
+for (let i = 0; i < spreads.length; i++) {
+  finalTraces.push({y: final});
+  numTraces.push(i+1);
+}
+
 // Render the graph
-Plotly.newPlot('myGraph', data, layout);
+Plotly.newPlot('myGraph', spreadTraces, layout);
+// Start animation
+Plotly.animate('myGraph', {
+  data: finalTraces,
+  traces: numTraces,
+  layout: {}
+}, {
+  transition: {
+    duration: 3000,
+    easing: 'cubic-in-out'
+  },
+  frame: {
+    duration: 3000
+  }
+});
+// hide loading wheel
+document.getElementById('loadingWheel').style.visibility = "hidden";
+// wait 4000 ms for animation to finish
+setTimeout(function(){
+  console.log('resizing')
+  Plotly.Plots.resize(document.getElementById('myGraph'));
+}, 4000);
+}
+
+function dateToSerial(dateString) {
+  // Parse the input date string
+  let [month, day, year] = dateString.split('/').map(Number);
+
+  // Create a date object for the input date
+  let inputDate = new Date(year, month - 1, day);
+
+  // Create a date object for January 1, 1 AD
+  let startDate = new Date(1, 0, 1); // Month is zero-indexed
+
+  // Calculate the difference in time (in milliseconds)
+  let timeDifference = inputDate.getTime() - startDate.getTime();
+
+  // Convert the difference from milliseconds to days
+  let daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+
+  return daysDifference+693596;
+}
+
+
+function serialToDate(serial) {
+  // Calculate the date from the ordinal number
+  let baseDate = new Date(1, 0, 1);
+  let date = new Date(baseDate.getTime() + (serial - 1) * 24 * 60 * 60 * 1000);
+  
+  // Format the date as m/d/yyyy
+  let day = date.getDate().toString();
+  let month = (date.getMonth() + 1).toString(); // Add 1 to convert from 0-indexed to 1-indexed
+  let year = (date.getFullYear()-1900).toString();
+  let dateString = month + "/" + day + "/" + year;
+  
+  return dateString;
+}
+
+
 
 
 // // Set up histogram
@@ -275,72 +410,39 @@ Plotly.newPlot('myGraph', data, layout);
 // console.log(document.getElementById('loadingWheel').style.visibility)
 
 // make a circle graph with the frequency of each grade using grade_points
-var circlegrades = grade_points.map(point => point[1])
-//get frequency of each grade
-var freq = {};
-circlegrades.forEach(function(grade) {
-  freq[grade] = (freq[grade] || 0) + 1;
-});
-//sort dict freq from highest to lowest based on key
+// var circlegrades = grade_points.map(point => point[1])
+// //get frequency of each grade
+// var freq = {};
+// circlegrades.forEach(function(grade) {
+//   freq[grade] = (freq[grade] || 0) + 1;
+// });
+// //sort dict freq from highest to lowest based on key
 
-freq = Object.fromEntries(Object.entries(freq).sort((a, b) => b[0] - a[0]));
+// freq = Object.fromEntries(Object.entries(freq).sort((a, b) => b[0] - a[0]));
 
-var unique_grades = Object.keys(freq);
-var counts = Object.values(freq);
+// var unique_grades = Object.keys(freq);
+// var counts = Object.values(freq);
 
-var circledata = [{
-  values: counts,
-  labels: unique_grades,
-  type: 'pie'
-}];
+// var circledata = [{
+//   values: counts,
+//   labels: unique_grades,
+//   type: 'pie'
+// }];
 
-circlelayout = {
-  title: 'Grade Distribution',
-  height: 400,
-  width: 500
-};
-Plotly.newPlot('myHistogram', circledata, circlelayout);
+// circlelayout = {
+//   title: 'Grade Distribution',
+//   height: 400,
+//   width: 500
+// };
+// Plotly.newPlot('myHistogram', circledata, circlelayout);
 
 
-document.getElementById('loadingWheel').style.visibility = "hidden";
+// document.getElementById('loadingWheel').style.visibility = "hidden";
 
-};
+// };
 
-async function graph_data(classes, specificity) {
-  
-const data = await fetchRequest('/grades_over_time', {classes: classes, specificity: specificity});
-
-  // if error in data, display error message
-  if (data['error']) {
-    const errorMessage = document.getElementById("error");
-    errorMessage.textContent = data['error'];
-    return;
-  }
-  
-  grades = JSON.stringify(data['grade_spread']);
-  times = JSON.stringify(data['times']);
-  goals = data['goals'];
-  goal_set_coords = data['goal_set_coords'];
-  grade_points = data['grade_points'];
-  
-  max_date = data['max_date'];
-  
-  let joined_classes = classes.join(', ');
-  if(joined_classes=='all, All'){
-    joined_classes = "All";
-  }
-  else{
-    console.log(classes);
-  }
-  // remove [CAT] from joined classes string
-  joined_classes = joined_classes.replace(/\[CAT\]/g, '');
-
-  var name =  joined_classes +" grades over time"
-  
-  
-  create_graph(grades, times, name, goals, max_date, goal_set_coords, grade_points);
-  
-
+function draw_graphs() {
+  return;
 }
 
 document.getElementById("class-form").addEventListener("submit", function(event) {
@@ -364,7 +466,7 @@ errorMessage.textContent = "";
   let specificity = document.getElementById("mySlider").value;
   console.log(selectedClasses);
   // document.getElementById("class-form").reset();
-  graph_data(selectedClasses, specificity)
+  draw_gotc(grade_spreads, times, weights, grades, selectedClasses, val_sums);
   console.log("done")
   
   });
@@ -419,3 +521,63 @@ function percentile(arr, p) {
   if (upper >= sorted.length) return sorted[lower];
   return sorted[lower] * (1 - weight) + sorted[upper] * weight;
 }
+
+
+
+let slideIndex = 0;
+
+        function moveSlide(n) {
+            showSlide(slideIndex += n);
+        }
+
+        function currentSlide(n) {
+            showSlide(slideIndex = n);
+        }
+
+        function showSlide(n) {
+            const slides = document.querySelectorAll('.slide');
+            const dots = document.querySelectorAll('.dot');
+            
+            if (n >= slides.length) slideIndex = 0;
+            if (n < 0) slideIndex = slides.length - 1;
+            
+            slides.forEach(slide => slide.style.display = 'none');
+            dots.forEach(dot => dot.classList.remove('active'));
+            
+            slides[slideIndex].style.display = 'flex';
+            dots[slideIndex].classList.add('active');
+        }
+
+        function setCompliments(compliments) {
+            const carousel = document.getElementById("crs");
+            const dotsContainer = document.querySelector(".dots");
+
+            // Clear existing slides and dots
+            carousel.innerHTML = '';
+            dotsContainer.innerHTML = '';
+
+            for (let x = 0; x < compliments.length; x++) {
+                let slide = document.createElement("div");
+                slide.className = "slide";
+                let text = document.createElement("p");
+                text.textContent = compliments[x];
+
+                // Generate random color
+                let randomColor = Math.floor(Math.random() * 16777215).toString(16);
+                randomColor = randomColor.padStart(6, '0');
+                console.log(randomColor);
+                slide.style.backgroundColor = "#" + randomColor;
+
+                slide.appendChild(text);
+                carousel.appendChild(slide);
+
+                // Create dot
+                let dot = document.createElement("span");
+                dot.className = "dot";
+                dot.onclick = () => currentSlide(x);
+                dotsContainer.appendChild(dot);
+            }
+
+            // Show the first slide
+            showSlide(slideIndex);
+        }

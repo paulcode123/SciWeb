@@ -261,6 +261,8 @@ document.querySelectorAll('.timecom').forEach(item => {
 	});
 })
 
+// if page is /Join
+if (window.location.pathname == '/Join') {
 // add event listener to the form "Joinform" for submit event
 document.getElementById('Joinform').addEventListener('submit', async function(event) {
 	// prevent the default form submission
@@ -281,7 +283,7 @@ document.getElementById('Joinform').addEventListener('submit', async function(ev
 	document.getElementById('Joinform').style.display = 'none';
 	document.getElementById('success').style.display = 'block';
 })
-
+}
 
 
 // Function to get the value of the selected radio button
@@ -297,4 +299,21 @@ var radios = document.getElementsByName('priority');
     }
 }
 
+if (window.location.pathname == '/Pitch') {
+// add an onclick event listener to the <a> tag "getEmail" 
+
+document.getElementById('getEmail').addEventListener('click', function(event) {
 	
+	// prevent the default form submission
+	event.preventDefault();
+	// get the value of the input field
+	var email = document.getElementById('email').value;
+	window.location.href = '/Join?email=' + email;
+})
+}
+// if on the join page, get the email from the url and set the value of the email input field to the email
+if (window.location.pathname == '/Join') {
+	var urlParams = new URLSearchParams(window.location.search);
+	var email = urlParams.get('email');
+	document.getElementById('email').value = email;
+}

@@ -27,7 +27,7 @@ from PIL import Image
 # Get functions from other files
 from database import get_data, post_data, update_data, delete_data, download_file, upload_file, init_firebase
 from classroom import init_oauth, oauth2callback, list_courses
-from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups, get_stats, update_leagues
+from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups, get_stats, update_leagues, get_compliments
 from goals import calculate_goal_progress, get_goals
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades
 from study import study_response, get_insights
@@ -426,33 +426,56 @@ def get_insights_ga():
   insights = get_insights(prompt)
   return json.dumps(insights)
 
-# Function to return grades to the Grade Analysis page
-@app.route('/grades_over_time', methods=['POST'])
-def post_ga_grades():
-  print("in grades over time")
-  data = request.json
-  classes = data['classes']
-  classes = decode_category_groups(classes)
-  specificity = int(data['specificity'])
-  # Get User, Class, and Grade data
-  classes_data = get_data("Classes")
-  # filter for the user's osis in OSIS column
-  classes_data = [item for item in classes_data if str(session['user_data']['osis']) in str(item['OSIS'])]
-  # grades = get_data("Grades")
-  raw_grades = get_grades()
-  user_data = get_name()
-  grades = filter_grades(raw_grades, user_data, classes)
-  print("len grades in post_ga_grades", len(grades))
-  
-  
-  try:
-    grade_points = get_grade_points(grades, user_data, classes_data)
 
-    # Calculate the user's grades over time, return the grades at their corresponding dates
-    times, grade_spread = process_grades(grades, user_data, classes_data, specificity)
-    print("grade_spread", grade_spread, "times", times)
+
+@app.route('/GAsetup', methods=['POST'])
+def GA_setup():
+  # get the user's grades and classes
+  classes = get_data("Classes")
+  weights = get_weights(classes, session['user_data']['osis'])
+  grades = get_grades()
+  user_data = get_name()
+
+  # if there are no grades, return an error
+  # if grades is a dictionary with a key 'class' and the value is 'No grades entered', return an error
+  if 'class' in grades and grades['class'] == 'No grades entered':
+    print("No grades found in GA_setup")
+    return json.dumps({"error": "Enter your grades before analyzing them"})
+  #filter classes for the user's osis
+  classes = [item for item in classes if str(session['user_data']['osis']) in str(item['OSIS'])]
+  stats = get_stats(grades, classes)
+  compliments = get_compliments(grades, classes)
+  # convert dates of grades(m/d/yyyy) to ordinal dates
+  ordinal_dated_grades = []
+  for grade in grades:
+    ordinal_dated_grades.append({"date": datetime.datetime.strptime(grade['date'], "%m/%d/%Y").toordinal(), "value": grade['value'], "class": grade['class'], "category": grade['category'], "score": grade['score'], "name": grade['name']})
+
+  try:
+    grade_spreads = {}
+    cat_value_sums = {}
+    categories = []
+    # calculate min and max dates across all grades in form m/d/yyyy
+    times = [datetime.datetime.strptime(grade['date'], "%m/%d/%Y").toordinal() for grade in grades]
+    # Convert back to dates for min and max
+    min_date = datetime.datetime.fromordinal(min(times))
+    max_date = datetime.datetime.fromordinal(max(times))
+    # For each category in each class, filter the grades for it
+    for c in weights:
+      grade_spreads[c] = {}
+      cat_value_sums[c] = {}
+      for category in weights[c]:
+        if category not in categories:
+          categories.append(category)
+        fgrades = filter_grades(grades, user_data, [c.lower(), category.lower()])
+        cat_value_sums[c][category] = sum([int(grade['value']) for grade in fgrades])
+        # If the user has grades for the class, add the class and the grades to the list of grade spreads
+        if fgrades:
+          print("fgrades", fgrades)
+          times, g = process_grades(fgrades, user_data, classes, s_max_date=max_date, s_min_date=min_date)
+          grade_spreads[c][category] = g
+   
     # Get the goals that the user has set, and create objects to overlay on the graph
-    goals, set_coords, max_date = get_goals(classes, user_data, grades, times, grade_spread)
+    # goals, set_coords, max_date = get_goals(classes, user_data, grades, times, grade_spread)
 
   except Exception as e:
     # get detailed error message
@@ -465,33 +488,21 @@ def post_ga_grades():
   # Create a dictionary to return the calculated data to the frontend
   response_data = {
     "times": times.tolist(),
-    "grade_spread": grade_spread,
-    "goals": goals,
-    "goal_set_coords": set_coords,
-    "grade_points": grade_points,
-    "max_date": max_date
+    "grade_spreads": grade_spreads,
+    # "goals": goals,
+    # "goal_set_coords": set_coords,
+    "grades": ordinal_dated_grades,
+    # "max_date": max_date,
+    "Weights": weights,
+    "categories": categories,
+    "stats": stats,
+    "compliments": compliments,
+    "cat_value_sums": cat_value_sums
   }
 
-  
-  
-  # Return the response data
-  return json.dumps(response_data)
 
-@app.route('/GAsetup', methods=['POST'])
-def GA_setup():
-  classes = get_data("Classes")
-  grades = get_grades()
-  # if there are no grades, return an error
-  # if grades is a dictionary with a key 'class' and the value is 'No grades entered', return an error
-  if 'class' in grades and grades['class'] == 'No grades entered':
-    print("No grades found in GA_setup")
-    return json.dumps({"error": "Enter your grades before analyzing them"})
-  #filter classes for the user's osis
-  classes = [item for item in classes if str(session['user_data']['osis']) in str(item['OSIS'])]
-  categories = make_category_groups(classes)
-  stats = get_stats(grades, classes)
-  print("categories: ", categories)
-  return json.dumps({"Classes": classes, "categories": categories, "stats": stats})
+
+  return json.dumps(response_data)
 
 @app.route('/get-gclasses', methods=['POST'])
 def get_gclasses():
@@ -604,8 +615,8 @@ def get_notebook():
   # Find the notebook with the matching class ID
   for item in notebooks:
     if item['classID'] == id:
-        prompt = [{"role":"system", "content": "Generate 3 practice questions based on this text"},
-                  {"role":"user", "content": str(item['text'])}]
+        prompt = [{"role":"system", "content": "Generate 3 practice questions based on this notebook structure."},
+                  {"role":"user", "content": str(item['content'])}]
         insights = get_insights(prompt)
         break  # Stop the loop once 'a' is found
   response = {"notebook":notebooks, 'insights': insights}
