@@ -9,10 +9,33 @@ var bellSchedule = [0, 485, 531, 577, 625, 671, 717, 763, 809, 855, 902]
 var thursBellSchedule = [0, 486, 530, 574, 618, 633, 677, 721, 765, 809, 853, 897]
 
 
-// Create function to show date + time
-function setPeriod(){
 
+function setPeriod(userClasses, friendsData, friendsClasses, currentPeriod) {
+  
+  const userClass = userClasses.find(classItem => classItem.period === currentPeriod);
+
+  // Set the HTML element to the name of the user's class
+  if (userClass) {
+      document.getElementById("current-class").textContent = `Current Class: ${userClass.name}`;
+  }
+
+  // Loop through each friend
+  friendsData.forEach(friend => {
+      // Find the class in friendsClasses where the period matches and the friend's OSIS is included
+      const friendClass = friendsClasses.find(classItem => classItem.period === currentPeriod && classItem.osisList.includes(friend.osis));
+
+      
+      if (friendClass) {
+          const friendClassElement = document.createElement('h5');
+          // Set the textContent property to the name of the class
+          friendClassElement.textContent = `${friend.name}: ${friendClass.name}`;
+
+          
+          document.getElementById("friends-classes").appendChild(friendClassElement);
+      }
+  });
 }
+
 function getPeriod(){
   // get the time in minutes since midnight
   var today = new Date();
@@ -182,7 +205,7 @@ window.addEventListener("DOMContentLoaded", (event) => {
 //Create a fetch request to /data to get Chat, Classes, and Assignments data
 async function main(){
 
-const data = await fetchRequest('/data', { data: "Chat, FILTERED Classes, Assignments" });
+const data = await fetchRequest('/data', { data: "Chat, FILTERED Classes, Assignments, FILTERED Friends, FILTERED FClasses" });
 
   
   //Store the data in variables
