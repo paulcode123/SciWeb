@@ -65,6 +65,15 @@ def jupapi_output_to_grades(data, encrypt):
       # if score is None, make it 'null'
       score = a["score"] if a["score"] != None else "null"
       grades.append({"name": a["name"], "date": date, "score": score, "value": a["points"], "class": c["name"], "category": a["category"], "OSIS": session['user_data']['osis'], "id": id})
+  
+  # filter out grades where grade["score"] = 'null' or grade["date"] = ''
+  grades = [grade for grade in grades if grade['score'] != 'null']
+
+  post_grades(grades, encrypt)
+  return grades
+
+def post_grades(grades, encrypt):
+  print("len grades posted", len(grades))
   #To avoid size issues, split the grades into groups of 100 assignments each
   grades_split = [grades[i:i + 100] for i in range(0, len(grades), 100)]
 
@@ -87,10 +96,8 @@ def jupapi_output_to_grades(data, encrypt):
     update_data(str(session['user_data']['osis']), "OSIS", grades_obj, "GradeData")
   else:
     post_data("GradeData", grades_obj)
-
-  # filter out grades where grade["score"] = 'null' or grade["date"] = ''
-  grades = [grade for grade in grades if grade['score'] != 'null']
-  return grades
+  
+  return
   
 def jupapi_output_to_classes(data):
   #this function suggests which classes the user should create or join based on their jupiter classes
@@ -199,9 +206,15 @@ def get_grades():
   
   dated_grades = []
   for grade in grades:
+    try:
+      grade['score'] = float(grade['score'])
+      grade['value'] = float(grade['value'])
+    except:
+      print("Error converting score or value to float", grade)
+      continue
     # if category is NoneType, print
     if type(grade['category']) == type(None) or type(grade['score']) == type('m') or type(grade['score']) == type(None):
-      # print("NoneType", grade)
+      print("Skipping", grade)
       continue
     
     #convert date to datetime object
@@ -209,6 +222,7 @@ def get_grades():
     
     #If date="None" or score is of type Nonetype
     if date == "None" or date=="":
+      print("skipping", grade)
       continue
     
     date = convert_date(date)

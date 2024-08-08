@@ -1,7 +1,7 @@
 # Import necessary libraries
 
 # Flask is a web framework for Python that allows backend-frontend communication
-from flask import Flask, render_template, request, session, redirect, url_for
+from flask import Flask, render_template, request, session, redirect, url_for, send_from_directory
 # json is a library for parsing and creating JSON data
 import json
 # requests is a library for getting info from the web
@@ -29,7 +29,7 @@ from database import get_data, post_data, update_data, delete_data, download_fil
 from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups, get_stats, update_leagues, get_compliments
 from goals import calculate_goal_progress, get_goals
-from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades
+from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades
 from study import study_response, get_insights
 
 #get api keys from static/api_keys.json file
@@ -108,9 +108,18 @@ def profile():
 def pitch():
   return render_template('About/Pitch.html')
 
-@app.route('/Study')
+@app.route('/StudyBot')
 def study():
-  return render_template('Study.html')
+  return render_template('StudyBot.html')
+
+@app.route('/StudyLevels')
+def study_levels():
+  return render_template('Levels.html')
+
+@app.route('/Evaluate')
+def evaluate():
+  return render_template('Evaluate.html')
+
 
 @app.route('/Battle')
 def battle():
@@ -155,6 +164,10 @@ def social_features():
 @app.route('/Features/Analytic')
 def analytic_features():
   return render_template('About/Analytic.html')
+
+@app.route('/firebase-messaging-sw.js')
+def service_worker():
+    return send_from_directory('.', 'firebase-messaging-sw.js')
 
 # The following routes are pages for specific classes and assignments
 @app.route('/class/<classurl>')
@@ -639,6 +652,14 @@ def acceptFriend():
     
   post_data("Friends", data)
   return json.dumps({"data": "success"})
+
+# post grades route
+@app.route('/post_grades', methods=['POST'])
+def post_grades_route():
+  data = request.json
+  grades = data['data']
+  post_grades(grades, "none")
+  return json.dumps({"message": "success"})
 
 
 #Function to get the user's name from Users data

@@ -163,21 +163,12 @@ for (let i = 0; i < pasted.length; i += 2) {
 
 
 async function post_grades(grades){
-  await fetchRequest('/post_data', {"sheet": "Grades", "data": grades});
+  await fetchRequest('/post_grades', {"data": grades});
 }
 
 
 
-
-fetch('/data', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ data: 'FILTERED Grades, FILTERED Classes' })
-})
-.then(response => response.json())
-.then(data => {
+  data = await fetchRequest('/data', {"data": 'FILTERED Grades, FILTERED Classes'});
   
   
   grades = data['Grades']
@@ -193,10 +184,7 @@ document.getElementById("class"+z).addEventListener("change", () => {optionSelec
 }
   createGradesTable(grades);
   document.getElementById('loadingWheel').style.visibility = "hidden";
-})
-.catch(error => {
-  console.log('An error occurred:' +error);
-});
+
 
 function setClassOptions(filteredClasses){
   
@@ -229,6 +217,7 @@ function createGradesTable(grades) {
   if (grades.length>1) {
     document.getElementById('DeleteGrades').style.visibility = "visible";
     document.getElementById('OpenGA').style.visibility = "visible";
+    document.getElementById('DownloadGrades').style.visibility = "visible";
   
   // sort grades by date from most recent to least recent
   grades.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -350,6 +339,7 @@ async function DeleteGrades(){
     // hide button
     document.getElementById('DeleteGrades').style.visibility = "hidden";
     document.getElementById('OpenGA').style.visibility = "hidden";
+    document.getElementById('DownloadGrades').style.visibility = "hidden";
     // remove grades from table
     document.getElementById('gradesBody').innerHTML = '';
 
@@ -381,4 +371,68 @@ function toggleGradeForm(){
     form.style.display = 'none';
     button.textContent = button.textContent.slice(0, -1) + '>';
   }
+}
+
+// if button with id "DownloadGrades" is clicked, download grades as a csv
+document.getElementById('DownloadGrades').addEventListener('click', downloadGrades);
+
+function downloadGrades() {
+  const csv = convertToCSV(grades);
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'grades.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+}
+
+function convertToCSV(grades) {
+  if (grades.length === 0) return '';
+
+  const headers = Object.keys(grades[0]);
+  const csvRows = [headers.join(',')];
+
+  for (const grade of grades) {
+    let values = headers.map(header => grade[header]);
+    // replace any commas in values with a //
+    values = values.map(value => (value.toString()).replace(/,/g, '//'));
+    csvRows.push(values.join(','));
+  }
+
+  return csvRows.join('\n');
+}
+
+// When an item is uploaded to the input field with id="csvfile", parse it into a list of dictionaries, run CreateGradesTable on it, and post it to the server
+document.getElementById('csvfile').addEventListener('change', async (event) => {
+  const file = event.target.files[0];
+  const text = await file.text();
+  const grades = parseCSV(text);
+  console.log(grades);
+  
+  post_grades(grades);
+  createGradesTable(grades);
+  
+});
+
+
+function parseCSV(text) {
+  const lines = text.split('\n');
+  const headers = lines[0].split(',');
+
+  const grades = lines.slice(1).map(line => {
+    let values = line.split(',');
+    
+    // Replace any // in values with a comma
+    values = values.map(value => value.replace(/\/\//g, ','));
+    const grade = {};
+    headers.forEach((header, index) => {
+      grade[header] = values[index];
+    });
+    return grade;
+  });
+
+  return grades;
 }

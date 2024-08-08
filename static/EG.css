@@ -98,6 +98,27 @@ input[type="text"] {
   background-color: rgb(148, 233, 239);
 }
 
+#DownloadGrades{
+  /* same styles as delete grades but with green border color */
+  display: inline-block;
+    padding: 8px 10px;
+    
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    outline: none;
+  border-radius: 5px;
+  visibility: hidden;
+  background-color: transparent;
+  border: 3px solid rgb(71, 243, 114);
+  color: rgb(0, 0, 0);
+}
+
+/* turn background color light green on hover */
+#DownloadGrades:hover {
+  background-color: rgb(148, 239, 154);
+}
+
 /* div containing fields and button to pull grades from jupiter */
 #pullJup{
   border-radius: 5px;

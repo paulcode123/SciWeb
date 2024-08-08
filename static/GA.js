@@ -37,7 +37,7 @@ async function main(){
     // setGoalProgress()
     setCompliments(compliments)
     
-    draw_gotc(grade_spreads, times, weights, grades, ['All', 'all'], val_sums)
+    draw_graphs(grade_spreads, times, weights, grades, ['All', 'all'], val_sums)
     
 }
 
@@ -153,14 +153,13 @@ main()
 
 // gotc = grades over time chart
 function draw_gotc(grade_spreads, times, weights, grades, cat, val_sums, goals=null, goal_set_coords=null){
-  
+// define the canvas
 const canvas = document.querySelector('#myGraph');
 
 
 // Convert dates from ordinal(eg. 79432) to strings(eg. 12/31/2021)
 let dateStrings = [];
 for (let i = 0; i < times.length; i++) {
-  
   dateStrings.push(serialToDate(times[i]));
 }
 
@@ -212,6 +211,7 @@ for (let i = 0; i < spreads.length; i++) {
   spreadTraces.push(trace);
 }
 
+// Add a scatter plot for individual grades
 grade_points_dates = grade_points.map(point => point['date']);
 grade_point_sizes = grade_points.map(point => {
   score = point['score'];
@@ -219,7 +219,12 @@ grade_point_sizes = grade_points.map(point => {
   category = point['category'].toLowerCase();
   class_name = point['class'].toLowerCase();
   cat_weight = weights[class_name][category];
-  cat_grade = grade_spreads[class_name][category][-1];
+  try{
+  cat_grade = grade_spreads[class_name][category].slice(-1)[0];
+  }
+  catch{
+    console.error("No grade spread for class: "+class_name+" and category: "+category)
+  }
   cat_val_sum = val_sums[class_name][category];
   return (value/cat_val_sum)*cat_weight;
 });
@@ -240,44 +245,12 @@ const scatterPlotTrace = {
   name: 'Individual Grades(click to show)',
   visible: 'legendonly'
 };
-
 spreadTraces.unshift(scatterPlotTrace)
 
-// Get number of instances of 'none' in grades
-// let noneCount = grades.filter(grade => grade === '"none"').length;
-// console.log(noneCount)
-  // For each goal, have a dotted line going from the rightmost point on the grades line to the corresponding goal
-  // for (let i = 0; i < goals.length; i++) {
-  //   let goal = goals[i];
-  //   let x = [goal_set_coords[i][0], goal.x];
-  //   let y = [goal_set_coords[i][1], goal.y];
-  //   let goalTrace = {
-  //     x: x,
-  //     y: y,
-  //     mode: 'lines',
-  //     line: {
-  //       color: 'darkgreen',
-  //       dash: 'dot'
-  //     }
-  //   };
-  //   data.push(goalTrace);
-    // data.push(goal);
-  // }
-
-
-
-// Define the goal zone
-
-// console.log(goals)
-// console.log(max_date)
-// min_grade = Math.min(...grades.filter(value => value !== '"none"').map(Number));
-// console.log(min_grade)
-// min_x = min_grade-(0.3*(100-min_grade))
-
-// console.log(dateStrings)
 
 // combine times and grade_point_dates
 all_dates = times.concat(grade_points_dates)
+// find min and max of all_dates
 min_x = Math.min(...all_dates)
 max_x = Math.max(...all_dates)
 console.log(min_x, max_x)
@@ -342,7 +315,7 @@ document.getElementById('loadingWheel').style.visibility = "hidden";
 // wait 4000 ms for animation to finish
 setTimeout(function(){
   console.log('resizing')
-  Plotly.Plots.resize(document.getElementById('myGraph'));
+  Plotly.relayout('myGraph', {'yaxis.autorange': true});
 }, 4000);
 }
 
@@ -382,67 +355,83 @@ function serialToDate(serial) {
 
 
 
+function draw_histogram(grades, cat) {
+  let grade_points = [];
+  for (let i = 0; i < grades.length; i++) {
+    let grade = grades[i];
+    console.log(cat.includes('all') && cat.includes('All'))
+    
+    if ((cat.includes(grade['class'].toLowerCase()) || cat.includes('all')) && (cat.includes(grade['category'].toLowerCase()) || cat.includes('All'))) {
+      grade_points.push(grade);
+    }
+  }
+  // sort grades into groups based on same class and category
+  let grade_groups = {};
+  for (let i = 0; i < grade_points.length; i++) {
+    let grade = grade_points[i];
+    let key = grade['class'] + " " + grade['category'];
+    if (key in grade_groups) {
+      grade_groups[key].push(grade);
+    } else {
+      grade_groups[key] = [grade];
+    }
+  }
+  let traces = [];
+  // create a histogram for each group
+  for (const key in grade_groups) {
+    let group = grade_groups[key];
+    let data = group.map(grade => grade['score']/grade['value']*100);
+   // Calculate the kernel density estimate
+   var bandwidth = 1.0; // You can adjust the bandwidth as needed
+   var kde = kernelDensityEstimation(data, epanechnikovKernel, bandwidth);
+    // Plot the density estimate
+    var trace = {
+      x: kde.x,
+      y: kde.y,
+      mode: 'lines',
+      name: key,
+};
+  traces.push(trace);
+  }
 
-// // Set up histogram
-// var histogrades = grade_points.map(point => point[1])
-// var minVal = percentile(histogrades, 0.05);
-// var maxVal = percentile(histogrades, 0.95);
-// let buckets = 10;
-// //Render Histogram
-// var histogram = [{
-//   x: histogrades,
-//   type: 'histogram',
-//   xbins: {
-//     start: minVal,
-//     end: maxVal,
-//     size: (maxVal - minVal) / buckets
-//   }
-// }];
+var layout = {
+    title: 'Grade Distribution',
+    xaxis: {title: 'Grade'},
+    yaxis: {title: 'Density'}
+};
+// run kde for all grades
+var data = grades.map(grade => grade['score']/grade['value']*100);
+var kde = kernelDensityEstimation(data, epanechnikovKernel, bandwidth);
+let coordcopies = [];
+let tracenums = [];
+for (let i = 0; i < traces.length; i++) {
+  coordcopies.push({y: kde.y, x: kde.x});
+  tracenums.push(i);
+}
 
-// const histlayout = {
-//   title: 'Histogram of '+name.slice(0, -9),
-//   xaxis: {title: 'Grade'},
-//   yaxis: {title: 'Count'}
-// };
-
-// // Plot the chart to a div with id 'myDiv'
-// Plotly.newPlot('myHistogram', histogram, histlayout);
-// console.log(document.getElementById('loadingWheel').style.visibility)
-
-// make a circle graph with the frequency of each grade using grade_points
-// var circlegrades = grade_points.map(point => point[1])
-// //get frequency of each grade
-// var freq = {};
-// circlegrades.forEach(function(grade) {
-//   freq[grade] = (freq[grade] || 0) + 1;
-// });
-// //sort dict freq from highest to lowest based on key
-
-// freq = Object.fromEntries(Object.entries(freq).sort((a, b) => b[0] - a[0]));
-
-// var unique_grades = Object.keys(freq);
-// var counts = Object.values(freq);
-
-// var circledata = [{
-//   values: counts,
-//   labels: unique_grades,
-//   type: 'pie'
-// }];
-
-// circlelayout = {
-//   title: 'Grade Distribution',
-//   height: 400,
-//   width: 500
-// };
-// Plotly.newPlot('myHistogram', circledata, circlelayout);
-
-
-// document.getElementById('loadingWheel').style.visibility = "hidden";
-
-// };
-
-function draw_graphs() {
-  return;
+Plotly.newPlot('myHisto', traces, layout);
+Plotly.animate('myHisto', {
+  data: coordcopies,
+  traces: tracenums,
+  layout: {}
+}, {
+  transition: {
+    duration: 3000,
+    easing: 'cubic-in-out'
+  },
+  frame: {
+    duration: 3000
+  }
+});
+setTimeout(function(){
+  console.log('resizing')
+  Plotly.relayout('myHisto', {'yaxis.autorange': true});
+}, 4000);
+}
+// create a function to call draw_histogram and draw_gotc with all of the necessary parameters
+function draw_graphs(grade_spreads, times, weights, grades, cat, val_sums){
+  draw_gotc(grade_spreads, times, weights, grades, cat, val_sums);
+  draw_histogram(grades, cat);
 }
 
 document.getElementById("class-form").addEventListener("submit", function(event) {
@@ -466,7 +455,7 @@ errorMessage.textContent = "";
   let specificity = document.getElementById("mySlider").value;
   console.log(selectedClasses);
   // document.getElementById("class-form").reset();
-  draw_gotc(grade_spreads, times, weights, grades, selectedClasses, val_sums);
+  draw_graphs(grade_spreads, times, weights, grades, selectedClasses, val_sums);
   console.log("done")
   
   });
@@ -581,3 +570,31 @@ let slideIndex = 0;
             // Show the first slide
             showSlide(slideIndex);
         }
+
+
+
+// Epanechnikov kernel function
+function epanechnikovKernel(u) {
+  return Math.abs(u) <= 1 ? 0.75 * (1 - u * u) : 0;
+}
+
+// Kernel density estimation function
+function kernelDensityEstimation(data, kernel, bandwidth) {
+  var n = data.length;
+  var xMin = Math.min.apply(null, data);
+  var xMax = Math.max.apply(null, data);
+  var xRange = xMax - xMin;
+  var x = [], y = [];
+  
+  for (var i = 0; i < 100; i++) {
+      var xi = xMin + i * (xRange / 100);
+      var yi = 0;
+      for (var j = 0; j < n; j++) {
+          yi += kernel((xi - data[j]) / bandwidth);
+      }
+      yi /= (n * bandwidth);
+      x.push(xi);
+      y.push(yi);
+  }
+  return {x: x, y: y};
+}

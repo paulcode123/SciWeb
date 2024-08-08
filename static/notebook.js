@@ -237,11 +237,7 @@ const diagrams = container.querySelectorAll('.dgm');
 // for each section name input box/textbox, but the correct text value in it
 //get list of text values for textbox content
 
-// for data.content, put everything in quotes into a list, i.e. data.content = {(m"p"dfeqaf"df"{ => text_list = ['p', 'df']
-let text_values = data.content.match(/"(.*?)"/g).map(function(val) {
-  return val.replace(/"/g, '');
-});
-
+text_values = JSON.parse(data.text)
 for(let i=0; i<input.length; i++){
   input[i].value = text_values[i]
 }
@@ -498,31 +494,45 @@ function get_structure(parent_section){
 
   // get the name of the section
   console.log(parent_section)
-  let section_name = parent_section.querySelector('.name_field').value
+  // loop through all children of the parent section
+  for(let i = 0; i < parent_section.children.length; i++){
+    // if class of the child is 'name_field', get the value of the input element
+    if (parent_section.children[i].className == 'name_field'){
+      var section_name = parent_section.children[i].value
+    }
+  }
   // add the section name to the section object
-  section[section_name] = []
+  section[section_name] = {}
 
-  // get all children of the parent section that have class 'text_field', or 'pq_field'
-  let text_fields = parent_section.querySelectorAll('.text_field')
-  let pq_fields = parent_section.querySelectorAll('.pq_field')
+
   let text_values = []
   let pq_values = []
-  for (let i = 0; i < text_fields.length; i++){
-    text_values.push(text_fields[i].value)
+  // loop through parent_section.children[2].children[3]
+
+  for(let i = 0; i < parent_section.children[2].children.length; i++){
+    let element = parent_section.children[2].children[i]
+    // if the child is a div with class 'dgm', get the innerHTML of the div
+    if (element.className == 'text_field'){
+      text_values.push(element.value)
+    }
+    if (element.className == 'pq_field'){
+      pq_values.push(element.value)
   }
-  for (let i = 0; i < pq_fields.length; i++){
-    pq_values.push(pq_fields[i].value)
-  }
+}
+  
 
   // add the text and pq fields to the section object
-  section[section_name].push({'text': text_values, 'pq': pq_values})
+  section[section_name]['text'] = text_values
+  section[section_name]['pq'] = pq_values
 
   // call the function on all subsections of the parent section
   let subsections = parent_section.querySelectorAll('.tab')
   for (let i = 0; i < subsections.length; i++){
     let subsec = subsections[i]
     console.log(subsec)
-    section[section_name].push(get_structure(subsec))
+    substruct = get_structure(subsec)
+    // combine section[section_name] dictionary with the substruct dictionary
+    section[section_name] = Object.assign(section[section_name], substruct)
   }
   return section
 }
@@ -537,10 +547,19 @@ async function postNotebook(){
     console.log(children[i])
     structure.push(get_structure(children[i]))
   }
+  // combine the dictionaries in list structure into one dictionary
+  structure = Object.assign({}, ...structure)
   // convert the structure object to a string
   structure = JSON.stringify(structure)
+  // select for text fields, pq fields, and name fields
+  text_fields = container.querySelectorAll('.text_field, .pq_field, .name_field');
+  // get the text values of the text fields
+  let text_vals = []
+  for (let i = 0; i < text_fields.length; i++){
+    text_vals.push(text_fields[i].value)
+  }
 
-  data = {'classID': id, 'innerHTML': container.innerHTML, 'content': structure}
+  data = {'classID': id, 'innerHTML': container.innerHTML, 'content': structure, "text": text_vals}
   if (notebook_exists == true){
     const result = await fetchRequest('/update_data', {'data': data, "sheet": "Notebooks", "row_name": "classID", "row_value": id})
   }

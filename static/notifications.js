@@ -31,7 +31,7 @@ function listen_notfs(db){
         if (change.type === "added" && notif.target == osis) {
             
           console.log("New notification: ", notif);
-            showNotification(notif);
+            showNotification(notif, notif.id);
           // Update your UI with the new notification
         }
       });
@@ -42,7 +42,7 @@ function listen_notfs(db){
         snapshot.docChanges().forEach((change) => {
           let message = change.doc.data();
           console.log(message)
-          if (change.type === "added" && message.OSIS.includes(osis) && !initialLoad) {
+          if (change.type === "added" && (message.OSIS.toString()).includes(osis) && !initialLoad) {
               
             console.log("New message: ", message);
             let not = {"id": message.id, "text": message.text, "type": "message"};
@@ -58,31 +58,27 @@ function listen_notfs(db){
       });
 }
 
-function showNotification(notif) {
-    const container = document.getElementById('notification-container');
-
-    const notification = document.createElement('div');
-    notification.className = `notification ${notif.type}`;
-    notification.innerHTML = `
-        <span>${notif.text}</span>
-        <button class="close-btn" onclick="removeNotification(this, ${notif.id})">&times;</button>
-    `;
-    console.log(notification)
-    container.appendChild(notification);
-
-    setTimeout(() => {
-        if (container.contains(notification)) {
-            container.removeChild(notification);
+function showNotification(notif, id=null) {
+    // request permission to show notifications
+    Notification.requestPermission().then(function(result) {
+        if (result === 'granted') {
+            // If the user accepts, let's create a notification
+            const notification = new Notification(notif.text,
+                {
+                    icon: '/static/media/favicon.png'
+                });
+            // when the user closes the notification, remove it from the database
+            if(id){
+            notification.addEventListener('click', function() {
+              fetchRequest('/delete_data', {row_value: id, row_name: "id", sheet: 'Notifications'});
+              console.log("Notification closed")
+            });
+          }
         }
-    }, 15000);
+        
+    });
 }
 
-window.removeNotification = function(button, id) {
-    const notification = button.parentElement;
-    notification.parentElement.removeChild(notification);
-    // Remove the notification from the database
-    fetchRequest('/delete_data', {row_value: id, row_name: "id", sheet: 'Notifications'});
-}
 
 
 const db = init_firebase_communication();

@@ -2,20 +2,19 @@
 <html>
 
 <head>
-  <title>{{ class_name }} Notebook</title>
-  
-  <link rel="icon" href="/static/media/favicon.png" type="image/x-icon">
-  
+  <title>SciWeb Study</title>
+  <link rel="icon" href="static/media/favicon.png" type="image/x-icon">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="/static/notebook.css">
   <link rel="stylesheet" href="/static/navbar.css">
+  <link rel="stylesheet" href="/static/studybot.css">
   <link rel="manifest" href="/static/manifest.json">
-  
 
-    
-    
+
+
+
 </head>
+
 <body>
   <ul class="navbar">
     <li><a href="/">Home</a></li>
@@ -25,7 +24,7 @@
         <a href="/EnterGrades">Enter</a>
         <a href="/GradeAnalysis">Analyse</a>
         <a href="/Goals">Goals</a>
-        
+
       </div>
     </li>
     <li class="dropdown">
@@ -51,29 +50,18 @@
       <div class="dropdown-content">
         <a href="/Pitch">Pitch</a>
         <a href="/GetStart">Getting Started</a>
-        
+
       </div>
     </li>
     <li><a href="/Login" id="profile">Login</a></li>
   </ul>
   <div id="notification-container"></div>
   <div id="loadingWheel"></div>
-  <h1>{{ class_name }} Notebook</h1>
-  <input type="file" accept="image/*" capture="environment" id="imageInput" style="display: none;">
-  <!-- add a label that's a camera emoji -->
-  <label for="imageInput" style="font-size: 50px;">📷</label>
-  <br>
-  <button id="create_section" class='btn'>New Section</button>
-  <div id="tabs"></div>
-  
-  <button id='save' onclick="postNotebook()">Save</button>
-  <div id="insights_container"></div>
-  <br><br>
-  
+  <h1>Study</h1>
+  <div id="study-container"></div>
   <script src="/static/util.js"></script>
   <script src="/static/user_data.js"></script>
   <script src="/static/notifications.js" type="module"></script>
-  <script src="/static/notebook.js"></script>
-  
+  <script src="/static/studybot.js"></script>
 </body>
 </html>

@@ -424,7 +424,7 @@ def update_leagues(grades, classes):
     update_data(league['id'], 'id', league, 'Leagues')
   
 
-def get_compliments(grades, classes, days=60):
+def get_compliments(grades, classes, days=90):
   print("in get_compliments")
   # This function finds the 5 individual grades with the largest impact on the user's GPA in the past 10 days
   # It then chooses a different metric for each grade to complement the user on
@@ -434,6 +434,7 @@ def get_compliments(grades, classes, days=60):
   now = datetime.datetime.now()
   ten_days_ago = now - datetime.timedelta(days=days)
   recent_grades = [grade for grade in grades if datetime.datetime.strptime(grade['date'], '%m/%d/%Y').date() >= ten_days_ago.date()]
+  print("len grades", len(grades), "len recent grades", len(recent_grades))
   # get the impact of each grade on the user's GPA
   weights = get_weights(classes, session['user_data']['osis'])
   for grade in recent_grades:
@@ -444,7 +445,7 @@ def get_compliments(grades, classes, days=60):
   # get the 5 grades with the largest impact
   best_grades = recent_grades[:5]
   # make sure all 5 of them have a positive impact, or else recall the function with a larger number of days
-  if best_grades[-1]['impact'][2] < 0:
+  if len(best_grades)<5 or best_grades[-1]['impact'][2] < 0:
     return get_compliments(grades, classes, days+5)
   complements = []
   complements.append("Great work on " + best_grades[0]['name'] + " in " + best_grades[0]['class'] + "! It increased your "+best_grades[0]['class']+" grade by " + str(round(best_grades[0]['impact'][1], 2)) + "%.")

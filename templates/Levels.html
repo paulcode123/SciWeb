@@ -7,7 +7,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/static/navbar.css">
-  <link rel="stylesheet" href="/static/study.css">
+  <link rel="stylesheet" href="/static/levels.css">
   <link rel="manifest" href="/static/manifest.json">
 
 
@@ -30,9 +30,10 @@
     <li class="dropdown">
       <button class="dropdown-btn">Study</button>
       <div class="dropdown-content">
-        <a href="#">Write</a>
-        <a href="/Study">Study</a>
-        <a href="/Battle">Battle</a>
+        <a href="/StudyLevels">Levels</a>
+<a href="/StudyBot">StudyBot</a>
+<a href="/Evaluate">Evaluate</a>
+<a href="/Battle">Battle</a>
       </div>
     </li>
     <li class="dropdown">
@@ -57,10 +58,46 @@
   <div id="notification-container"></div>
   <div id="loadingWheel"></div>
   <h1>Study</h1>
-  <div id="study-container"></div>
+  <div id="mode">
+    <!-- dropdown to select class -->
+    <select id="classSelect">
+        <option value="0">🧑🏽‍🏫 Select Class</option>
+      <option value="1">Loading...</option>
+    </select>
+    <!-- dropdown to select unit -->
+    <select id="unitSelect">
+        
+    <option value="0">📊 Select Unit</option>
+    <option value="1">Please Select Class First</option>
+    </select>
+  </div>
+    <hr>
+  
+    <!-- add image: static>media>Remember.png -->
+    <div class="imgcontainer">
+    <img src="/static/media/Remember.png" alt="Remember">
+  </div>
+    
+    <div class="flashcard" onclick="flipCard()">
+        <div class="front">
+            <div id="question"></div>
+            <br>
+            <div id="choice1" class="choice"></div>
+            <div id="choice2" class="choice"></div>
+            <div id="choice3" class="choice"></div>
+            <div id="choice4" class="choice"></div>
+        </div>
+        <div class="back">
+            <h1>Paris</h1>
+        </div>
+    </div>
+    <hr>
+    <div class="imgcontainer">
+        <img src="/static/media/Explain.png" alt="Explain">
+    </div>
   <script src="/static/util.js"></script>
   <script src="/static/user_data.js"></script>
   <script src="/static/notifications.js" type="module"></script>
-  <script src="/static/study.js"></script>
+  <script src="/static/levels.js"></script>
 </body>
 </html>

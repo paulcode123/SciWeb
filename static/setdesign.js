@@ -109,7 +109,7 @@ function add_user_bubbles(classData, users){
     var userListContainer = document.getElementById('user-list');
       console.log(classData)
     //set members as a list of osis values, taking only the numbers and not any combination of spaces and commas in between
-    const members = classData['OSIS'].split(/[\s,]+/).filter(item => item.length > 0);
+    const members = classData['OSIS'].toString().split(/[\s,]+/).filter(item => item.length > 0);
     
     for(let x=0; x<members.length; x++){
         let name = users.find(item => item.osis == members[x]);

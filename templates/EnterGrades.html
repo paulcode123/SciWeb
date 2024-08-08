@@ -29,9 +29,10 @@
     <li class="dropdown">
       <button class="dropdown-btn">Study</button>
       <div class="dropdown-content">
-        <a href="#">Write</a>
-        <a href="/Study">Study</a>
-        <a href="/Battle">Battle</a>
+        <a href="/StudyLevels">Levels</a>
+<a href="/StudyBot">StudyBot</a>
+<a href="/Evaluate">Evaluate</a>
+<a href="/Battle">Battle</a>
       </div>
     </li>
     <li class="dropdown">
@@ -76,12 +77,16 @@
   </div>
     <button id="DeleteGrades">Delete Saved Grades</button>
     <a href="/GradeAnalysis" id="OpenGA" class="button">Analyze Grades</a>
+    <button id="DownloadGrades">Download Grades</button>
     <!-- get user osis number -->
     <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
     
     <button id="toggleGradeForm">Enter Grades Manually ></button>
     <br><br>
     <form id='gradeform'>
+      <!-- create an input element for csv file uploads as a button "Upload CSV" -->
+<input type="file" id="csvfile" accept=".csv" style="display: none;">
+<label for="csvfile" style="cursor: pointer;">Upload CSV</label>
       
  <table>
   <thead>
