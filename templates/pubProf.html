@@ -7,6 +7,8 @@
     <!-- Link to CSS file -->
     <link rel="stylesheet" href="/static/pubProf.css">
     <link rel="stylesheet" href="/static/navbar.css">
+    <link rel="manifest" href="/static/manifest.json">
+
 </head>
 <body>
     <ul class="navbar">
@@ -25,7 +27,7 @@
           <div class="dropdown-content">
             <a href="#">Write</a>
             <a href="/Study">Study</a>
-            <a href="#">Predict</a>
+            <a href="/Battle">Battle</a>
           </div>
         </li>
         <li class="dropdown">
@@ -33,7 +35,7 @@
           <div class="dropdown-content">
             <a href="/Classes">Classes</a>
             <a href="/Assignments">Assignments</a>
-            <a href="#">Leagues</a>
+            <a href="/Leagues">Leagues</a>
             <a href="#">Questions</a>
           </div>
         </li>
@@ -79,7 +81,9 @@
         </div>
     </div>
 </main>
+<script src="/static/util.js"></script>
     <script src="/static/user_data.js"></script>
+  <script src="/static/notifications.js" type="module"></script>
     <script src="/static/pubProf.js"></script>
 </body>
 </html>

@@ -5,6 +5,7 @@ import datetime
 import requests
 from database import get_data, update_data, post_data, delete_data
 import re
+from flask import session
 
 
 def run_puppeteer_script(osis, password):
@@ -39,7 +40,8 @@ def run_puppeteer_script(osis, password):
 
     # for course in output:
     #   course = course.split("Category ")[1:]
-    
+    if "name" in output and output["name"] == "Incorrect credentials":
+      return "WrongPass"
     
     return output
     # print(result)
@@ -49,7 +51,8 @@ def run_puppeteer_script(osis, password):
     return None
 
 
-def jupapi_output_to_grades(data, session, sheetdb_url, allow_demo_change):
+def jupapi_output_to_grades(data, encrypt):
+  print("jupapi_output_to_grades")
   grades = []
   classes= data["courses"]
   for c in classes:
@@ -57,37 +60,61 @@ def jupapi_output_to_grades(data, session, sheetdb_url, allow_demo_change):
     for a in assignments:
       # generate 4 digit random number
       id = random.randint(1000, 9999)
-      grades.append({"name": a["name"], "date": a["due"], "score": a["score"], "value": a["points"], "class": c["name"], "category": a["category"], "OSIS": session['user_data']['osis'], "id": id})
+      date = a["due"]
+      date = convert_date(date)
+      # if score is None, make it 'null'
+      score = a["score"] if a["score"] != None else "null"
+      grades.append({"name": a["name"], "date": date, "score": score, "value": a["points"], "class": c["name"], "category": a["category"], "OSIS": session['user_data']['osis'], "id": id})
+  
+  # filter out grades where grade["score"] = 'null' or grade["date"] = ''
+  grades = [grade for grade in grades if grade['score'] != 'null']
+
+  post_grades(grades, encrypt)
+  return grades
+
+def post_grades(grades, encrypt):
+  print("len grades posted", len(grades))
   #To avoid size issues, split the grades into groups of 100 assignments each
   grades_split = [grades[i:i + 100] for i in range(0, len(grades), 100)]
 
-  grades_obj = {"OSIS": session['user_data']['osis']}
+  grades_obj = {"OSIS": str(session['user_data']['osis']), "encrypted": "False"}
+
   #modify the line above to include all the grades
   for i in range(0, len(grades_split)):
-    grades_obj[str(i+1)] = grades_split[i]
+    grade_fragment = grades_split[i]
+    if encrypt != "none":
+      print("encrypting")
+      grade_fragment = encrypt_grades(str(grade_fragment), int(encrypt))
+      grades_obj["encrypted"] = "True"
+    grades_obj[str(i+1)] = grade_fragment
+   
   #get list of all values in 'OSIS' column
   grades_data = get_data("GradeData")
   osis_list = [str(grade['OSIS']) for grade in grades_data]
   # If the user's osis is already in the osis column, update, otherwise post
   if str(session['user_data']['osis']) in osis_list:
-    update_data(session['user_data']['osis'], "OSIS", grades_obj, "GradeData", session, sheetdb_url, allow_demo_change)
-  post_data("GradeData", grades_obj, sheetdb_url, allow_demo_change)
-  print(len(grades))
-  return grades
+    update_data(str(session['user_data']['osis']), "OSIS", grades_obj, "GradeData")
+  else:
+    post_data("GradeData", grades_obj)
   
-def jupapi_output_to_classes(data, session, sheetdb_url, allow_demo_change):
+  return
+  
+def jupapi_output_to_classes(data):
   #this function suggests which classes the user should create or join based on their jupiter classes
   #for each class, if the class exists in class_data, update the db it with the user's osis in the 'OSIS' col of that class
   # If the class does not yet exist, add the class to the db: {"teacher": teacher name, "name": class name, "OSIS": user's osis, "id": random 4 digit number, "period": period, "categories": [name, weight, name, weight, ...]}
   
-  to_post = []
+  # get the classes data from the db
   class_data = get_data("Classes")
-  
+  # get the user's classes from the jupiter data
   classes = data["courses"]
+
+  # for each class in the user's jupiter data, check if the class exists in the db
   for c in classes:
     class_exists = False
     class_name = c["name"]
     
+    # get the teacher's last name
     teacher = c["teacher"]
     teacher = teacher.split(" ")[-1]
     schedule = c["schedule"]
@@ -95,17 +122,20 @@ def jupapi_output_to_classes(data, session, sheetdb_url, allow_demo_change):
     categories = []
     for cat in raw_cat:
       categories.extend([cat["name"], cat["weight"]*100])
+    
     # if class_name and teacher match a class in class_data, update the class with the user's osis
     for class_info in class_data:
-      if not(class_info["name"] == class_name and class_info["teacher"] == teacher and class_info["schedule"] == schedule):
+      # check if the class exists in the db
+      if not("name" in class_info and class_info["name"] == class_name and class_info["teacher"] == teacher and class_info["schedule"] == schedule):
         continue
+      # check if the user is already in the class
       if str(session['user_data']['osis']) in class_info["OSIS"]:
         class_exists = True
         break
       else:
         class_info["OSIS"] = str(session['user_data']['osis']) + ", " + class_info["OSIS"]
         # update_data(class_info["id"], "id", class_info, "Classes", session, sheetdb_url, allow_demo_change)
-        update_data(class_info["id"], "id", class_info, "Classes", session, sheetdb_url, allow_demo_change)
+        update_data(class_info["id"], "id", class_info, "Classes")
         
         class_exists = True
         break
@@ -115,61 +145,112 @@ def jupapi_output_to_classes(data, session, sheetdb_url, allow_demo_change):
     if not class_exists:
       #generate 4 digit random number
       id = random.randint(1000, 9999)
-      class_info = {"period": "", "teacher": teacher, "name": class_name, "OSIS": session['user_data']['osis'], "assignments": "", "description": "", "id": id, "schedule": c["schedule"], "categories": categories}
-      to_post.append(class_info)
+      class_info = {"period": "", "teacher": teacher, "name": class_name, "OSIS": session['user_data']['osis'], "assignments": "", "description": "", "id": str(id), "schedule": c["schedule"], "categories": categories}
+      post_data("Classes", class_info)
 
-  # if to_post is not empty...
-  if to_post:
-    post_data("Classes", to_post, sheetdb_url, allow_demo_change)
+  
     
   
 
-def get_grades(session):
+def get_grades():
   data = get_data("GradeData")
   #filter for osis
   has_grades = False
   for grade in data:
-    print(session['user_data']['osis'], grade['OSIS'])
+    
     if str(grade['OSIS']) == str(session['user_data']['osis']):
       line = grade
       has_grades = True
   
   if not has_grades:
     return {"date": "1/1/2021", "score": 0, "value": 0, "class": "No grades entered", "category": "No grades entered", "name": "None"}
-
+  
   grades = []
-  for i in range(1, len(line)):
-    cell = line[str(i)]
-    #convert from string to list of dictionaries
-    cell = json.loads(cell)
-    grades.extend(cell)
+
+  # get the line dict without the osis and encrypted keys
+  gline = {key: line[key] for key in line if key != "OSIS" and key != "encrypted" and key != "docid"}
+  # get the highest number of the keys in the line dict
+  num_elements = max([int(key) for key in gline.keys()])+1
+  
+  # convert string to boolean
+  encrypted = line['encrypted'] == "True"
+  if encrypted:
+    if 'grades_key' not in session['user_data'] or session['user_data']['grades_key'] == "none":
+        print("No grades key")
+        return []
+    
+    for i in range(1, num_elements):
+      cell = line[str(i)]
+      cell = decrypt_grades(cell, int(session['user_data']['grades_key']))
+      # convert single quotes to double quotes
+      cell = cell.replace("{'", '{"')
+      cell = cell.replace("':", '":')
+      cell = cell.replace(", '", ', "')
+      cell = cell.replace("'}", '"}')
+      cell = cell.replace(": '", ': "')
+      cell = cell.replace("',", '",')
+      
+      cell = json.loads(cell)
+      for grade in cell:
+        if grade['score'] == 'null':
+          grade['score'] = None
+      grades.extend(cell)
+  else:
+    for i in range(1, num_elements):
+      cell = line[str(i)]
+      if type(cell) == str:
+        cell = json.loads(cell)
+      grades.extend(cell)
+  
   #convert date of each grade from format m/dd to mm/dd/yyyy
   
   dated_grades = []
   for grade in grades:
+    try:
+      grade['score'] = float(grade['score'])
+      grade['value'] = float(grade['value'])
+    except:
+      print("Error converting score or value to float", grade)
+      continue
+    # if category is NoneType, print
+    if type(grade['category']) == type(None) or type(grade['score']) == type('m') or type(grade['score']) == type(None):
+      print("Skipping", grade)
+      continue
+    
     #convert date to datetime object
     date = str(grade['date'])
     
     #If date="None" or score is of type Nonetype
-    if date == "None" or type(grade['score']) == type(None):
+    if date == "None" or date=="":
+      print("skipping", grade)
       continue
     
     date = convert_date(date)
     
     grade['date'] = date
     dated_grades.append(grade)
-  print(dated_grades[:10])
+  # print(len(dated_grades), len(grades))
   return dated_grades
 
 
 def convert_date(date_str):
     # Current date
     current_date = datetime.datetime.now()
+    if date_str == "" or date_str == None:
+        #set the date to 9/10
+        date_str = "9/10"
+    # add 5 days to the current date
+    current_date = current_date + datetime.timedelta(days=5)
     current_year = current_date.year
     
     # Parse the input date string and add the current year
-    input_date_with_current_year = datetime.datetime.strptime(date_str + f"/{current_year}", "%m/%d/%Y")
-    
+    try:
+      if "202" in date_str:
+        input_date_with_current_year = datetime.datetime.strptime(date_str, "%m/%d/%Y")
+      else:
+        input_date_with_current_year = datetime.datetime.strptime(date_str + f"/{current_year}", "%m/%d/%Y")
+    except:
+      print("Error parsing date", date_str)
     # If the resulting date is in the future, subtract one year
     if input_date_with_current_year > current_date:
         input_date_with_current_year = input_date_with_current_year.replace(year=current_year - 1)
@@ -177,3 +258,31 @@ def convert_date(date_str):
     # Return the formatted date string without leading zeros in a platform-independent way
     return f"{input_date_with_current_year.month}/{input_date_with_current_year.day}/{input_date_with_current_year.year}"
 
+
+def encrypt_grades(plain_text, number):
+    # Convert the number to bytes
+    key_bytes = number.to_bytes((number.bit_length() + 7) // 8, byteorder='big')
+    
+    # Convert the plain text to bytes
+    plain_bytes = plain_text.encode()
+    
+    # XOR each byte of the plain text with the key
+    encrypted_bytes = bytearray()
+    for i in range(len(plain_bytes)):
+        encrypted_bytes.append(plain_bytes[i] ^ key_bytes[i % len(key_bytes)])
+    
+    return encrypted_bytes.hex()
+
+def decrypt_grades(cipher_text, number):
+    # Convert the number to bytes
+    key_bytes = number.to_bytes((number.bit_length() + 7) // 8, byteorder='big')
+    
+    # Convert the hexadecimal string back to bytes
+    encrypted_bytes = bytearray.fromhex(cipher_text)
+    
+    # XOR each byte of the cipher text with the key
+    decrypted_bytes = bytearray()
+    for i in range(len(encrypted_bytes)):
+        decrypted_bytes.append(encrypted_bytes[i] ^ key_bytes[i % len(key_bytes)])
+    
+    return decrypted_bytes.decode()

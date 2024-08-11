@@ -6,6 +6,7 @@
 <head>
   <title>SciWeb Home</title>
   <link rel="icon" href="static/media/favicon.png" type="image/x-icon">
+  <link rel="manifest" href="/static/manifest.json">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -26,9 +27,10 @@
     <li class="dropdown">
       <button class="dropdown-btn">Study</button>
       <div class="dropdown-content">
-        <a href="#">Write</a>
-        <a href="/Study">Study</a>
-        <a href="#">Predict</a>
+        <a href="/StudyLevels">Levels</a>
+<a href="/StudyBot">StudyBot</a>
+<a href="/Evaluate">Evaluate</a>
+<a href="/Battle">Battle</a>
       </div>
     </li>
     <li class="dropdown">
@@ -36,7 +38,7 @@
       <div class="dropdown-content">
         <a href="/Classes">Classes</a>
         <a href="/Assignments">Assignments</a>
-        <a href="#">Leagues</a>
+        <a href="/Leagues">Leagues</a>
         <a href="#">Questions</a>
       </div>
     </li>
@@ -50,6 +52,7 @@
     </li>
     <li><a href="/Login" id="profile">Login</a></li>
   </ul>
+  <div id="notification-container"></div>
   <main>
     <div class="container">
       <h1> Welcome To SciWeb</h1>
@@ -75,8 +78,10 @@
 </div>
   </main>
   
+  <script src="/static/util.js"></script>
 <script src="/static/user_data.js"></script>
-<script src="/static/Home.js"></script>
+  <script src="/static/notifications.js" type="module"></script>
+<script src="/static/Home.js" type="module"></script>
 
 </body>
 

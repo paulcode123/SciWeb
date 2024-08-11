@@ -16,25 +16,34 @@
 //       -subsection
 //   -section
 
+
 //define preexisting elements from HTML
 var current_dgm = null;
 var remove = false;
 var container = document.getElementById('tabs');
 var create_sec_button = document.getElementById('create_section');
+var notebook_exists = false;
 
+//add event listener to create section button
 create_sec_button.addEventListener('click', () => new_section(container));
 
 //define functions to add elements
 function textField(parent){
-  const textField = document.createElement('textarea')
+  let textField = document.createElement('textarea')
   textField.type = 'text';
+  textField.className = 'text_field'
   parent.appendChild(textField)
 }
 
+function pqField(parent){
+  let pqField = document.createElement('input')
+  pqField.type = 'text';
+  pqField.className = 'pq_field'
+  parent.appendChild(pqField)
+}
 
 function diagram(parent){
-  
-  const diagram = document.createElement('div')
+  let diagram = document.createElement('div')
   diagram.className = 'dgm';
   diagram.addEventListener('click', function() {
     current_dgm = diagram
@@ -43,9 +52,10 @@ function diagram(parent){
   parent.appendChild(diagram);
 }
 
+
 //allow images to be pasted into the diagram
 function allow_image_paste_in(diagram){
-  
+  // when the user pastes an image, create an img element and append it to the div
   diagram.addEventListener('paste', function(event) {
     var items = (event.clipboardData || event.originalEvent.clipboardData).items;
     console.log(JSON.stringify(items)); // logs all clipboard items for debugging
@@ -89,6 +99,7 @@ function add_toggle_EL(button, tabContent){
 //define function to add section
 function new_section(parent){
   console.log(container)
+
   //create main tab
   const newTab = document.createElement('div');
   newTab.className = 'tab';
@@ -107,6 +118,7 @@ function new_section(parent){
   const tabName = document.createElement('input');
   tabName.placeholder = `{Add section name here}`;
   tabName.type = 'name';
+  tabName.className = 'name_field';
   //add input box as an element of the main tab
   newTab.appendChild(tabName)
   
@@ -117,6 +129,7 @@ function new_section(parent){
     //when clicked, create new section with current section as parent
     add_sec_button.addEventListener('click', () => new_section(tabBody));
     tabContent.appendChild(add_sec_button);
+
     //add button to create text field and set properties
     const add_text_field = document.createElement('button');
     add_text_field.className = 'btn';
@@ -125,6 +138,15 @@ function new_section(parent){
     add_text_field.addEventListener('click', () => textField(tabContent));
     //add textfield to tabContent div
     tabBody.appendChild(add_text_field);
+
+    //add button to create text field and set properties
+    const add_pq_field = document.createElement('button');
+    add_pq_field.className = 'btn';
+    add_pq_field.textContent = 'Add Practice Question';
+    //when clicked, create textfield with predefined function
+    add_pq_field.addEventListener('click', () => pqField(tabContent));
+    //add textfield to tabContent div
+    tabBody.appendChild(add_pq_field);
 
     //do same for diagram as we did for textbox above
     const add_diagram = document.createElement('button');
@@ -136,6 +158,7 @@ function new_section(parent){
     tabBody.appendChild(tabContent);
     //add tabBody as element of main tab
     newTab.appendChild(tabBody);
+    newTab.className = 'tab';
 
     //add main tab as element of parent div
     parent.appendChild(newTab);
@@ -164,15 +187,9 @@ function element_click(node){
 }
 
 //get data of preexisting diagram and add element properties
-fetch('/notebook', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ data: window.location.href.slice(-13, -9) })
-})
-.then(response => response.json())
-.then(rawdata => {
+async function main(){
+const rawdata = await fetchRequest('/notebook', {data: window.location.href.slice(-13, -9)})
+
   
   //get raw data
   insights = rawdata['insights']
@@ -219,14 +236,11 @@ const diagrams = container.querySelectorAll('.dgm');
   }
 // for each section name input box/textbox, but the correct text value in it
 //get list of text values for textbox content
-if(data.text){
-text_values = JSON.parse(data.text);
 
-  for(let i=0; i<input.length; i++){
-    input[i].value = text_values[i]
-  }
+text_values = JSON.parse(data.text)
+for(let i=0; i<input.length; i++){
+  input[i].value = text_values[i]
 }
-
 // for each button...
   for(let i=0; i<buttons.length; i++){
     //if it's a toggle button
@@ -279,17 +293,31 @@ nodes.forEach(node => {
 lines.forEach(line => {
   element_click(line)
 });
+  notebook_exists = true;
   }
   document.getElementById('loadingWheel').style.display = "none";   
-})
-.catch(error => {
-  console.error('An error occurred in notebook.js:' +error);
-});
+}
 
+main()
 
-
-
-
+function extract_text(parent, txts){
+  //if key of parent dict includes 'text', add the text values to the txts array
+  if (Object.keys(parent).includes('text')){
+    txts.push(parent.text)
+  }
+  //get all children of the parent element
+  const childElements = parent.children;
+  //if child elements doesn't exist, return txts
+  if (!childElements){
+    return txts
+  }
+  //loop through all children
+  for (let i = 0; i < childElements.length; i++) {
+    //recursively call the function on each child element
+    txts = extract_text(childElements[i], txts)
+  }
+  return txts
+}
 //create diagram box
 function createNode(x, y, current_dgm) {
     console.log("node created")
@@ -429,53 +457,119 @@ container.addEventListener('mousemove', (e) => {
     }
 });
 
-function get_children(parent, txts) {
-  var text_elements = txts;
-  const childElements = parent.children;
-  // console.log(parent)
-  for (let i = 0; i < childElements.length; i++) {
-    if (childElements[i].className != 'tab'){
-      continue;
-    }
-    var content_divs = childElements[i].children[2].children[0];
-    var section_name = childElements[i].children[1].value;
-    // console.log(section_name)
-    text_elements.push(section_name)
-    // console.log(content_divs)
-    
-    var textareas = content_divs.querySelectorAll('textarea');
-    for (let i = 0; i < textareas.length; i++) {
-    // console.log(textareas[i].value);
-    text_elements.push(textareas[i].value)
+// function to get all text values of the notebook
+function get_children(parent, txts, target_class) {
+  // if the parent matches the target class, add the text value to the txts array
+  if (parent.className == target_class){
+    txts.push(parent.value)
   }
-  text_elements = get_children(childElements[i].children[2], text_elements)
+  // get all children of the parent element
+  const childElements = parent.children;
+  // loop through all children
+  for (let i = 0; i < childElements.length; i++) {
+    // recursively call the function on each child element
+    txts = get_children(childElements[i], txts, target_class)
+  }
+  return txts
 }
-  return text_elements
+
+//make a recurring function that loops through all children of the parent and sets the data-text property of each input element to the value of the input element
+function set_input_text(parent){
+  //if the parent is an input element, set the data-text property to the value of the input element
+  if (parent.tagName == 'INPUT'){
+    parent.setAttribute('data-text', parent.value)
+  }
+  const childElements = parent.children;
+  for (let i = 0; i < childElements.length; i++) {
+    set_input_text(childElements[i])
+  }
+
+}
+
+function get_structure(parent_section){
+  // organize content into form: [{section_name: [{subsection_name: {text: [text1, text2, ...], pq: [pq1, pq2, ...], diagrams: [diagram1, diagram2, ...]}}]]
+
+  // create a new section object
+  let section = {}
+
+  // get the name of the section
+  console.log(parent_section)
+  // loop through all children of the parent section
+  for(let i = 0; i < parent_section.children.length; i++){
+    // if class of the child is 'name_field', get the value of the input element
+    if (parent_section.children[i].className == 'name_field'){
+      var section_name = parent_section.children[i].value
+    }
+  }
+  // add the section name to the section object
+  section[section_name] = {}
+
+
+  let text_values = []
+  let pq_values = []
+  // loop through parent_section.children[2].children[3]
+
+  for(let i = 0; i < parent_section.children[2].children.length; i++){
+    let element = parent_section.children[2].children[i]
+    // if the child is a div with class 'dgm', get the innerHTML of the div
+    if (element.className == 'text_field'){
+      text_values.push(element.value)
+    }
+    if (element.className == 'pq_field'){
+      pq_values.push(element.value)
+  }
+}
+  
+
+  // add the text and pq fields to the section object
+  section[section_name]['text'] = text_values
+  section[section_name]['pq'] = pq_values
+
+  // call the function on all subsections of the parent section
+  let subsections = parent_section.querySelectorAll('.tab')
+  for (let i = 0; i < subsections.length; i++){
+    let subsec = subsections[i]
+    console.log(subsec)
+    substruct = get_structure(subsec)
+    // combine section[section_name] dictionary with the substruct dictionary
+    section[section_name] = Object.assign(section[section_name], substruct)
+  }
+  return section
 }
 
 
-function postNotebook(){
+async function postNotebook(){
   var id = window.location.href.slice(-13, -9);
-  //var data = [section_name, text_box_content, =, ..., [subsection]]
-  var empty = [];
-  var text_data = get_children(container, empty)
-  console.log(text_data)
-  data = {'data': {'classID': id, 'innerHTML': container.innerHTML, 'text': text_data}}
-  fetch('/post-notebook', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(data)
-})
-.then(response => response.text())
-.then(result => {
+//  call get_structure on each child of the container element
+  let structure = []
+  let children = container.children
+  for (let i = 0; i < children.length; i++){
+    console.log(children[i])
+    structure.push(get_structure(children[i]))
+  }
+  // combine the dictionaries in list structure into one dictionary
+  structure = Object.assign({}, ...structure)
+  // convert the structure object to a string
+  structure = JSON.stringify(structure)
+  // select for text fields, pq fields, and name fields
+  text_fields = container.querySelectorAll('.text_field, .pq_field, .name_field');
+  // get the text values of the text fields
+  let text_vals = []
+  for (let i = 0; i < text_fields.length; i++){
+    text_vals.push(text_fields[i].value)
+  }
+
+  data = {'classID': id, 'innerHTML': container.innerHTML, 'content': structure, "text": text_vals}
+  if (notebook_exists == true){
+    const result = await fetchRequest('/update_data', {'data': data, "sheet": "Notebooks", "row_name": "classID", "row_value": id})
+  }
+  else{
+    const result = await fetchRequest('/post_data', {'data': data, "sheet": "Notebooks"})
+  }
     console.log(result)
-})
-.catch(error => {
-    console.log('An error occurred:', error);
-});
+
 }
+
 
   const insightContainer = document.getElementById("insights_container");
 
@@ -575,3 +669,14 @@ function img_resize_draggable(img){
   window.addEventListener('touchend', dragEnd, false);
   window.addEventListener('touchmove', drag, false);
 }
+
+// Add an event listener to the imageUpload input element
+const imageUpload = document.getElementById('imageInput');
+imageUpload.addEventListener('change', (e) => {
+  var image = e.target.files[0];
+  // convert to base64
+  getBase64(image).then(data => {
+  // When an image is uploaded, send it to the server to be processed
+  fetchRequest('/process-notebook-image', {image: data})
+  });
+});

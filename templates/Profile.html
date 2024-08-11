@@ -8,6 +8,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/static/navbar.css">
   <link rel="stylesheet" href="/static/profile.css">
+  <link rel="manifest" href="/static/manifest.json">
+
 
 
 
@@ -28,9 +30,10 @@
     <li class="dropdown">
       <button class="dropdown-btn">Study</button>
       <div class="dropdown-content">
-        <a href="#">Write</a>
-        <a href="/Study">Study</a>
-        <a href="#">Predict</a>
+        <a href="/StudyLevels">Levels</a>
+<a href="/StudyBot">StudyBot</a>
+<a href="/Evaluate">Evaluate</a>
+<a href="/Battle">Battle</a>
       </div>
     </li>
     <li class="dropdown">
@@ -38,7 +41,7 @@
       <div class="dropdown-content">
         <a href="/Classes">Classes</a>
         <a href="/Assignments">Assignments</a>
-        <a href="#">Leagues</a>
+        <a href="/Leagues">Leagues</a>
         <a href="#">Questions</a>
       </div>
     </li>
@@ -52,6 +55,7 @@
     </li>
     <li><a href="/Login" id="profile">Login</a></li>
   </ul>
+  <div id="notification-container"></div>
   <div id="loadingWheel"></div>
   <h1>Profile Page</h1>
   <div class="profile-container">
@@ -149,8 +153,9 @@
   <br><br>
   <a id="logout" href="/Login" class="button">Sign into a different account</a>
 
-  
+  <script src="/static/util.js"></script>
   <script src="/static/user_data.js"></script>
+  <script src="/static/notifications.js" type="module"></script>
   <script src="/static/profile.js"></script>
 </body>
 </html>

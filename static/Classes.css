@@ -84,3 +84,11 @@
       margin: 5px 0 0;
       font-size: 14px;
     }
+
+
+    body {
+      background-image: url('/static/media/Classesbgd.png'); /* URL of the background image */
+      background-size: cover; /* Cover the entire page */
+      background-position: center; /* Center the image */
+      background-repeat: no-repeat; /* Do not repeat the image */
+    }

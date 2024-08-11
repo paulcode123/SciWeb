@@ -3,6 +3,8 @@
 
 <link rel="stylesheet" href="static/terms.css">
 <link rel="stylesheet" href="static/navbar.css">
+<link rel="manifest" href="/static/manifest.json">
+
 
 <head>
   <title>SciWeb Home</title>
@@ -26,9 +28,10 @@
     <li class="dropdown">
       <button class="dropdown-btn">Study</button>
       <div class="dropdown-content">
-        <a href="#">Write</a>
-        <a href="/Study">Study</a>
-        <a href="#">Predict</a>
+        <a href="/StudyLevels">Levels</a>
+<a href="/StudyBot">StudyBot</a>
+<a href="/Evaluate">Evaluate</a>
+<a href="/Battle">Battle</a>
       </div>
     </li>
     <li class="dropdown">
@@ -36,7 +39,7 @@
       <div class="dropdown-content">
         <a href="/Classes">Classes</a>
         <a href="/Assignments">Assignments</a>
-        <a href="#">Leagues</a>
+        <a href="/Leagues">Leagues</a>
         <a href="#">Questions</a>
       </div>
     </li>
@@ -50,6 +53,7 @@
     </li>
     <li><a href="/Login" id="profile">Login</a></li>
   </ul>
+  <div id="notification-container"></div>
   <main>
     <section>
         <h1>Terms and Conditions</h1>
@@ -59,7 +63,7 @@
           </li>
           <li>All SciWeb platforms and servers are opt-in, and by using them, the user agrees to the following terms and conditions</li>
           <li>SciWeb will not sell, share, or distribute user data outside of the initiative. Proper precautions shall be taken to protect user data.</li>
-          <li>Furthermore, all user data will be stored in a google spreadsheet, with only the president of SciWeb having access to it</li>
+          <li>Furthermore, all user data will be stored in a secure database, with only the president of SciWeb having access to it</li>
           <li>The SciWeb president, Paul Nieuwerburgh, declares that no individual data points, scores, or users will be accessed</li>
           <li>No data belonging to users will be accessible to other users on the platform, without the explicit permission of that user</li>
           <li>User data will not be used to test or develop the website</li>
@@ -70,6 +74,7 @@
   </main>
   
 <script src="/static/user_data.js"></script>
+  <script src="/static/notifications.js" type="module"></script>
 
 
 </body>

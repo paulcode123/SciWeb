@@ -1,6 +1,11 @@
 runtime: python312  # replace with your Python version
 entrypoint: gunicorn -b :$PORT main:app  # replace 'main:app' with your app's entry point
 
+handlers:
+- url: /.*
+  script: auto
+  secure: always
+
 env_variables:
   GOOGLE_APPLICATION_CREDENTIALS: 'SciWeb_API_secret.json'
 

@@ -8,6 +8,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/static/EG.css">
   <link rel="stylesheet" href="/static/navbar.css">
+  <link rel="manifest" href="/static/manifest.json">
+
 </head>
 
   
@@ -27,9 +29,10 @@
     <li class="dropdown">
       <button class="dropdown-btn">Study</button>
       <div class="dropdown-content">
-        <a href="#">Write</a>
-        <a href="/Study">Study</a>
-        <a href="#">Predict</a>
+        <a href="/StudyLevels">Levels</a>
+<a href="/StudyBot">StudyBot</a>
+<a href="/Evaluate">Evaluate</a>
+<a href="/Battle">Battle</a>
       </div>
     </li>
     <li class="dropdown">
@@ -37,7 +40,7 @@
       <div class="dropdown-content">
         <a href="/Classes">Classes</a>
         <a href="/Assignments">Assignments</a>
-        <a href="#">Leagues</a>
+        <a href="/Leagues">Leagues</a>
         <a href="#">Questions</a>
       </div>
     </li>
@@ -51,22 +54,39 @@
     </li>
     <li><a href="/Login" id="profile">Login</a></li>
   </ul>
+  <div id="notification-container"></div>
 
   <main>
     <div id="loadingWheel"></div>
     <h1>Enter Grades</h1>
     <p>Pull your grades directly from Jupiter, or enter/edit them manually</p>
     <br>
-    <input type="number" id="osis" placeholder="OSIS"></input><br>
-    <input type="password" id="password" placeholder="Jupiter Password"></input><br>
-    <p>By pulling grades from Jupiter, you agree to our <a target="_blank" href="https://docs.google.com/document/d/1lhb14Q6I_U5Tj7EFQUM2bF0cNlkBF_6_4zce6fF70L0/edit?usp=sharing">Terms and Conditions</a></p>
+    <div id="pullJup">
+    <input type="number" id="osis" placeholder="OSIS" autocomplete="tel"></input><br>
+    <input type="password" id="password" placeholder="Jupiter Password" autocomplete="bday-month"></input> <br>
+    <input type="checkbox" id="addclasses"><label for="addclasses">Join my Classes</label><br>
+    <input type="checkbox" id="encrypt">
+    <label for="encrypt">Encrypt my Grades data <small>(This may disable some features)</small></label><br>
+    <input type="checkbox" id="updateLeagues"><label for="updateLeagues">Update Leagues</label><br>
+    <br>
+    <p>By pulling grades from Jupiter, you agree to our <a target="_blank" href="/Terms">Terms and Conditions</a></p>
     <button id="Jupull">Pull from Jupiter</button>
+    <div class="loading-bar-container">
+      <div class="loading-bar"></div>
+    </div>
+  </div>
     <button id="DeleteGrades">Delete Saved Grades</button>
+    <a href="/GradeAnalysis" id="OpenGA" class="button">Analyze Grades</a>
+    <button id="DownloadGrades">Download Grades</button>
     <!-- get user osis number -->
-    <br><br><br><br>
+    <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
     
-    
+    <button id="toggleGradeForm">Enter Grades Manually ></button>
+    <br><br>
     <form id='gradeform'>
+      <!-- create an input element for csv file uploads as a button "Upload CSV" -->
+<input type="file" id="csvfile" accept=".csv" style="display: none;">
+<label for="csvfile" style="cursor: pointer;">Upload CSV</label>
       
  <table>
   <thead>
@@ -200,7 +220,9 @@
     </tbody>
   </table>
 
+<script src="/static/util.js"></script>
 <script src="/static/user_data.js"></script>
+  <script src="/static/notifications.js" type="module"></script>
 <script src="static/EG.js" type="module"></script>
 <!-- <script src="/src/index.js"></script> -->
 <!-- <script src="{{ url_for('static', filename='dist/index.js') }}"></script> -->

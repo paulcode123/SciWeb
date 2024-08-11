@@ -43,21 +43,124 @@ input[type="text"] {
 }
 
 #osis{
-  width:10%;
+  width:100px;
 }
 
 #password{
-  width: 10%;
+  width: 100px;
 }
 
 #DeleteGrades{
   visibility: hidden;
   border-radius: 5px;
-  background-color: #f44336;
-  color: white;
+  background-color: transparent;
+  /* border color to red */
+  border: 3px solid red;
+  color: black;
 }
 
 /* turn background color black on hover */
 #DeleteGrades:hover {
-  background-color: black;
+  background-color: rgb(250, 147, 147);
+}
+
+#Jupull{
+  /* same styles as delete grades but with green border color */
+  border-radius: 5px;
+  background-color: transparent;
+  border: 3px solid green;
+  color: black;
+}
+
+/* turn background color light green on hover */
+#Jupull:hover {
+  background-color: rgb(147, 250, 147);
+}
+
+#OpenGA{
+  /* same styles as delete grades but with green border color */
+  display: inline-block;
+    padding: 8px 10px;
+    
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    outline: none;
+  border-radius: 5px;
+  visibility: hidden;
+  background-color: transparent;
+  border: 3px solid rgb(20, 185, 244);
+  color: black;
+}
+
+/* turn background color light green on hover */
+#OpenGA:hover {
+  background-color: rgb(148, 233, 239);
+}
+
+#DownloadGrades{
+  /* same styles as delete grades but with green border color */
+  display: inline-block;
+    padding: 8px 10px;
+    
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    outline: none;
+  border-radius: 5px;
+  visibility: hidden;
+  background-color: transparent;
+  border: 3px solid rgb(71, 243, 114);
+  color: rgb(0, 0, 0);
+}
+
+/* turn background color light green on hover */
+#DownloadGrades:hover {
+  background-color: rgb(148, 239, 154);
+}
+
+/* div containing fields and button to pull grades from jupiter */
+#pullJup{
+  border-radius: 5px;
+  border-width: 2px;
+  border-style: solid;
+  border-color: black;
+  padding: 20px;
+}
+
+.loading-bar-container {
+  width: 80%;
+  background-color: #ddd;
+  border-radius: 25px;
+  overflow: hidden;
+}
+
+.loading-bar {
+  height: 30px;
+  width: 0;
+  background-color: #4caf50;
+  border-radius: 25px 0 0 25px;
+  display: none;
+}
+
+body{
+  background-image: url('/static/media/EGbgd.png'); /* URL of the background image */
+  /* background-size: cover; Cover the entire page */
+  /* background-position: center; Center the image */
+  /* background-repeat: no-repeat; Do not repeat the image */
+}
+
+#toggleGradeForm{
+  /* thin, black, rounded border, transparent */
+  border: 1px solid black;
+  border-radius: 5px;
+  background-color: transparent;
+  color: black;
+  padding: 10px;
+  transition: background-color 0.3s ease;
+}
+
+/* hide gradeform */
+#gradeform{
+  display: none;
 }

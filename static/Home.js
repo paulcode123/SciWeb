@@ -1,3 +1,7 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging.js"
+
+
 //When button with id="scrolltodash" is clicked, scroll to the div with id=dashboard
 document.getElementById('scrolltodash').addEventListener('click', function() {
     document.getElementById('dashboard').scrollIntoView({
@@ -98,16 +102,10 @@ function get_classes_ids(classes){
 
 
 //Create a fetch request to /data to get Chat, Classes, and Assignments data
+async function main(){
 console.log("fetching data")
-fetch('/data', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ data: "Chat, FILTERED Classes, Assignments" })
-})
-.then(response => response.json())
-.then(data => {
+const data = await fetchRequest('/data', { data: "Chat, FILTERED Classes, Assignments" });
+
   console.log("got data")
   //Store the data in variables
   var messages = data['Chat']
@@ -118,8 +116,77 @@ fetch('/data', {
   show_recent_messages(messages, classes, assignments);
   console.log("done")
   return true;
-})
-.catch(error => {
-  console.error('An error occurred in Home.js: ' +error);
-  return false;
+}
+
+// Register service worker for the app
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' }).then(function(registration) {
+      // Registration was successful
+      console.log('ServiceWorker registration successful with scope: ', registration.scope);
+      // Wait for the service worker to be active
+      if (registration.active) {
+        console.log('Service worker is active and ready.');
+        init_messaging(registration);
+      } else {
+        console.log('Service worker not active yet, waiting for it to be active.');
+        registration.addEventListener('updatefound', () => {
+          registration.installing.addEventListener('statechange', (event) => {
+            if (event.target.state === 'activated') {
+              console.log('Service worker activated.');
+              init_messaging(registration);
+            }
+          });
+        });
+      }
+    })
+    .catch((error) => {
+      console.error('ServiceWorker registration failed: ', error);
+    });
 });
+} else {
+console.log('Service workers are not supported in this browser.');
+
+}
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAj7iUJlTR_JDvq62rmfe6eZZXvtsO8Cac",
+  authDomain: "sturdy-analyzer-381018.firebaseapp.com",
+  projectId: "sturdy-analyzer-381018",
+  storageBucket: "sturdy-analyzer-381018.appspot.com",
+  messagingSenderId: "800350153500",
+  appId: "1:800350153500:web:3da9c736e97b9f582928d9",
+  measurementId: "G-TGW6CJ0H1Q"
+};
+
+
+function init_messaging(registration){
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+console.log("firebase initialized")
+  // Retrieve Firebase Messaging object
+  const messagingobj = getMessaging(app);
+  // messagingobj.useServiceWorker(registration);
+
+  Notification.requestPermission().then((permission) => {
+    if (permission === 'granted') {
+      console.log('Notification permission granted.');
+      // Get the token
+      getToken(messagingobj, { vapidKey: 'BCoZeBvXxYJwgPvsOtcd1JNaqkzw2-KvZlsEGp1UdWVJ67HOF_1T70IfJKKiCOF1tvx4M1aSvm4u-IJZA_ZTPUk' }).then((currentToken) => {
+        if (currentToken) {
+          console.log('Token:', currentToken);
+          fetchRequest('/post_data', {data: {"token": currentToken, "OSIS": osis}, sheet: "Tokens"});
+          // Send the token to your server and update the UI if necessary
+        } else {
+          console.log('No registration token available. Request permission to generate one.');
+        }
+      }).catch((err) => {
+        console.log('An error occurred while retrieving token. ', err);
+      });
+    } else {
+      console.log('Unable to get permission to notify.');
+    }
+  });
+}
+
+main();

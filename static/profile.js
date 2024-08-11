@@ -1,28 +1,20 @@
+// const { file } = require("get-uri/dist/file");
+
 var userData;
 var users;
-setTimeout(function() {
+setTimeout(async function() {
   
+data = await fetchRequest('/data', { data: "Name, FILTERED Profiles, FILTERED Friends, Users" })
 
-fetch('/data', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ data: "Name, FILTERED Profiles, FILTERED Friends, Users" })
-})
-.then(response => response.json())
-.then(data => {
-  userData = data['Name'];
-  console.log(userData);
-  users = data['Users'];
-  displayUserInfo(userData);
-  set_public_profile(data['Profiles']);
-  showFriends(data['Friends'], users, userData.osis);
-  document.getElementById('loadingWheel').style.display = "none";
-})
-.catch(error => {
-  console.error('An error occurred at profile.js:' +error);
-});
+userData = data['Name'];
+console.log(userData);
+users = data['Users'];
+displayUserInfo(userData);
+set_public_profile(data['Profiles']);
+console.log(data['Friends']);
+showFriends(data['Friends'], users, userData.osis);
+document.getElementById('loadingWheel').style.display = "none";
+
 }, 300);
 
 function displayUserInfo(userData){
@@ -67,22 +59,8 @@ document.getElementById(`${fieldName}_submit`).style.visibility = "visible";
 
 
 
-function update_data(data){
-  
-  fetch('/update-login', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(data)
-})
-.then(response => response.text())
-.then(result => {
-    var a = result;  // Log the response from Python
-})
-.catch(error => {
-    console.log('An error occurred:', error);
-});
+async function update_data(data){
+  result = await fetchRequest('/update-data', data);
 }
 
 
@@ -115,24 +93,19 @@ async function savePubProf(){
     "showClasses": document.getElementById('showClassesInput').checked,
     "showFriends": document.getElementById('showFriendsInput').checked
   }
-  //Create fetch request to update public profile
-  fetch('/update-public-profile', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(data)
-})
-.then(response => response.text())
-.then(result => {
-    var a = result;  // Log the response from Python
-})
+  await fetchRequest('/update-data', {"sheet": "Profiles", "data": data, "row_value": userData.osis, "row_name": "osis"});
+  
 }
 
 function set_public_profile(userData){
   userData = userData[0];
+  // if userData doesn't exist, return
+  if(userData == undefined){
+    return;
+  }
   console.log(userData)
-  if(userData.ProfPic != null && userData.ProfPic != ""){
+  // check is ProPic is undefined
+  if(userData.ProfPic != null && userData.ProfPic != "" && userData.ProfPic != undefined){
   
   let imgPreview = document.getElementById('profilePicturePreview');
   getFile(userData.ProfPic).then(image => {
@@ -163,14 +136,7 @@ document.getElementById('profilePictureInput').addEventListener('change', functi
   }
 });
 
-async function getBase64(file) {
-  return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file); // Converts the file to Base64
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = error => reject(error);
-  });
-}
+
 
 function openTab(event, tabName) {
   // Get all elements with class="tabcontent" and hide them
@@ -194,13 +160,15 @@ function showFriends(friends, users, osis) {
   friends.forEach(friend => {
     //Get the name of the sender given friend.OSIS and name of target given friend.targetOSIS
     for (let i = 0; i < users.length; i++) {
-      if (users[i].osis === friend.OSIS) {
+      console.log(users[i].osis.toString() + " " + friend.OSIS.toString());
+      if (users[i].osis.toString() == friend.OSIS.toString()) {
         friend.first_name = users[i].first_name;
       }
-      if (users[i].osis === friend.targetOSIS) {
+      if (users[i].osis.toString() == friend.targetOSIS.toString()) {
         friend.target_first_name = users[i].first_name;
       }
     }
+    console.log(friend)
     if (friend.status === "accepted") {
       addToFriendsTab(friend, osis);
     } else if (friend.OSIS === userData.osis) {
@@ -212,6 +180,7 @@ function showFriends(friends, users, osis) {
 }
 
 function addToFriendsTab(friend) {
+  console.log(friend)
   let friendsTab = document.getElementById('friends');
   let friendDiv = document.createElement('div');
   friendDiv.className = 'friend';
@@ -282,20 +251,11 @@ function acceptFriend(friend) {
   }
   postFriend(data);
 }
-function postFriend(data){
-  fetch('/accept-friend', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(data)
-})
-.then(response => response.text())
-.then(result => {
-    var a = result;  // Log the response from Python
-    //reload page
-    location.reload();
-})
+async function postFriend(data){
+  await fetchRequest('/post_data', {"sheet": "Friends", "data": data})
+  await fetchRequest('/post_data', {"sheet": "Notifications", "data": {"target": "3428756", "text":userData.first_name+"has sent you a friend request", "type": "frReq", "id": (Math.floor(Math.random() * 10000)).toString()}})
+  //reload page
+  location.reload();
 }
 
 // Add event listener to the search bar id="search-bar". When the user starts typing, find and dispay the users that match that name
@@ -317,9 +277,9 @@ document.getElementById('search-bar').addEventListener('input', function(event) 
         userDiv.textContent = full_name;
         userDiv.addEventListener('click', () => {
           let data = {
-            "OSIS": userData.osis,
+            "OSIS": userData.osis.toString(),
             "status": "pending",
-            "targetOSIS": user.osis,
+            "targetOSIS": user.osis.toString(),
             "id": (Math.floor(Math.random() * 10000)).toString()
           }
           postFriend(data);
@@ -330,46 +290,23 @@ document.getElementById('search-bar').addEventListener('input', function(event) 
   }
 });
 
-function getFile(fileId) {
+async function getFile(fileId) {
   // Return the fetch promise chain
-  return fetch('/get-file', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ file: fileId })
-  })
-  .then(response => {
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    return response.json();
-  })
-  .then(data => {
-    // Assuming `data.file` is the image or file data you want
-    let file = data.file;
-    file = file.replace('dataimage/pngbase64', 'data:image/png;base64,');
-    //remove last character from string
-    file = file.slice(0, -1);
-    
-    
-    return file; // This will be the resolved value of the promise
-  });
+  const data = await fetchRequest('/get-file', {file: fileId});
+  
+  // Assuming `data.file` is the image or file data you want
+  let file = data.file;
+  file = file.replace('dataimage/pngbase64', 'data:image/png;base64,');
+  file = file.replace('dataimage/jpegbase64', 'data:image/jpeg;base64,');
+  //remove last character from string
+  file = file.slice(0, -1);
+  
+  return file; // This will be the resolved value of the promise
 }
 
 
 // Create function for fetch request to upload-file route
-function uploadFile(xfile, id) {
-  fetch('/upload-file', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ file: xfile, name: id })
-  })
-  .then(response => response.json())
-  .then(data => {
-    // Display the image
-    return data;
-  });
+async function uploadFile(xfile, id) {
+  const data = await fetchRequest('/upload-file', {file: xfile, name: id});
+  return data;
 }

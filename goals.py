@@ -7,13 +7,18 @@ import numpy as np
 def calculate_goal_progress(session):
   # This function calculates the progress toward each of the user's goals
   # It returns a list of dictionaries, each containing grade/date when set, goal grade/date, current grade/date, and the class/category of the goal
+  print("calculating goal progress")
+  
   goals = get_data("Goals")
   goals = filter_goals(goals, session['user_data'], 'any')
   classes = get_data("Classes")
-  grades = get_grades(session)
+  grades = get_grades()
+  
   weights = get_weights(classes, session['user_data']['osis'])
   progress = []
+  print(len(goals))
   for goal in goals:
+    # print("goal", goal)
     #filter grades for matching user osis
     
     goal_grades = filter_grades(grades, session['user_data'], [goal['class'], goal['category']])
@@ -29,10 +34,10 @@ def calculate_goal_progress(session):
     grade_change = current_grade - grade_when_set
     percent_grade_change = grade_change / (goal_grade - grade_when_set) if goal_grade - grade_when_set != 0 else 0
     percent_grade_change = round(percent_grade_change, 3)
-    print("pgc", percent_grade_change)
+    # print("pgc", percent_grade_change)
     current_grade_trajectory = grade_when_set + (current_grade - grade_when_set) / percent_time_passed if percent_time_passed != 0 else current_grade
     
-    print("goal_grade", goal_grade, "current_grade", current_grade, "grade change", grade_change, "grade_when_set", grade_when_set, "current_grade_trajectory", current_grade_trajectory)
+    # print("goal_grade", goal_grade, "current_grade", current_grade, "grade change", grade_change, "grade_when_set", grade_when_set, "current_grade_trajectory", current_grade_trajectory)
     progress.append({'date_set': str(date_set), 'grade_when_set': grade_when_set, 'goal_date': str(goal_date), 'goal_grade': goal_grade, 'current_grade': current_grade, 'current_date': str(current_date), 'current_grade_trajectory': current_grade_trajectory, 'class': goal['class'], 'category': goal['category'], 'percent_time_passed': percent_time_passed, 'percent_grade_change': percent_grade_change, 'grade_change': grade_change})
   return progress
 # Use the Goal data to create icons to be overlayed on the graph in the Grade Analysis page
@@ -74,6 +79,7 @@ def get_goals(classes, user_data, grades, times, grade_spread, extend_to_goals=F
     grade_spreadc = [float(grade) for grade in grade_spread if grade != 'none']
 
     #make times and grade_spreadc the same length by removing the last elements of times
+    print("times", times)
     timesc = times[:len(grade_spreadc)]
    #calculate grade when set given grades and times: interpolate
     print("date_set_ordinal", date_set_ordinal, "times", timesc, "grades", grade_spreadc)
@@ -106,9 +112,12 @@ def get_goals(classes, user_data, grades, times, grade_spread, extend_to_goals=F
 
 # Filter function for goals
 def filter_goals(goals, user_data, classes):
-  goals = [
-    goal for goal in goals
-    if (goal['OSIS'] == user_data['osis']) and ((
-      goal['class'] in classes) and (goal['category'] in classes) or classes=='any')
-  ]
-  return goals
+  filtered_goals = []
+  for goal in goals:
+    if 'OSIS' not in goal:
+      # print("goal", goal)
+      goal = goal['goal']
+    if (int(goal['OSIS']) == int(user_data['osis'])) and (((goal['class'] in classes) and (goal['category'] in classes)) or classes=='any'):
+      filtered_goals.append(goal)
+  
+  return filtered_goals

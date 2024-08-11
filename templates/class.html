@@ -7,6 +7,10 @@
   
     <title>SciWeb {{ class_name }}</title>
     <link rel="icon" href="/static/media/favicon.png" type="image/x-icon">
+    <link rel="manifest" href="/static/manifest.json">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 </head>
 <body>
   <ul class="navbar">
@@ -23,9 +27,10 @@
     <li class="dropdown">
       <button class="dropdown-btn">Study</button>
       <div class="dropdown-content">
-        <a href="#">Write</a>
-        <a href="/Study">Study</a>
-        <a href="#">Predict</a>
+        <a href="/StudyLevels">Levels</a>
+<a href="/StudyBot">StudyBot</a>
+<a href="/Evaluate">Evaluate</a>
+<a href="/Battle">Battle</a>
       </div>
     </li>
     <li class="dropdown">
@@ -33,7 +38,7 @@
       <div class="dropdown-content">
         <a href="/Classes">Classes</a>
         <a href="/Assignments">Assignments</a>
-        <a href="#">Leagues</a>
+        <a href="/Leagues">Leagues</a>
         <a href="#">Questions</a>
       </div>
     </li>
@@ -47,13 +52,30 @@
     </li>
     <li><a href="/Login" id="profile">Login</a></li>
   </ul>
+  <div id="notification-container"></div>
   <div id="loadingWheel"></div>
-    <h1>Welcome to {{ class_name }}</h1>
+  <div class="container">
+  <div id="classimgcontainer"></div>
+  <div id="head">
+    <h1>{{ class_name }}</h1>
+    <button id="joinBtn">Join Class</button>
     <h3 id="description"></h3>
     <div id="user-list"></div>
     <div id="assignmentList"></div>
     <br>
-  <button id="createBtn">Create Assignment</button>
+    </div>
+    </div>
+    <!-- create input image upload element with a label "🖼️" -->
+    <input type="file" id="imgupload" style="display: none;">
+    <label for="imgupload" id="uploadLabel">🖼️</label>
+
+    <!-- create color input with paint emoji label -->
+    <label for="color" id="colorLabel">🎨</label>
+    <input type="color" id="color" value="#000000" style="display: none;">
+    <button id="savecolor" style="display: none;">Save Color</button>
+
+    <br>
+  <button id="createBtn">➕</button>
 
   <div id="formContainer" style="display: none;">
     <form id="assignmentForm">
@@ -62,6 +84,8 @@
 
       <label for="due">Due Date:</label>
       <input type="date" id="due" name="due" required>
+      <label for="points">Points:</label>
+      <input type="number" id="points" name="points" required>
       <label for="assignmentType">Type:</label>
     <select id="assignmentType" name="assignmentType">
       <option value="default">Loading Classes</option>
@@ -74,8 +98,9 @@
       <input type="submit" value="Submit">
     </form>
   </div>
-  <br>
+  <br><br>
   <div id="openNBcont"></div>
+  <br>
   <div id="chat-box">
     <button id="refresh-chat">🔄</button>
     <ul id="message-list"></ul>
@@ -89,10 +114,11 @@
       
     </div>
     <img scr="" id="testimg">
-    <!-- Add any additional HTML content here -->
-  
-  
+    
+  <script src="/static/util.js"></script>
   <script src="/static/user_data.js"></script>
+  <script src="/static/notifications.js" type="module"></script>
+  <script src="/static/setdesign.js"></script>
   <script src="/static/class.js"></script>
   <script src="/static/chatBox.js"></script>
   

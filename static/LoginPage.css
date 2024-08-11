@@ -3,12 +3,18 @@ form {
   max-width: 500px;
   margin: 40px auto;
   padding: 20px;
-  background-color: #f2f2f2;
+  background-color: #2e2f30;
   border-radius: 10px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-input[type="text"],
+input[type="number"] {
+  /* make input field background color the same as the box surrounding it */
+  background-color: #2e2f30;
+}
+
+/* input[type="text"],
+input[type="password"],
 input[type="email"],
 input[type="number"] {
   width: 100%;
@@ -17,16 +23,16 @@ input[type="number"] {
   border: none;
   border-radius: 5px;
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
-}
+} */
 
-input[type="submit"] {
+/* input[type="submit"] {
   background-color: #4CAF50;
   color: white;
   padding: 10px 20px;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-}
+} */
 
 #demo {
   background-color: lightblue; /* Light blue background */
@@ -40,4 +46,50 @@ input[type="submit"] {
 
 #demo:hover {
   background-color: black; /* Black background on hover */
+}
+
+/* Slider styles */
+.slider {
+  position: relative;
+  width: 120px;
+  height: 34px;
+  background-color: #3ec1f9;
+  border-radius: 17px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.slider-text {
+  position: absolute;
+  top: 50%;
+  width: 100%;
+  left:25%;
+  text-align: center;
+  transform: translateY(-50%);
+  font-size: 16px;
+  color: white;
+  pointer-events: none;
+  user-select: none;
+}
+.slider-text.left {
+  left: 25%;  /* Position text more to the left */
+}
+.slider-text.right {
+  left: -25%;  /* Position text more to the right */
+}
+.slider:before {
+  position: absolute;
+  content: '';
+  width: 50px;
+  height: 30px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  border-radius: 15px;
+  transition: 0.2s !important;
+}
+.slider.on {
+  background-color: #4CAF50;
+}
+.slider.on:before {
+  transform: translateX(65px);
 }

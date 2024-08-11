@@ -1,15 +1,13 @@
-// classData is predefined in the html
-// console.log("class.js classData: "+classData)
-// create user bubbles
-// console.log(document.getElementById("description"))
+
 var classData = null;
+//display the class notebook button and description
 function display_NB_btn(classData){
   console.log(classData)
 document.getElementById("description").textContent = classData['description'];
 
 var button = document.createElement("button");
 var href = "/class/"+classData['name']+classData['id']+"/notebook";
-button.textContent = "Open Class Notebook";
+button.textContent = "➡️📒";
 button.id = "openNB";
 button.addEventListener("click", function() {
         // Navigate to the specified URL
@@ -20,31 +18,6 @@ button.addEventListener("click", function() {
 // Append the button to the document body or any desired element
 document.getElementById('openNBcont').appendChild(button);
 }
-
-
-
-
-
-
-function add_user_bubbles(classData){
-var userListContainer = document.getElementById('user-list');
-  console.log(classData)
-// members = classData['OSIS'].split(", ")
-//set members as a list of osis values, taking only the numbers and not any combination of spaces and commas in between
-members = classData['OSIS'].split(/[\s,]+/).filter(item => item.length > 0);
-
-members.forEach(function(user) {
-    var userBubble = document.createElement('div');
-    userBubble.textContent = user;
-    userBubble.classList.add('user-bubble');
-    userBubble.addEventListener('click', function() {
-        window.location.href = '/users/' + user; // link to profile page
-    });
-    userListContainer.appendChild(userBubble);
-});
-}
-
-
 
 //add class form
 const createBtn = document.getElementById('createBtn');
@@ -66,13 +39,15 @@ assignmentForm.addEventListener('submit', (e) => {
   const name = document.getElementById('name').value;
   const due = document.getElementById('due').value;
   const type = document.getElementById('assignmentType').value;
+  const points = document.getElementById('points').value;
   document.getElementById("assignmentForm").reset();
   // Create and display the object containing the name and due date values
   const assignmentObj = {
     name: name,
     category: type,
+    points: points,
     due: due,
-    id: Math.floor(Math.random() * 10000),
+    id: Math.floor(Math.random() * 10000).toString(),
     class: classData['id'],
     class_name: classData['name']
   };
@@ -83,64 +58,46 @@ assignmentForm.addEventListener('submit', (e) => {
 
 function post_assignment(data){
   var new_row = classData
-  new_row['assignments'] = new_row['assignments'] + data['id']
-  fetch('/post-assignment', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      data: {"data":data, "classid": classData['id'], "newrow": new_row}
-      
-    })
-})
-.then(response => response.json())
-.then(data => {
+  new_row['assignments'] = new_row['assignments'] + ", "+data['id']
+  fetchRequest('/post_data', {data: data, sheet: "Assignments"});
+  fetchRequest('/update_data', {"row_value": classData['id'], "row_name": "id", "data": new_row, "sheet": "Classes"});
   location.reload();
-  })
 }
 
 
-
-function get_assignment(){
-
-  fetch('/data', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ data: "Assignments, FILTERED Classes" })
-})
-.then(response => response.json())
-.then(data => {
-  
+async function get_assignment(){
+  var data = await fetchRequest('/data', {data: "Assignments, Classes, Name, Users"});
   var classId = window.location.href.slice(-4);
   var assignmentList = data['Assignments']
   classData = data['Classes'];
-  console.log(classId);
-  classData = classData.find(item => item.id === classId);
-  
-  display_classes(assignmentList, classData);
+  console.log(data)
+  classData = classData.find(item => item.id == classId);
+  // set head to classData['color']
+  document.getElementById('head').style.backgroundColor = classData['color'];
+  set_class_img(classData['img'])
+  display_assignments(assignmentList, classData);
   display_NB_btn(classData);
-  add_user_bubbles(classData);
+  add_user_bubbles(classData, data['Users']);
   optionSelected(classData);
+  setImageEl(classData, "Classes")
+  set_color_EL("Classes", classData)
+  show_Join(data['Name'], classData, "Classes");
+  // if classData['img'] != "", set the background image of the div to the base64 image string
+  
   document.getElementById('loadingWheel').style.display = "none";
-})
-.catch(error => {
-  console.error('An error occurred in class.js :' +error);
-});
 }
 get_assignment()
 
-function display_classes(assignmentList, classList){
+function display_assignments(assignmentList, classData){
   const assignmentListContainer = document.getElementById('assignmentList');
     assignmentList.forEach(assignmentData => {
       if(!(assignmentData['class']==classData['id'])){return;}
       
       const assignmentItem = document.createElement('div');
       assignmentItem.classList.add('assignment-item');
+      const dueDate = processDate(assignmentData.due);
       assignmentItem.innerHTML = `
-        <h3>Due ${assignmentData.due}</h3>
+        <h3>Due ${dueDate}</h3>
         <p>Type: ${assignmentData.category}</p>
         <p>Name: ${assignmentData.name}</p>
       `;
@@ -156,14 +113,17 @@ function display_classes(assignmentList, classList){
 
 
 
-function optionSelected(classes){
+function optionSelected(classData){
     
-  console.log(classes);
-  var categories = classes['categories']
+  console.log(classData);
+  var categories = classData['categories']
   
   if(categories){
-    
-  categories = JSON.parse(categories).filter(item => typeof item === 'string');
+    // convert categories to json if it is a string
+    if(typeof categories === 'string'){
+      categories = JSON.parse(categories);
+    }
+    categories = categories.filter(item => typeof item === 'string');
     
   var categoryElement = document.getElementById("assignmentType")
   // Remove all existing options

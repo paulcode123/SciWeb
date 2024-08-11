@@ -23,8 +23,8 @@ const categoryCheckboxes = document.getElementById("categoryCheckboxes");
         "date": goalDate,
         "grade": goalGrade,
         "date_set": new Date().toLocaleDateString(),
-        "OSIS": osis,
-        "id": Math.floor(Math.random() * 10000)
+        "OSIS": osis.toString(),
+        "id": (Math.floor(Math.random() * 10000)).toString()
       }
       post_goal(goal);
 
@@ -36,47 +36,29 @@ const categoryCheckboxes = document.getElementById("categoryCheckboxes");
     });
 
 
-function post_goal(goal){
-  fetch('/post-goal', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({"goal":goal})
-})
-.then(response => response.text())
-.then(result => {
-    console.log(result);  // Log the response from Python
-})
-.catch(error => {
-    console.log('An error occurred:', error);
-});
+async function post_goal(goal){
+  const result = await fetchRequest('/post_data', {"sheet": "Goals", "data": goal});
+  console.log(result);  // Log the response from Python
 }
 
 // Get the classes for the user
-fetch('/data', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ data: 'FILTERED Classes' })
-})
-.then(response => response.json())
-.then(data => {
-  var rawclasses = data['Classes']
-  const classes = rawclasses.filter(item => item.OSIS.includes(osis));
+async function main(){
+  const data = await fetchRequest('/data', { data: 'FILTERED Classes' });
+
+  var classes = data['Classes']
+  console.log(classes)
   setClassOptions(classes)
-  
-  document.getElementById("classDropdown").addEventListener("change", () => {optionSelected(classes)});
+  console.log("setting EL")
+  classDropdown.addEventListener("change", () => {optionSelected(classes)});
+  console.log("EL set")
   document.getElementById('loadingWheel').style.display = "none";  
-})
-.catch(error => {
-  console.log('An error occurred:' +error);
-});
+
+
+}
+main()
 
 // Set the options for the class dropdown
 function setClassOptions(filteredClasses){
-  
     const selectElement = document.getElementById("classDropdown");
     for(let x=0; x<filteredClasses.length; x++){
       // Create a new option element
@@ -90,7 +72,7 @@ function setClassOptions(filteredClasses){
 
 // Remove the "Please add classes first" option
 if(filteredClasses.length != 0){
-selectElement.removeChild(selectElement.querySelector('option[value="default"]'));
+// selectElement.removeChild(selectElement.querySelector('option[value="default"]'));
 // add "all" option to selectElement
 const newOption = document.createElement("option");
 newOption.value = "all";
@@ -104,7 +86,7 @@ selectElement.appendChild(newOption);
 
 //After the user has selected a class, display the associated category dropdown
   function optionSelected(classes){
-    
+    console.log("in optionSelected")
     console.log(classes);
     var selectedClass = document.getElementById("classDropdown").value;
     var categoryElement = document.getElementById("categoryDropdown");
@@ -119,8 +101,11 @@ selectElement.appendChild(newOption);
     var categories = classes.filter(item => item.name == selectedClass)[0].categories;
     
     if(categories){
-      
-    categories = JSON.parse(categories).filter(item => typeof item === 'string');
+      if (typeof categories === 'string'){
+        categories = JSON.parse(categories);
+      }
+      categories = categories.filter(item => typeof item === 'string');
+    
       
     
     // Remove all existing options

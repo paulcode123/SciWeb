@@ -1,11 +1,11 @@
 //Start playing the video when the user scrolls to it
 let observer = new IntersectionObserver((entries, observer) => { 
-    console.log("observer")
+    
     entries.forEach(entry => {
-        console.log("entry")
+        
         // Check if the video is in the viewport
         if (entry.isIntersecting) {
-            console.log("playing")
+            
             // Start playing the video
             entry.target.play();
         } else {
@@ -22,7 +22,7 @@ observer.observe(document.getElementById('swbVid'));
  window.addEventListener('scroll', function() {
     var image = document.getElementById('dimImage');
     var windowHeight = window.innerHeight;
-    console.log(windowHeight)
+    
     var scrollY = window.scrollY;
   
     // Adjust these values as needed
@@ -53,7 +53,7 @@ observer.observe(document.getElementById('swbVid'));
     
     opacity = Math.max(0, 1 - (distance / windowHeight));
   } // When in between, opacity remains 1, as initialized
-  console.log(opacity)
+  
   imageb.style.opacity = opacity;
   const buttons = document.querySelectorAll('main button');
 
@@ -104,7 +104,7 @@ buttons.forEach(button => {
       function typeWriter(element, text, i, interval) {
         if (i < text.length) {
             element.textContent += text.charAt(i);
-            console.log(text.charAt(i))
+            
             i++;
             setTimeout(() => typeWriter(element, text, i, interval), interval);
         }
@@ -112,11 +112,11 @@ buttons.forEach(button => {
 
     // Intersection Observer to trigger the typing effect
     let observer2 = new IntersectionObserver((entries, observer) => {
-        console.log("observer2")
+        
         entries.forEach(entry => {
-            console.log("entry2")
+            
             if (entry.isIntersecting) {
-                console.log("typing")
+                
                 typeWriter(typingText, txt2type, 0, 50);
                 observer2.unobserve(entry.target); // Stop observing after it's visible
             }

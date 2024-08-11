@@ -8,7 +8,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/static/GA.css">
   <link rel="stylesheet" href="/static/navbar.css">
+  <link rel="manifest" href="/static/manifest.json">
+
 </head>
+
 
 <body>
   <ul class="navbar">
@@ -25,9 +28,10 @@
     <li class="dropdown">
       <button class="dropdown-btn">Study</button>
       <div class="dropdown-content">
-        <a href="#">Write</a>
-        <a href="/Study">Study</a>
-        <a href="#">Predict</a>
+        <a href="/StudyLevels">Levels</a>
+<a href="/StudyBot">StudyBot</a>
+<a href="/Evaluate">Evaluate</a>
+<a href="/Battle">Battle</a>
       </div>
     </li>
     <li class="dropdown">
@@ -35,7 +39,7 @@
       <div class="dropdown-content">
         <a href="/Classes">Classes</a>
         <a href="/Assignments">Assignments</a>
-        <a href="#">Leagues</a>
+        <a href="/Leagues">Leagues</a>
         <a href="#">Questions</a>
       </div>
     </li>
@@ -49,19 +53,45 @@
     </li>
     <li><a href="/Login" id="profile">Login</a></li>
   </ul>
+  <div id="notification-container"></div>
 
   <main>
     
     <h1>Grade Analysis</h1>
     
     <br>
-  
+    <!-- element for error text, give red inline styling -->
+    <p id="error" style="color: red;"></p>
     </form>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <div id="myGraph"></div>
-    <br><br>
-    <div id="myHistogram"></div>
+    <br>
 
+
+
+    <div class="carousel-container">
+      <div class="carousel" id="crs">
+          <!-- <img src="https://via.placeholder.com/800x400?text=Image+1" alt="Image 1">
+          <img src="https://via.placeholder.com/800x400?text=Image+2" alt="Image 2">
+          <img src="https://via.placeholder.com/800x400?text=Image+3" alt="Image 3">
+          <img src="https://via.placeholder.com/800x400?text=Image+4" alt="Image 4"> -->
+      </div>
+      <button class="arrow left" onclick="moveSlide(-1)">&#10094;</button>
+      <button class="arrow right" onclick="moveSlide(1)">&#10095;</button>
+      <div class="dots">
+          <span class="dot" onclick="currentSlide(0)"></span>
+          <span class="dot" onclick="currentSlide(1)"></span>
+          <span class="dot" onclick="currentSlide(2)"></span>
+          <span class="dot" onclick="currentSlide(3)"></span>
+      </div>
+  </div>
+  <br>
+
+
+
+    
+    <div id="myGraph"></div>
+    <div id="myHisto"></div>
+    <br><br>
+    
 
     <div id="loadingWheel"></div>
    <form id="class-form">
@@ -86,6 +116,40 @@
   <h1 id="error-message"></h1>
 </form>
     <br>
+    <div id="StatsContainer">
+      <div class="number-box">
+        <h2>GPA</h2>
+        <p class="number" id="s1">--</p>
+        <p class="caption">As it appears on report card</p>
+    </div>
+    <div class="number-box">
+        <h2>Raw Avg</h2>
+        <p class="number" id="s2">--</p>
+        <p class="caption">More volatile and exact</p>
+    </div>
+    <div class="number-box">
+        <h2>Recent Change</h2>
+        <p class="number" id="s3">--</p>
+        <p class="caption">Raw average change over the past 30 days</p>
+    </div>
+    <div class="number-box">
+        <h2>Most Improved</h2>
+        <p class="number" id="s4">--</p>
+        <p class="caption">Class with largest grade increase over the past 30 days</p>
+    </div>
+    <div class="number-box">
+        <h2>Focus On...</h2>
+        <p class="number" id="s5">--</p>
+        <p class="caption">Biggest dip over the past 30 days</p>
+    </div>
+    <div class="number-box">
+        <h2>Recent Grade</h2>
+        <p class="number" id="s6">--</p>
+        <p class="caption">Non-cumulative grade over the past 30 days</p>
+    </div>
+    </div>
+
+    <div id="myHistogram"></div>
     
     <div id="GoalProgressContainer"></div>
     <div id="RecentScoresContainer"></div>
@@ -96,9 +160,11 @@
     <div id="insightContainer"></div>
 
   </main>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
-  
+  <script src="/static/util.js"></script>
   <script src="/static/user_data.js"></script>
+  <script src="/static/notifications.js" type="module"></script>
   <script src="static/GA.js"></script>
 </body>
 

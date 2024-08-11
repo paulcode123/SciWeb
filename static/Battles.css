@@ -1,0 +1,100 @@
+/* Styles for the Battle heading */
+h1 {
+    font-size: 2.5em;
+    color: #333;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Styles for the description paragraph */
+#description {
+    font-size: 1.2em;
+    color: #555;
+    text-align: center;
+    margin: 0 20px 20px;
+    line-height: 1.5;
+}
+
+/* Styles for buttons */
+button {
+    background-color: #4CAF50; /* Green */
+    color: white;
+    padding: 15px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 1em;
+    margin: 10px 5px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+/* Styles for the game code section */
+#gameCode {
+    text-align: center;
+    margin-top: 20px;
+}
+
+#gameCodeText {
+    font-size: 1.2em;
+    color: #333;
+}
+
+#copyCode,
+#joinCreated {
+    background-color: #008CBA; /* Blue */
+    color: white;
+    padding: 10px 15px;
+    margin-left: 5px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#copyCode:hover,
+#joinCreated:hover {
+    background-color: #007bb5;
+}
+
+/* Styles for the input field */
+#joinCode {
+    width: calc(100% - 40px);
+    padding: 15px;
+    margin: 20px 20px 10px;
+    box-sizing: border-box;
+    font-size: 1.5em; /* Large font size */
+    font-weight: bold; /* Bold letters */
+    letter-spacing: 0.3em; /* Spread apart letters */
+    text-transform: uppercase; /* All caps */
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    text-align: center;
+    font-family: 'Arial Black', Gadget, sans-serif; /* Bulky font */
+}
+
+/* Additional button styles for join game button */
+#joinGame {
+    background-color: #f44336; /* Red */
+    color: white;
+    padding: 15px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 1em;
+    margin: 10px 5px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+#joinGame:hover {
+    background-color: #da190b;
+}

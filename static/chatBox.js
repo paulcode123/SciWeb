@@ -1,6 +1,8 @@
 // const { get } = require("http");
 
-// let locationData = null;
+// const { send } = require("process");
+var current_class = "undefined";
+
 var classId = window.location.href.slice(-4)
 // Function to receive and display messages in the chat box
 function receive_messages(messages, users) {
@@ -9,8 +11,13 @@ function receive_messages(messages, users) {
   clearMessages()
   // Loop through all the messages and display them
   messages.forEach(message => {
+    // if data in messages, set message to data
+    if (message.data){
+    message = message.data;
+    }
     //if the message is in the current class, display it
-    if (message.location ===classId) {
+    // console.log(message, message['location'], classId.toString())
+    if ((message['location']).toString() == classId.toString()) {
       
       let listItem = document.createElement('li');
       listItem.className = 'message';
@@ -20,7 +27,7 @@ function receive_messages(messages, users) {
       let senderName = 'default';
       
       for (let i = 0; i < users.length; i++) {
-        if (users[i].osis == message.OSIS) {
+        if (users[i].osis == message.sender) {
           senderName = users[i].first_name;
           break;
         }
@@ -77,6 +84,7 @@ function clearMessages() {
 
 // Handle sending a message
 function sendMessage() {
+  console.log('Sending message...');
   // If image is uploaded, send the image
   var message = '';
   if (document.getElementById('upload').files.length > 0) {
@@ -93,7 +101,8 @@ function sendMessage() {
     let chat = {
       text: message,
       location: classId,
-      OSIS: osis,
+      sender: osis,
+      OSIS: current_class.OSIS,
       id: Math.floor(Math.random() * 10000),
       timestamp: Date.now()
     }
@@ -109,15 +118,17 @@ return;
   message = inputField.value;
   inputField.value = '';
   
-  console.log('Message:', message);
+  console.log('Message:', message, current_class);
   
   let chat = {
     text: message,
     location: classId,
-    OSIS: osis,
+    sender: osis,
+    OSIS: current_class['OSIS'],
     id: Math.floor(Math.random() * 10000),
     timestamp: Date.now()
   }
+  console.log(chat);
   post_message(chat)
 }
 
@@ -135,48 +146,38 @@ inputField.addEventListener('keydown', function(event) {
 
 // receive_messages(['hello', 'world'])
 //post messages to py database
-function post_message(message){
-  
-
-fetch('/post-message', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      data: {"data":message}
-      
-    })
-})
-.then(response => response.json())
-.then(data => {
-  get_messages()
-  })
+async function post_message(message){
+var a = await fetchRequest('/post_data', {sheet: 'Chat', data: message});
+await get_messages()
 }
+
 //get messages from py
-function get_messages(){
-  
-  fetch('/data', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ data: "Chat, Users, FILTERED Classes" })
-})
-.then(response => response.json())
-.then(data => {
+async function get_messages(){
+  // set group_name equal to either class, or league, depending on the url of the page
+  if(window.location.href.includes('class')){
+    group_name = 'Classes';
+    sheet_name = group_name;
+  }
+  else if(window.location.href.includes('league')){
+    group_name = 'Leagues';
+    sheet_name = group_name;
+  }
+  else{
+    group_name = 'Assignments'
+    sheet_name = 'Classes, FILTERED Assignments';
+  }
+
+  var data = await fetchRequest('/data', {data: `FILTERED Chat, Users, FILTERED ${sheet_name}`});
   
   var messages = data['Chat']
   var users = data['Users']
-  locationData = data['Classes']
+  const group = data[group_name]
+  // filter for the class where id = classId
+  console.log(classId, group)
+  current_class = group.filter(classObj => classObj.id == classId)[0];
   
   receive_messages(messages, users);
   return true;
-})
-.catch(error => {
-  console.error('An error occurred in get_messages(), chatBox.js:' +error);
-  return false;
-});
 }
 
 
@@ -215,73 +216,43 @@ function renderImage(image) {
   document.getElementById('image-container').appendChild(img);
 }
 
-async function getBase64(file) {
-  return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file); // Converts the file to Base64
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = error => reject(error);
-  });
-}
 
 // Create function for fetch request to get-file route
-function getFile(fileId) {
+async function getFile(fileId) {
   // Return the fetch promise chain
-  return fetch('/get-file', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ file: fileId })
-  })
-  .then(response => {
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    return response.json();
-  })
-  .then(data => {
-    // Assuming `data.file` is the image or file data you want
-    let file = data.file;
-    let type;
-    // console.log(file.slice(11, 14));
-    if(file.includes('pngbase64')){
-      type = 'png';
-      file = file.replace('dataimage/pngbase64', 'data:image/png;base64,');
-      file = file.slice(0, -1);
-    }
-    else if(file.includes('jpegbase64')){
-      type = 'jpeg';
-      file = file.replace('dataimage/jpegbase64', 'data:image/jpeg;base64,');
-    }
-    else if(file.includes('pdfbase64')){
-      type = 'pdf';
-      file = file.replace('dataapplication/pdfbase64', 'data:application/pdf;base64,');
-    }
-    else{
-      console.log('Error: File type not supported', file);
-    }
-    
-    
-    return [file, type]; // This will be the resolved value of the promise
-  });
+  var response = await fetchRequest('/get-file', {file: fileId});
+  
+  // Assuming `data.file` is the image or file data you want
+  let file = response.file;
+  let type;
+  // console.log(file.slice(11, 14));
+  if(file.includes('pngbase64')){
+    type = 'png';
+    file = file.replace('dataimage/pngbase64', 'data:image/png;base64,');
+    file = file.slice(0, -1);
+  }
+  else if(file.includes('jpegbase64')){
+    type = 'jpeg';
+    file = file.replace('dataimage/jpegbase64', 'data:image/jpeg;base64,');
+  }
+  else if(file.includes('pdfbase64')){
+    type = 'pdf';
+    file = file.replace('dataapplication/pdfbase64', 'data:application/pdf;base64,');
+  }
+  else{
+    console.log('Error: File type not supported', file);
+  }
+  
+  
+  return [file, type]; // This will be the resolved value of the promise
+
 }
 
 
 // Create function for fetch request to upload-file route
-function uploadFile(xfile, id) {
-  fetch('/upload-file', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ file: xfile, name: id })
-  })
-  .then(response => response.json())
-  .then(data => {
-    // Display the image
-    return data;
-  });
+async function uploadFile(xfile, id) {
+  var data = await fetchRequest('/upload-file', {file: xfile, name: id});
+  return data;
 }
 
 function base64ToBlob(base64, type = 'application/octet-stream') {
