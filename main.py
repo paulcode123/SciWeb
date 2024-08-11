@@ -1,7 +1,7 @@
 # Import necessary libraries
 
 # Flask is a web framework for Python that allows backend-frontend communication
-from flask import Flask, render_template, request, session, redirect, url_for
+from flask import Flask, render_template, request, session, redirect, url_for, send_from_directory
 # json is a library for parsing and creating JSON data
 import json
 # requests is a library for getting info from the web
@@ -12,59 +12,65 @@ import datetime
 import re
 # googleapiclient is a library for working with Google APIs(Getting data from Google Sheets in this case)
 from googleapiclient.discovery import build
+import traceback
+
+# for images
+import base64
+from io import BytesIO
+from PIL import Image
+
+# import openai
+
+
 
 
 # Get functions from other files
-from database import get_data, post_data, update_data, delete_data, download_file, upload_file
+from database import get_data, post_data, update_data, delete_data, download_file, upload_file, init_firebase
 from classroom import init_oauth, oauth2callback, list_courses
-from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups
+from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups, get_stats, update_leagues, get_compliments
 from goals import calculate_goal_progress, get_goals
-from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades
+from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades
+from study import study_response, get_insights
 
 #get api keys from static/api_keys.json file
-keys = json.load(open('api_keys.json'))
+keys = json.load(open('api_keys.json'))  
 
 
 
 
-# Function to initialize the Google Sheets API
-def init_gapi():
-  spreadsheet_id = '1k7VOAgZY9FVdcyVFaQmY_iW_DXvYQluosM2LYL2Wmc8'
-  # API key for accessing the Google Sheets API: find it in the "Getting Started with Contributing" document
-  # Remember to keep it secret, and don't publish it to GitHub
-  api_key = keys["GoogleAPIKey"]
-
-  # URL for the SheetDB API, for POST requests
-  sheetdb_url = 'https://sheetdb.io/api/v1/y0fswwtbyapbd'
-
-  DISCOVERY_SERVICE_URL = 'https://sheets.googleapis.com/$discovery/rest?version=v4'
-
-  service = build('sheets',
-                  'v4',
-                  developerKey=api_key,
-  discoveryServiceUrl=DISCOVERY_SERVICE_URL)
-  max_column = "K"
-
-  return spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column
-
+init_firebase()
 # Initialize other variables
-def init_vars():
-  spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column = init_gapi()
-  # OpenAI API key for generating insights: find it in the "Getting Started with Contributing" document
-  # don't publish it to GitHub
-  openAIAPI = keys["OpenAiAPIKey"]
-  
-  
-  return spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column, openAIAPI
+def init():
+  vars = {}
+  keys = json.load(open('api_keys.json'))
+  vars['openAIAPI'] = keys["OpenAiAPIKey"]
+  vars['spreadsheet_id'] = '1k7VOAgZY9FVdcyVFaQmY_iW_DXvYQluosM2LYL2Wmc8'
+  vars['gSheet_api_key'] = keys["GoogleAPIKey"]
+  # URL for the SheetDB API, for POST requests
+  vars['sheetdb_url'] = 'https://sheetdb.io/api/v1/y0fswwtbyapbd'
 
+  vars['DISCOVERY_SERVICE_URL'] = 'https://sheets.googleapis.com/$discovery/rest?version=v4'
 
-spreadsheet_id, api_key, sheetdb_url, DISCOVERY_SERVICE_URL, service, max_column, openAIAPI = init_vars()
+  vars['service'] = build('sheets',
+                  'v4',
+                  developerKey=vars['gSheet_api_key'],
+  discoveryServiceUrl=vars['DISCOVERY_SERVICE_URL'])
+  vars['max_column'] = "O"
+  vars['AppSecretKey'] = keys["AppSecretKey"]
+  # firebase or gsheet
+  vars['database'] = 'gsheet'
+  vars['allow_demo_change'] = True
+  
+  return vars
+
+vars = init()
+
 app = Flask(__name__)
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_PERMANENT'] = False
 
 # App secret key for session management
-app.secret_key = keys["AppSecretKey"]
-
-allow_demo_change = True
+app.config['SECRET_KEY'] = vars["AppSecretKey"]
 generate_grade_insights = True
 
 #initialize the front end: all of the HTML/CCS/JS files
@@ -100,15 +106,32 @@ def profile():
 
 @app.route('/Pitch')
 def pitch():
-  return render_template('Pitch.html')
+  return render_template('About/Pitch.html')
 
-@app.route('/Study')
+@app.route('/StudyBot')
 def study():
-  return render_template('Study.html')
+  return render_template('StudyBot.html')
+
+@app.route('/StudyLevels')
+def study_levels():
+  return render_template('Levels.html')
+
+@app.route('/Evaluate')
+def evaluate():
+  return render_template('Evaluate.html')
+
+
+@app.route('/Battle')
+def battle():
+  return render_template('Battles.html')
 
 @app.route('/Classes')
 def classes():
   return render_template('Classes.html')
+
+@app.route('/Leagues')
+def leagues():
+  return render_template('Leagues.html')
 
 @app.route('/GetStart')
 def getstart():
@@ -126,14 +149,40 @@ def assignments():
 def course_selection():
   return render_template('CourseSelection.html')
 
+@app.route('/Join')
+def join():
+  return render_template('About/Join.html')
+
+@app.route('/Features/AI')
+def ai_features():
+  return render_template('About/AI.html')
+
+@app.route('/Features/Social')
+def social_features():
+  return render_template('About/Social.html')
+
+@app.route('/Features/Analytic')
+def analytic_features():
+  return render_template('About/Analytic.html')
+
+@app.route('/firebase-messaging-sw.js')
+def service_worker():
+    return send_from_directory('.', 'firebase-messaging-sw.js')
+
 # The following routes are pages for specific classes and assignments
 @app.route('/class/<classurl>')
 def class_page(classurl):
   # Pass the class name and class data to the class page
-  id = re.findall('[0-9]+', classurl)[0]
+  id = classurl[-4:]
   class_name = classurl.replace(id, "").strip()
   classes = get_data("Classes")
-  class_data = next((row for row in classes if row['id'] == id), None)
+  print(classes)
+  class_data = next((row for row in classes if str(row['id']) == str(id)), None)
+  print(classes[4]['id'], str(id), str(classes[4]['id']) == str(id))
+  print(class_data)
+  # class_img = ""
+  # if 'img' in class_data and class_data['img'] != "":
+  #   class_img = download_file("sciweb-files", class_data['img'])
   return render_template('class.html',
                          class_name=class_name,
                          class_data=class_data)
@@ -150,12 +199,22 @@ def notebook_page(classurl):
                          class_name=class_name,
                          class_data=class_data)
 
+# League page, for specific leagues
+@app.route('/league/<leagueid>')
+def league_page(leagueid):
+  leagues = get_data("Leagues")
+  league_data = next(
+    (row for row in leagues if int(row['id']) == int(leagueid)), None)
+  league_name = league_data['Name']
+  return render_template('league.html',
+                         league_name=league_name)
+
 # Assignment page, for specific assignments
 @app.route('/assignment/<assignmentid>')
 def assignment_page(assignmentid):
   assignments = get_data("Assignments")
   assignment_data = next(
-    (row for row in assignments if row['id'] == assignmentid), None)
+    (row for row in assignments if int(row['id']) == int(assignmentid)), None)
   assignment_name = assignment_data['name']
   return render_template('assignment.html',
                          assignment_name=assignment_name,
@@ -167,7 +226,10 @@ def public_profile(userid):
   profiles = get_data("Profiles")
   
   profile = next((row for row in profiles if str(row['OSIS']) == str(userid)), None)
-  
+  # if profile is not found, return an error without a separate page
+  if profile == None:
+    return json.dumps({"error": "Profile not found"})
+
   
   #Get just first name, last name, grade, and osis of the user, still as a dictionary
   user_data = next(
@@ -184,6 +246,18 @@ def public_profile(userid):
                          user_data=user_data,
                          classes=class_data)
 
+@app.route('/reviews/<courseid>')
+def course_reviews(courseid):
+  courses = get_data("Courses")
+  course_data = next((row for row in courses if row['id'] == courseid), None)
+  # convert course_data to json
+  course_data = json.loads(json.dumps(course_data))
+  return render_template('course_reviews.html',
+                         courseData=course_data, courseName=course_data['Name'])
+
+@app.route('/battle/<battleid>')
+def battle_page(battleid):
+  return render_template('battle.html')
 # This concludes initializing the front end
 
 #The following route functions post/get data to/from JS files
@@ -192,12 +266,20 @@ def public_profile(userid):
 # Get the user's IP address, connects to the user_data.js function
 @app.route('/home-ip', methods=['POST'])
 def get_home_ip():
-
+  r = request.json
+  userId = r['userId']
+  grades_key = r['grades_key']
+  print("grades_key", grades_key)
+  if 'user_data' not in session:
+    return json.dumps({'Name': ["Login", 404]})
+  session['user_data']['grades_key'] = str(grades_key)
+  session.modified = True
+  print("grades_key", session['user_data']['grades_key'])
   if 'ip_add' not in session:
     # store the ip address in the session
-    session['ip_add'] = request.json
-    print(request.json)
-  print("ip from get_home_ip is:", session['ip_add'])
+    session['ip_add'] = userId
+    
+  print("ip from get_home_ip is:", session['ip_add'], "grades_key", grades_key)
   # return the user's data given their IP address
   return json.dumps({'Name': get_name(str(session['ip_add']))})
 
@@ -208,8 +290,17 @@ def Jupiter():
   # get_gclassroom_api_data()
   data = request.json
   classes= run_puppeteer_script(data['osis'], data['password'])
-  jupapi_output_to_classes(classes, session, sheetdb_url, allow_demo_change)
-  grades = jupapi_output_to_grades(classes, session, sheetdb_url, allow_demo_change)
+  
+  if classes == "WrongPass":
+    return json.dumps({"error": "Incorrect credentials"})
+  if str(data['addclasses'])=="True":
+    jupapi_output_to_classes(classes)
+  
+  session['user_data']['grades_key'] = str(data['encrypt'])
+  grades = jupapi_output_to_grades(classes, data['encrypt'])
+  if str(data['updateLeagues'])=="True":
+    classes = get_data("Classes")
+    update_leagues(grades, classes)
   return json.dumps(grades)
 
 @app.route('/init_oauth', methods=['POST', 'GET'])
@@ -217,11 +308,19 @@ def init_oauth_handler():
   response = init_oauth()
   return response
 
+@app.route('/submit', methods=['POST'])
+def submit():
+  data = request.json
+  post_data("Join", data)
+  return json.dumps({"message": "success"})
+
 @app.route('/oauth2callback', methods=['GET'])
 def oauth2callback_handler():
   token = oauth2callback()
   print("session", session['credentials'])
   return redirect(url_for('assignments'))
+
+
 # This function is called from many JS files to get data from specific sheets
 # The requested sheets are passed in as a list: eg. "Grades, Classes"
 # It returns the data from the requested sheet
@@ -231,20 +330,47 @@ def fetch_data():
   # Split the requested sheets into a list
   sheets = sheets.split(", ")
   response = {}
+
   for sheet in sheets:
+    print("sheet", sheet)
+    # if trying to get just the user's data, call the get_name function
     if sheet=="Name":
       response[sheet] = get_name()
+    # if trying to get data from sheet, but only rows where OSIS column includes the user's osis
     elif "FILTERED" in sheet:
+      # if session['user_data'] is not defined, throw an error
+      if 'user_data' not in session:
+        return json.dumps({"error": "User data not found"})
+      # get the sheet name without the "FILTERED " prefix
       sheet_name = sheet.replace("FILTERED ", "")
-      data = get_data(sheet_name)
-      if sheet_name=="Friends":
-        #send if the user's osis is in the OSIS or targetOSIS of the row
-        response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in item['OSIS'] or str(session['user_data']['osis']) in item['targetOSIS']]
-      elif sheet_name=="Grades":
-        response[sheet_name] = get_grades(session)
+      # special case for the Grades, since it's not a normal sheet: it must be processed differently
+      if sheet_name=="Grades":
+        response[sheet_name] = get_grades()
       else:
-        #Otherwise, filter the data for the user's osis
-        response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in item['OSIS']]
+        data = get_data(sheet_name)
+        # if data is of type NoneType, return an empty list
+        if data == None:
+          return json.dumps({})
+        
+        # if the sheet is one of these exceptions that require special filtering
+        if sheet_name=="Friends":
+          #send if the user's osis is in the OSIS or targetOSIS of the row
+          response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in item['OSIS'] or str(session['user_data']['osis']) in item['targetOSIS']]
+        elif sheet_name=="Assignments":
+          # send if item['class'] is the id for any of the rows in response['Classes']
+          class_ids = [item['id'] for item in response['Classes']]
+          response[sheet_name] = [item for item in data if item['class'] in class_ids]
+        elif sheet_name=="FClasses":
+          #send all of the classes that the user's friends are in
+          friend_osises = [item['targetOSIS'] for item in data if str(session['user_data']['osis']) in item['OSIS']] + [item['OSIS'] for item in data if str(session['user_data']['osis']) in item['targetOSIS']]
+          r = []
+          classes = get_data("Classes")
+          for friend in friend_osises:
+            r += [item for item in classes if friend in item['OSIS']]
+          response[sheet_name] = r
+        else:
+          #Otherwise, filter the data for the user's osis
+          response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in str(item['OSIS'])]
     elif sheet=="Users":
       #only include the first 3 columns of the Users sheet, first_name, last_name, and osis
       data = get_data(sheet)
@@ -253,6 +379,25 @@ def fetch_data():
       response[sheet] = get_data(sheet)
   return json.dumps(response)
 
+@app.route('/post_data', methods=['POST'])
+def post_data_route():
+  data = request.json
+  post_data(data['sheet'], data['data'])
+  return json.dumps({"message": "success"})
+
+@app.route('/update_data', methods=['POST'])
+def update_data_route():
+  data = request.json
+  response = update_data(data['row_value'], data['row_name'], data['data'], data['sheet'])
+  print("response", response)
+  return json.dumps({"message": "success"})
+
+@app.route('/delete_data', methods=['POST'])
+def delete_data_route():
+  data = request.json
+  delete_data(data['row_value'], data['row_name'], data['sheet'])
+  return json.dumps({"message": "success"})
+
 @app.route('/goals_progress', methods=['POST'])
 def get_goals_progress():
   return json.dumps(calculate_goal_progress(session))
@@ -260,80 +405,117 @@ def get_goals_progress():
 # Function to return insights to the Study page
 @app.route('/AI', methods=['POST'])
 def get_AI():
-  return json.dumps(get_insights(request.json['data']))
+  return json.dumps(study_response(request.json['data']))
 
 #function to generate insights and return them to the Grade Analysis page
 @app.route('/insights', methods=['POST'])
 def get_insights_ga():
   classes_data = get_data("Classes")
   user_data = get_name()
-  grades = get_grades(session)
-  grade_spreads = []
+  grades = get_grades()
+  grade_spreads = {}
 
-  grade_spread = process_grades(grades, ["all", "All"], user_data, classes_data)
-  # If the user is graphing all of their classes, allow insights to be generated for each class individually by getting the user's grades for each class to pass to the AI
+  grade_spreads["All"] = process_grades(grades, user_data, classes_data)
+  # If the user is graphing all of their classes, allow insights to be generated for each class and category individually by getting the user's grades for each class to pass to the AI
+  weights = get_weights(classes_data, user_data['osis'])
   
-  matching_classes = [item['name'] for item in classes_data if session['user_data']['osis'] in item['OSIS']]
-  
-  for item in matching_classes:
-    # Get the user's grades for the class
-    t, g = process_grades(grades, [item.lower(), "All"], user_data, classes_data)
-    # If the user has grades for the class, add the class and the grades to the list of grade spreads
-    if type(t)!='int':
-      grade_spreads.append(item+": "+str(g))
+  for className in weights:
+    for category in weights[className]:
+    # Get the user's grades for the class and category
+      fgrades = filter_grades(grades, user_data, [className.lower(), category.lower()])
+      t, g = process_grades(fgrades, user_data, classes_data, extend_to_goals=False)
+      # If the user has grades for the class, add the class and the grades to the list of grade spreads
+      if type(t)!='int':
+        grade_spreads[className+" "+category] = g
+    # do it for the class as a whole
+    fgrades = filter_grades(grades, user_data, [className.lower(), "All"])
+    t, g = process_grades(fgrades, user_data, classes_data, extend_to_goals=False)
+    grade_spreads[className] = g
     
   # Generate the insights
-  prompt = [{"role":"system", "content": "You are an advisor to a high school student, and your job is to curate 5 insightful and specific ways in which the students grades over time in individual classes influence their overall grade, and what they should focus their efforts on improving. Write a numbered list and nothing else."},
-            {"role": "user", "content": "total: "+str(grade_spread)+"factors: "+str(grade_spreads)}]
+  prompt = [{"role":"system", "content": "You are an advisor to a high school student, and your job is to curate 5 insightful and specific areas for the student to focus on. You will get lists of the student's grades for a given class/category at 10 sequential times during the year. Write a numbered list and nothing else."},
+            {"role": "user", "content": str(grade_spreads)}]
   
   insights = get_insights(prompt)
   return json.dumps(insights)
 
-# Function to return grades to the Grade Analysis page
-@app.route('/grades_over_time', methods=['POST'])
-def post_ga_grades():
-  data = request.json
-  classes = data['classes']
-  classes = decode_category_groups(classes)
-  print("specificity", data['specificity'])
-  specificity = int(data['specificity'])
-  # Get User, Class, and Grade data
-  classes_data = get_data("Classes")
-  # grades = get_data("Grades")
-  grades = get_grades(session)
-  
-  
-  user_data = get_name()
-  grade_points = get_grade_points(grades, user_data, classes)
 
-  # Calculate the user's grades over time, return the grades at their corresponding dates
-  times, grade_spread = process_grades(grades, classes, user_data, classes_data, specificity)
-
-  # Get the goals that the user has set, and create objects to overlay on the graph
-  goals, set_coords, max_date = get_goals(classes, user_data, grades, times, grade_spread)
-  # Create a dictionary to return the calculated data to the frontend
-  response_data = {
-    "times": times.tolist(),
-    "grade_spread": grade_spread,
-    "goals": goals,
-    "goal_set_coords": set_coords,
-    "grade_points": grade_points,
-    "max_date": max_date
-  }
-
-  
-  
-  # Return the response data
-  return json.dumps(response_data)
 
 @app.route('/GAsetup', methods=['POST'])
 def GA_setup():
+  # get the user's grades and classes
   classes = get_data("Classes")
+  weights = get_weights(classes, session['user_data']['osis'])
+  grades = get_grades()
+  user_data = get_name()
+
+  # if there are no grades, return an error
+  # if grades is a dictionary with a key 'class' and the value is 'No grades entered', return an error
+  if 'class' in grades and grades['class'] == 'No grades entered':
+    print("No grades found in GA_setup")
+    return json.dumps({"error": "Enter your grades before analyzing them"})
   #filter classes for the user's osis
-  classes = [item for item in classes if str(session['user_data']['osis']) in item['OSIS']]
-  categories = make_category_groups(classes)
-  
-  return json.dumps({"Classes": classes, "categories": categories})
+  classes = [item for item in classes if str(session['user_data']['osis']) in str(item['OSIS'])]
+  stats = get_stats(grades, classes)
+  compliments = get_compliments(grades, classes)
+  # convert dates of grades(m/d/yyyy) to ordinal dates
+  ordinal_dated_grades = []
+  for grade in grades:
+    ordinal_dated_grades.append({"date": datetime.datetime.strptime(grade['date'], "%m/%d/%Y").toordinal(), "value": grade['value'], "class": grade['class'], "category": grade['category'], "score": grade['score'], "name": grade['name']})
+
+  try:
+    grade_spreads = {}
+    cat_value_sums = {}
+    categories = []
+    # calculate min and max dates across all grades in form m/d/yyyy
+    times = [datetime.datetime.strptime(grade['date'], "%m/%d/%Y").toordinal() for grade in grades]
+    # Convert back to dates for min and max
+    min_date = datetime.datetime.fromordinal(min(times))
+    max_date = datetime.datetime.fromordinal(max(times))
+    # For each category in each class, filter the grades for it
+    for c in weights:
+      grade_spreads[c] = {}
+      cat_value_sums[c] = {}
+      for category in weights[c]:
+        if category not in categories:
+          categories.append(category)
+        fgrades = filter_grades(grades, user_data, [c.lower(), category.lower()])
+        cat_value_sums[c][category] = sum([int(grade['value']) for grade in fgrades])
+        # If the user has grades for the class, add the class and the grades to the list of grade spreads
+        if fgrades:
+          print("fgrades", fgrades)
+          times, g = process_grades(fgrades, user_data, classes, s_max_date=max_date, s_min_date=min_date)
+          grade_spreads[c][category] = g
+   
+    # Get the goals that the user has set, and create objects to overlay on the graph
+    # goals, set_coords, max_date = get_goals(classes, user_data, grades, times, grade_spread)
+
+  except Exception as e:
+    # get detailed error message
+    error_message = traceback.format_exc()
+    print("Error in post_ga_grades:", error_message)
+    # post error message to Errors sheet in the database
+    e = "Error in post_ga_grades: "+error_message
+    post_data("Errors", {"error": e, "OSIS": user_data['osis']})
+    return json.dumps({"error": "You have encountered an error :( Please contact pauln30@nycstudents.net with this text:    "+error_message})
+  # Create a dictionary to return the calculated data to the frontend
+  response_data = {
+    "times": times.tolist(),
+    "grade_spreads": grade_spreads,
+    # "goals": goals,
+    # "goal_set_coords": set_coords,
+    "grades": ordinal_dated_grades,
+    # "max_date": max_date,
+    "Weights": weights,
+    "categories": categories,
+    "stats": stats,
+    "compliments": compliments,
+    "cat_value_sums": cat_value_sums
+  }
+
+
+
+  return json.dumps(response_data)
 
 @app.route('/get-gclasses', methods=['POST'])
 def get_gclasses():
@@ -342,18 +524,32 @@ def get_gclasses():
   print("classes", classes)
   return json.dumps(classes)
 
-# Post grades entered in the Enter Grades page to the Grades sheet
-@app.route('/post-grades', methods=['POST'])
-def receive_grades():
+@app.route('/process-notebook-image', methods=['POST'])
+def process_notebook_image():
   data = request.json
-  post_data("Grades", data, sheetdb_url, allow_demo_change)
-  return 'Data received successfully'
+  base64_img = data['image']
+  base64_img = base64_img.split(",")[1]
+  # correct the padding of the base64 string
+  padding_needed = 4 - (len(base64_img) % 4)
+  if padding_needed:
+      base64_img += '=' * padding_needed
+  # Decode the base64 string to bytes
+  image_data = base64.b64decode(base64_img)
+  # Convert the bytes to an image
+  image = Image.open(BytesIO(image_data))
+  prompt = [{"role":"system", "content": "Given the file ID of the image of a worksheet or textbook, list the specific topics covered in it."}, {"role":"user", "content": "file ID: <<fid>>"}]
+  # Get insights from the AI
+  insights = get_insights(prompt, image_data)
+  print("insights", insights)
+  return json.dumps(insights)
+  
+
 
 @app.route('/impact', methods=['POST'])
 def get_impact():
   data = request.json
   
-  grades = get_grades(session)
+  grades = get_grades()
   classes = get_data("Classes")
   category_grades = filter_grades(grades, session['user_data'], [data['class'], data['category']])
   
@@ -371,6 +567,7 @@ def get_impact():
 @app.route('/get-file', methods=['POST'])
 def get_file():
   data = request.json
+  print(data)
   # Get the file from the bucket
   base64 = download_file("sciweb-files", data['file'])
   return json.dumps({"file": str(base64)})
@@ -384,37 +581,42 @@ def upload_file_route():
   return json.dumps({"message": "success"})
 
 
+
 #When the user logs in, their data is posted to the Users sheet
 @app.route('/post-login', methods=['POST'])
 def postLogin(): 
-  data = request.json
+  raw_data = request.json
+  data = raw_data['data']
+  mode = raw_data['mode']
   session['ip_add'] = data['IP']
   logins = get_data("Users")
   #remove the user's ip addresses from all other accounts
-  for row in logins:
-    if session['ip_add'] in row['IP']:
-      row['IP'] = row['IP'].replace(session['ip_add'], "")
-      #if the ip address is the only one in the list(no numbers in row['IP']), remove the row
-      if not any(char.isdigit() for char in row['IP']):
-        delete_data("Users", row['osis'], "osis", session, sheetdb_url, allow_demo_change)
-      else:
-        update_data(row['osis'], 'osis', row, "Users", session, sheetdb_url, allow_demo_change)
+  # for row in logins:
+  #   if session['ip_add'] in row['IP']:
+  #     row['IP'] = row['IP'].replace(session['ip_add'], "")
+  #     #if the ip address is the only one in the list(no numbers in row['IP']), remove the row
+  #     if not any(char.isdigit() for char in row['IP']):
+  #       delete_data("Users", row['osis'], "osis")
+  #     else:
+  #       update_data(row['osis'], 'osis', row, "Users")
       
-  # if the user has logged in before, update their IP address    
-  for row in logins:
-    # If the user's osis is already in the Users sheet...
-    if row['password'] == data['password'] and row['first_name'] == data['first_name']:
-      # Add their new IP address to the list of IP addresses
-      data['IP'] = f"{session['ip_add']}, {row['IP']}"
-      # Update the user's data in the Users sheet
-      update_data(row['password'], 'password', data, "Users", session, sheetdb_url, allow_demo_change)
-      session['user_data'] = row
-      return 'success'
+  # if the user has logged in before, update their IP address
+  if mode == "Login":    
+    for row in logins:
+      # If the user's osis is already in the Users sheet...
+      if row['password'] == data['password'] and row['first_name'] == data['first_name']:
+        # Add their new IP address to the list of IP addresses
+        row['IP'] = f"{session['ip_add']}, {row['IP']}"
+        
+        update_data(row['password'], 'password', row, "Users")
+        session['user_data'] = row
+        return json.dumps({"data": "success"})
+    return json.dumps({"data": "failure"})
   
   # If the user has not logged in before, add their data to the Users sheet
   session['user_data'] = data
-  post_data("Users", data, sheetdb_url, allow_demo_change)
-  return 'success'
+  post_data("Users", data)
+  return json.dumps({"data": "success"})
 
 
 # Send notebook data and Generate Practice Questions for the class notebook
@@ -426,20 +628,13 @@ def get_notebook():
   # Find the notebook with the matching class ID
   for item in notebooks:
     if item['classID'] == id:
-        prompt = [{"role":"system", "content": "Generate 3 practice questions based on this text"},
-                  {"role":"user", "content": item['text']}]
+        prompt = [{"role":"system", "content": "Generate 3 practice questions based on this notebook structure."},
+                  {"role":"user", "content": str(item['content'])}]
         insights = get_insights(prompt)
         break  # Stop the loop once 'a' is found
   response = {"notebook":notebooks, 'insights': insights}
   return json.dumps(response)
 
-# If the user changes their info on the profile page, update the Users sheet
-@app.route('/update-login', methods=['POST'])
-def updateLogin():
-  data = request.json
-  
-  update_data(str(data['osis']), 'osis', data, "Users", session, sheetdb_url, allow_demo_change)
-  return 'success'
 
 #accept friend request
 @app.route('/accept-friend', methods=['POST'])
@@ -448,92 +643,23 @@ def acceptFriend():
   friends = get_data("Friends")
   # If status is pending and there already is a row with the same osis and targetOSIS, update the row
   if data['status'] == "accepted":
-    update_data(data['id'], 'id', data, "Friends", session, sheetdb_url, allow_demo_change)
-    return 'success'
+    update_data(data['id'], 'id', data, "Friends")
+    return json.dumps({"data": "success"})
   data['OSIS'] = session['user_data']['osis']
   for row in friends:
     if (row['OSIS'] == data['targetOSIS'] and row['targetOSIS'] == data['OSIS']) or (row['OSIS'] == data['OSIS'] and row['targetOSIS'] == data['targetOSIS']):
-      return 'success'
+      return json.dumps({"data": "success"})
     
-  post_data("Friends", data, sheetdb_url, allow_demo_change)
-  return 'success'
-
-#update public profile
-@app.route('/update-public-profile', methods=['POST'])
-def updatePublicProfile():
-  data = request.json
-  update_data(str(data['OSIS']), 'OSIS', data, "Profiles", session, sheetdb_url, allow_demo_change)
-  return 'success'
-
-# After every couple of questions that the user answers on the study page, their questions and answers are logged to the Study sheet
-@app.route('/updateStudy', methods=['POST'])
-def updateStudy():
-  data = request.json
-  data = data['data']
-  user_data = get_name()
-  osis = user_data['osis']
-  update_data(osis, 'OSIS', [{"OSIS": osis, "Q&As": data}], "Study", session, sheetdb_url, allow_demo_change)
-  return json.dumps('success')
-
-#If a user joins or creates a class, the class data is posted to the Classes sheet
-@app.route('/post-classes', methods=['POST'])
-def receive_Classes():
-  data = request.json
-  print("receive_classes data", data)
-  # update=0 means the class is new, update=1 means the class is being joined
-  if data["update"] == 0:
-    post_data("Classes", data['class'], sheetdb_url, allow_demo_change)
-  else:
-    # add the user's osis to the class's list of osis
-    update_data(data["update"], "id", data['class'], "Classes", session, sheetdb_url, allow_demo_change)
-
+  post_data("Friends", data)
   return json.dumps({"data": "success"})
 
-# If the user edits one of their grades on the Enter Grades page, it's updated in the Grades sheet
-@app.route('/update-grades', methods=['POST'])
-def update_grades():
+# post grades route
+@app.route('/post_grades', methods=['POST'])
+def post_grades_route():
   data = request.json
-  update_data(data['rowid'], "id", data['grades'], "Grades", session, sheetdb_url, allow_demo_change)
-  return 'success'
-
-#If the user clicks the delete saved grades button, delete their grades from the Grades sheet
-@app.route('/delete-grades', methods=['POST'])
-def delete_grades():
-  data = request.json
-  delete_data("GradeData", data['osis'], "OSIS", session, sheetdb_url, allow_demo_change)
-  return 'success'
-
-# When the user creates an assignment, the database is updated
-@app.route('/post-assignment', methods=['POST'])
-def postAssignment():
-  data = request.json['data']
-  print(data)
-  # Add the assignment to the Assignments sheet
-  post_data("Assignments", data['data'], sheetdb_url, allow_demo_change)
-  # Also, update the Classes sheet to include the assignment
-  update_data(data['classid'], "id", data["newrow"], "Classes", session, sheetdb_url, allow_demo_change)
-  return json.dumps('success')
-
-# When the user creates a goal, it's posted to the Goals sheet
-@app.route('/post-goal', methods=['POST'])
-def postGoal():
-  data = request.json
-  post_data("Goals", data, sheetdb_url, allow_demo_change)
-  return 'success'
-
-# When the user types a message into the chat, it's posted to the Chat sheet
-@app.route('/post-message', methods=['POST'])
-def postMessage():
-  data = request.json
-  post_data("Chat", data, sheetdb_url, allow_demo_change)
-  return json.dumps({"data": 'success'})
-
-# When the user saves a notebook after changing it, it's posted to the Notebooks sheet
-@app.route('/post-notebook', methods=['POST'])
-def postNotebook():
-  data = request.json
-  update_data(data['data']['classID'], 'classID', data, "Notebooks", session, sheetdb_url, allow_demo_change)
-  return json.dumps({"data": 'success'})
+  grades = data['data']
+  post_grades(grades, "none")
+  return json.dumps({"message": "success"})
 
 
 #Function to get the user's name from Users data
@@ -552,7 +678,7 @@ def get_name(ip=None):
   
 
   data = get_data("Users")
-  
+  print(data)
   # If the user's IP address is in the Users data, return their name and other info
   if 'ip_add' in session:
     filtered_data = [entry for entry in data if str(session['ip_add']) in str(entry.get('IP'))]
@@ -571,29 +697,9 @@ def get_name(ip=None):
 
 
 
-# Query the LLM API to get insights
-def get_insights(prompts):
-  
-  headers = {
-    'Authorization': f'Bearer {openAIAPI}',
-    'Content-Type': 'application/json'
-}
-  
-  payload = {
-    "model": "gpt-3.5-turbo",
-    "messages": prompts
-}
-  insights = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
-  insights = insights.json()
-  print("raw insights: "+str(insights))
-  insights = insights['choices'][0]['message']['content']
-  print("insights: "+str(insights))
-  return insights
-  
 
-  
 
-#uncomment to run locally, comment to deploy
+#uncomment to run locally, comment to deploy. Before deploying, change db to firebase, add new packages to requirements.txt
 
 if __name__ == '__main__':
   app.run(host='localhost', port=8080)
