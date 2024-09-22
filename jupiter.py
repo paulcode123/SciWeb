@@ -108,7 +108,7 @@ def jupapi_output_to_classes(data):
   class_data = get_data("Classes")
   # get the user's classes from the jupiter data
   classes = data["courses"]
-
+  print("in jupapi_output_to_classes, classes:", classes)
   # for each class in the user's jupiter data, check if the class exists in the db
   for c in classes:
     class_exists = False
@@ -129,11 +129,11 @@ def jupapi_output_to_classes(data):
       if not("name" in class_info and class_info["name"] == class_name and class_info["teacher"] == teacher and class_info["schedule"] == schedule):
         continue
       # check if the user is already in the class
-      if str(session['user_data']['osis']) in class_info["OSIS"]:
+      if str(session['user_data']['osis']) in str(class_info["OSIS"]):
         class_exists = True
         break
       else:
-        class_info["OSIS"] = str(session['user_data']['osis']) + ", " + class_info["OSIS"]
+        class_info["OSIS"] = str(session['user_data']['osis']) + ", " + str(class_info["OSIS"])
         # update_data(class_info["id"], "id", class_info, "Classes", session, sheetdb_url, allow_demo_change)
         update_data(class_info["id"], "id", class_info, "Classes")
         
@@ -169,6 +169,9 @@ def get_grades():
 
   # get the line dict without the osis and encrypted keys
   gline = {key: line[key] for key in line if key != "OSIS" and key != "encrypted" and key != "docid"}
+  # if there are no remaining keys, return the default dict
+  if len(gline) == 0:
+    return {"date": "1/1/2021", "score": 0, "value": 0, "class": "No grades entered", "category": "No grades entered", "name": "None"}
   # get the highest number of the keys in the line dict
   num_elements = max([int(key) for key in gline.keys()])+1
   
@@ -251,8 +254,8 @@ def convert_date(date_str):
         input_date_with_current_year = datetime.datetime.strptime(date_str + f"/{current_year}", "%m/%d/%Y")
     except:
       print("Error parsing date", date_str)
-    # If the resulting date is in the future, subtract one year
-    if input_date_with_current_year > current_date:
+    # If the resulting date is more than 20 days in the future, subtract one year
+    if input_date_with_current_year > current_date + datetime.timedelta(days=20):
         input_date_with_current_year = input_date_with_current_year.replace(year=current_year - 1)
     
     # Return the formatted date string without leading zeros in a platform-independent way

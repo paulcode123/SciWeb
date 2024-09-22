@@ -1,65 +1,74 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE HTML>
+<!--
+	Landed by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>SciWeb | Enter Grades</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="/static/PitchFiles/assets/css/main.css" />
+    <link rel="stylesheet" href="/static/EG.css">
 
-<head>
-  <meta charset="UTF-8">
-  <title>SciWeb Enter Grades</title>
-  <link rel="icon" href="static/media/favicon.png" type="image/x-icon">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="/static/EG.css">
-  <link rel="stylesheet" href="/static/navbar.css">
-  <link rel="manifest" href="/static/manifest.json">
+        <link rel="icon" href="static/media/favicon.png" type="image/x-icon">
+		<noscript><link rel="stylesheet" href="/static/PitchFiles/assets/css/noscript.css" /></noscript>
+	</head>
+	<body class="is-preload">
+		<div id="page-wrapper">
 
-</head>
+			<!-- Header -->
+            <header id="header">
+                <!-- <h1 id="logo"><a href="/">Landed</a></h1> -->
+                <nav id="nav">
+                    <ul>
+                      <li><a href="/">Home</a></li>
+                      <li>
+                        <a>Achieve</a>
+                        <ul>
+                          <li><a href="/EnterGrades">Enter</a></li>
+                          <li><a href="/GradeAnalysis">Analyse</a></li>
+                          <li><a href="/Goals">Goals</a></li>
+                        </ul>
+                      </li>
+                      <li>
+                        <a>Study</a>
+                        <ul>
+                          <li><a href="#">Write</a></li>
+                          <li><a href="/Study">Study</a></li>
+                          <li><a href="/Battle">Battle</a></li>
+                        </ul>
+                      </li>
+                      <li>
+                        <a>Connect</a>
+                        <ul>
+                          <li><a href="/Classes">Classes</a></li>
+                          <li><a href="/Assignments">Assignments</a></li>
+                          <li><a href="/Leagues">Leagues</a></li>
+                          <li><a href="#">Questions</a></li>
+                        </ul>
+                      </li>
+                      <li>
+                        <a>About</a>
+                        <ul>
+                          <li><a href="/Pitch">Pitch</a></li>
+                          <li><a href="/GetStart">Getting Started</a></li>
+                        </ul>
+                      </li>
+                      <li><a href="/Login" class="button primary" id="profile">Login</a></li>
+                    </ul>
+                  </nav>
+            </header>
+            <div id="main" class="wrapper style1">
+                <div class="container">
 
-  
-
-<body>
-  <ul class="navbar">
-    <li><a href="/">Home</a></li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Achieve</button>
-      <div class="dropdown-content">
-        <a href="/EnterGrades">Enter</a>
-        <a href="/GradeAnalysis">Analyse</a>
-        <a href="/Goals">Goals</a>
-        
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Study</button>
-      <div class="dropdown-content">
-        <a href="/StudyLevels">Levels</a>
-<a href="/StudyBot">StudyBot</a>
-<a href="/Evaluate">Evaluate</a>
-<a href="/Battle">Battle</a>
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Connect</button>
-      <div class="dropdown-content">
-        <a href="/Classes">Classes</a>
-        <a href="/Assignments">Assignments</a>
-        <a href="/Leagues">Leagues</a>
-        <a href="#">Questions</a>
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">About</button>
-      <div class="dropdown-content">
-        <a href="/Pitch">Pitch</a>
-        <a href="/GetStart">Getting Started</a>
-        
-      </div>
-    </li>
-    <li><a href="/Login" id="profile">Login</a></li>
-  </ul>
-  <div id="notification-container"></div>
-
-  <main>
     <div id="loadingWheel"></div>
-    <h1>Enter Grades</h1>
-    <p>Pull your grades directly from Jupiter, or enter/edit them manually</p>
+    <header class="major">
+      <h2>Enter Grades</h2>
+      <p>Simply pull your grades directly from Jupiter to unlock powerful analysis and insights</p>
+    </header>
+    
     <br>
     <div id="pullJup">
     <input type="number" id="osis" placeholder="OSIS" autocomplete="tel"></input><br>
@@ -76,10 +85,10 @@
     </div>
   </div>
     <button id="DeleteGrades">Delete Saved Grades</button>
-    <a href="/GradeAnalysis" id="OpenGA" class="button">Analyze Grades</a>
+    <button id="OpenGA">Analyze Grades</button>
     <button id="DownloadGrades">Download Grades</button>
     <!-- get user osis number -->
-    <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+    <br><br><br><br>
     
     <button id="toggleGradeForm">Enter Grades Manually ></button>
     <br><br>
@@ -222,11 +231,20 @@
 
 <script src="/static/util.js"></script>
 <script src="/static/user_data.js"></script>
-  <script src="/static/notifications.js" type="module"></script>
 <script src="static/EG.js" type="module"></script>
-<!-- <script src="/src/index.js"></script> -->
-<!-- <script src="{{ url_for('static', filename='dist/index.js') }}"></script> -->
-  </main>
+  <script src="/static/notifications.js" type="module"></script>
+
+
+<!-- Scripts -->
+<script src="/static/util.js"></script>
+<script src="/static/PitchFiles/assets/js/jquery.min.js"></script>
+<script src="/static/PitchFiles/assets/js/jquery.scrolly.min.js"></script>
+<script src="/static/PitchFiles/assets/js/jquery.dropotron.min.js"></script>
+<script src="/static/PitchFiles/assets/js/jquery.scrollex.min.js"></script>
+<script src="/static/PitchFiles/assets/js/browser.min.js"></script>
+<script src="/static/PitchFiles/assets/js/breakpoints.min.js"></script>
+<script src="/static/PitchFiles/assets/js/util.js"></script>
+<script src="/static/PitchFiles/assets/js/main.js"></script>
+
 </body>
-  </html>
-  
+</html>

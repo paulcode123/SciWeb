@@ -9,6 +9,11 @@ const tbody = document.querySelector("#mytbody");
 var grades;
 const Pullbutton = document.querySelector('#Jupull');
 
+// when OpenGA button is clicked, open the GradeAnalysis page
+document.getElementById('OpenGA').addEventListener('click', () => {
+  window.location.href = '/GradeAnalysis';
+});
+
 //add event listener to the pull button
 Pullbutton.addEventListener('click', pullfromJupiter);
 
@@ -235,7 +240,7 @@ function createGradesTable(grades) {
       createTableCell(className),
       createTableCell(category),
       createTableCell(name),
-      createEditButton(i)
+      createShareButton(i)
     ];
 
     cells.forEach(cell => row.appendChild(cell));
@@ -250,82 +255,34 @@ function createTableCell(value) {
   return cell;
 }
 
-// Function to create an edit button for a row
-function createEditButton(index) {
-  const button = document.createElement('button');
-  button.textContent = 'Edit';
-  button.addEventListener('click', () => {
-    const row = document.getElementById('gradesBody').children[index];
-    makeRowEditable(row, index);
-  });
-
+// Function to create an share button for the row
+function createShareButton(index) {
+  const row = document.getElementById('gradesBody').children[index];
   const cell = document.createElement('td');
-  cell.appendChild(button);
+  // add the image /static/media/shareicon.png, and onclick, run navigator.share
+  const span = document.createElement('span');
+  const icon = document.createElement('img');
+  icon.src = '/static/media/shareicon.png';
+  icon.style.width = '20px';
+  icon.style.height = '20px';
+  span.appendChild(icon);
+  span.addEventListener('click', () => {
+    const grade = grades[index];
+    navigator.share({
+      title: 'Grade',
+      text: `I got a ${grade.score}/${grade.value} on ${grade.name} in ${grade.class}! Check out your grades using the link below.`,
+      url: "https://bxsciweb.org/EnterGrades"
+    });
+  });
+  cell.appendChild(span);
   return cell;
 }
 
-// Function to make a row editable
-function makeRowEditable(row, index) {
-  input_types = ["date", "number", "number", "text", "text", "text"]
-  const cells = row.children;
-  for (let i = 0; i < cells.length - 1; i++) {
-    const cell = cells[i];
-    const value = cell.textContent;
-    let type = input_types[i];
-    cell.innerHTML = `<input type="${type}" value="${value}">`;
-    
-  }
 
-  const saveButton = document.createElement('button');
-  saveButton.textContent = 'Save';
 
-// When the user clicks the save button, save the changes made to the row
-saveButton.addEventListener('click', () => {
-    saveRowChanges(row, index);
-  });
 
-  const actionCell = cells[cells.length - 1];
-  actionCell.innerHTML = '';
-  actionCell.appendChild(saveButton);
-}
 
-// Function to save the changes made to a row
-function saveRowChanges(row, index) {
-  const cells = row.children;
-  const updatedValues = {};
 
-  for (let i = 0; i < cells.length - 1; i++) {
-    const cell = cells[i];
-    const input = cell.firstChild;
-    const value = input.value;
-    const property = getPropertyByIndex(i);
-    updatedValues[property] = value;
-    cell.textContent = value;
-  }
-  updatedValues['id'] = grades[index]['id']
-  updatedValues['osis'] = grades[index]['osis']
-  const saveButton = document.createElement('button');
-  saveButton.textContent = 'Edit';
-  saveButton.addEventListener('click', () => {
-    makeRowEditable(row, index);
-  });
-
-  const actionCell = cells[cells.length - 1];
-  actionCell.innerHTML = '';
-  actionCell.appendChild(saveButton);
-  index = grades[index]['id']
-  // Process the updated values as needed
-  console.log('Updated Values:', updatedValues);
-  console.log('Original Index:', index);
-  update_grades(index, updatedValues)
-}
-
-// Function to get the property name based on the index
-function getPropertyByIndex(index) {
-  const properties = ['date', 'score', 'value', 'class', 'category', 'name'];
-  return properties[index];
-}
-// Create the grades table
 
 async function update_grades(id, grades){
   await fetchRequest('/update_data', {"sheet": "Grades", "data": grades, "row_name": "id", "row_value": id});

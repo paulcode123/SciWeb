@@ -8,6 +8,11 @@ var grade_spreads;
 var grades;
 var val_sums;
 
+var currentCategories;
+var goals;
+
+var combinedx;
+var combinedy;
 
 async function main(){
   const data = await fetchRequest('/GAsetup', { data: '' });
@@ -31,13 +36,14 @@ async function main(){
     stats = data["stats"];
     compliments = data["compliments"];
     val_sums = data["cat_value_sums"];
+    goals = data["goals"];
 
-    setClasses(weights, categories)
+    setClasses(weights)
     setStats(stats)
     // setGoalProgress()
     setCompliments(compliments)
     
-    draw_graphs(grade_spreads, times, weights, grades, ['All', 'all'], val_sums)
+    draw_graphs(grade_spreads, times, weights, grades, ['All', 'all'], val_sums, 5, goals);
     
 }
 
@@ -54,56 +60,106 @@ function setStats(stats){
   document.getElementById("s5").nextElementSibling.textContent += "("+stats["grade_changes"][stats["most_worsened_class"]]+"%)"
   document.getElementById("s6").textContent = stats["past30_avg"] + "%"
 }
-function setClasses(weights, categories){
+function setClasses(weights){
     var classes = Object.keys(weights)
     var class_div = document.getElementById("classes")
-    var categories_div = document.getElementById("categories")
     console.log(classes)
-    for(let x=0;x<classes.length;x++){
-      // var child_label = document.createElement("label");
-      let text = document.createElement("label");
-      let checkbox = document.createElement("input");
-      let checkmark = document.createElement("span");
-
-      checkbox.type = 'checkbox';
-      checkbox.value = classes[x].toLowerCase();
-      checkbox.name = 'class';
-
-      text.textContent = "     "+ classes[x];
-      text.className = 'custom-checkbox';
-
-      checkmark.className = 'checkmark';
-      checkbox.addEventListener('change', function() {
+    
+      //create an all checkbox that checks all the checkboxes in the class and their subcategories
+      let [t, cb, m] = createCheckbox("All");
+      t.appendChild(m);
+      t.appendChild(cb);
+      class_div.appendChild(t);
+      cb.addEventListener('change', function() {
         if(this.checked) {
-          text.style.backgroundColor = 'green'; // Directly change the background color
+          t.style.backgroundColor = 'rgba(228, 76, 101, 1)'; // Directly change the background color
+          checkboxes = document.querySelectorAll('input[name="class"]');
+          for (let i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].checked = true;
+            console.log(checkboxes[i], "checked")
+            checkboxes[i].dispatchEvent(new Event('change'));
+          }
         } else {
-          text.style.backgroundColor = 'darkgray'; // Revert to original color
+          t.style.backgroundColor = '#1b1c1c'; // Revert to original color
+          checkboxes = document.querySelectorAll('input[name="class"]:checked');
+          for (let i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].checked = false;
+            checkboxes[i].dispatchEvent(new Event('change'));
+          }
+        }
+      });
+
+      for(let x=0;x<classes.length;x++){
+      // define the class checkboxes
+      let subcategories = document.createElement("div");
+      let [text, checkbox, checkmark] = createCheckbox(classes[x])
+
+      // for each category in the class, create a checkbox
+      for (const category in weights[classes[x]]) {
+        let label = document.createElement("label");
+        let input = document.createElement("input");
+        input.type = 'checkbox';
+        input.value = category.toLowerCase();
+        input.name = 'class';
+        label.textContent = "     "+ category;
+        label.className = 'category-checkbox';
+        input.addEventListener('change', function() {
+          if(this.checked) {
+            label.style.backgroundColor = 'rgba(228, 76, 101, 1)'; // Directly change the background color
+          } else {
+            label.style.backgroundColor = '#1b1c1c'; // Revert to original color
+          }
+        });
+        label.appendChild(input);
+        subcategories.appendChild(label);
+      }
+
+      // hide subcategories by default
+      subcategories.style.display = 'none';
+
+      checkbox.addEventListener('change', function() {
+        checkboxes = subcategories.querySelectorAll('input[name="class"]');
+        if(this.checked) {
+          text.style.backgroundColor = 'rgba(228, 76, 101, 1)'; // Directly change the background color
+          subcategories.style.display = 'block';
+          // check all subcategories
+          for (let i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].checked = true;
+            checkboxes[i].dispatchEvent(new Event('change'));
+          }
+        } else {
+          text.style.backgroundColor = '#1b1c1c'; // Revert to original color
+          subcategories.style.display = 'none';
+          // uncheck all subcategories
+          for (let i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].checked = false;
+            checkboxes[i].dispatchEvent(new Event('change'));
+          }
         }
       });
       text.appendChild(checkmark);
       text.appendChild(checkbox);
       class_div.appendChild(text);
+      class_div.appendChild(subcategories);
     }
 
-    console.log(categories)
-for(let x=0;x<categories.length;x++){
-      let label = document.createElement("label");
-      let input = document.createElement("input");
-      input.type = 'checkbox'
-      input.value = categories[x];
-      label.textContent = "     "+ categories[x];
-      input.name = 'class'
-      label.className = 'custom-checkbox';
-      input.addEventListener('change', function() {
-        if(this.checked) {
-          label.style.backgroundColor = 'green'; // Directly change the background color
-        } else {
-          label.style.backgroundColor = 'darkgray'; // Revert to original color
-        }
-      });
-      label.appendChild(input);
-      categories_div.appendChild(label);
-    }
+}
+
+function createCheckbox(content){
+  let text = document.createElement("label");
+  let checkbox = document.createElement("input");
+  let checkmark = document.createElement("span");
+  
+
+  checkbox.type = 'checkbox';
+  checkbox.value = content.toLowerCase();
+  checkbox.name = 'class';
+
+  text.textContent = "     "+ content;
+  text.className = 'class-checkbox';
+
+  checkmark.className = 'checkmark';
+  return [text, checkbox, checkmark];
 }
 
 async function setGoalProgress(){
@@ -152,7 +208,7 @@ async function setGoalProgress(){
 main()
 
 // gotc = grades over time chart
-function draw_gotc(grade_spreads, times, weights, grades, cat, val_sums, goals=null, goal_set_coords=null){
+function draw_gotc(grade_spreads, times, weights, grades, cat, val_sums, comp_time, goals){
 // define the canvas
 const canvas = document.querySelector('#myGraph');
 
@@ -261,14 +317,22 @@ const layout = {
     title: 'Date',
     tickvals: times,
     ticktext: dateStrings,
-    range: [min_x - 3, max_x + 3]
+    range: [min_x - 3, max_x + 3],
+    showgrid: false
   },
   yaxis: {
     title: 'Grades',
+    showgrid: false
   },
+  showlegend: false,
   displayModeBar: false,
   //shapes: goals // Add the goal zone shape
   // images: goals
+  paper_bgcolor: 'rgba(0,0,0,0)', // Transparent background
+  plot_bgcolor: 'rgba(0,0,0,0)',  // Transparent plot area
+  font: {
+    color: 'white' // White text
+  }
 };
 
 // create final, combined line: at each timepoint, sum the weighted grade_spreads
@@ -285,6 +349,8 @@ for (let i = 0; i < times.length; i++) {
 }
 console.log(final)
 
+combinedx = times;
+combinedy = final;
 
 // create an array with a copy of dict {y: final} for each spread
 let finalTraces = [];
@@ -296,27 +362,178 @@ for (let i = 0; i < spreads.length; i++) {
 
 // Render the graph
 Plotly.newPlot('myGraph', spreadTraces, layout);
-// Start animation
-Plotly.animate('myGraph', {
-  data: finalTraces,
-  traces: numTraces,
-  layout: {}
-}, {
-  transition: {
-    duration: 3000,
-    easing: 'cubic-in-out'
-  },
-  frame: {
-    duration: 3000
+
+// update goals
+updateGoals(goals, cat);
+
+// when checkbox with id 'individual' is clicked, show or hide the scatter plot
+document.getElementById('individual').addEventListener('change', function() {
+  if(this.checked) {
+    spreadTraces[0].visible = true;
+  } else {
+    spreadTraces[0].visible = 'legendonly';
   }
+  Plotly.react('myGraph', spreadTraces, layout);
 });
 // hide loading wheel
 document.getElementById('loadingWheel').style.visibility = "hidden";
-// wait 4000 ms for animation to finish
+setTimeout(function(){
+  console.log(comp_time)
+// Start animation
+animationGOTC(numTraces, finalTraces, "combine");
+console.log(finalTraces)
+// when checkbox with id 'components' is clicked, split or combine the line components
+document.getElementById('components').addEventListener('change', function() {
+  if(this.checked) {
+    animationGOTC(numTraces, finalTraces);
+  } else {
+    // the y values of all spreadTraces except the last one, which is the scatter plot
+    
+    console.log(spreads)
+    traces = spreads.map(spread => {return {y: spread}});
+    animationGOTC(numTraces, traces);
+  }
+});
+
+}, comp_time*500);
+}
+
+function animationGOTC(numTraces, traces){
+  
+  Plotly.animate('myGraph', {
+    data: traces,
+    traces: numTraces,
+    layout: {}
+  }, {
+    transition: {
+      duration: 3000,
+      easing: 'cubic-in-out'
+    },
+    frame: {
+      duration: 3000
+    }
+  });
+  // wait 4000 ms for animation to finish
 setTimeout(function(){
   console.log('resizing')
   Plotly.relayout('myGraph', {'yaxis.autorange': true});
 }, 4000);
+}
+
+
+// Add event listener to button addGoal to set a plotly onclick event to add a goal
+document.getElementById('addGoal').addEventListener('click', function() {
+  console.log('addGoal clicked');
+  var myPlot = document.getElementById('myGraph');
+
+  function clickHandler(event) {
+    // Get the bounding rectangle of the plot
+    var rect = myPlot.getBoundingClientRect();
+
+    // Calculate mouse position relative to the plot
+    var x = event.clientX - rect.left;
+    var y = event.clientY - rect.top;
+
+    // Get the x and y axes from the full layout
+    var xaxis = myPlot._fullLayout.xaxis;
+    var yaxis = myPlot._fullLayout.yaxis;
+
+    // Convert pixel coordinates to data coordinates
+    var xData = xaxis.p2d(x)-2;
+    var yData = yaxis.p2d(y)+0.55;
+
+    addGoal(xData, yData);
+
+    // Remove the click event listener after it runs
+    myPlot.removeEventListener('click', clickHandler);
+    console.log('click event listener removed');
+  }
+
+  // Attach the click handler
+  myPlot.addEventListener('click', clickHandler);
+  console.log('click event listener added');
+});
+
+
+// log the goal to the database and update goals
+async function addGoal(xData, yData) {
+  // convert xData(serial date) to string date
+  let dateString = serialToDate(xData);
+  // set dateSet to today's date
+  let dateSet = new Date();
+  let dateSetString = (dateSet.getMonth() + 1) + '/' + dateSet.getDate() + '/' + (dateSet.getFullYear());
+  // generate a random 5 digit id
+  let id = Math.floor(Math.random() * 90000) + 10000;
+  let data = {date: dateString, grade: yData, categories: currentCategories, date_set: dateSetString, OSIS: osis, id: id}
+  await fetchRequest('/post_data', {sheet: "Goals", data: data});
+  goals.push(data)
+  console.log(goals, data)
+  // update goals
+  updateGoals(goals, currentCategories);
+}
+
+function updateGoals(goals, categories) {
+  // for each goal in goals where goal['categories'] matches categories, add a line on the graph
+  graph = document.getElementById('myGraph');
+  medals = [];
+  lines = [];
+  for (let i = 0; i < goals.length; i++) {
+    let goal = goals[i];
+    console.log(goal['categories'], categories)
+    if (goal['categories'].every(category => categories.includes(category))) {
+      // convert goal['date'] to serial date
+      let xgoal = dateToSerial(goal['date']);
+      let ygoal = goal['grade'];
+      let xinitdate = goal['date_set'];
+      let xinit = dateToSerial(xinitdate);
+      // get yinit by interpolating from combinedx and combinedy
+      let yinit = interpolate(xinit, combinedx, combinedy);
+
+      console.log("in updateGoals", xgoal, ygoal, xinit, yinit);
+      // create a line from (xinit, yinit) to (xgoal, ygoal) on the graph
+      let line = {
+        x: [xinit, xgoal],
+        y: [yinit, ygoal],
+        mode: 'lines',
+        line: {
+          color: 'rgba(255, 255, 255, 0.5)',
+          width: 1
+        },
+        name: 'Goal'
+      };
+      lines.push(line);
+      // add the image(/static/media/GoalMedal.png) of a medal, representing the goal, at (xgoal, ygoal)
+      sizex = (graph.layout.xaxis.range[1]-graph.layout.xaxis.range[0])/5;
+      sizey = (graph.layout.yaxis.range[1]-graph.layout.yaxis.range[0])/5;
+      
+      let image = {
+        source: '/static/media/GoalMedal.png',
+        x: xgoal,
+        y: ygoal,
+        xref: 'x',
+        yref: 'y',
+        sizex: sizex,
+        sizey: sizey,
+        xanchor: 'center',
+        yanchor: 'middle'
+      };
+      medals.push(image);
+    }
+  }
+  console.log(medals)
+  Plotly.addTraces(graph, lines);
+  Plotly.relayout(graph, { images: medals })
+}
+
+function interpolate(x, xs, ys) {
+  for (let i = 0; i < xs.length - 1; i++) {
+      if (x >= xs[i] && x <= xs[i + 1]) {
+          let x1 = xs[i], x2 = xs[i + 1];
+          let y1 = ys[i], y2 = ys[i + 1];
+          return y1 + (y2 - y1) * (x - x1) / (x2 - x1);
+      }
+  }
+  throw new Error('x is out of bounds. x = ' + x + ', xs = ' + xs);
 }
 
 function dateToSerial(dateString) {
@@ -335,7 +552,7 @@ function dateToSerial(dateString) {
   // Convert the difference from milliseconds to days
   let daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
 
-  return daysDifference+693596;
+  return daysDifference+693962;
 }
 
 
@@ -355,7 +572,7 @@ function serialToDate(serial) {
 
 
 
-function draw_histogram(grades, cat) {
+function draw_histogram(grades, cat, comp_time) {
   let grade_points = [];
   for (let i = 0; i < grades.length; i++) {
     let grade = grades[i];
@@ -396,8 +613,15 @@ function draw_histogram(grades, cat) {
 
 var layout = {
     title: 'Grade Distribution',
-    xaxis: {title: 'Grade'},
-    yaxis: {title: 'Density'}
+    xaxis: {title: 'Grade', showgrid: false},
+    yaxis: {title: 'Density', showgrid: false},
+    showlegend: false,
+    displayModeBar: false,
+    paper_bgcolor: 'rgba(0,0,0,0)', // Transparent background
+    plot_bgcolor: 'rgba(0,0,0,0)',  // Transparent plot area
+    font: {
+    color: 'white' // White text
+  }
 };
 // run kde for all grades
 var data = grades.map(grade => grade['score']/grade['value']*100);
@@ -410,28 +634,49 @@ for (let i = 0; i < traces.length; i++) {
 }
 
 Plotly.newPlot('myHisto', traces, layout);
-Plotly.animate('myHisto', {
-  data: coordcopies,
-  traces: tracenums,
-  layout: {}
-}, {
-  transition: {
-    duration: 3000,
-    easing: 'cubic-in-out'
-  },
-  frame: {
-    duration: 3000
+setTimeout(function(){
+  animationHistogram(tracenums, coordcopies);
+}, comp_time*500);
+
+// when checkbox with id 'componentsHisto' is clicked, split or combine the line components
+document.getElementById('componentsHisto').addEventListener('change', function() {
+  if(this.checked) {
+    animationHistogram(tracenums, coordcopies);
+  } else {
+    anitraces = traces.map(trace => {return {y: trace.y, x: trace.x}});
+    console.log(traces)
+    console.log(anitraces)
+    animationHistogram(tracenums, anitraces);
   }
 });
-setTimeout(function(){
-  console.log('resizing')
-  Plotly.relayout('myHisto', {'yaxis.autorange': true});
-}, 4000);
 }
+
+function animationHistogram(tracenums, traces){
+  
+  Plotly.animate('myHisto', {
+    data: traces,
+    traces: tracenums,
+    layout: {}
+  }, {
+    transition: {
+      duration: 3000,
+      easing: 'cubic-in-out'
+    },
+    frame: {
+      duration: 3000
+    }
+  });
+  setTimeout(function(){
+    console.log('resizing')
+    Plotly.relayout('myHisto', {'yaxis.autorange': true});
+  }, 4000);
+}
+
 // create a function to call draw_histogram and draw_gotc with all of the necessary parameters
-function draw_graphs(grade_spreads, times, weights, grades, cat, val_sums){
-  draw_gotc(grade_spreads, times, weights, grades, cat, val_sums);
-  draw_histogram(grades, cat);
+function draw_graphs(grade_spreads, times, weights, grades, cat, val_sums, comp_time=0, goals){
+  currentCategories = cat;
+  draw_gotc(grade_spreads, times, weights, grades, cat, val_sums, comp_time, goals);
+  draw_histogram(grades, cat, comp_time);
 }
 
 document.getElementById("class-form").addEventListener("submit", function(event) {
@@ -455,7 +700,7 @@ errorMessage.textContent = "";
   let specificity = document.getElementById("mySlider").value;
   console.log(selectedClasses);
   // document.getElementById("class-form").reset();
-  draw_graphs(grade_spreads, times, weights, grades, selectedClasses, val_sums);
+  draw_graphs(grade_spreads, times, weights, grades, selectedClasses, val_sums, specificity);
   console.log("done")
   
   });
@@ -597,4 +842,44 @@ function kernelDensityEstimation(data, kernel, bandwidth) {
       y.push(yi);
   }
   return {x: x, y: y};
+}
+
+
+function shareStat(stat, id){
+  text = first_name+"My"+" "+stat+" is "+document.getElementById(id).textContent+"! Check out my other stats on my bxsciweb profile!"
+  navigator.share({
+    title: first_name+"'s Grade Analytics",
+    text: text,
+    url: 'https://bxsciweb.org/users/'+osis
+  })
+}
+
+async function shareGraph(id) {
+  // Get the Plotly graph element
+  var graph = document.getElementById(id)
+
+  // Use html2canvas to take a screenshot of the div
+  html2canvas(graph).then(canvas => {
+    // Convert the canvas to a Blob
+    canvas.toBlob(blob => {
+      const file = new File([blob], "graph.png", { type: "image/png" });
+
+      // Use the navigator.share API to share the image
+      if (navigator.share) {
+        navigator.share({
+          title: 'Graph Image',
+          text: 'Check out this graph!',
+          files: [file]
+        }).then(() => {
+          console.log('Share successful');
+        }).catch(error => {
+          console.error('Error sharing', error);
+        });
+      } else {
+        console.error('Web Share API not supported');
+      }
+    });
+  }).catch(error => {
+    console.error('Error taking screenshot', error);
+  });
 }

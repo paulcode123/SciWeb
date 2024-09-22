@@ -28,7 +28,6 @@ from PIL import Image
 from database import get_data, post_data, update_data, delete_data, download_file, upload_file, init_firebase
 from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups, get_stats, update_leagues, get_compliments
-from goals import calculate_goal_progress, get_goals
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades
 from study import study_response, get_insights
 
@@ -58,7 +57,7 @@ def init():
   vars['max_column'] = "O"
   vars['AppSecretKey'] = keys["AppSecretKey"]
   # firebase or gsheet
-  vars['database'] = 'gsheet'
+  vars['database'] = 'firebase'
   vars['allow_demo_change'] = True
   
   return vars
@@ -115,6 +114,10 @@ def study():
 @app.route('/StudyLevels')
 def study_levels():
   return render_template('Levels.html')
+
+@app.route('/Diagnostic')
+def diagnostic():
+  return render_template('Diagnostic.html')
 
 @app.route('/Evaluate')
 def evaluate():
@@ -398,9 +401,6 @@ def delete_data_route():
   delete_data(data['row_value'], data['row_name'], data['sheet'])
   return json.dumps({"message": "success"})
 
-@app.route('/goals_progress', methods=['POST'])
-def get_goals_progress():
-  return json.dumps(calculate_goal_progress(session))
 
 # Function to return insights to the Study page
 @app.route('/AI', methods=['POST'])
@@ -448,6 +448,9 @@ def GA_setup():
   weights = get_weights(classes, session['user_data']['osis'])
   grades = get_grades()
   user_data = get_name()
+  goals = get_data("Goals")
+  # filter goals for the user's osis
+  goals = [item for item in goals if str(session['user_data']['osis']) in str(item['OSIS'])]
 
   # if there are no grades, return an error
   # if grades is a dictionary with a key 'class' and the value is 'No grades entered', return an error
@@ -456,14 +459,15 @@ def GA_setup():
     return json.dumps({"error": "Enter your grades before analyzing them"})
   #filter classes for the user's osis
   classes = [item for item in classes if str(session['user_data']['osis']) in str(item['OSIS'])]
-  stats = get_stats(grades, classes)
-  compliments = get_compliments(grades, classes)
-  # convert dates of grades(m/d/yyyy) to ordinal dates
-  ordinal_dated_grades = []
-  for grade in grades:
-    ordinal_dated_grades.append({"date": datetime.datetime.strptime(grade['date'], "%m/%d/%Y").toordinal(), "value": grade['value'], "class": grade['class'], "category": grade['category'], "score": grade['score'], "name": grade['name']})
-
   try:
+    stats = get_stats(grades, classes)
+    compliments = get_compliments(grades, classes)
+    # convert dates of grades(m/d/yyyy) to ordinal dates
+    ordinal_dated_grades = []
+    for grade in grades:
+      ordinal_dated_grades.append({"date": datetime.datetime.strptime(grade['date'], "%m/%d/%Y").toordinal(), "value": grade['value'], "class": grade['class'], "category": grade['category'], "score": grade['score'], "name": grade['name']})
+
+
     grade_spreads = {}
     cat_value_sums = {}
     categories = []
@@ -510,7 +514,8 @@ def GA_setup():
     "categories": categories,
     "stats": stats,
     "compliments": compliments,
-    "cat_value_sums": cat_value_sums
+    "cat_value_sums": cat_value_sums,
+    "goals": goals
   }
 
 
@@ -701,5 +706,5 @@ def get_name(ip=None):
 
 #uncomment to run locally, comment to deploy. Before deploying, change db to firebase, add new packages to requirements.txt
 
-if __name__ == '__main__':
-  app.run(host='localhost', port=8080)
+# if __name__ == '__main__':
+#   app.run(host='localhost', port=8080)

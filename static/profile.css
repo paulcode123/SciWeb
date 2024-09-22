@@ -159,3 +159,27 @@
   cursor: pointer;
   
 }
+
+#profilePicturePreview {
+  display: none;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  object-fit: cover;
+  /* center horizontally */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#pencil {
+  /* hard code the position on screen to be 160 px from the top and 50vw+80px from the left */
+  position: absolute;
+  top: 200px;
+  left: calc(50vw + 75px);
+  display: none;
+  background-color: rgb(71, 71, 204);
+  /* make background circular */
+  border-radius: 50%;
+  padding: 2px;
+
+}

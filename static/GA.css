@@ -2,7 +2,7 @@
   max-width: 400px;
   margin: 0 auto;
   box-shadow: 0 5px 7px rgba(0, 0, 0, 0.1);
-  background-color:#d4dadb;
+  background-color:#3c3d3d;
   padding: 20px;
 }
 
@@ -12,7 +12,7 @@
   gap: 10px;
 }
 
-button {
+/* button {
   margin-top: 10px;
 }
 
@@ -26,7 +26,7 @@ button {
 
 button:hover {
   background-color: #2c7e8f;
-}
+} */
 #error-message {
   color: red;
   font-size: 24px;
@@ -63,12 +63,12 @@ button:hover {
   display: inline-block;
   margin-right: 10px;
 }
-h1 {
+/* h1 {
   color: #333;
-}
+} */
 
-.custom-checkbox{
-  background-color: darkgray; /* Dark gray background */
+.class-checkbox{
+  background-color: #1b1c1c; /* Dark gray background */
   border-radius: 5px; /* Rounded corners */
   padding: 5px; /* Padding around the text and checkbox */
   display: inline-block; /* Allows the label to wrap the text and checkbox neatly */
@@ -78,6 +78,35 @@ h1 {
   margin-right: 5px; /* Add some space between the checkboxes */
 }
 
+.category-checkbox{
+  background-color: #1b1c1c; /* Dark gray background */
+  border-radius: 15px; /* Rounded corners */
+  padding: 5px; /* Padding around the text and checkbox */
+  display: inline-block; /* Allows the label to wrap the text and checkbox neatly */
+  margin-top: 5px; /* Add some space between the checkboxes */
+  margin-bottom: 5px; /* Add some space between the checkboxes */
+  margin-left: 5px; /* Add some space between the checkboxes */
+  margin-right: 5px; /* Add some space between the checkboxes */
+}
+
+/* on hover, fade in a 5px solid pink border */
+
+.custom-checkbox {
+  transition: border 0.3s ease-in-out; /* Add transition for border */
+}
+
+.custom-checkbox:hover {
+  border: 5px solid rgb(228, 76, 101);
+}
+
+/* for submit button, make it pink(228, 76, 101), turning black on hover with padding */
+#submit{
+  background-color: rgb(228, 76, 101);
+  border-radius: 5px;
+  color: white;
+  padding: 10px;
+  transition: background-color 0.3s ease;
+}
 
 .goal {
   background-color: #f1f1f1;
@@ -93,19 +122,50 @@ h1 {
 #StatsContainer {
   display: grid;
   grid-template-columns: repeat(2, 1fr); /* Ensures two columns */
-  gap: 20px; /* Space between columns and rows */
-  padding: 20px; /* Padding around the entire grid */
   box-sizing: border-box; /* Ensures padding does not affect width calculation */
   width: 100%; /* Ensures the grid takes up the full width of the container */
 }
 
 
 .number-box {
-  background: #f4f4f4; /* Light grey background for visibility */
-  padding: 20px;
+  background: #322f2f; /* Light grey background for visibility */
   /* text-align: center; */
   box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Adds subtle shadow for depth */
-  width: 40%; /* Ensures the box takes up the full width of the column */
+  width: 100%; /* Ensures the box takes up the full width of the column */
+  position: relative;
+  /* 2 px pink solid border */
+  border: 2px solid rgb(228, 76, 101);
+}
+/* if the width of the viewport is more than 500px, have a 40 px space between boxes in the same row and have a set width */
+@media (min-width: 500px) {
+  .number-box {
+    margin-right: 40px;
+    width: 200px;
+    padding: 20px;
+    /* width: 40%; */
+  }
+  #StatsContainer {
+    gap: 20px; /* Space between columns and rows */
+    padding: 20px; /* Padding around the entire grid */
+  }
+}
+
+#perfana{
+  /* styling for performance analysis button */
+  /* pink, black text, padding, turns black on hover */
+  background-color: rgb(228, 76, 101);
+  border-radius: 15px;
+  color: black;
+  padding: 20px;
+  font-size: medium;
+  /* center on page */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#perfana:hover{
+  background-color: black;
+  color: white;
 }
 
 .number {
@@ -123,12 +183,12 @@ h2 {
   margin: 10px 0;
 }
 
-body{
-  background-image: url('/static/media/GAbgd.png'); /* URL of the background image */
-  background-size: cover; /* Cover the entire page */
-  background-position: center; /* Center the image */
-  background-repeat: no-repeat; /* Do not repeat the image */
-}
+/* body{
+  background-image: url('/static/media/GAbgd.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+} */
 
 .carousel-container {
   width: 80%;
@@ -201,23 +261,40 @@ body{
 }
 
 #myGraph {
-  width:80%;
-  /* align horizontally on page */
-  margin-left: auto;
-  margin-right: auto;
   border-radius: 6px;
-  margin-bottom: 40px;
-  padding: 20px;
-  background-color: #ffd700;
+  border: 20px solid rgb(228, 76, 101);
+
+  /* in terms of sizing, make it as big as it can be while maintaining a 2:1 width:height aspect ratio and a 10px margin on both sides */
+  width: 100%;
+  /* height is viewport width-20 / 2 */
+  height: calc(50vw - 10px);
+  margin: 10px;
 }
 
 #myHisto {
-  width:80%;
-  /* align horizontally on page */
+  border-radius: 6px;
+  border: 20px solid rgb(228, 76, 101);
+
+  /* in terms of sizing, make it as big as it can be while maintaining a 2:1 width:height aspect ratio and a 10px margin on both sides */
+  width: 100%;
+  /* height is viewport width-20 / 2 */
+  height: calc(50vw - 10px);
+  margin: 10px;
+}
+
+#addGoal{
+  background-color: rgb(228, 76, 101);
+  border-radius: 15px;
+  color: black;
+  padding: 20px;
+  font-size: medium;
+  /* center on page */
   margin-left: auto;
   margin-right: auto;
-  border-radius: 6px;
-  margin-bottom: 40px;
-  padding: 20px;
-  background-color: #ffd700;
+}
+
+.share-icon {
+  height: 20px;
+  width: 20px;
+  cursor: pointer;
 }

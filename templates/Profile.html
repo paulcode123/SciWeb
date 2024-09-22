@@ -57,7 +57,14 @@
   </ul>
   <div id="notification-container"></div>
   <div id="loadingWheel"></div>
-  <h1>Profile Page</h1>
+  <img id="profilePicturePreview" alt="Profile Preview" />
+  <label id="pencil" for="profilePictureInput" class="custom-file-upload">
+    ✏️
+  </label>
+  <input type="file" id="profilePictureInput" style="display: none;" accept="image/*" />
+  
+  
+
   <div class="profile-container">
     <div class="profile-field">
 
@@ -128,9 +135,7 @@
   <br>
   <h3>Public Profile</h3>
   <p>Profile Pic:</p>
-  <input type="file" id="profilePictureInput" accept="image/*" />
-  <img id="profilePicturePreview" style="display:none; width: 100px; height: 100px;" alt="Profile Preview" />
-
+  
   <!-- Paragraph-length input field for about me section -->
   <p>About Me:</p>
   <textarea id="aboutMeInput" rows="4" cols="50"></textarea>

@@ -43,40 +43,24 @@ def filter_grades(grades, user_data, classes):
 
 
 # Get the minimum and maximum dates of the user's grades
-def get_min_max(grades, user_data, classes=None, extend_to_goals=False, interval=10):
-    from goals import filter_goals
+def get_min_max(grades, interval=10):
     print("in get_min_max")
-    if extend_to_goals:
-      goals = get_data("Goals")
-    # print("len(grades)", len(grades), "len goals", len(goals))
+    
     if len(grades) == 0:
         print("error: no grades found in gmm, returning 0, 0, 0")
         return 0,0,0
-    # If min and max dates include goals, then add goal dates to the list of dates
-    if extend_to_goals and len(goals) > 0:
-      # This should be changed to only include goals for the classes being graphed
-      user_goals = filter_goals(goals, user_data, classes)
-      goal_dates = [
-          datetime.datetime.strptime(goal['date'], '%m/%d/%Y').date() for goal in user_goals
-      ]
-      
+    
     #get dates from grades
-    # print(grades[0])
     dates = [
         datetime.datetime.strptime(grade['date'], '%m/%d/%Y').date() for grade in grades
     ]
-    if extend_to_goals and len(goals) > 0:
-      dates.extend(goal_dates)  # Include goal dates in the list
-
+    
     if len(dates) == 0:
         print("error: no dates found in gmm returning 0, 0, 0")
         return 0, 0, 0
     min_date = min(dates)
     max_date = max(dates)
-    # print("max_date", max_date, "min_date", min_date)
-    # print("new_max_date", max_date + datetime.timedelta(days=(((max_date-min_date).days)/interval)))
-    #11/30
-    #11/6
+  
     max_date = max_date + datetime.timedelta(days=(((max_date-min_date).days)/interval))
     if min_date == max_date:
         max_date = max_date + datetime.timedelta(days=5)
@@ -121,7 +105,7 @@ def process_grades(grades, user_data, classes_data, interval=10, s_min_date=None
   
   if not s_min_date:
     # Get the minimum and maximum dates of the user's grades
-    min_date, max_date, z = get_min_max(grades, user_data, interval=interval)
+    min_date, max_date, z = get_min_max(grades, interval=interval)
     
     
     
@@ -223,6 +207,7 @@ def calculate_grade(time, data, weights, return_class_grades=False, all_dates=Fa
       return finalGrade, classGrades
     return finalGrade
   else:
+    print("error: no grades found in calculate_grade.", len(data), "grades passed in")
     return 100
 
 def get_grade_points(grades, user_data, classes_data):
@@ -326,18 +311,25 @@ def get_stats(grades, classes):
 
   # calculate the grade from 30 days ago
   thirty_days_ago = current_date - datetime.timedelta(days=30)
-  t30_avg, t30_grades = calculate_grade(thirty_days_ago, grades, weights, return_class_grades=True)
-  t30_avg = round(t30_avg, 3)
+ 
+  try:
+    t30_avg, t30_grades = calculate_grade(thirty_days_ago, grades, weights, return_class_grades=True)
+    t30_avg = round(t30_avg, 3)
 
-  # Calculate the change in grades for each class
-  grade_changes = {}
-  for class_name, grade in current_grades.items():
-    if class_name in t30_grades:
-      grade_changes[class_name] = round(grade - t30_grades[class_name], 3)
+    # Calculate the change in grades for each class
+    grade_changes = {}
+    for class_name, grade in current_grades.items():
+      if class_name in t30_grades:
+        grade_changes[class_name] = round(grade - t30_grades[class_name], 3)
 
-  # Find the most improved class and most worsened class
-  most_improved_class = max(grade_changes, key=grade_changes.get)
-  most_worsened_class = min(grade_changes, key=grade_changes.get)
+    # Find the most improved class and most worsened class
+    most_improved_class = max(grade_changes, key=grade_changes.get)
+    most_worsened_class = min(grade_changes, key=grade_changes.get)
+  except:
+    t30_avg = 0
+    grade_changes = {}
+    most_improved_class = "None"
+    most_worsened_class = "None"
 
   # calculate the change in avg from the past 30 days
   avg_change = raw_avg - t30_avg
@@ -351,7 +343,7 @@ def get_stats(grades, classes):
   return {"gpa": gpa, "raw_avg": raw_avg, "avg_change": avg_change, "most_improved_class": most_improved_class, "most_worsened_class": most_worsened_class, "past30_avg": past30_avg, "t30_avg": t30_avg, "grade_changes": grade_changes}
 
 def update_leagues(grades, classes):
-  from goals import calculate_goal_progress
+  
 
   print("in update_leagues")
   # filter the leagues for those that the user is in and get all of the activities that need to be calculated
@@ -381,8 +373,8 @@ def update_leagues(grades, classes):
     dr, grade_spread = process_grades(grades, session['user_data'], classes, 15, min_date, max_date)
     # print(dr)
   # Grade Leaderboard
-  if "Glb" in distinct_activities:
-    goalp = calculate_goal_progress(session)
+  # if "Glb" in distinct_activities:
+  #   goalp = calculate_goal_progress(session)
   # recent assessment share
   if "RAS" in distinct_activities:
     # filter grades for assessment category and the past 30 days

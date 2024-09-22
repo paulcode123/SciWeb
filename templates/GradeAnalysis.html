@@ -1,67 +1,76 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE HTML>
+<!--
+	Landed by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>SciWeb | Grade Analysis</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="/static/PitchFiles/assets/css/main.css" />
+    <link rel="stylesheet" href="/static/GA.css" />
+        <link rel="icon" href="static/media/favicon.png" type="image/x-icon">
+		<noscript><link rel="stylesheet" href="/static/PitchFiles/assets/css/noscript.css" /></noscript>
+	</head>
+	<body class="is-preload">
+		<div id="page-wrapper">
 
-<head>
-  <meta charset="UTF-8">
-  <title>SciWeb Grade Analysis</title>
-  <link rel="icon" href="static/media/favicon.png" type="image/x-icon">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="/static/GA.css">
-  <link rel="stylesheet" href="/static/navbar.css">
-  <link rel="manifest" href="/static/manifest.json">
-
-</head>
-
-
-<body>
-  <ul class="navbar">
-    <li><a href="/">Home</a></li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Achieve</button>
-      <div class="dropdown-content">
-        <a href="/EnterGrades">Enter</a>
-        <a href="/GradeAnalysis">Analyse</a>
-        <a href="/Goals">Goals</a>
-        
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Study</button>
-      <div class="dropdown-content">
-        <a href="/StudyLevels">Levels</a>
-<a href="/StudyBot">StudyBot</a>
-<a href="/Evaluate">Evaluate</a>
-<a href="/Battle">Battle</a>
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Connect</button>
-      <div class="dropdown-content">
-        <a href="/Classes">Classes</a>
-        <a href="/Assignments">Assignments</a>
-        <a href="/Leagues">Leagues</a>
-        <a href="#">Questions</a>
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">About</button>
-      <div class="dropdown-content">
-        <a href="/Pitch">Pitch</a>
-        <a href="/GetStart">Getting Started</a>
-        
-      </div>
-    </li>
-    <li><a href="/Login" id="profile">Login</a></li>
-  </ul>
-  <div id="notification-container"></div>
-
-  <main>
+			<!-- Header -->
+            <header id="header">
+                <!-- <h1 id="logo"><a href="/">Landed</a></h1> -->
+                <nav id="nav">
+                    <ul>
+                      <li><a href="/">Home</a></li>
+                      <li>
+                        <a>Achieve</a>
+                        <ul>
+                          <li><a href="/EnterGrades">Enter</a></li>
+                          <li><a href="/GradeAnalysis">Analyse</a></li>
+                          <li><a href="/Goals">Goals</a></li>
+                        </ul>
+                      </li>
+                      <li>
+                        <a>Study</a>
+                        <ul>
+                          <li><a href="#">Write</a></li>
+                          <li><a href="/Study">Study</a></li>
+                          <li><a href="/Battle">Battle</a></li>
+                        </ul>
+                      </li>
+                      <li>
+                        <a>Connect</a>
+                        <ul>
+                          <li><a href="/Classes">Classes</a></li>
+                          <li><a href="/Assignments">Assignments</a></li>
+                          <li><a href="/Leagues">Leagues</a></li>
+                          <li><a href="#">Questions</a></li>
+                        </ul>
+                      </li>
+                      <li>
+                        <a>About</a>
+                        <ul>
+                          <li><a href="/Pitch">Pitch</a></li>
+                          <li><a href="/GetStart">Getting Started</a></li>
+                        </ul>
+                      </li>
+                      <li><a href="/Login" class="button primary" id="profile">Login</a></li>
+                    </ul>
+                  </nav>
+            </header>
+            <div id="main" class="wrapper style1">
+                <div class="container">
     
-    <h1>Grade Analysis</h1>
+                  <div id="loadingWheel"></div>
+                  <header class="major">
+                    <h2>Grade Analysis</h2>
+                    <p>See your grades on a graph, stats, analytics, and more</p>
+                  </header>
     
     <br>
     <!-- element for error text, give red inline styling -->
-    <p id="error" style="color: red;"></p>
+    
     </form>
     <br>
 
@@ -87,66 +96,94 @@
 
 
 
-    
+  <span onclick="shareGraph('myGraph')">
+    <img class="share-icon" src="/static/media/white_share_icon.png">
+</span>
     <div id="myGraph"></div>
+    <!-- add a checkbox with text "Components" that will cause the lines to break off into their components -->
+    <span>
+      <input type="checkbox" id="components">
+      <label for="components">Components</label>
+    </span>
+    <span>
+      <input type="checkbox" id="individual">
+      <label for="individual">Individual Grades</label>
+    </span>
+    <button id="addGoal">Add Goal</button><br>
+    <span onclick="shareGraph('myHisto')">
+      <img class="share-icon" src="/static/media/white_share_icon.png">
+  </span>
     <div id="myHisto"></div>
+    <span>
+      <input type="checkbox" id="componentsHisto" checked>
+      <label for="componentsHisto">Components</label>
+    </span>
     <br><br>
-    
+    <p id="error" style="color: red;"></p>
 
     <div id="loadingWheel"></div>
    <form id="class-form">
   <h2>Select Classes/Categories to Graph</h2>
   <div id="checkbox-group">
   <div id='classes'>
-    <label class="custom-checkbox">
-      All
-    <input type="checkbox" name="class" value="all"> 
-    </label>
   </div>
     <br>
-  <div id='categories'>
-    <label class="custom-checkbox">
-      All
-      <input type="checkbox" name="class" value="All">
-    </label>
+  
   </div>
-  </div>
-  <input type="range" id="mySlider" name="mySlider" min="0" max="30" value="15">
-  <button type="submit">Graph</button>
+  <input style="visibility: hidden;" type="range" id="mySlider" name="mySlider" min="0" max="30" value="10">
+  <button type="submit" id="submit">Graph</button>
   <h1 id="error-message"></h1>
 </form>
     <br>
     <div id="StatsContainer">
-      <div class="number-box">
-        <h2>GPA</h2>
-        <p class="number" id="s1">--</p>
-        <p class="caption">As it appears on report card</p>
-    </div>
-    <div class="number-box">
-        <h2>Raw Avg</h2>
-        <p class="number" id="s2">--</p>
-        <p class="caption">More volatile and exact</p>
-    </div>
-    <div class="number-box">
-        <h2>Recent Change</h2>
-        <p class="number" id="s3">--</p>
-        <p class="caption">Raw average change over the past 30 days</p>
-    </div>
-    <div class="number-box">
-        <h2>Most Improved</h2>
-        <p class="number" id="s4">--</p>
-        <p class="caption">Class with largest grade increase over the past 30 days</p>
-    </div>
-    <div class="number-box">
-        <h2>Focus On...</h2>
-        <p class="number" id="s5">--</p>
-        <p class="caption">Biggest dip over the past 30 days</p>
-    </div>
-    <div class="number-box">
-        <h2>Recent Grade</h2>
-        <p class="number" id="s6">--</p>
-        <p class="caption">Non-cumulative grade over the past 30 days</p>
-    </div>
+        <div class="number-box">
+            <h2>GPA</h2>
+            <span class="share-icon" onclick="shareStat('GPA', 's1')">
+                <img src="/static/media/shareicon.png" alt="Share Icon" width="16" height="16">
+            </span>
+            <p class="number" id="s1">--</p>
+            <p class="caption">As it appears on report card</p>
+        </div>
+        <div class="number-box">
+            <h2>Raw Avg</h2>
+            <span class="share-icon" onclick="shareStat('Raw Average', 's2')">
+                <img src="/static/media/shareicon.png" alt="Share Icon" width="16" height="16">
+            </span>
+            <p class="number" id="s2">--</p>
+            <p class="caption">More volatile and exact</p>
+        </div>
+        <div class="number-box">
+            <h2>Recent Change</h2>
+            <span class="share-icon" onclick="shareStat('Raw average change over the past 30 days', 's3')">
+                <img src="/static/media/shareicon.png" alt="Share Icon" width="16" height="16">
+            </span>
+            <p class="number" id="s3">--</p>
+            <p class="caption">Raw average change over the past 30 days</p>
+        </div>
+        <div class="number-box">
+            <h2>Most Improved</h2>
+            <span class="share-icon" onclick="shareStat('Class with largest grade increase over the past 30 days', 's4')">
+                <img src="/static/media/shareicon.png" alt="Share Icon" width="16" height="16">
+            </span>
+            <p class="number" id="s4">--</p>
+            <p class="caption">Class with largest grade increase over the past 30 days</p>
+        </div>
+        <div class="number-box">
+            <h2>Focus On...</h2>
+            <span class="share-icon" onclick="shareStat('Biggest dip over the past 30 days', 's5')">
+                <img src="/static/media/shareicon.png" alt="Share Icon" width="16" height="16">
+            </span>
+            <p class="number" id="s5">--</p>
+            <p class="caption">Biggest dip over the past 30 days</p>
+        </div>
+        <div class="number-box">
+            <h2>Recent Grade</h2>
+            <span class="share-icon" onclick="shareStat('Non-cumulative grade over the past 30 days', 's6')">
+                <img src="/static/media/shareicon.png" alt="Share Icon" width="16" height="16">
+            </span>
+            <p class="number" id="s6">--</p>
+            <p class="caption">Non-cumulative grade over the past 30 days</p>
+        </div>
     </div>
 
     <div id="myHistogram"></div>
@@ -156,16 +193,28 @@
     
     <br>
 
-    <button onclick="getInsights()">See Overall Performance Analysis</button>
+    <button onclick="getInsights()" id="perfana">Get AI Generated Performance Analysis</button>
     <div id="insightContainer"></div>
 
-  </main>
+  
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.js"></script>
 
   <script src="/static/util.js"></script>
   <script src="/static/user_data.js"></script>
   <script src="/static/notifications.js" type="module"></script>
   <script src="static/GA.js"></script>
-</body>
 
+  <!-- Scripts -->
+  <script src="/static/util.js"></script>
+  <script src="/static/PitchFiles/assets/js/jquery.min.js"></script>
+  <script src="/static/PitchFiles/assets/js/jquery.scrolly.min.js"></script>
+  <script src="/static/PitchFiles/assets/js/jquery.dropotron.min.js"></script>
+  <script src="/static/PitchFiles/assets/js/jquery.scrollex.min.js"></script>
+  <script src="/static/PitchFiles/assets/js/browser.min.js"></script>
+  <script src="/static/PitchFiles/assets/js/breakpoints.min.js"></script>
+  <script src="/static/PitchFiles/assets/js/util.js"></script>
+  <script src="/static/PitchFiles/assets/js/main.js"></script>
+
+</body>
 </html>
