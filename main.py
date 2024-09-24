@@ -208,11 +208,14 @@ def public_profile(userid):
 @app.route('/reviews/<courseid>')
 def course_reviews(courseid):
   courses = get_data("Courses")
-  course_data = next((row for row in courses if row['id'] == courseid), None)
+  print(courses); 
+  print(courseid); 
+  course_data = next((row for row in courses if int(row['id']) == int(courseid)), None) 
+ 
+  print(course_data, type(course_data)); 
   # convert course_data to json
-  course_data = json.loads(json.dumps(course_data))
-  return render_template('course_reviews.html',
-                         courseData=course_data, courseName=course_data['Name'])
+  course_data_1 = json.loads(json.dumps(course_data)) 
+  return render_template('course_reviews.html', courseData=course_data_1, courseName=course_data['Name'])
 # This concludes initializing the front end
 
 #The following route functions post/get data to/from JS files
