@@ -1,4 +1,5 @@
-
+// Add this import at the top of the file
+import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
 
 
@@ -215,38 +216,6 @@ selectElement.removeChild(selectElement.querySelector('option[value="default"]')
   
 }
 
-//Add previously inputted grades to the table
-function createGradesTable(grades) {
-  const tableBody = document.getElementById('gradesBody');
-  tableBody.innerHTML = ''; // Clear any existing rows
-  if (grades.length>1) {
-    document.getElementById('DeleteGrades').style.visibility = "visible";
-    document.getElementById('OpenGA').style.visibility = "visible";
-    document.getElementById('DownloadGrades').style.visibility = "visible";
-  
-  // sort grades by date from most recent to least recent
-  grades.sort((a, b) => new Date(b.date) - new Date(a.date));
-  }
-  for (let i = 0; i < grades.length; i++) {
-    const row = document.createElement('tr');
-
-    const grade = grades[i];
-    const { date, score, value, class: className, category, name } = grade;
-
-    const cells = [
-      createTableCell(date),
-      createTableCell(score),
-      createTableCell(value),
-      createTableCell(className),
-      createTableCell(category),
-      createTableCell(name),
-      createShareButton(i)
-    ];
-
-    cells.forEach(cell => row.appendChild(cell));
-    tableBody.appendChild(row);
-  }
-}
 
 // Function to create a table cell
 function createTableCell(value) {
@@ -393,3 +362,173 @@ function parseCSV(text) {
 
   return grades;
 }
+
+
+
+
+
+
+
+
+
+
+function createGradesTable(grades) {
+  const tableBody = document.getElementById('gradesBody');
+  tableBody.innerHTML = ''; // Clear any existing rows
+  if (grades.length>1) {
+    document.getElementById('DeleteGrades').style.visibility = "visible";
+    document.getElementById('OpenGA').style.visibility = "visible";
+    document.getElementById('DownloadGrades').style.visibility = "visible";
+  
+  // sort grades by date from most recent to least recent
+  grades.sort((a, b) => new Date(b.date) - new Date(a.date));
+  }
+  for (let i = 0; i < grades.length; i++) {
+    const row = document.createElement('tr');
+
+    const grade = grades[i];
+    const { date, score, value, class: className, category, name } = grade;
+
+    const cells = [
+      createTableCell(date),
+      createTableCell(score),
+      createTableCell(value),
+      createTableCell(className),
+      createTableCell(category),
+      createTableCell(name),
+      createShareButton(i),
+      createShowFriendsButton(grade) // New column
+    ];
+
+    cells.forEach(cell => row.appendChild(cell));
+    tableBody.appendChild(row);
+  }
+}
+
+
+
+// Function to create the Show Friends button
+function createShowFriendsButton(grade) {
+  const cell = document.createElement('td');
+  const button = document.createElement('button');
+  button.textContent = 'Show Friends';
+  button.classList.add('show-friends-button');
+  button.addEventListener('click', () => showFriends(grade));
+  cell.appendChild(button);
+  return cell;
+}
+
+async function showFriends(grade) {
+  const db = getFirestore();
+  
+  // Get user's friends
+  const friendsData = await fetchRequest('/data', { data: 'Friends' });
+  console.log(friendsData)
+  const friends = friendsData['Friends'].filter(friend => friend.OSIS === osis && friend.status === 'accepted');
+
+  // Get friends' tokens
+  const usersData = await fetchRequest('/data', { data: 'Tokens' });
+  const friendTokens = friends.map(friend => {
+    const user = usersData.find(u => u.OSIS === friend.targetOSIS);
+    return user ? user.token : null;
+  }).filter(token => token !== null);
+
+  // Prepare the notification message
+  const message = {
+    title: "Friend's Grade Update",
+    body: `${osis} got ${grade.score}/${grade.value} in ${grade.class} for ${grade.name}!`,
+    data: {
+      gradeId: grade.id,
+      senderOSIS: osis
+    }
+  };
+
+  console.log(friendTokens)
+  // Send notifications to friends
+  for (const token of friendTokens) {
+    try {
+      await addDoc(collection(db, "notifications"), {
+        token: token,
+        message: message
+      });
+      console.log("Notification sent successfully to", token);
+    } catch (error) {
+      console.error("Error sending notification:", error);
+    }
+  }
+
+  alert("Grade shared with friends!");
+}
+
+// Function to handle high five
+async function handleHighFive(gradeId, senderOSIS) {
+  const db = getFirestore();
+  const usersData = await fetchRequest('/data', { data: 'Tokens' });
+  const sender = usersData.find(u => u.OSIS === senderOSIS);
+
+  if (sender && sender.token) {
+    const message = {
+      title: "High Five Received!",
+      body: `${osis} gave you a high five for your grade!`,
+      data: {
+        type: "highFive",
+        receiverOSIS: senderOSIS
+      }
+    };
+
+    try {
+      await addDoc(collection(db, "notifications"), {
+        token: sender.token,
+        message: message
+      });
+      console.log("High five notification sent successfully");
+    } catch (error) {
+      console.error("Error sending high five notification:", error);
+    }
+  }
+}
+
+// Add this to your existing event listeners
+document.addEventListener('DOMContentLoaded', () => {
+  // ... existing code ...
+
+  // Listen for notifications
+  const db = getFirestore();
+  const notificationsRef = collection(db, "notifications");
+  onSnapshot(notificationsRef, (snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+      if (change.type === "added") {
+        const notification = change.doc.data();
+        if (notification.message.data.type === "highFive" && notification.message.data.receiverOSIS === osis) {
+          showNotification(notification.message.title, notification.message.body);
+        } else if (notification.message.data.senderOSIS && notification.message.data.senderOSIS !== osis) {
+          showNotification(notification.message.title, notification.message.body, () => {
+            handleHighFive(notification.message.data.gradeId, notification.message.data.senderOSIS);
+          });
+        }
+      }
+    });
+  });
+});
+
+function showNotification(title, body, onClickCallback = null) {
+  if ("Notification" in window) {
+    Notification.requestPermission().then(function (permission) {
+      if (permission === "granted") {
+        const notification = new Notification(title, {
+          body: body,
+          icon: '/static/media/favicon.png'
+        });
+
+        if (onClickCallback) {
+          notification.onclick = () => {
+            onClickCallback();
+            notification.close();
+          };
+        }
+      }
+    });
+  }
+}
+
+// ... rest of the existing code ...

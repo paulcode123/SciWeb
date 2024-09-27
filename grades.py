@@ -106,6 +106,8 @@ def process_grades(grades, user_data, classes_data, interval=10, s_min_date=None
   if not s_min_date:
     # Get the minimum and maximum dates of the user's grades
     min_date, max_date, z = get_min_max(grades, interval=interval)
+    # override max_date to today
+    max_date = datetime.datetime.now().date()
     
     
     

@@ -34,8 +34,8 @@
                       <li>
                         <a>Study</a>
                         <ul>
-                          <li><a href="#">Write</a></li>
-                          <li><a href="/Study">Study</a></li>
+                          <li><a href="/Evaluate">Evaluate</a></li>
+                          <li><a href="/StudyLevels">Levels</a></li>
                           <li><a href="/Battle">Battle</a></li>
                         </ul>
                       </li>
@@ -186,10 +186,26 @@
         </div>
     </div>
 
-    <div id="myHistogram"></div>
-    
-    <div id="GoalProgressContainer"></div>
-    <div id="RecentScoresContainer"></div>
+    <br>
+    <div id="goalTableContainer">
+      <h2>Goals</h2>
+      <table id="goalTable">
+          <thead>
+              <tr>
+                <th>Days Left</th>
+                <th>Time Complete</th>
+                <th>Grade Progress</th>
+                <th>Above/Below Expected</th>
+                <th>Goal Grade</th>
+                <th>Class/Category</th>
+                <th>Actions</th>
+              </tr>
+          </thead>
+          <tbody id="goalTableBody">
+              <!-- Goals will be inserted here by JavaScript -->
+          </tbody>
+      </table>
+  </div>
     
     <br>
 

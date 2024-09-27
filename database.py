@@ -185,6 +185,7 @@ def update_data_firebase(row_val, row_name, new_row, collection):
     return updated_documents
 
 def delete_data_firebase(row_val, row_name, collection):
+    print("deleting data from firebase: ", type(row_val))
     # Initialize Firestore DB
     db = firestore.client()
 
@@ -192,7 +193,7 @@ def delete_data_firebase(row_val, row_name, collection):
     collection_ref = db.collection(collection)
     print(row_val, row_name, collection)
     # Query for documents with the matching row_name and row_val
-    docs = collection_ref.where(row_name, '==', str(row_val)).stream()
+    docs = collection_ref.where(row_name, '==', row_val).stream()
 
     # Keep track of deleted documents
     deleted_documents = []

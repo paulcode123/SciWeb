@@ -159,3 +159,47 @@ input[type="text"] {
 #gradeform{
   display: none;
 }
+
+/* ... existing styles ... */
+
+/* Add this new style for the Show Friends button */
+.show-friends-button {
+  border-radius: 5px;
+  padding: 5px 10px;
+  background-color: transparent;
+  border: 2px solid #4a90e2;
+  color: #4a90e2;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.show-friends-button:hover {
+  background-color: #4a90e2;
+  color: white;
+}
+
+/* Style for the share icon */
+.share-icon {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.share-icon:hover {
+  transform: scale(1.2);
+}
+
+/* Add some spacing to the table cells */
+#gradesTable td {
+  padding: 10px;
+  vertical-align: middle;
+}
+
+/* Center the buttons and icons in their cells */
+#gradesTable td:last-child,
+#gradesTable td:nth-last-child(2) {
+  text-align: center;
+}
+
+/* ... rest of the existing styles ... */

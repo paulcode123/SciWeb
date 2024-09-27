@@ -1,18 +1,12 @@
-
-
 <!DOCTYPE HTML>
-<!--
-	Landed by HTML5 UP
-	html5up.net | @ajlkn
-	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
--->
 <html>
 	<head>
-		<title>Page Title here</title>
+		<title>SciWeb | Messages</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="/static/PitchFiles/assets/css/main.css" />
         <link rel="icon" href="static/media/favicon.png" type="image/x-icon">
+		<link rel="stylesheet" href="/static/messages.css">
 		<noscript><link rel="stylesheet" href="/static/PitchFiles/assets/css/noscript.css" /></noscript>
 	</head>
 	<body class="is-preload">
@@ -20,7 +14,6 @@
 
 			<!-- Header -->
             <header id="header">
-                <!-- <h1 id="logo"><a href="/">Landed</a></h1> -->
                 <nav id="nav">
                     <ul>
                       <li><a href="/">Home</a></li>
@@ -60,23 +53,49 @@
                     </ul>
                   </nav>
             </header>
+
             <div id="main" class="wrapper style1">
                 <div class="container">
-                    
-        
-<!-- ADD CODE HERE -->
-
+                    <!-- Message Center Content -->
+                    <div class="message-center-container">
+                        <div class="sidebar">
+                            <h2>Threads</h2>
+                            <div id="sidebar-threads"></div>
+                            <h3>New Message</h3>
+                            <form id="new-message-form">
+                                <input type="text" id="recipients" placeholder="Recipients (comma-separated)" required>
+                                <textarea id="new-message" placeholder="Type your message" required></textarea>
+                                <button type="submit">Create Thread</button>
+                            </form>
+                            <h3>Friend Requests</h3>
+                            <div id="friend-requests"></div>
+                        </div>
+                        <div class="main-content">
+                            <div id="chat-box"></div>
+                            <div class="input-container">
+                                <input type="text" id="message-input" placeholder="Type a message...">
+                                <input type="file" id="upload" accept="image/*,application/pdf" style="display: none;">
+                                <label for="upload" id="upload-label">📎</label>
+                                <button id="send-button">Send</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
 		<!-- Scripts -->
         <script src="/static/util.js"></script>
-			<script src="/static/PitchFiles/assets/js/jquery.min.js"></script>
-			<script src="/static/PitchFiles/assets/js/jquery.scrolly.min.js"></script>
-			<script src="/static/PitchFiles/assets/js/jquery.dropotron.min.js"></script>
-			<script src="/static/PitchFiles/assets/js/jquery.scrollex.min.js"></script>
-			<script src="/static/PitchFiles/assets/js/browser.min.js"></script>
-			<script src="/static/PitchFiles/assets/js/breakpoints.min.js"></script>
-			<script src="/static/PitchFiles/assets/js/util.js"></script>
-			<script src="/static/PitchFiles/assets/js/main.js"></script>
+		<script src="/static/PitchFiles/assets/js/jquery.min.js"></script>
+		<script src="/static/PitchFiles/assets/js/jquery.scrolly.min.js"></script>
+		<script src="/static/PitchFiles/assets/js/jquery.dropotron.min.js"></script>
+		<script src="/static/PitchFiles/assets/js/jquery.scrollex.min.js"></script>
+		<script src="/static/PitchFiles/assets/js/browser.min.js"></script>
+		<script src="/static/PitchFiles/assets/js/breakpoints.min.js"></script>
+		<script src="/static/PitchFiles/assets/js/util.js"></script>
+		<script src="/static/PitchFiles/assets/js/main.js"></script>
+        <script src="/static/user_data.js"></script>
+        <script type="module" src="/static/notifications.js"></script>
+        <script src="/static/messages.js"></script>
 
 	</body>
 </html>

@@ -40,11 +40,11 @@ async function main(){
 
     setClasses(weights)
     setStats(stats)
-    // setGoalProgress()
+    
     setCompliments(compliments)
     
     draw_graphs(grade_spreads, times, weights, grades, ['All', 'all'], val_sums, 5, goals);
-    
+    setGoalTable(goals)
 }
 
 function setStats(stats){
@@ -426,31 +426,30 @@ document.getElementById('addGoal').addEventListener('click', function() {
   console.log('addGoal clicked');
   var myPlot = document.getElementById('myGraph');
 
-  function clickHandler(event) {
-    // Get the bounding rectangle of the plot
-    var rect = myPlot.getBoundingClientRect();
+  function clickHandler(data) {
+    var xaxis = myPlot.layout.xaxis;
+    var yaxis = myPlot.layout.yaxis;
+    var l = myPlot.layout.margin.l;
+    var t = myPlot.layout.margin.t;
 
-    // Calculate mouse position relative to the plot
-    var x = event.clientX - rect.left;
-    var y = event.clientY - rect.top;
+    var x = xaxis.p2d(data.event.clientX - myPlot.getBoundingClientRect().left - l);
+    var y = yaxis.p2d(data.event.clientY - myPlot.getBoundingClientRect().top - t);
 
-    // Get the x and y axes from the full layout
-    var xaxis = myPlot._fullLayout.xaxis;
-    var yaxis = myPlot._fullLayout.yaxis;
+    // Round x to the nearest day
+    x = Math.round(x);
 
-    // Convert pixel coordinates to data coordinates
-    var xData = xaxis.p2d(x)-2;
-    var yData = yaxis.p2d(y)+0.55;
+    // Ensure y is within a reasonable range (e.g., 0-100 for percentage grades)
+    y = Math.max(0, Math.min(100, y));
 
-    addGoal(xData, yData);
+    addGoal(x, y);
 
     // Remove the click event listener after it runs
-    myPlot.removeEventListener('click', clickHandler);
+    myPlot.removeListener('click', clickHandler);
     console.log('click event listener removed');
   }
 
   // Attach the click handler
-  myPlot.addEventListener('click', clickHandler);
+  myPlot.on('click', clickHandler);
   console.log('click event listener added');
 });
 
@@ -470,6 +469,8 @@ async function addGoal(xData, yData) {
   console.log(goals, data)
   // update goals
   updateGoals(goals, currentCategories);
+  // update goalTable
+  updateGoalTable(goals);
 }
 
 function updateGoals(goals, categories) {
@@ -512,8 +513,9 @@ function updateGoals(goals, categories) {
         y: ygoal,
         xref: 'x',
         yref: 'y',
-        sizex: sizex,
-        sizey: sizey,
+        sizinf: 'contain',
+        sizex: 5,
+        sizey: 5,
         xanchor: 'center',
         yanchor: 'middle'
       };
@@ -522,7 +524,13 @@ function updateGoals(goals, categories) {
   }
   console.log(medals)
   Plotly.addTraces(graph, lines);
-  Plotly.relayout(graph, { images: medals })
+  Plotly.relayout(graph, {
+    images: medals,
+    'images[0].xref': 'paper',
+    'images[0].yref': 'paper',
+    'images[0].sizex': 0.05,
+    'images[0].sizey': 0.05
+  });
 }
 
 function interpolate(x, xs, ys) {
@@ -882,4 +890,62 @@ async function shareGraph(id) {
   }).catch(error => {
     console.error('Error taking screenshot', error);
   });
+}
+
+function setGoalTable(goals) {
+  const tableBody = document.getElementById('goalTableBody');
+  tableBody.innerHTML = ''; // Clear existing rows
+
+  goals.forEach((goal, index) => {
+    const row = document.createElement('tr');
+    
+    const dateSet = new Date(goal.date_set);
+    const goalDate = new Date(goal.date);
+    const today = new Date();
+    const daysLeft = Math.ceil((goalDate - today) / (1000 * 60 * 60 * 24));
+    
+    const totalDays = Math.ceil((goalDate - dateSet) / (1000 * 60 * 60 * 24));
+    const daysPassed = totalDays - daysLeft;
+    const percentTimeComplete = Math.round((daysPassed / totalDays) * 100);
+
+    // Interpolate the grade when set
+    const gradeWhenSet = interpolate(dateToSerial(goal.date_set), combinedx, combinedy);
+    const currentGrade = interpolate(dateToSerial(today.toLocaleDateString()), combinedx, combinedy);
+
+    const totalGradeChange = goal.grade - gradeWhenSet;
+    const currentGradeChange = currentGrade - gradeWhenSet;
+    const percentGradeComplete = Math.round((currentGradeChange / totalGradeChange) * 100);
+
+    const expectedGrade = gradeWhenSet + (totalGradeChange * (daysPassed / totalDays));
+    const percentAboveBelow = Math.round((currentGrade - expectedGrade) * 100) / 100;
+
+    row.innerHTML = `
+      <td>${daysLeft}</td>
+      <td>${percentTimeComplete}%</td>
+      <td>${percentGradeComplete}%</td>
+      <td>${percentAboveBelow > 0 ? '+' : ''}${percentAboveBelow}%</td>
+      <td>${goal.grade.toFixed(2)}%</td>
+      <td>${goal.categories.join(', ')}</td>
+      <td><span class="delete-goal" data-id="${goal.id}">🗑️</span></td>
+    `;
+
+    tableBody.appendChild(row);
+  });
+
+  // Add event listeners for delete buttons
+  document.querySelectorAll('.delete-goal').forEach(button => {
+    button.addEventListener('click', async function() {
+      const goalId = this.getAttribute('data-id');
+      goals = await deleteGoal(goalId);
+      // Refresh the graph and table
+      draw_graphs(grade_spreads, times, weights, grades, currentCategories, val_sums, 5, goals);
+      setGoalTable(goals);
+    });
+  });
+}
+
+async function deleteGoal(goalId) {
+  await fetchRequest('/delete_data', { sheet: "Goals", row_name: "id", row_value: parseInt(goalId) });
+  goals = goals.filter(goal => parseInt(goal.id) != parseInt(goalId));
+  return goals
 }

@@ -298,3 +298,41 @@ h2 {
   width: 20px;
   cursor: pointer;
 }
+
+#goalTableContainer {
+  margin: 20px 0;
+  padding: 20px;
+  background-color: #322f2f;
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+#goalTable {
+  width: 100%;
+  border-collapse: collapse;
+  color: white;
+}
+
+#goalTable th, #goalTable td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid rgb(228, 76, 101);
+}
+
+#goalTable th {
+  background-color: rgb(228, 76, 101);
+  color: black;
+}
+
+#goalTable tr:hover {
+  background-color: rgba(228, 76, 101, 0.1);
+}
+
+.delete-goal {
+  cursor: pointer;
+  font-size: 1.2em;
+}
+
+.delete-goal:hover {
+  color: rgb(228, 76, 101);
+}
