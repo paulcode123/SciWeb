@@ -1,0 +1,8 @@
+/* add background image as file: don't scale to fit, just display once */
+body {
+    background-image: url('/static/media/diagbgd.jpg'), url('/static/media/gradpurp.jpg');
+    background-repeat: no-repeat, no-repeat;
+    background-size: cover, contain; /* Adjust sizes as needed */
+    background-position: top left, bottom right; /* Adjust positions as needed */
+    background-attachment: fixed, fixed; /* Optional: keeps the background fixed during scroll */
+}

@@ -1,5 +1,5 @@
 
-button {
+/* button {
   background-color: #558f2c;
   border-radius: 5px;
   color: white;
@@ -9,7 +9,7 @@ button {
 
 button:hover {
   background-color: #2c7e8f;
-}
+} */
 
 table {
   border-collapse: collapse;
@@ -23,20 +23,24 @@ th, td {
 }
 
 th {
-  background-color: #f2f2f2;
+  background-color: transparent;
   color: #333;
 }
 
 tr:nth-child(even) {
-  background-color: #f2f2f2;
+  background-color: #252525;
 }
+
 
 input[type="number"], input[type="date"], select {
   width: 100%;
   padding: 8px;
   border: 1px solid #ccc;
+  background-color: #333;
   border-radius: 4px;
   box-sizing: border-box;
+  /* text color black */
+  color: whitesmoke;
 }
 input[type="text"] {
   width: 100%;
@@ -53,78 +57,69 @@ input[type="text"] {
 #DeleteGrades{
   visibility: hidden;
   border-radius: 5px;
+  padding: 5px;
   background-color: transparent;
-  /* border color to red */
   border: 3px solid red;
-  color: black;
+  color: whitesmoke;
 }
 
-/* turn background color black on hover */
+
 #DeleteGrades:hover {
   background-color: rgb(250, 147, 147);
 }
 
+
 #Jupull{
-  /* same styles as delete grades but with green border color */
+  
   border-radius: 5px;
+  padding: 5px;
   background-color: transparent;
   border: 3px solid green;
-  color: black;
+  color: white;
 }
 
-/* turn background color light green on hover */
+
 #Jupull:hover {
   background-color: rgb(147, 250, 147);
 }
 
 #OpenGA{
-  /* same styles as delete grades but with green border color */
-  display: inline-block;
-    padding: 8px 10px;
-    
-    cursor: pointer;
-    text-align: center;
-    text-decoration: none;
-    outline: none;
+  
   border-radius: 5px;
+  padding: 5px;
   visibility: hidden;
   background-color: transparent;
   border: 3px solid rgb(20, 185, 244);
-  color: black;
+  color: whitesmoke;
 }
 
-/* turn background color light green on hover */
+
 #OpenGA:hover {
   background-color: rgb(148, 233, 239);
 }
 
 #DownloadGrades{
-  /* same styles as delete grades but with green border color */
-  display: inline-block;
-    padding: 8px 10px;
-    
-    cursor: pointer;
-    text-align: center;
-    text-decoration: none;
-    outline: none;
+  
   border-radius: 5px;
+  padding: 5px;
+  background-color: transparent;
   visibility: hidden;
   background-color: transparent;
   border: 3px solid rgb(71, 243, 114);
-  color: rgb(0, 0, 0);
+  color: whitesmoke;
 }
 
 /* turn background color light green on hover */
 #DownloadGrades:hover {
   background-color: rgb(148, 239, 154);
-}
+} 
 
 /* div containing fields and button to pull grades from jupiter */
 #pullJup{
   border-radius: 5px;
   border-width: 2px;
   border-style: solid;
-  border-color: black;
+  border-color: rgb(244, 85, 85);
   padding: 20px;
 }
 
@@ -143,19 +138,19 @@ input[type="text"] {
   display: none;
 }
 
-body{
+/* body{
   background-image: url('/static/media/EGbgd.png'); /* URL of the background image */
   /* background-size: cover; Cover the entire page */
   /* background-position: center; Center the image */
   /* background-repeat: no-repeat; Do not repeat the image */
-}
+/* } */ 
 
 #toggleGradeForm{
   /* thin, black, rounded border, transparent */
-  border: 1px solid black;
+  border: 1px solid rgb(244, 90, 90);
   border-radius: 5px;
   background-color: transparent;
-  color: black;
+  color: whitesmoke;
   padding: 10px;
   transition: background-color 0.3s ease;
 }
@@ -164,3 +159,47 @@ body{
 #gradeform{
   display: none;
 }
+
+/* ... existing styles ... */
+
+/* Add this new style for the Show Friends button */
+.show-friends-button {
+  border-radius: 5px;
+  padding: 5px 10px;
+  background-color: transparent;
+  border: 2px solid #4a90e2;
+  color: #4a90e2;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.show-friends-button:hover {
+  background-color: #4a90e2;
+  color: white;
+}
+
+/* Style for the share icon */
+.share-icon {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.share-icon:hover {
+  transform: scale(1.2);
+}
+
+/* Add some spacing to the table cells */
+#gradesTable td {
+  padding: 10px;
+  vertical-align: middle;
+}
+
+/* Center the buttons and icons in their cells */
+#gradesTable td:last-child,
+#gradesTable td:nth-last-child(2) {
+  text-align: center;
+}
+
+/* ... rest of the existing styles ... */

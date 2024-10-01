@@ -1,0 +1,112 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>Evaluate Your Knowledge</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="/static/PitchFiles/assets/css/main.css" />
+		<link rel="stylesheet" href="/static/evaluate.css" />
+        <link rel="icon" href="static/media/favicon.png" type="image/x-icon">
+		<noscript><link rel="stylesheet" href="/static/PitchFiles/assets/css/noscript.css" /></noscript>
+	</head>
+	<body class="is-preload">
+		<div id="page-wrapper">
+			<!-- Header -->
+            <header id="header">
+                <nav id="nav">
+                    <ul>
+                      <li><a href="/">Home</a></li>
+                      <li>
+                        <a>Achieve</a>
+                        <ul>
+                          <li><a href="/EnterGrades">Enter</a></li>
+                          <li><a href="/GradeAnalysis">Analyse</a></li>
+                          <li><a href="/Goals">Goals</a></li>
+                        </ul>
+                      </li>
+                      <li>
+                        <a>Study</a>
+                        <ul>
+                          <li><a href="/Evaluate">Evaluate</a></li>
+                          <li><a href="/StudyLevels">Levels</a></li>
+                          <li><a href="/Battle">Battle</a></li>
+                        </ul>
+                      </li>
+                      <li>
+                        <a>Connect</a>
+                        <ul>
+                          <li><a href="/Classes">Classes</a></li>
+                          <li><a href="/Assignments">Assignments</a></li>
+                          <li><a href="/Leagues">Leagues</a></li>
+                          <li><a href="#">Questions</a></li>
+                        </ul>
+                      </li>
+                      <li>
+                        <a>About</a>
+                        <ul>
+                          <li><a href="/Pitch">Pitch</a></li>
+                          <li><a href="/GetStart">Getting Started</a></li>
+                        </ul>
+                      </li>
+                      <li><a href="/Login" class="button primary" id="profile">Login</a></li>
+                    </ul>
+                </nav>
+            </header>
+
+            <div id="main" class="wrapper style1">
+                <div class="container">
+                    <header class="major">
+                        <h2>Evaluate Your Knowledge</h2>
+                    </header>
+
+                    <section id="class-selection">
+                        <h3>Select a Class and Unit</h3>
+                        <select id="class-select">
+                            <option value="">Select a class</option>
+                        </select>
+                        <select id="unit-select" disabled>
+                            <option value="">Select a unit</option>
+                        </select>
+                        <button id="start-evaluation" class="button primary">Start Evaluation</button>
+                    </section>
+
+                    <section id="evaluation" style="display: none;">
+                        <div id="question-container">
+                            <h3 id="question"></h3>
+                            <div id="choices-container">
+                                <!-- This will be dynamically populated by JavaScript -->
+                            </div>
+                        </div>
+                        <div id="progress">Question <span id="current-question">1</span> of 5</div>
+                        <button id="next-question" class="button primary" style="display: none;">Next Question</button>
+                        <div id="result" style="display: none;"></div>
+                    </section>
+
+                    <div id="loading" style="display: none;">
+                        <div class="spinner"></div>
+                        <p id="loading-text">Generating questions...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer id="footer">
+                <!-- Footer content here -->
+            </footer>
+        </div>
+
+		<!-- Scripts -->
+        <script src="/static/util.js"></script>
+		<script src="/static/PitchFiles/assets/js/jquery.min.js"></script>
+		<script src="/static/PitchFiles/assets/js/jquery.scrolly.min.js"></script>
+		<script src="/static/PitchFiles/assets/js/jquery.dropotron.min.js"></script>
+		<script src="/static/PitchFiles/assets/js/jquery.scrollex.min.js"></script>
+		<script src="/static/PitchFiles/assets/js/browser.min.js"></script>
+		<script src="/static/PitchFiles/assets/js/breakpoints.min.js"></script>
+		<script src="/static/PitchFiles/assets/js/util.js"></script>
+		<script src="/static/PitchFiles/assets/js/main.js"></script>
+        <script src="/static/evaluate.js"></script>
+		<script src="/static/notifications.js" type="module"></script>
+		<script src="/static/user_data.js"></script>
+	</body>
+</html>

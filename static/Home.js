@@ -120,12 +120,14 @@ const data = await fetchRequest('/data', { data: "Chat, FILTERED Classes, Assign
 
 // Register service worker for the app
 if ('serviceWorker' in navigator) {
+  console.log("service worker")
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' }).then(function(registration) {
       // Registration was successful
       console.log('ServiceWorker registration successful with scope: ', registration.scope);
       // Wait for the service worker to be active
       if (registration.active) {
+        console.log("service worker is active and ready")
         console.log('Service worker is active and ready.');
         init_messaging(registration);
       } else {
@@ -161,32 +163,56 @@ const firebaseConfig = {
 
 
 function init_messaging(registration){
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-console.log("firebase initialized")
-  // Retrieve Firebase Messaging object
-  const messagingobj = getMessaging(app);
-  // messagingobj.useServiceWorker(registration);
-
-  Notification.requestPermission().then((permission) => {
-    if (permission === 'granted') {
-      console.log('Notification permission granted.');
-      // Get the token
-      getToken(messagingobj, { vapidKey: 'BCoZeBvXxYJwgPvsOtcd1JNaqkzw2-KvZlsEGp1UdWVJ67HOF_1T70IfJKKiCOF1tvx4M1aSvm4u-IJZA_ZTPUk' }).then((currentToken) => {
-        if (currentToken) {
-          console.log('Token:', currentToken);
-          fetchRequest('/post_data', {data: {"token": currentToken, "OSIS": osis}, sheet: "Tokens"});
-          // Send the token to your server and update the UI if necessary
-        } else {
-          console.log('No registration token available. Request permission to generate one.');
+  console.log("init messaging")
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  console.log("firebase initialized")
+    // Retrieve Firebase Messaging object
+    const messagingobj = getMessaging(app);
+  
+    Notification.requestPermission().then(async (permission) => {
+      if (permission === 'granted') {
+        console.log('Notification permission granted.');
+        // Get the token
+        try {
+          const currentToken = await getToken(messagingobj, { vapidKey: 'BCoZeBvXxYJwgPvsOtcd1JNaqkzw2-KvZlsEGp1UdWVJ67HOF_1T70IfJKKiCOF1tvx4M1aSvm4u-IJZA_ZTPUk' });
+          if (currentToken) {
+            console.log('Token:', currentToken);
+            
+            // Get device name (if available)
+            let deviceName = navigator.userAgent;
+  
+            // Get current tokens for the user
+            const currentTokens = await fetchRequest('/data', {data: "FILTERED Tokens"});
+            const userTokens = currentTokens['Tokens'].filter(t => t.OSIS === osis);
+  
+            // Check if the token already exists
+            const tokenExists = userTokens.some(t => t.token === currentToken);
+  
+            if (!tokenExists) {
+              // Only add the new token if it doesn't exist
+              await fetchRequest('/post_data', {
+                data: {
+                  "token": currentToken,
+                  "OSIS": osis,
+                  "deviceName": deviceName
+                },
+                sheet: "Tokens"
+              });
+              console.log("New token added for device:", deviceName);
+            } else {
+              console.log("Token already exists for this user and device.");
+            }
+          } else {
+            console.log('No registration token available. Request permission to generate one.');
+          }
+        } catch (err) {
+          console.log('An error occurred while retrieving token. ', err);
         }
-      }).catch((err) => {
-        console.log('An error occurred while retrieving token. ', err);
-      });
-    } else {
-      console.log('Unable to get permission to notify.');
-    }
-  });
-}
+      } else {
+        console.log('Unable to get permission to notify.');
+      }
+    });
+  }
 
 main();

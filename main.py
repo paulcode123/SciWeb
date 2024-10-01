@@ -1,7 +1,7 @@
 # Import necessary libraries
 
 # Flask is a web framework for Python that allows backend-frontend communication
-from flask import Flask, render_template, request, session, redirect, url_for, send_from_directory
+from flask import Flask, render_template, request, session, redirect, url_for, send_from_directory, jsonify
 # json is a library for parsing and creating JSON data
 import json
 # requests is a library for getting info from the web
@@ -28,7 +28,6 @@ from PIL import Image
 from database import get_data, post_data, update_data, delete_data, download_file, upload_file, init_firebase
 from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups, get_stats, update_leagues, get_compliments
-from goals import calculate_goal_progress, get_goals
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades
 from study import study_response, get_insights
 
@@ -58,7 +57,7 @@ def init():
   vars['max_column'] = "O"
   vars['AppSecretKey'] = keys["AppSecretKey"]
   # firebase or gsheet
-  vars['database'] = 'gsheet'
+  vars['database'] = 'firebase'
   vars['allow_demo_change'] = True
   
   return vars
@@ -116,6 +115,10 @@ def study():
 def study_levels():
   return render_template('Levels.html')
 
+@app.route('/Diagnostic')
+def diagnostic():
+  return render_template('Diagnostic.html')
+
 @app.route('/Evaluate')
 def evaluate():
   return render_template('Evaluate.html')
@@ -148,6 +151,10 @@ def assignments():
 @app.route('/CourseSelection')
 def course_selection():
   return render_template('CourseSelection.html')
+
+@app.route('/Messages')
+def messages():
+  return render_template('messages.html')
 
 @app.route('/Join')
 def join():
@@ -398,9 +405,6 @@ def delete_data_route():
   delete_data(data['row_value'], data['row_name'], data['sheet'])
   return json.dumps({"message": "success"})
 
-@app.route('/goals_progress', methods=['POST'])
-def get_goals_progress():
-  return json.dumps(calculate_goal_progress(session))
 
 # Function to return insights to the Study page
 @app.route('/AI', methods=['POST'])
@@ -448,6 +452,9 @@ def GA_setup():
   weights = get_weights(classes, session['user_data']['osis'])
   grades = get_grades()
   user_data = get_name()
+  goals = get_data("Goals")
+  # filter goals for the user's osis
+  goals = [item for item in goals if str(session['user_data']['osis']) in str(item['OSIS'])]
 
   # if there are no grades, return an error
   # if grades is a dictionary with a key 'class' and the value is 'No grades entered', return an error
@@ -456,14 +463,15 @@ def GA_setup():
     return json.dumps({"error": "Enter your grades before analyzing them"})
   #filter classes for the user's osis
   classes = [item for item in classes if str(session['user_data']['osis']) in str(item['OSIS'])]
-  stats = get_stats(grades, classes)
-  compliments = get_compliments(grades, classes)
-  # convert dates of grades(m/d/yyyy) to ordinal dates
-  ordinal_dated_grades = []
-  for grade in grades:
-    ordinal_dated_grades.append({"date": datetime.datetime.strptime(grade['date'], "%m/%d/%Y").toordinal(), "value": grade['value'], "class": grade['class'], "category": grade['category'], "score": grade['score'], "name": grade['name']})
-
   try:
+    stats = get_stats(grades, classes)
+    compliments = get_compliments(grades, classes)
+    # convert dates of grades(m/d/yyyy) to ordinal dates
+    ordinal_dated_grades = []
+    for grade in grades:
+      ordinal_dated_grades.append({"date": datetime.datetime.strptime(grade['date'], "%m/%d/%Y").toordinal(), "value": grade['value'], "class": grade['class'], "category": grade['category'], "score": grade['score'], "name": grade['name']})
+
+
     grade_spreads = {}
     cat_value_sums = {}
     categories = []
@@ -510,7 +518,8 @@ def GA_setup():
     "categories": categories,
     "stats": stats,
     "compliments": compliments,
-    "cat_value_sums": cat_value_sums
+    "cat_value_sums": cat_value_sums,
+    "goals": goals
   }
 
 
@@ -543,6 +552,160 @@ def process_notebook_image():
   print("insights", insights)
   return json.dumps(insights)
   
+
+@app.route('/generate-questions', methods=['POST'])
+def generate_questions():
+    data = request.json
+    class_id = data['classId']
+    unit_name = data['unitName']  # Changed from unitIndex to unitName
+
+    # Get the notebook content for the selected class and unit
+    notebooks = get_data("Notebooks")
+    notebook_content = next((item['content'] for item in notebooks if item['classID'] == class_id), None)
+
+    if not notebook_content:
+        return jsonify({"error": "Notebook content not found"}), 404
+
+    try:
+        content_dict = json.loads(notebook_content)
+        unit_content = content_dict.get(unit_name)  # Get unit content by name instead of index
+
+        if not unit_content:
+            return jsonify({"error": "Unit content not found"}), 404
+
+        # Generate questions using AI
+        prompt = [
+            {"role": "system", "content": "Generate 2 multiple-choice questions and 3 short-response questions based on the content as described in the notebook data. Each MCQ question should have 4 choices, with one correct answer. Format the output as a JSON array of objects, where each object has 'question', 'choices' (array of 4 strings, for MCQs), and 'correct_answer' fields."},
+            {"role": "user", "content": str(unit_content)}
+        ]
+
+        questions = get_insights(prompt)
+
+        try:
+            questions_json = json.loads(questions)
+            return jsonify({"questions": questions_json})
+        except json.JSONDecodeError:
+            return jsonify({"error": "Failed to generate valid questions"}), 500
+
+    except json.JSONDecodeError:
+        return jsonify({"error": "Invalid notebook content format"}), 400
+
+@app.route('/get-units', methods=['POST'])
+def get_units():
+    data = request.json
+    class_id = data['classId']
+    notebooks = get_data("Notebooks")
+    notebook_content = next((item['content'] for item in notebooks if item['classID'] == class_id), None)
+    
+    if notebook_content:
+        try:
+            content_dict = json.loads(notebook_content)
+            units = list(content_dict.keys())
+            return jsonify({"units": units})
+        except json.JSONDecodeError:
+            return jsonify({"error": "Invalid notebook content format"}), 400
+    else:
+        return jsonify({"error": "Notebook content not found"}), 404
+
+@app.route('/score-answers', methods=['POST'])
+def score_answers():
+    data = request.json
+    questions = data['questions']
+    user_answers = data['answers']
+
+    score = 0
+
+    for i, question in enumerate(questions):
+        if 'choices' in question:  # This is a multiple-choice question
+            if user_answers[i] == question['correct_answer']:
+                score += 20
+        else:  # This is an open-ended question
+            prompt = [
+                {"role": "system", "content": "You are an AI assistant tasked with scoring a student's answer to an open-ended question. Score the answer on a scale of 0 to 20, where 20 is a perfect answer. Provide the score as a single number without any additional text or explanation."},
+                {"role": "user", "content": f"Question: {question['question']}\nStudent's Answer: {user_answers[i]}"}
+            ]
+
+            ai_score = get_insights(prompt)
+            print("ai_score", ai_score)
+            try:
+                question_score = int(ai_score.strip())
+                score += min(max(question_score, 0), 20)  # Ensure score is between 0 and 20
+            except ValueError:
+                # If AI doesn't return a valid number, assign a default score
+                score += 10
+
+    return jsonify({"score": score})
+
+@app.route('/generate-bloom-questions', methods=['POST'])
+def generate_bloom_questions():
+    data = request.json
+    class_id = data['classId']
+    unit_name = data['unitName']
+    level = data['level']
+
+    # Get the notebook content for the selected class and unit
+    notebooks = get_data("Notebooks")
+    notebook_content = next((item['content'] for item in notebooks if item['classID'] == class_id), None)
+
+    if not notebook_content:
+        return jsonify({"error": "Notebook content not found"}), 404
+
+    try:
+        content_dict = json.loads(notebook_content)
+        unit_content = content_dict.get(unit_name)
+
+        if not unit_content:
+            return jsonify({"error": "Unit content not found"}), 404
+
+        # Generate questions using AI
+        prompt = [
+            {"role": "system", "content": f"Generate 5 short-response questions about on the topics within the notebook data. The theme of the questions should be at the {level} level of Bloom's Taxonomy. To clarify, the questions shouldn't be about the physical structure or layout of the notebook, nor about bloom's taxonomy.Format the output as a JSON array of objects, where each object has a 'question' field."},
+            {"role": "user", "content": str(unit_content)}
+        ]
+
+        questions = get_insights(prompt)
+
+        try:
+            questions_json = json.loads(questions)
+            return jsonify({"questions": questions_json})
+        except json.JSONDecodeError:
+            return jsonify({"error": "Failed to generate valid questions"}), 500
+
+    except json.JSONDecodeError:
+        return jsonify({"error": "Invalid notebook content format"}), 400
+
+@app.route('/evaluate-answer', methods=['POST'])
+def evaluate_answer():
+    data = request.json
+    question = data['question']
+    answer = data['answer']
+    level = data['level']
+
+    prompt = [
+        {"role": "system", "content": f"You are an AI assistant tasked with evaluating a student's answer to a {level}-level question in Bloom's Taxonomy. Score the answer on a scale of 0 to 10, where 10 is a perfect answer. Provide the score as a number and a brief feedback explanation."},
+        {"role": "user", "content": f"Question: {question}\nStudent's Answer: {answer}"}
+    ]
+
+    evaluation = get_insights(prompt)
+
+    try:
+        # Split the response into lines
+        lines = evaluation.strip().split('\n')
+        
+        # Extract score from the first line
+        score_line = lines[0]
+        score = int(score_line.split(':')[-1].strip())
+        
+        # Join the remaining lines as feedback
+        feedback = '\n'.join(lines[1:]).strip()
+        
+        if not feedback:
+            feedback = "No feedback provided."
+        
+        print("score", score, "feedback", feedback)
+        return jsonify({"score": score, "feedback": feedback})
+    except (ValueError, IndexError):
+        return jsonify({"error": "Failed to evaluate answer"}), 500
 
 
 @app.route('/impact', methods=['POST'])

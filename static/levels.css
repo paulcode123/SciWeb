@@ -1,122 +1,46 @@
-body {
-    
-        background-image: url('/static/media/Levelsbgd.png'); /* URL of the background image */
-        background-size: 100% auto; /* Span the full width of the page */
-        background-repeat: repeat-y; /* Repeat the image vertically */
-    
-  }
-
-.imgcontainer {
-    /* center the image horizontally */
-    display: flex;
-    justify-content: center;
-}
-img{
-    backdrop-filter: blur(1px); /* Adjust the blur radius as needed */
-}
-
- #mode {
-    /* center the elements */
-    display: flex;
-    justify-content: center;
-    /* add a semi-opaque purple background */
-    background-color: rgba(128, 0, 128, 0.5);
-    /* add padding and margin */
-    padding: 20px;
-    margin: 10px;
-    /* make the width of the background 20% while keeping everything centered */
-    width: 30%;
-    margin-left: 35%;
-    margin-right: 35%;
-    /* add rounded corners */
+#progress-bar {
+    width: 100%;
+    height: 20px;
+    background-color: #ddd;
     border-radius: 10px;
- }
+    margin-bottom: 20px;
+}
 
- /* add styles to select elements in mode div */
-    #mode select {
-        /* add padding */
-        padding: 10px;
-        /* add margin */
-        margin: 10px;
-        /* make the width 100% */
-        width: 100%;
-        /* add rounded corners */
-        border-radius: 5px;
-        /* add border */
-        border: 1px solid black;
-    }
+#progress-fill {
+    height: 100%;
+    width: 0;
+    background-color: #4CAF50;
+    border-radius: 10px;
+    transition: width 0.5s ease-in-out;
+}
 
-    /* change the fill color of hr elements to blue and change thickness */
-    hr {
-        background-color: blue;
-        height: 3px;
-        margin-top: 5px;
-        margin-bottom: 5px;
-    }
+#points {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
 
-    
+#feedback {
+    margin-top: 20px;
+    padding: 10px;
+    border-radius: 5px;
+}
 
-    #question{
-        /* align item vertically in parent div */
-        align-self: center;
-        /* make font size bigger, change font */
-        font-size: 30px;
-        font-family: 'Courier New', Courier, monospace;
+.feedback-positive {
+    background-color: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+}
 
-    }
+.feedback-negative {
+    background-color: rgba(244, 67, 54, 0.2);
+    color: #F44336;
+}
 
-    /* for all elements in class "choice", give thin, blue border with rounded edges, turn blue when hovered over */
-    .choice {
-        border: 1px solid blue;
-        border-radius: 5px;
-        padding: 10px;
-        margin: 3px;
-        cursor: pointer;
-    }
+#level-complete, #all-levels-complete {
+    text-align: center;
+    margin-top: 30px;
+}
 
-    .choice:hover {
-        background-color: lightblue;
-    }
-
-    .flashcard .front {
-        z-index: 2;
-        transform: rotateY(0deg);
-    }
-    
-    .flashcard .back {
-        transform: rotateY(180deg);
-    }
-    
-    .flashcard.flipped .front {
-        transform: rotateY(-180deg);
-    }
-
-    .flashcard.flipped .back {
-        transform: rotateY(0deg);
-    }
-
-    .flashcard {
-        /* make the text appear in a flashcard, a large white box */
-        background-color: white;
-        height: 400px;
-        width: 600px;
-        /* add margin */
-        margin: 10px;
-        margin-left: 20%;
-        /* center elements horizontally in div */
-        display: flex;
-        justify-content: center;
-
-        /* keep consecutive elements below each other */
-        flex-direction: column;
-        /* add rounded corners */
-        border-radius: 10px;
-        /* position: relative; */
-        perspective: 1000px; /* Enable 3D space for flipping */
-    }
-
-    .flashcard .front, .flashcard .back {
-    backface-visibility: hidden;
-    transition: transform 0.6s;
-    
-    }
+#next-level {
+    margin-top: 20px;
+}
