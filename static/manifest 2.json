@@ -1,0 +1,17 @@
+{
+    "name": "SciWebApp",
+    "short_name": "SciWeb",
+    "icons": [
+      {
+        "src": "/static/media/favicon.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      }
+    ],
+    "start_url": "/",
+    "background_color": "#FFFFFF",
+    "display": "standalone",
+    "scope": "/",
+    "theme_color": "#FFFFFF"
+  }
+  
