@@ -17,9 +17,13 @@ import traceback
 # for images
 import base64
 from io import BytesIO
-from PIL import Image
+import tempfile
+from pydantic import BaseModel, Field
+from openai import OpenAI
+import random
 
-# import openai
+import openai
+from PyPDF2 import PdfReader
 
 
 
@@ -28,8 +32,8 @@ from PIL import Image
 from database import get_data, post_data, update_data, delete_data, download_file, upload_file, init_firebase
 from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups, get_stats, update_leagues, get_compliments
-from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades
-from study import study_response, get_insights
+from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades, confirm_category_match
+from study import get_insights, get_insights_from_file
 
 #get api keys from static/api_keys.json file
 keys = json.load(open('api_keys.json'))  
@@ -43,6 +47,7 @@ def init():
   vars = {}
   keys = json.load(open('api_keys.json'))
   vars['openAIAPI'] = keys["OpenAiAPIKey"]
+  openai.api_key = vars['openAIAPI']
   vars['spreadsheet_id'] = '1k7VOAgZY9FVdcyVFaQmY_iW_DXvYQluosM2LYL2Wmc8'
   vars['gSheet_api_key'] = keys["GoogleAPIKey"]
   # URL for the SheetDB API, for POST requests
@@ -59,6 +64,7 @@ def init():
   # firebase or gsheet
   vars['database'] = 'firebase'
   vars['allow_demo_change'] = True
+  vars['client'] = OpenAI(api_key=vars['openAIAPI'])
   
   return vars
 
@@ -136,6 +142,10 @@ def classes():
 def leagues():
   return render_template('Leagues.html')
 
+@app.route('/Notebook')
+def notebook():
+  return render_template('notebook.html')
+
 @app.route('/GetStart')
 def getstart():
   return render_template('GetStart.html')
@@ -194,17 +204,7 @@ def class_page(classurl):
                          class_name=class_name,
                          class_data=class_data)
 
-# For class notebooks of specific classes
-@app.route('/class/<classurl>/notebook')
-def notebook_page(classurl):
-  #Again, pass in class specific data
-  id = re.findall('[0-9]+', classurl)[0]
-  class_name = classurl.replace(id, "").strip()
-  classes = get_data("Classes")
-  class_data = next((row for row in classes if row['id'] == id), None)
-  return render_template('notebook.html',
-                         class_name=class_name,
-                         class_data=class_data)
+
 
 # League page, for specific leagues
 @app.route('/league/<leagueid>')
@@ -300,13 +300,19 @@ def Jupiter():
   
   if classes == "WrongPass":
     return json.dumps({"error": "Incorrect credentials"})
+
+  class_data = get_data("Classes")
+
   if str(data['addclasses'])=="True":
-    jupapi_output_to_classes(classes)
+    jupapi_output_to_classes(classes, class_data)
   
   session['user_data']['grades_key'] = str(data['encrypt'])
   grades = jupapi_output_to_grades(classes, data['encrypt'])
+  # if the categories in the grades do not match the categories in the classes, rerun the function
+  if confirm_category_match(grades, class_data):
+     jupapi_output_to_classes(classes, class_data)
+
   if str(data['updateLeagues'])=="True":
-    classes = get_data("Classes")
     update_leagues(grades, classes)
   return json.dumps(grades)
 
@@ -367,6 +373,10 @@ def fetch_data():
           # send if item['class'] is the id for any of the rows in response['Classes']
           class_ids = [item['id'] for item in response['Classes']]
           response[sheet_name] = [item for item in data if item['class'] in class_ids]
+        elif sheet_name=="Notebooks":
+          #  send if the classID is the id for any of the rows in response['Classes']
+          class_ids = [item['id'] for item in response['Classes']]
+          response[sheet_name] = [item for item in data if item['classID'] in class_ids]
         elif sheet_name=="FClasses":
           #send all of the classes that the user's friends are in
           friend_osises = [item['targetOSIS'] for item in data if str(session['user_data']['osis']) in item['OSIS']] + [item['OSIS'] for item in data if str(session['user_data']['osis']) in item['targetOSIS']]
@@ -533,25 +543,86 @@ def get_gclasses():
   print("classes", classes)
   return json.dumps(classes)
 
-@app.route('/process-notebook-image', methods=['POST'])
-def process_notebook_image():
-  data = request.json
-  base64_img = data['image']
-  base64_img = base64_img.split(",")[1]
-  # correct the padding of the base64 string
-  padding_needed = 4 - (len(base64_img) % 4)
-  if padding_needed:
-      base64_img += '=' * padding_needed
-  # Decode the base64 string to bytes
-  image_data = base64.b64decode(base64_img)
-  # Convert the bytes to an image
-  image = Image.open(BytesIO(image_data))
-  prompt = [{"role":"system", "content": "Given the file ID of the image of a worksheet or textbook, list the specific topics covered in it."}, {"role":"user", "content": "file ID: <<fid>>"}]
-  # Get insights from the AI
-  insights = get_insights(prompt, image_data)
-  print("insights", insights)
-  return json.dumps(insights)
+class ResponseTypeNB(BaseModel):
+        topic: str
+        subtopics: list[str]
+        practice_questions: list[str]
+
+@app.route('/process-notebook-file', methods=['POST'])
+def process_notebook_file():
+    data = request.json
+    file_content = data['file']
+    file_type = data['fileType']
+    unit = data['unit']
+    
+    
+    if file_type == 'application/pdf':
+         # Decode the base64 PDF content
+        pdf_bytes = base64.b64decode(file_content)
+        pdf_file = BytesIO(pdf_bytes)
+        pdf_reader = PdfReader(pdf_file)
+        
+        # Extract text from the PDF
+        text_content = ""
+        for page in pdf_reader.pages:
+            text_content += page.extract_text()
+        
+        prompts = [
+            {"role": "system", "content": "You are an expert at analyzing educational worksheets and creating study materials."},
+            {"role": "user", "content": f"Analyze this worksheet PDF content and provide the following information:\n1. The main topic of the worksheet\n2. A list of specific subtopics or concepts the user needs to know\n3. Several practice questions related to the worksheet content\n\nPDF Content:\n{text_content[:4000]}"}  # Limit content to 4000 characters to avoid token limits
+        ]
+        
+        insights = get_insights(prompts, ResponseTypeNB)
+        
+        
+    else:
+        # Process image (existing code)
+        base64_img = file_content
+        
+        # Fix padding if necessary
+        padding = len(base64_img) % 4
+        if padding:
+            base64_img += '=' * (4 - padding)
+        
+        prompts = [
+            {"role": "system", "content": "You are an expert at analyzing educational worksheets and creating study materials."},
+            {"role": "user", "content": [
+                {"type": "text", "text": "Analyze this worksheet image and provide the following information:\n1. The main topic of the worksheet\n2. A list of specific subtopics or concepts the user needs to know\n3. Several practice questions related to the worksheet content\nFormat your response as JSON with keys 'topic', 'subtopics', and 'practice_questions'."},
+                {"type": "image_url", "image_url": {"url": f"data:image/{file_type.split('/')[-1]};base64,{base64_img}"}}
+            ]}
+        ]
+        
+        insights = get_insights(prompts, ResponseTypeNB)
+    
+    # generate a random 7 digit number
+    blob_id = ''.join([str(random.randint(0, 9)) for _ in range(7)])
+    # store the file in the cloud storage
+    # upload_file("sciweb-files", file_content, blob_id)
+    # add to the Notebooks sheet
+    post_data("Notebooks", {"classID": data['classID'], "unit": unit, "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "image": blob_id, "topic": insights.topic, "subtopics": insights.subtopics, "practice_questions": insights.practice_questions})
+    return json.dumps({"message": "success"})
   
+  
+# set response format class. for mcq, the key is the question, and the value is the answer
+class ResponseFormatGQ(BaseModel):
+    multiple_choice: dict[str, str] = Field(...)
+    short_response: list[str] = Field(...)
+
+    class Config:
+        schema_extra = {
+            "type": "object",
+            "properties": {
+                "multiple_choice": {
+                    "type": "object",
+                    "additionalProperties": {"type": "string"}
+                },
+                "short_response": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                }
+            },
+            "required": ["multiple_choice", "short_response"]
+        }
 
 @app.route('/generate-questions', methods=['POST'])
 def generate_questions():
@@ -561,51 +632,43 @@ def generate_questions():
 
     # Get the notebook content for the selected class and unit
     notebooks = get_data("Notebooks")
-    notebook_content = next((item['content'] for item in notebooks if item['classID'] == class_id), None)
+    # get one list of all of the subtopics from all of the images and one list of all of the practice questions from all of the images
+    subtopics = []
+    practice_questions = []
+    for item in notebooks:
+        if item['classID'] == class_id and item['unit'] == unit_name:
+            subtopics += item['subtopics']
+            practice_questions += item['practice_questions']
 
-    if not notebook_content:
+    
+        
+
+    if not subtopics or not practice_questions:
         return jsonify({"error": "Notebook content not found"}), 404
 
-    try:
-        content_dict = json.loads(notebook_content)
-        unit_content = content_dict.get(unit_name)  # Get unit content by name instead of index
+  
+    # Generate questions using AI
+    prompt = [
+    {"role": "system", "content": "You are an AI designed to generate educational questions. Your output should be in JSON format with two keys: 'multiple_choice' (a dictionary of questions and answers) and 'short_response' (a list of questions)."},
+    {"role": "user", "content": f"Generate 2 multiple-choice questions and 3 short-response questions based on these topics: {subtopics} and examples: {practice_questions}. Ensure your response is in the correct JSON format."}
+]
 
-        if not unit_content:
-            return jsonify({"error": "Unit content not found"}), 404
+    questions = get_insights(prompt, ResponseFormatGQ)
 
-        # Generate questions using AI
-        prompt = [
-            {"role": "system", "content": "Generate 2 multiple-choice questions and 3 short-response questions based on the content as described in the notebook data. Each MCQ question should have 4 choices, with one correct answer. Format the output as a JSON array of objects, where each object has 'question', 'choices' (array of 4 strings, for MCQs), and 'correct_answer' fields."},
-            {"role": "user", "content": str(unit_content)}
-        ]
+    return json.dumps({"questions": questions})
 
-        questions = get_insights(prompt)
-
-        try:
-            questions_json = json.loads(questions)
-            return jsonify({"questions": questions_json})
-        except json.JSONDecodeError:
-            return jsonify({"error": "Failed to generate valid questions"}), 500
-
-    except json.JSONDecodeError:
-        return jsonify({"error": "Invalid notebook content format"}), 400
 
 @app.route('/get-units', methods=['POST'])
 def get_units():
     data = request.json
     class_id = data['classId']
     notebooks = get_data("Notebooks")
-    notebook_content = next((item['content'] for item in notebooks if item['classID'] == class_id), None)
+    # Get unique units for the given class_id
+    units = list(set(notebook['unit'] for notebook in notebooks if notebook['classID'] == class_id))
     
-    if notebook_content:
-        try:
-            content_dict = json.loads(notebook_content)
-            units = list(content_dict.keys())
-            return jsonify({"units": units})
-        except json.JSONDecodeError:
-            return jsonify({"error": "Invalid notebook content format"}), 400
-    else:
-        return jsonify({"error": "Notebook content not found"}), 404
+    return jsonify({"units": units})
+    
+    
 
 @app.route('/score-answers', methods=['POST'])
 def score_answers():

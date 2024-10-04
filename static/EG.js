@@ -52,6 +52,10 @@ async function pullfromJupiter(){
   else{
   grades = data;
   createGradesTable(grades);
+  // If new classes were added, send notifications
+  if (data.new_classes && data.new_classes.length > 0) {
+    notifyClassmates(data.new_classes, data.class_tokens);
+  }
   }
 }
 }
@@ -531,4 +535,34 @@ function showNotification(title, body, onClickCallback = null) {
   }
 }
 
-// ... rest of the existing code ...
+async function notifyClassmates(newClasses, classTokens) {
+  const db = getFirestore();
+
+  for (const className of newClasses) {
+    const tokens = classTokens[className];
+
+    // Prepare the notification message
+    const message = {
+      title: "New Classmate",
+      body: `${first_name} has joined ${className}!`,
+      data: {
+        type: "newClassmate",
+        className: className,
+        newClassmateOSIS: osis
+      }
+    };
+
+    // Send notifications to classmates
+    for (const token of tokens) {
+      try {
+        await addDoc(collection(db, "notifications"), {
+          token: token,
+          message: message
+        });
+        console.log("Notification sent successfully to", token);
+      } catch (error) {
+        console.error("Error sending notification:", error);
+      }
+    }
+  }
+}

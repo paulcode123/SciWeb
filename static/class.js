@@ -5,6 +5,12 @@ function display_NB_btn(classData){
   console.log(classData)
 document.getElementById("description").textContent = classData['description'];
 
+// Display schedule
+displaySchedule(classData['schedule']);
+
+// Display grading categories
+displayCategories(classData['categories']);
+
 var button = document.createElement("button");
 var href = "/class/"+classData['name']+classData['id']+"/notebook";
 button.textContent = "➡️📒";
@@ -14,6 +20,11 @@ button.addEventListener("click", function() {
         window.location.href = href;
     })
 
+  // Add Leave Class button
+  var leaveButton = document.getElementById('leaveClass');
+  leaveButton.addEventListener("click", function() {
+    leaveClass(classData);
+  });
 
 // Append the button to the document body or any desired element
 document.getElementById('openNBcont').appendChild(button);
@@ -140,4 +151,57 @@ categoryElement.appendChild(newOption);
   }
   
   }
+}
+
+function leaveClass(classData) {
+  if (confirm("Are you sure you want to leave this class?")) {
+    //remove the user from the string of the class members' osis
+    classData['OSIS'] = classData['OSIS'].replace(osis, "");
+
+    fetchRequest('/update_data', {
+      "row_value": classData['id'],
+      "row_name": "id",
+      "data": classData,
+      "sheet": "Classes"
+    }).then(response => {
+      if (response.message === "success") {
+        alert("You have left the class successfully.");
+        window.location.href = "/Classes";  // Redirect to the Classes page
+      } else {
+        alert("There was an error leaving the class. Please try again.");
+      }
+    });
+  }
+}
+
+
+function displaySchedule(schedule) {
+  const scheduleContainer = document.getElementById('scheduleContainer');
+  scheduleContainer.innerHTML = '<h4>Schedule:</h4>';
+  if (typeof schedule === 'string') {
+    scheduleContainer.innerHTML += `<p>${schedule}</p>`;
+  } else if (Array.isArray(schedule)) {
+    const scheduleList = document.createElement('ul');
+    schedule.forEach(item => {
+      const listItem = document.createElement('li');
+      listItem.textContent = item;
+      scheduleList.appendChild(listItem);
+    });
+    scheduleContainer.appendChild(scheduleList);
+  }
+}
+
+function displayCategories(categories) {
+  const categoriesContainer = document.getElementById('categoriesContainer');
+  categoriesContainer.innerHTML = '<h4>Grading Categories:</h4>';
+  if (typeof categories === 'string') {
+    categories = JSON.parse(categories);
+  }
+  const categoryList = document.createElement('ul');
+  for (let i = 0; i < categories.length; i += 2) {
+    const listItem = document.createElement('li');
+    listItem.textContent = `${categories[i]}: ${categories[i+1]}%`;
+    categoryList.appendChild(listItem);
+  }
+  categoriesContainer.appendChild(categoryList);
 }

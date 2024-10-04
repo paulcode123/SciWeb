@@ -141,3 +141,60 @@ input[type="submit"]:hover {
       /* background-position: center; Center the image */
       /* background-repeat: no-repeat; Do not repeat the image */
     }
+
+    #leaveClass {
+      padding: 10px 20px;
+      background-color: #d9534f;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    
+    #leaveClass:hover {
+      background-color: #c9302c;
+    }
+
+
+    .info-container {
+      background-color: rgba(255, 255, 255, 0.8);
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .info-container h4 {
+      margin-top: 0;
+      color: #333;
+      border-bottom: 2px solid #337ab7;
+      padding-bottom: 5px;
+    }
+    
+    .info-container ul {
+      list-style-type: none;
+      padding-left: 0;
+    }
+    
+    .info-container li {
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+    
+    #scheduleContainer {
+      margin-right: 20px;
+    }
+    
+    #categoriesContainer {
+      margin-left: 20px;
+    }
+    
+    @media (min-width: 768px) {
+      #scheduleContainer,
+      #categoriesContainer {
+        display: inline-block;
+        vertical-align: top;
+        width: calc(50% - 20px);
+      }
+    }

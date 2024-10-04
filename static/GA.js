@@ -379,22 +379,21 @@ document.getElementById('individual').addEventListener('change', function() {
 document.getElementById('loadingWheel').style.visibility = "hidden";
 setTimeout(function(){
   console.log(comp_time)
-// Start animation
-animationGOTC(numTraces, finalTraces, "combine");
-console.log(finalTraces)
-// when checkbox with id 'components' is clicked, split or combine the line components
-document.getElementById('components').addEventListener('change', function() {
-  if(this.checked) {
-    animationGOTC(numTraces, finalTraces);
-  } else {
-    // the y values of all spreadTraces except the last one, which is the scatter plot
-    
-    console.log(spreads)
-    traces = spreads.map(spread => {return {y: spread}});
-    animationGOTC(numTraces, traces);
-  }
-});
-
+  // Start animation
+  animationGOTC(numTraces, finalTraces, "combine");
+  console.log(finalTraces)
+  // when checkbox with id 'components' is clicked, split or combine the line components
+  document.getElementById('components').addEventListener('change', function() {
+    if(this.checked) {
+      // Split the lines when checked
+      console.log(spreads)
+      traces = spreads.map(spread => {return {y: spread}});
+      animationGOTC(numTraces, traces);
+    } else {
+      // Combine the lines when unchecked
+      animationGOTC(numTraces, finalTraces);
+    }
+  });
 }, comp_time*500);
 }
 
@@ -474,6 +473,10 @@ async function addGoal(xData, yData) {
 }
 
 function updateGoals(goals, categories) {
+  // if goals does not exist, return
+  if (!goals) {
+    return;
+  }
   // for each goal in goals where goal['categories'] matches categories, add a line on the graph
   graph = document.getElementById('myGraph');
   medals = [];
@@ -602,21 +605,26 @@ function draw_histogram(grades, cat, comp_time) {
     }
   }
   let traces = [];
+  let individualTraces = []; // Store individual traces
   // create a histogram for each group
   for (const key in grade_groups) {
     let group = grade_groups[key];
     let data = group.map(grade => grade['score']/grade['value']*100);
-   // Calculate the kernel density estimate
-   var bandwidth = 1.0; // You can adjust the bandwidth as needed
-   var kde = kernelDensityEstimation(data, epanechnikovKernel, bandwidth);
+    
+    // Calculate bandwidth based on data variance
+    var bandwidth = Math.sqrt(data.reduce((acc, val) => acc + Math.pow(val - data.reduce((a, b) => a + b) / data.length, 2), 0) / data.length);
+    bandwidth = Math.max(bandwidth, 0.5); // Ensure minimum bandwidth
+    
+    var kde = kernelDensityEstimation(data, epanechnikovKernel, bandwidth);
     // Plot the density estimate
     var trace = {
       x: kde.x,
       y: kde.y,
       mode: 'lines',
       name: key,
-};
-  traces.push(trace);
+    };
+    traces.push(trace);
+    individualTraces.push({x: kde.x, y: kde.y}); // Store individual KDE
   }
 
 var layout = {
@@ -631,30 +639,26 @@ var layout = {
     color: 'white' // White text
   }
 };
-// run kde for all grades
+// Store the combined KDE
 var data = grades.map(grade => grade['score']/grade['value']*100);
 var kde = kernelDensityEstimation(data, epanechnikovKernel, bandwidth);
-let coordcopies = [];
-let tracenums = [];
-for (let i = 0; i < traces.length; i++) {
-  coordcopies.push({y: kde.y, x: kde.x});
-  tracenums.push(i);
-}
+let combinedTrace = {x: kde.x, y: kde.y};
+
+// Define tracenums
+let tracenums = Array.from({length: traces.length}, (_, i) => i);
+
 
 Plotly.newPlot('myHisto', traces, layout);
 setTimeout(function(){
-  animationHistogram(tracenums, coordcopies);
+  animationHistogram(tracenums, Array(traces.length).fill(combinedTrace));
 }, comp_time*500);
 
-// when checkbox with id 'componentsHisto' is clicked, split or combine the line components
+// Update the event listener for the checkbox
 document.getElementById('componentsHisto').addEventListener('change', function() {
   if(this.checked) {
-    animationHistogram(tracenums, coordcopies);
+    animationHistogram(tracenums, individualTraces);
   } else {
-    anitraces = traces.map(trace => {return {y: trace.y, x: trace.x}});
-    console.log(traces)
-    console.log(anitraces)
-    animationHistogram(tracenums, anitraces);
+    animationHistogram(tracenums, Array(traces.length).fill(combinedTrace));
   }
 });
 }
@@ -836,18 +840,33 @@ function kernelDensityEstimation(data, kernel, bandwidth) {
   var n = data.length;
   var xMin = Math.min.apply(null, data);
   var xMax = Math.max.apply(null, data);
+  
+  // Check if all values are the same
+  if (xMin === xMax) {
+    // Create a Gaussian-like hill centered at the single value
+    var x = [], y = [];
+    for (var i = 0; i < 100; i++) {
+      var xi = xMin - 5 * bandwidth + i * (10 * bandwidth / 100);
+      var yi = Math.exp(-Math.pow(xi - xMin, 2) / (2 * Math.pow(bandwidth, 2)));
+      x.push(xi);
+      y.push(yi);
+    }
+    return {x: x, y: y};
+  }
+  
+  // Original KDE calculation for non-uniform data
   var xRange = xMax - xMin;
   var x = [], y = [];
   
   for (var i = 0; i < 100; i++) {
-      var xi = xMin + i * (xRange / 100);
-      var yi = 0;
-      for (var j = 0; j < n; j++) {
-          yi += kernel((xi - data[j]) / bandwidth);
-      }
-      yi /= (n * bandwidth);
-      x.push(xi);
-      y.push(yi);
+    var xi = xMin + i * (xRange / 100);
+    var yi = 0;
+    for (var j = 0; j < n; j++) {
+      yi += kernel((xi - data[j]) / bandwidth);
+    }
+    yi /= (n * bandwidth);
+    x.push(xi);
+    y.push(yi);
   }
   return {x: x, y: y};
 }

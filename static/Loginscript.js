@@ -51,16 +51,18 @@ form.addEventListener('submit', function(event) {
 async function post_login(data){
   const result = await fetchRequest('/post-login', data);
 
-    if(result['data']=="success"){
-    window.location.href = "/";
-    }else{
-      alert("Invalid login credentials");
-      document.getElementById("loadingWheel").style.display = "none";
-      // clear form
-      document.getElementById("login-form").reset();
+  if(result['data']=="success"){
+    if (toggleMode === "Signup") {
+      window.location.href = "/?signup=true";
+    } else {
+      window.location.href = "/";
     }
-
-
+  } else {
+    alert("Invalid login credentials");
+    document.getElementById("loadingWheel").style.display = "none";
+    // clear form
+    document.getElementById("login-form").reset();
+  }
 }
 
 function toggleSlider() {

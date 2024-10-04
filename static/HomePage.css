@@ -70,3 +70,46 @@ p {
   background-color: #f1f1f1;
   transform: scale(1.1);
 }
+
+
+/* Notifications icon styles */
+.notifications-icon {
+  position: fixed;
+  top: 70px;
+  right: 20px;
+  font-size: 24px;
+  cursor: pointer;
+  z-index: 1000;
+}
+
+.notifications-enabled {
+  color: #58cf39;
+}
+
+.notifications-disabled {
+  color: #ff4444;
+}
+
+/* Retry button styles */
+.retry-button {
+  background-color: #ff4444;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-left: 10px;
+}
+
+.retry-button:hover {
+  background-color: #cc0000;
+}
+
+/* Instructions styles */
+.notification-instructions {
+  font-size: 14px;
+  color: #666;
+  margin-top: 10px;
+  max-width: 300px;
+}
