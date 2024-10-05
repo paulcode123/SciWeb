@@ -65,6 +65,7 @@ def init():
   vars['database'] = 'firebase'
   vars['allow_demo_change'] = True
   vars['client'] = OpenAI(api_key=vars['openAIAPI'])
+  vars['google_credentials_path'] = 'cloudRunKey.json'
   
   return vars
 
@@ -72,7 +73,7 @@ vars = init()
 
 app = Flask(__name__)
 app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_PERMANENT'] = True
 
 # App secret key for session management
 app.config['SECRET_KEY'] = vars["AppSecretKey"]

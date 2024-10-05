@@ -6,6 +6,7 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 import json
 from flask import session
+from google.oauth2 import service_account
 
 #get data from Google Sheets API
 def get_data_gsheet(sheet, row_name, row_val):
@@ -80,8 +81,11 @@ def update_data_gsheet(row_val, row_name, new_row, sheet):
 
 
 def upload_file(bucket_name, base64_string, destination_blob_name):
+    from main import init
+    vars = init()
     """Uploads a file to the bucket."""
-    storage_client = storage.Client()
+    cred = service_account.Credentials.from_service_account_file(vars['google_credentials_path'])
+    storage_client = storage.Client(credentials=cred)
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(str(destination_blob_name))
 
@@ -94,8 +98,11 @@ def upload_file(bucket_name, base64_string, destination_blob_name):
     print(f"Content uploaded to {destination_blob_name}.")
 
 def download_file(bucket_name, source_blob_name):
+    from main import init
+    vars = init()
     """Downloads a blob from the bucket and returns it as a base64 string."""
-    storage_client = storage.Client()
+    cred = service_account.Credentials.from_service_account_file(vars['google_credentials_path'])
+    storage_client = storage.Client(credentials=cred)
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(str(source_blob_name))
 

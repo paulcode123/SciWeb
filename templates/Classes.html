@@ -1,87 +1,219 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML>
 <html>
-<link rel="stylesheet" href="static/Classes.css">
-<link rel="stylesheet" href="static/navbar.css">
+   <head>
+       <title>SciWeb Classes</title>
+       <meta charset="utf-8" />
+       <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+       <link rel="stylesheet" href="/static/PitchFiles/assets/css/main.css" />
+       <link rel="stylesheet" href="/static/Classes.css">
+       <link rel="stylesheet" href="/static/darkmode.css" />
+       <link rel="icon" href="static/media/favicon.png" type="image/x-icon">
+       <link rel="manifest" href="/static/manifest.json">
+       <noscript><link rel="stylesheet" href="/static/PitchFiles/assets/css/noscript.css" /></noscript>
+       <style>
+           body {
+               background-color: #1c1d26; /* Updated to match darkThemeTemplate.html */
+               color: #ffffff;
+           }
+           #page-wrapper {
+               background-color: #1c1d26; /* Updated to match darkThemeTemplate.html */
+           }
+           #main {
+               background-color: #1c1d26; /* Updated to match darkThemeTemplate.html */
+               padding: 3em 0;
+           }
+           .container {
+               padding: 0 2em;
+           }
+           h1 {
+               color: #ff4d4d; /* Red color from darkThemeTemplate.html */
+               margin: 0.5em 0 1em;
+               font-size: 3.5em; /* Slightly reduced for a more professional look */
+               font-weight: 600; /* Semi-bold for a cleaner appearance */
+               text-align: center;
+               text-transform: uppercase; /* Uppercase for added emphasis */
+               letter-spacing: 2px; /* Improved letter spacing */
+               position: relative;
+               padding-bottom: 0.5em;
+           }
+           h1::after {
+               content: '';
+               position: absolute;
+               bottom: 0;
+               left: 50%;
+               transform: translateX(-50%);
+               width: 100px;
+               height: 3px;
+               background-color: #ff4d4d; /* Red color from darkThemeTemplate.html */
+           }
+           #classList {
+               background-color: #222;
+               padding: 1em;
+               border-radius: 4px;
+               margin-bottom: 2em;
+           }
+           .class-item {
+               background-color: #1a1a1a;
+               padding: 15px;
+               margin-bottom: 10px;
+               border-radius: 4px;
+               transition: background-color 0.3s ease;
+               color: #ffffff; /* Make the text white */
+           }
+           .class-item:hover {
+               background-color: #222;
+           }
+           .class-item h3 {
+               margin: 0 0 10px 0;
+               font-size: 1.2em;
+           }
+           .class-item p {
+               margin: 5px 0;
+               font-size: 0.9em;
+           }
+           #joinButton {
+               background-color: #4a90e2;
+               color: #ffffff;
+               transition: background-color 0.3s ease;
+           }
+           #joinButton:hover {
+               background-color: #3a7bc8;
+           }
+           #classForm {
+               background-color: #333;
+               padding: 2em;
+               border-radius: 4px;
+               margin-top: 2em;
+               display: none;
+           }
+           input[type="text"], input[type="number"] {
+               background-color: #444;
+               color: #ffffff;
+               border: 1px solid #555;
+           }
+           input[type="submit"] {
+               background-color: #4a90e2;
+               color: #ffffff;
+           }
+           input[type="submit"]:hover {
+               background-color: #3a7bc8;
+           }
+       </style>
+   </head>
+   <body class="is-preload">
+       <div id="page-wrapper">
 
-<head>
-  <title>SciWeb Classes</title>
-  <link rel="icon" href="static/media/favicon.png" type="image/x-icon">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="manifest" href="/static/manifest.json">
+
+           <!-- Header -->
+           <header id="header">
+               <nav id="nav">
+                   <ul>
+                       <li><a href="/">Home</a></li>
+                       <li>
+                           <a>Achieve</a>
+                           <ul>
+                               <li><a href="/EnterGrades">Enter</a></li>
+                               <li><a href="/GradeAnalysis">Analyse</a></li>
+                               <li><a href="/Goals">Goals</a></li>
+                           </ul>
+                       </li>
+                       <li>
+                           <a>Study</a>
+                           <ul>
+                               <li><a href="/Evaluate">Evaluate</a></li>
+                               <li><a href="/StudyLevels">Levels</a></li>
+                               <li><a href="/Battle">Battle</a></li>
+                           </ul>
+                       </li>
+                       <li>
+                           <a>Connect</a>
+                           <ul>
+                               <li><a href="/Classes">Classes</a></li>
+                               <li><a href="/Assignments">Assignments</a></li>
+                               <li><a href="/Leagues">Leagues</a></li>
+                               <li><a href="#">Questions</a></li>
+                           </ul>
+                       </li>
+                       <li>
+                           <a>About</a>
+                           <ul>
+                               <li><a href="/Pitch">Pitch</a></li>
+                               <li><a href="/GetStart">Getting Started</a></li>
+                           </ul>
+                       </li>
+                       <li><a href="/Login" class="button primary" id="profile">Login</a></li>
+                   </ul>
+               </nav>
+           </header>
 
 
-</head>
+           <!-- Main -->
+           <div id="main" class="wrapper">
+               <div class="container">
+                   <div id="notification-container"></div>
+                   <div id="loadingWheel"></div>
+                   <h1>My Classes</h1>
+                   <p>Planning next year's courses? Try out our <a href="/CourseSelection" target="_blank">Course Selection Tool</a></p>
+                   <div id="classList">
+                       <!-- The placeholder class has been removed -->
+                       <!-- Classes will be dynamically added here by JavaScript -->
+                   </div>
+                   <button id="joinButton" class="button">Join or Create Class</button>
+                   <form id="classForm" style="display: none;">
+                       <div class="row gtr-uniform">
+                           <div class="col-6 col-12-xsmall">
+                               <label for="periodInput">Period:</label>
+                               <input type="number" id="periodInput" autocomplete="off">
+                           </div>
+                           <div class="col-6 col-12-xsmall">
+                               <label for="teacherInput">Teacher:</label>
+                               <input type="text" id="teacherInput" autocomplete="off">
+                               </div>
+                           <div class="col-12">
+                               <label for="nameInput">Class Name:</label>
+                               <input type="text" id="nameInput" autocomplete="off">
+                               </div>
+                           <div class="col-12">
+                               <label for="categories">Grading Categories:</label>
+                               <input type="text" id="categories" placeholder="ex. Participation: 20%, Assessments: 60%, Homework: 20%">
+                               </div>
+                           <div class="col-12">
+                               <ul id="classOptions"></ul>
+                               </div>
+                           <div class="col-12">
+                               <input type="submit" value="Submit" class="primary">
+                               </div>
+                       </div>
+                   </form>
+               </div>
+           </div>
 
-<body>
-  <ul class="navbar">
-    <li><a href="/">Home</a></li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Achieve</button>
-      <div class="dropdown-content">
-        <a href="/EnterGrades">Enter</a>
-        <a href="/GradeAnalysis">Analyse</a>
-        <a href="/Goals">Goals</a>
-        
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Study</button>
-      <div class="dropdown-content">
-        <a href="/StudyLevels">Levels</a>
-<a href="/StudyBot">StudyBot</a>
-<a href="/Evaluate">Evaluate</a>
-<a href="/Battle">Battle</a>
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Connect</button>
-      <div class="dropdown-content">
-        <a href="/Classes">Classes</a>
-        <a href="/Assignments">Assignments</a>
-        <a href="/Leagues">Leagues</a>
-        <a href="#">Questions</a>
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">About</button>
-      <div class="dropdown-content">
-        <a href="/Pitch">Pitch</a>
-        <a href="/GetStart">Getting Started</a>
-        
-      </div>
-    </li>
-    <li><a href="/Login" id="profile">Login</a></li>
-  </ul>
-  <div id="notification-container"></div>
-  <main>
-    <div id="loadingWheel"></div>
-    <h1>My Classes</h1>
-    <!-- create text with a link embedded into a word -->
-    <p>Planning next year's courses? Try out our <a href="/CourseSelection" target="_blank">Course Selection Tool</a></p>
-    <div id="classList"></div>
-    <br>
-    <button id="joinButton">Join or Create Class</button>
-    <form id="classForm" class="hidden">
-      <label for="periodInput">Period:</label>
-      <input type="number" id="periodInput" autocomplete="off">
-      <label for="teacherInput">Teacher:</label>
-      <input type="text" id="teacherInput" autocomplete="off">
-      <label for="nameInput">Class Name:</label>
-      <input type="text" id="nameInput" autocomplete="off">
-      <label for="categories">Grading Categories:</label>
-      <input type="text" id="categories" placeholder="ex. Participation: 20%, Assessments: 60%, Homework: 20%">
-      <ul id="classOptions"></ul>
-      <input type="submit" value="Submit">
-  </form>
-  <br>
-  <br>
-  </main>
-  
-  <script src="/static/util.js"></script>
-<script src="/static/user_data.js"></script>
-  <script src="/static/notifications.js" type="module"></script>
- <script src="/static/Classes.js"></script>
-</body>
 
+           <!-- Scripts -->
+           <script src="/static/util.js"></script>
+           <script src="/static/PitchFiles/assets/js/jquery.min.js"></script>
+           <script src="/static/PitchFiles/assets/js/jquery.scrolly.min.js"></script>
+           <script src="/static/PitchFiles/assets/js/jquery.dropotron.min.js"></script>
+           <script src="/static/PitchFiles/assets/js/jquery.scrollex.min.js"></script>
+           <script src="/static/PitchFiles/assets/js/browser.min.js"></script>
+           <script src="/static/PitchFiles/assets/js/breakpoints.min.js"></script>
+           <script src="/static/PitchFiles/assets/js/util.js"></script>
+           <script src="/static/PitchFiles/assets/js/main.js"></script>
+           <script src="/static/user_data.js"></script>
+           <script src="/static/notifications.js" type="module"></script>
+           <script src="/static/Classes.js"></script>
+           <script>
+               document.addEventListener('DOMContentLoaded', function() {
+                   const joinButton = document.getElementById('joinButton');
+                   const classForm = document.getElementById('classForm');
+
+
+                   joinButton.addEventListener('click', function(e) {
+                       e.preventDefault();
+                       classForm.style.display = classForm.style.display === 'none' ? 'block' : 'none';
+                   });
+               });
+           </script>
+       </div>
+   </body>
 </html>

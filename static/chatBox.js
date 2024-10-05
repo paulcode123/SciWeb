@@ -81,6 +81,19 @@ function clearMessages() {
   }
 }
 
+// Add this function to filter out curse words
+function cleanText(text) {
+  const curseWords = ['fuck', 'shit', 'ass', 'bitch', 'nigger', 'nigga', 'faggot', 'retard', 'retarded', 'cunt', 'piss', 'pussy', 'dick', 'cock']; // Add more words as needed
+  let ltext = text.toLowerCase();
+  // if any of the curse words are in the text, return false
+  for (let i = 0; i < curseWords.length; i++) {
+    if (ltext.includes(curseWords[i])) {
+      alert('SciWeb supports academic communication and collaboration. Please be respectful and appropriate in your language. Thank you for your cooperation.');
+      return false;
+    }
+  }
+  return true;
+}
 
 // Handle sending a message
 function sendMessage() {
@@ -117,6 +130,10 @@ return;
   let inputField = document.getElementById('message-input');
   message = inputField.value;
   inputField.value = '';
+
+  if (!cleanText(message)) {
+    return;
+  }
   
   console.log('Message:', message, current_class);
   

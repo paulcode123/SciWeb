@@ -1,200 +1,212 @@
-
-/* styles for user bubbles */
 .user-bubble {
-    display: inline-block;
-    margin: 5px;
-    padding: 10px;
-    background-color: green;
-    border-radius: 20px;
-    cursor: pointer;
+  display: inline-block;
+  margin: 5px;
+  padding: 10px;
+  background-color: green;
+  border-radius: 20px;
+  cursor: pointer;
 }
+
 
 .user-bubble:hover {
-    background-color: turquoise;
+  background-color: turquoise;
 }
 #formContainer {
-  margin-top: 20px;
+margin-top: 20px;
 }
 
-#assignmentForm {
-  display: flex;
-  flex-direction: column;
-  max-width: 300px;
-  margin: 0 auto;
+
+#assignmentForm, #classForm {
+display: flex;
+flex-direction: column;
+max-width: 300px;
+margin: 0 auto;
 }
+
 
 label {
-  margin-bottom: 5px;
-  font-weight: bold;
+margin-bottom: 5px;
+font-weight: bold;
 }
+
 
 input[type="text"],
-input[type="date"] {
-  padding: 8px;
-  margin-bottom: 10px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
+input[type="date"],
+input[type="number"] {
+padding: 8px;
+margin-bottom: 10px;
+border-radius: 4px;
+border: 1px solid #ccc;
 }
+
 
 input[type="submit"] {
-  padding: 10px 20px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+padding: 10px 20px;
+background-color: #4CAF50;
+color: white;
+border: none;
+border-radius: 4px;
+cursor: pointer;
 }
+
 
 input[type="submit"]:hover {
-  background-color: #45a049;
+background-color: #45a049;
 }
+
 
 .error-message {
-  color: red;
-  margin-top: 5px;
-}
-#createBtn {
-  padding: 10px 20px;
-  background-color: #337ab7;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+color: red;
+margin-top: 5px;
 }
 
-#createBtn:hover {
-  background-color: #286090;
+
+/* Button styles */
+#createBtn, #joinButton {
+padding: 10px 20px;
+background-color: #337ab7;
+color: white;
+border: none;
+border-radius: 4px;
+cursor: pointer;
 }
+
+
+#createBtn:hover, #joinButton:hover {
+background-color: #286090;
+}
+
 
 #openNB {
-  padding: 10px 20px;
-  border-color: black;
-  
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 10px;
+padding: 10px 20px;
+border-color: black;
+color: white;
+border: none;
+border-radius: 8px;
+cursor: pointer;
+font-size: 10px;
 }
+
 
 #openNB:hover {
-  background-color: #0d366b;
+background-color: #0d366b;
 }
 
 
+/* Assignment styles */
 .assignment-item {
-      margin-bottom: 10px;
-      padding: 10px;
-      background-color: #f5f5f5;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .assignment-item:hover {
-      background-color: #e0e0e0;
-    }
-
-    .assignment-item h3 {
-      margin: 0;
-      font-size: 18px;
-    }
-
-    .assignment-item p {
-      margin: 5px 0 0;
-      font-size: 14px;
-    }
-
-    .container {
-      display: flex;
-
-    }
-    
-    #classimgcontainer {
-      /* Set width to auto and height to 200px */
-      height: 200px;
-      overflow: hidden; /* Ensure the image doesn't overflow */
-    }
-    
-    #classimgcontainer img {
-      /* Set height to 100% to fill container, and let width adjust accordingly */
-      height: 100%;
-      width: auto;
-    }
-
-    #head {
-      flex-grow: 1; /* Allow the head div to grow and take remaining space */
-    }
-    
-    #joinBtn {
-      padding: 10px 20px;
-      background-color: #337ab7;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      display: none;
-    }
-
-    body {
-      background-image: url('/static/media/classbgd.png'); /* URL of the background image */
-      background-size: cover; /* Cover the entire page */
-      /* background-position: center; Center the image */
-      /* background-repeat: no-repeat; Do not repeat the image */
-    }
-
-    #leaveClass {
-      padding: 10px 20px;
-      background-color: #d9534f;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-left: 10px;
-    }
-    
-    #leaveClass:hover {
-      background-color: #c9302c;
-    }
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    cursor: pointer;
+  }
 
 
-    .info-container {
-      background-color: rgba(255, 255, 255, 0.8);
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-    
-    .info-container h4 {
-      margin-top: 0;
-      color: #333;
-      border-bottom: 2px solid #337ab7;
-      padding-bottom: 5px;
-    }
-    
-    .info-container ul {
-      list-style-type: none;
-      padding-left: 0;
-    }
-    
-    .info-container li {
-      margin-bottom: 5px;
-      font-size: 14px;
-    }
-    
-    #scheduleContainer {
-      margin-right: 20px;
-    }
-    
-    #categoriesContainer {
-      margin-left: 20px;
-    }
-    
-    @media (min-width: 768px) {
-      #scheduleContainer,
-      #categoriesContainer {
-        display: inline-block;
-        vertical-align: top;
-        width: calc(50% - 20px);
-      }
-    }
+  .assignment-item:hover {
+    background-color: #e0e0e0;
+  }
+
+
+  .assignment-item h3 {
+    margin: 0;
+    font-size: 18px;
+  }
+
+
+  .assignment-item p {
+    margin: 5px 0 0;
+    font-size: 14px;
+  }
+
+
+  /* Layout styles */
+  .container {
+    display: flex;
+  }
+ 
+  #classimgcontainer {
+    /* Set width to auto and height to 200px */
+    height: 200px;
+    overflow: hidden; /* Ensure the image doesn't overflow */
+  }
+ 
+  #classimgcontainer img {
+    /* Set height to 100% to fill container, and let width adjust accordingly */
+    height: 100%;
+    width: auto;
+  }
+
+
+  #head {
+    flex-grow: 1; /* Allow the head div to grow and take remaining space */
+  }
+ 
+  #joinBtn {
+    padding: 10px 20px;
+    background-color: #337ab7;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: none;
+  }
+
+
+  /* Dark theme styles */
+  body {
+    background-color: #1a1a1a;
+    color: #ffffff;
+  }
+ 
+  #page-wrapper {
+    background-color: #1a1a1a;
+  }
+ 
+  #main {
+    background-color: #2a2a2a;
+    padding: 3em 0;
+  }
+ 
+  .container {
+    padding: 0 2em;
+  }
+ 
+  h1 {
+    color: #ff4d4d; /* The red color from the dark theme template */
+    margin-bottom: 1em;
+    font-size: 4em; /* Increased font size even more */
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    text-align: center; /* Center the text */
+  }
+ 
+  #classList {
+    background-color: #222;
+    padding: 1em;
+    border-radius: 4px;
+    margin-bottom: 2em;
+  }
+ 
+  #classList button {
+    background-color: #333;
+    color: #ffffff;
+    transition: background-color 0.3s ease;
+  }
+ 
+  #classList button:hover {
+    background-color: #444;
+  }
+ 
+  #classForm {
+    background-color: #333;
+    padding: 2em;
+    border-radius: 4px;
+    margin-top: 2em;
+  }
+ 
+  input[type="text"], input[type="number"] {
+    background-color: #444;
+    color: #ffffff;
+    border: 1px solid #555;
+  }

@@ -3,5 +3,6 @@ api_keys.json
 gclassrm.json
 service_key.json
 static/credentials.json
+cloudRunKey.json
 # add __pycache__ to .gitignore
 __pycache__/
