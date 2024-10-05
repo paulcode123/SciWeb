@@ -70,3 +70,75 @@ select, button {
 #loading p {
     text-align: center;
 }
+
+/* ... (previous styles remain the same) */
+
+#result {
+    margin-top: 20px;
+    text-align: left;
+}
+
+#result h3 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.score-summary {
+    background-color: #4e5266;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.total-score {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #e44c65;
+}
+
+.feedback-section {
+    background-color: #353849;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.feedback-section ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.feedback-section li {
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #4e5266;
+    border-radius: 5px;
+}
+
+.strengths-weaknesses {
+    display: flex;
+    justify-content: space-between;
+}
+
+.strengths, .weaknesses {
+    width: 48%;
+    background-color: #353849;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.strengths h4, .weaknesses h4 {
+    margin-top: 0;
+}
+
+.strengths ul, .weaknesses ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.strengths li, .weaknesses li {
+    margin-bottom: 10px;
+    padding: 5px;
+    background-color: #4e5266;
+    border-radius: 3px;
+}

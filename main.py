@@ -598,32 +598,20 @@ def process_notebook_file():
     # generate a random 7 digit number
     blob_id = ''.join([str(random.randint(0, 9)) for _ in range(7)])
     # store the file in the cloud storage
-    # upload_file("sciweb-files", file_content, blob_id)
+    upload_file("sciweb-files", file_content, blob_id)
     # add to the Notebooks sheet
     post_data("Notebooks", {"classID": data['classID'], "unit": unit, "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "image": blob_id, "topic": insights.topic, "subtopics": insights.subtopics, "practice_questions": insights.practice_questions})
-    return json.dumps({"message": "success"})
-  
+    return jsonify({"success": True, "message": "Worksheet processed and stored successfully"})  
   
 # set response format class. for mcq, the key is the question, and the value is the answer
-class ResponseFormatGQ(BaseModel):
-    multiple_choice: dict[str, str] = Field(...)
-    short_response: list[str] = Field(...)
+class MultipleChoiceQuestion(BaseModel):
+    question: str
+    answers: list[str]
+    correct_answer: str
 
-    class Config:
-        schema_extra = {
-            "type": "object",
-            "properties": {
-                "multiple_choice": {
-                    "type": "object",
-                    "additionalProperties": {"type": "string"}
-                },
-                "short_response": {
-                    "type": "array",
-                    "items": {"type": "string"}
-                }
-            },
-            "required": ["multiple_choice", "short_response"]
-        }
+class response_format(BaseModel):
+    multiple_choice: list[MultipleChoiceQuestion]
+    short_response: list[str]
 
 @app.route('/generate-questions', methods=['POST'])
 def generate_questions():
@@ -650,13 +638,13 @@ def generate_questions():
   
     # Generate questions using AI
     prompt = [
-    {"role": "system", "content": "You are an AI designed to generate educational questions. Your output should be in JSON format with two keys: 'multiple_choice' (a dictionary of questions and answers) and 'short_response' (a list of questions)."},
-    {"role": "user", "content": f"Generate 2 multiple-choice questions and 3 short-response questions based on these topics: {subtopics} and examples: {practice_questions}. Ensure your response is in the correct JSON format."}
+    {"role": "system", "content": "You are an AI designed to generate educational questions given a list of topics and examples."},
+    {"role": "user", "content": f"Generate 2 multiple-choice questions, each with 4 answer choices, and 3 short-response questions based on these topics: {subtopics} and examples: {practice_questions}. Ensure your response is in the correct JSON format."}
 ]
 
-    questions = get_insights(prompt, ResponseFormatGQ)
+    questions = get_insights(prompt, response_format)
 
-    return json.dumps({"questions": questions})
+    return json.dumps({"questions": questions.dict()})
 
 
 @app.route('/get-units', methods=['POST'])
@@ -669,7 +657,15 @@ def get_units():
     
     return jsonify({"units": units})
     
-    
+class Feedback(BaseModel):
+    feedback: str
+    score: int
+
+class ResponseTypeQA(BaseModel):
+    feedback: list[Feedback]
+    weaknesses: list[str]
+    strengths: list[str]
+    test_score: int
 
 @app.route('/score-answers', methods=['POST'])
 def score_answers():
@@ -679,64 +675,48 @@ def score_answers():
 
     score = 0
 
-    for i, question in enumerate(questions):
-        if 'choices' in question:  # This is a multiple-choice question
-            if user_answers[i] == question['correct_answer']:
-                score += 20
-        else:  # This is an open-ended question
-            prompt = [
-                {"role": "system", "content": "You are an AI assistant tasked with scoring a student's answer to an open-ended question. Score the answer on a scale of 0 to 20, where 20 is a perfect answer. Provide the score as a single number without any additional text or explanation."},
-                {"role": "user", "content": f"Question: {question['question']}\nStudent's Answer: {user_answers[i]}"}
-            ]
+    for i in range(len(questions['multiple_choice'])):
+        if user_answers[i] == questions['multiple_choice'][i]['correct_answer']:
+            score += 20
+        
+    prompt = [
+        {"role": "system", "content": "You are an AI assistant tasked with scoring a student's answers to open-ended questions. Score each answer on a scale of 0 to 20, provide feedback on each answer, provide a list of areas of strengths and weaknesses over all of the questions, and a predicted score on a test of this material given all of the questions, out of 100."},
+        {"role": "user", "content": f"Questions: {questions['short_response']}\nStudent's Answers: {user_answers}"}
+    ]
 
-            ai_score = get_insights(prompt)
-            print("ai_score", ai_score)
-            try:
-                question_score = int(ai_score.strip())
-                score += min(max(question_score, 0), 20)  # Ensure score is between 0 and 20
-            except ValueError:
-                # If AI doesn't return a valid number, assign a default score
-                score += 10
+    ai_score = get_insights(prompt, ResponseTypeQA)
+    ai_score = ai_score.dict()
+    print("ai_score", ai_score)
 
-    return jsonify({"score": score})
+    return jsonify({"MCQscore": score, "SAQ_feedback": ai_score})
+
+class BloomQuestion(BaseModel):
+    question: str
+    personalDifficulty: int
+
+class ResponseTypeBloom(BaseModel):
+    questions: list[BloomQuestion]
 
 @app.route('/generate-bloom-questions', methods=['POST'])
 def generate_bloom_questions():
     data = request.json
-    class_id = data['classId']
-    unit_name = data['unitName']
     level = data['level']
+    previous_answers = data['previousAnswers']
+    notebook_content = data['notebookContent']
 
-    # Get the notebook content for the selected class and unit
-    notebooks = get_data("Notebooks")
-    notebook_content = next((item['content'] for item in notebooks if item['classID'] == class_id), None)
+    # Generate questions using AI
+    prompt = [
+        {"role": "system", "content": f"Generate 5 specific short-response questions about the topics/example questions. The questions should be at the {level} level of Bloom's Taxonomy. After asking about all of the material, use the user's previous answers to generate questions like the ones they got wrong. Assign a personal difficulty to each question based on how well the user did on similar questions in the past, where 1 is easy and 10 is hard."},
+        {"role": "user", "content": "notebook content: " + str(notebook_content) + "\n previous answers: " + str(previous_answers)}
+    ]
 
-    if not notebook_content:
-        return jsonify({"error": "Notebook content not found"}), 404
+    questions = get_insights(prompt, ResponseTypeBloom)
 
-    try:
-        content_dict = json.loads(notebook_content)
-        unit_content = content_dict.get(unit_name)
+    return json.dumps({"questions": questions.dict()})
 
-        if not unit_content:
-            return jsonify({"error": "Unit content not found"}), 404
-
-        # Generate questions using AI
-        prompt = [
-            {"role": "system", "content": f"Generate 5 short-response questions about on the topics within the notebook data. The theme of the questions should be at the {level} level of Bloom's Taxonomy. To clarify, the questions shouldn't be about the physical structure or layout of the notebook, nor about bloom's taxonomy.Format the output as a JSON array of objects, where each object has a 'question' field."},
-            {"role": "user", "content": str(unit_content)}
-        ]
-
-        questions = get_insights(prompt)
-
-        try:
-            questions_json = json.loads(questions)
-            return jsonify({"questions": questions_json})
-        except json.JSONDecodeError:
-            return jsonify({"error": "Failed to generate valid questions"}), 500
-
-    except json.JSONDecodeError:
-        return jsonify({"error": "Invalid notebook content format"}), 400
+class ScoreBloom(BaseModel):
+  score: int
+  feedback: str
 
 @app.route('/evaluate-answer', methods=['POST'])
 def evaluate_answer():
@@ -746,30 +726,13 @@ def evaluate_answer():
     level = data['level']
 
     prompt = [
-        {"role": "system", "content": f"You are an AI assistant tasked with evaluating a student's answer to a {level}-level question in Bloom's Taxonomy. Score the answer on a scale of 0 to 10, where 10 is a perfect answer. Provide the score as a number and a brief feedback explanation."},
+        {"role": "system", "content": f"You are an AI assistant tasked with evaluating a student's answer to a {level}-level question in Bloom's Taxonomy. Score the answer on a scale of 0 to 10, where 10 is a perfect answer. Provide the score and some feedback."},
         {"role": "user", "content": f"Question: {question}\nStudent's Answer: {answer}"}
     ]
 
-    evaluation = get_insights(prompt)
+    evaluation = get_insights(prompt, ScoreBloom)
 
-    try:
-        # Split the response into lines
-        lines = evaluation.strip().split('\n')
-        
-        # Extract score from the first line
-        score_line = lines[0]
-        score = int(score_line.split(':')[-1].strip())
-        
-        # Join the remaining lines as feedback
-        feedback = '\n'.join(lines[1:]).strip()
-        
-        if not feedback:
-            feedback = "No feedback provided."
-        
-        print("score", score, "feedback", feedback)
-        return jsonify({"score": score, "feedback": feedback})
-    except (ValueError, IndexError):
-        return jsonify({"error": "Failed to evaluate answer"}), 500
+    return json.dumps({"score": evaluation.score, "feedback": evaluation.feedback})
 
 
 @app.route('/impact', methods=['POST'])

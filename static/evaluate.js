@@ -84,7 +84,7 @@ function handleClassSelect() {
     });
 }
 
-// Function to start the evaluation process
+// Modify the startEvaluation function to handle the new format
 function startEvaluation() {
     const classId = document.getElementById('class-select').value;
     const unitName = document.getElementById('unit-select').value;
@@ -106,8 +106,9 @@ function startEvaluation() {
     })
     .then(response => response.json())
     .then(data => {
+        console.log(data);
         currentQuestions = data.questions;
-        userAnswers = new Array(currentQuestions.length).fill(null);
+        userAnswers = new Array(currentQuestions.multiple_choice.length + currentQuestions.short_response.length).fill(null);
         document.getElementById('loading').style.display = 'none';
         document.getElementById('evaluation').style.display = 'block';
         showQuestion(0);
@@ -122,14 +123,15 @@ function startEvaluation() {
 
 // Function to display a question and its answer choices
 function showQuestion(index) {
-    const question = currentQuestions[index];
-    document.getElementById('question').textContent = question.question;
-    const choicesContainer = document.getElementById('choices-container');
-    choicesContainer.innerHTML = '';
-
+    let question;
     if (index < 2) {
         // Multiple choice question
-        question.choices.forEach((choice, i) => {
+        question = currentQuestions.multiple_choice[index];
+        document.getElementById('question').textContent = question.question;
+        const choicesContainer = document.getElementById('choices-container');
+        choicesContainer.innerHTML = '';
+
+        question.answers.forEach((choice, i) => {
             const button = document.createElement('button');
             button.textContent = choice;
             button.classList.add('choice');
@@ -137,9 +139,14 @@ function showQuestion(index) {
             choicesContainer.appendChild(button);
         });
     } else {
-        // Open-ended question
+        // Short response question
+        question = currentQuestions.short_response[index - 2];
+        document.getElementById('question').textContent = question;
+        const choicesContainer = document.getElementById('choices-container');
+        choicesContainer.innerHTML = '';
+
         const textarea = document.createElement('textarea');
-        textarea.id = 'open-answer';
+        textarea.id = 'short-answer';
         textarea.rows = 4;
         textarea.cols = 50;
         choicesContainer.appendChild(textarea);
@@ -156,13 +163,15 @@ function showQuestion(index) {
 
 // Function to handle user's answer for multiple-choice questions
 function handleAnswer(selectedAnswer) {
-    const currentQuestion = currentQuestions[currentQuestionIndex];
+    const currentQuestion = currentQuestions.multiple_choice[currentQuestionIndex];
     userAnswers[currentQuestionIndex] = selectedAnswer;
 
     document.querySelectorAll('.choice').forEach(button => {
         button.disabled = true;
         if (button.textContent === currentQuestion.correct_answer) {
             button.style.backgroundColor = '#4CAF50';
+        } else if (button.textContent === selectedAnswer) {
+            button.style.backgroundColor = '#FF6347';
         }
     });
 
@@ -172,9 +181,9 @@ function handleAnswer(selectedAnswer) {
 
 // Function to handle user's answer for open-ended questions
 function handleOpenAnswer() {
-    const answer = document.getElementById('open-answer').value;
+    const answer = document.getElementById('short-answer').value;
     userAnswers[currentQuestionIndex] = answer;
-    document.getElementById('open-answer').disabled = true;
+    document.getElementById('short-answer').disabled = true;
     showNextButton();
 }
 
@@ -214,7 +223,7 @@ function submitAnswers() {
     .then(data => {
         console.log(data);
         document.getElementById('loading').style.display = 'none';
-        showResult(data.score);
+        showResult(data);
     })
     .catch(error => {
         console.error('Error:', error);
@@ -224,13 +233,51 @@ function submitAnswers() {
     });
 }
 
-// Function to display the final score
-function showResult(score) {
-    console.log(score);
+function showResult(data) {
+    console.log(data);
     document.getElementById('evaluation').style.display = 'block';
     document.getElementById('question-container').style.display = 'none';
     document.getElementById('progress').style.display = 'none';
     document.getElementById('next-question').style.display = 'none';
     document.getElementById('result').style.display = 'block';
-    document.getElementById('result').textContent = `Your comprehension score is ${score} out of 100!`;
+
+    const mcqScore = data.MCQscore;
+    const saqFeedback = data.SAQ_feedback;
+
+    let resultHTML = `
+        <h3>Evaluation Results</h3>
+        <div class="score-summary">
+            <p>Multiple Choice Questions Score: ${mcqScore} / 40</p>
+            <p>Short Answer Questions Score: ${saqFeedback.feedback.reduce((total, item) => total + item.score, 0)} / 60</p>
+            <p class="total-score">Predicted Test Score: ${mcqScore + saqFeedback.test_score} / 100</p>
+        </div>
+        <div class="feedback-section">
+            <h4>Detailed Feedback</h4>
+            <ul>
+                ${saqFeedback.feedback.map((feedback, index) => `
+                    <li>
+                        <strong>Question ${index + 1}:</strong>
+                        <p>Score: ${feedback.score} / 20</p>
+                        <p>${feedback.feedback}</p>
+                    </li>
+                `).join('')}
+            </ul>
+        </div>
+        <div class="strengths-weaknesses">
+            <div class="strengths">
+                <h4>Strengths</h4>
+                <ul>
+                    ${saqFeedback.strengths.map(strength => `<li>${strength}</li>`).join('')}
+                </ul>
+            </div>
+            <div class="weaknesses">
+                <h4>Areas for Improvement</h4>
+                <ul>
+                    ${saqFeedback.weaknesses.map(weakness => `<li>${weakness}</li>`).join('')}
+                </ul>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('result').innerHTML = resultHTML;
 }

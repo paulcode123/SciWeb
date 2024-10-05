@@ -115,12 +115,40 @@ function createWorksheetElement(worksheet) {
         <ul>${worksheet.subtopics.map(subtopic => `<li>${subtopic}</li>`).join('')}</ul>
         <h4>Practice Questions:</h4>
         <ol>${worksheet.practice_questions.map(question => `<li>${question}</li>`).join('')}</ol>
-        <button class="view-worksheet" data-image="${worksheet.image}">View Worksheet</button>
+        <div class="worksheet-actions">
+            <button class="view-worksheet" data-image="${worksheet.image}">View Worksheet</button>
+            <button class="delete-worksheet" data-id="${worksheet.id}">Delete Worksheet</button>
+        </div>
     `;
     worksheetDiv.querySelector('.view-worksheet').addEventListener('click', (e) => {
-        viewWorksheet(e.target.dataset.image);
+        viewWorksheet(e.target.dataset.image, worksheetDiv);
+    });
+    worksheetDiv.querySelector('.delete-worksheet').addEventListener('click', (e) => {
+        deleteWorksheet(e.target.dataset.image, worksheetDiv);
     });
     return worksheetDiv;
+}
+
+function deleteWorksheet(worksheetId, worksheetElement) {
+    if (confirm('Are you sure you want to delete this worksheet?')) {
+        fetchRequest('/delete_data', {
+            row_value: worksheetId,
+            row_name: 'image',
+            sheet: 'Notebooks'
+        })
+        .then(data => {
+            if (data.message === 'success') {
+                worksheetElement.remove();
+                alert('Worksheet deleted successfully');
+            } else {
+                alert('Failed to delete worksheet. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting worksheet. Please try again.');
+        });
+    }
 }
 
 function createNewUnit(classId) {
@@ -181,10 +209,31 @@ function sendWorksheetToServer(classId, unitName, base64File, fileType) {
     });
 }
 
-function viewWorksheet(imageReference) {
-    // Implement the logic to view the worksheet based on the image reference
+async function viewWorksheet(imageReference, worksheetDiv) {
     console.log(`Viewing worksheet with image reference: ${imageReference}`);
-    // This could open a new window or modal with the worksheet image/PDF
+    
+    try {
+        // Use fetchRequest to get the file from the server
+        const data = await fetchRequest('/get-file', { file: imageReference });
+        
+        if (!data || !data.file) {
+            throw new Error('Failed to retrieve file data');
+        }
+
+        // Create an image element
+        const img = document.createElement('img');
+        img.src = `data:image/png;base64,${data.file}`;
+        img.alt = 'Worksheet';
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+        
+        
+        worksheetDiv.appendChild(img);
+        
+    } catch (error) {
+        console.error('Error fetching or displaying the worksheet:', error);
+        alert('Failed to load the worksheet. Please try again.');
+    }
 }
 
 function setupEventListeners() {

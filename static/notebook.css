@@ -105,3 +105,31 @@ button {
 .create-unit:hover {
     background-color: #45a049;
 }
+
+.worksheet-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.view-worksheet, .delete-worksheet {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.view-worksheet {
+  background-color: rgb(228, 76, 101);
+  color: white;
+}
+
+.delete-worksheet {
+  background-color: #d9534f;
+  color: white;
+}
+
+.delete-worksheet:hover {
+  background-color: #c9302c;
+}
