@@ -41,7 +41,7 @@ function listen_notfs(db){
     onSnapshot(chatRef, (snapshot) => {
         snapshot.docChanges().forEach((change) => {
           let message = change.doc.data();
-          console.log(message)
+          // console.log(message)
           if (change.type === "added" && (message.OSIS.toString()).includes(osis) && !initialLoad) {
               
             console.log("New message: ", message);

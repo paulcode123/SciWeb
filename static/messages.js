@@ -1,226 +1,309 @@
-let currentThreadId = null;
-let currentUsers = [];
+var current_location;
+var current_recipients;
+var current_chat;
+var location_to_recipients={}
+var users;
 
-async function initializeMessageCenter() {
-    await loadThreads();
-    await loadFriendRequests();
-    setupNewMessageForm();
-    setupEventListeners();
-}
-
-async function loadThreads() {
-    const threads = await fetchRequest('/get_threads', { osis: currentUserOsis });
-    const sidebarThreads = document.getElementById('sidebar-threads');
-    sidebarThreads.innerHTML = '';
-
-    threads.forEach(thread => {
-        const threadElement = createThreadElement(thread);
-        sidebarThreads.appendChild(threadElement);
-    });
-}
-
-function createThreadElement(thread) {
-    const threadElement = document.createElement('div');
-    threadElement.className = 'thread-item';
-    threadElement.textContent = thread.name || thread.participants.join(', ');
-    threadElement.onclick = () => loadThread(thread.id);
-    return threadElement;
-}
-
-async function loadThread(threadId) {
-    currentThreadId = threadId;
-    const messages = await fetchRequest('/get_messages', { threadId });
-    const users = await fetchRequest('/get_users', { userIds: messages.map(m => m.sender) });
-    currentUsers = users;
-
-    const chatBox = document.getElementById('chat-box');
-    chatBox.innerHTML = '';
-
-    messages.forEach(message => {
-        const messageElement = createMessageElement(message, users);
-        chatBox.appendChild(messageElement);
+document.addEventListener('DOMContentLoaded', function() {
+    getData().then(data => {
+        console.log(data);
+        DisplayThreads(data);
     });
 
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-function createMessageElement(message, users) {
-    const messageElement = document.createElement('div');
-    messageElement.className = 'message';
-
-    const senderElement = document.createElement('div');
-    senderElement.className = 'sender';
-    senderElement.textContent = users.find(u => u.osis === message.sender).first_name;
-    messageElement.appendChild(senderElement);
-
-    const contentElement = document.createElement('div');
-    contentElement.className = 'content';
-
-    if (message.text.includes('file:')) {
-        const fileId = message.text.slice(-7);
-        getFile(fileId).then(([image, type]) => {
-            if (type === 'pdf') {
-                const pdfElement = createPdfElement(image);
-                contentElement.appendChild(pdfElement);
-            } else {
-                const imageElement = createImageElement(image);
-                contentElement.appendChild(imageElement);
-            }
-        });
-    } else {
-        contentElement.textContent = message.text;
-    }
-
-    messageElement.appendChild(contentElement);
-
-    const reactionsElement = createReactionsElement(message);
-    messageElement.appendChild(reactionsElement);
-
-    return messageElement;
-}
-
-function createPdfElement(pdfData) {
-    const pdfElement = document.createElement('a');
-    const pdfBlob = base64ToBlob(pdfData, 'application/pdf');
-    const url = URL.createObjectURL(pdfBlob);
-    pdfElement.href = url;
-    pdfElement.textContent = 'Open PDF ➡️';
-    pdfElement.target = '_blank';
-    pdfElement.className = 'pdf';
-    return pdfElement;
-}
-
-function createImageElement(imageData) {
-    const imageElement = document.createElement('img');
-    imageElement.src = imageData;
-    imageElement.className = 'message-image';
-    return imageElement;
-}
-
-function createReactionsElement(message) {
-    const reactionsElement = document.createElement('div');
-    reactionsElement.className = 'reactions';
-
-    const reactions = ['👍', '❤️', '😂', '😮', '😢', '😡'];
-    reactions.forEach(reaction => {
-        const reactionButton = document.createElement('button');
-        reactionButton.className = 'reaction-button';
-        reactionButton.textContent = reaction;
-        reactionButton.onclick = () => addReaction(message.id, reaction);
-        reactionsElement.appendChild(reactionButton);
-    });
-
-    return reactionsElement;
-}
-
-async function addReaction(messageId, reaction) {
-    await fetchRequest('/add_reaction', { messageId, reaction, osis: currentUserOsis });
-    await loadThread(currentThreadId);
-}
-
-function setupNewMessageForm() {
-    const newMessageForm = document.getElementById('new-message-form');
-    newMessageForm.onsubmit = async (e) => {
-        e.preventDefault();
-        const recipients = document.getElementById('recipients').value.split(',').map(r => r.trim());
-        const message = document.getElementById('new-message').value;
-        await fetchRequest('/create_thread', { recipients, message, osis: currentUserOsis });
-        await loadThreads();
-        newMessageForm.reset();
-    };
-}
-
-function setupEventListeners() {
-    const sendButton = document.getElementById('send-button');
-    sendButton.addEventListener('click', sendMessage);
-
-    const inputField = document.getElementById('message-input');
-    inputField.addEventListener('keydown', function(event) {
+    // Add event listeners
+    document.getElementById('send-button').addEventListener('click', sendMessage);
+    document.getElementById('message-input').addEventListener('keydown', function(event) {
         if (event.key === 'Enter') {
             sendMessage();
         }
     });
+    document.getElementById('refresh-chat').addEventListener('click', refresh);
+    document.getElementById('upload').addEventListener('change', handleFileUpload);
+    document.getElementById('clear').addEventListener('click', clearInput);
 
-    const uploadInput = document.getElementById('upload');
-    uploadInput.addEventListener('change', handleFileUpload);
+});
+
+function toggleSection(sectionId) {
+    const list = document.getElementById(`${sectionId}-list`);
+    list.classList.toggle('active');
 }
 
-async function sendMessage() {
-    const inputField = document.getElementById('message-input');
-    const message = inputField.value;
+async function refresh(){
+    console.log("refreshing...")
+    data = await fetchRequest('/data', { data: "FILTERED Chat"});
+    current_chat = data.Chat;
+    receive_messages(data.Chat, users, current_location);
+}
+
+function isThreadSet(){
+    const urlParams = new URLSearchParams(window.location.search);
+    const threadId = urlParams.get('thread');
+    if (threadId) {
+        console.log(current_chat)
+        displayChat(threadId, location_to_recipients[threadId], current_chat);
+    }
+}
+
+async function getData(){
+    return await fetchRequest('/data', { data: "FILTERED Classes, FILTERED Leagues, FILTERED Friends, Users, FILTERED Chat" });
+}
+
+function DisplayThreads(data) {
+    let classes = data['Classes'];
+    let leagues = data['Leagues'];
+    let friends = data['Friends'];
+    users = data['Users'];
+    chat = data['Chat'];
+    current_chat = chat;
+
+    
+
+    let classesList = document.getElementById('classes-list');
+    let leaguesList = document.getElementById('leagues-list');
+    let friendsList = document.getElementById('friends-list');
+
+    // Clear existing list items
+    classesList.innerHTML = '';
+    leaguesList.innerHTML = '';
+    friendsList.innerHTML = '';
+
+    // Display Classes
+    classes.forEach(cls => {
+        const li = document.createElement('li');
+        li.textContent = cls.name;
+        classesList.appendChild(li);
+        li.onclick = () => displayChat(cls.id, cls.OSIS, chat);
+        location_to_recipients[cls.id] = cls.OSIS;
+    });
+
+    // Display Leagues
+    leagues.forEach(league => {
+        const li = document.createElement('li');
+        li.textContent = league.Name;
+        leaguesList.appendChild(li);
+        li.onclick = () => displayChat(league.id, league.OSIS, chat);
+        location_to_recipients[league.id] = league.OSIS;
+    });
+
+    // Display Friends
+    friends.forEach(friend => {
+        if(friend.status == "accepted"){
+            other_persons_osis = friend.targetOSIS == osis ? friend.OSIS : friend.targetOSIS;
+            otherUser = users.find(user => user.osis == other_persons_osis);
+
+            const li = document.createElement('li');
+            li.textContent = `${otherUser.first_name} ${otherUser.last_name}`;
+            friendsList.appendChild(li);
+            let combosis = otherUser.osis.toString()+osis.toString()
+            let csvOsis = otherUser.osis.toString()+", "+osis.toString()
+            li.onclick = () => displayChat(combosis, csvOsis, chat);
+            location_to_recipients[combosis] = csvOsis;
+            console.log(osis, otherUser.osis)
+        }
+    });
+    isThreadSet()
+}
+
+function displayChat(location, recipients, chat) {
+    console.log("displaying chat:", location)
+    const newUrl = `Messages?thread=${location}`;
+    history.pushState({ thread: location }, '', newUrl);
+    current_location = location
+    current_recipients = recipients
+    console.log(current_recipients)
+    receive_messages(chat, users, location);
+}
+
+function receive_messages(messages, users, location) {
+    var messageList = document.getElementById('message-list');
+    clearMessages();
+    messages.sort((a, b) => a.timestamp - b.timestamp);
+    messages.forEach(message => {
+        if (message.data) {
+            message = message.data;
+        }
+
+        if(message.id==1373){
+            console.log(message);
+        }
+        
+        if ((message['location']).toString() == location.toString()) {
+            let listItem = document.createElement('li');
+            listItem.className = 'message';
+
+            let senderElement = document.createElement('div');
+            senderElement.className = 'sender';
+            let senderName = 'default';
+            
+            for (let i = 0; i < users.length; i++) {
+                if (users[i].osis == message.sender) {
+                    senderName = users[i].first_name;
+                    break;
+                }
+            }
+            senderElement.textContent = senderName;
+
+            let textElement = document.createElement('div');
+            if (message.text.includes('file:')) {
+                let id = message.text.slice(-7);
+                getFile(id).then(([image, type]) => {
+                    if(type == 'pdf'){
+                        let pdfElement = document.createElement('a');
+                        let pdfBlob = base64ToBlob(image, 'application/pdf');
+                        let url = URL.createObjectURL(pdfBlob);
+                        pdfElement.href = url;
+                        pdfElement.textContent = 'Open PDF     ➡️';
+                        pdfElement.target = '_blank';
+                        pdfElement.className = 'pdf';
+                        textElement.appendChild(pdfElement);
+                    } else {
+                        let imageElement = document.createElement('img');
+                        imageElement.src = image;
+                        imageElement.width = 120;
+                        imageElement.height = 120;
+                        textElement.appendChild(imageElement);
+                    }
+                });
+            } else {
+                textElement.textContent = message.text;
+            }
+            listItem.appendChild(senderElement);
+            listItem.appendChild(textElement);
+            messageList.appendChild(listItem);
+        }
+    });
+    messageList.scrollTop = messageList.scrollHeight;
+}
+
+function clearMessages() {
+    let messageList = document.getElementById('message-list');
+    while (messageList.firstChild) {
+        messageList.firstChild.remove();
+    }
+}
+
+function cleanText(text) {
+    const curseWords = ['fuck', 'shit', 'ass', 'bitch', 'nigger', 'nigga', 'faggot', 'retard', 'retarded', 'cunt', 'piss', 'pussy', 'dick', 'cock'];
+    let ltext = text.toLowerCase();
+    for (let i = 0; i < curseWords.length; i++) {
+        if (ltext.includes(curseWords[i])) {
+            alert('SciWeb supports academic communication and collaboration. Please be respectful and appropriate in your language. Thank you for your cooperation.');
+            return false;
+        }
+    }
+    return true;
+}
+
+function sendMessage() {
+    console.log('Sending message...');
+    var message = '';
+    if (document.getElementById('upload').files.length > 0) {
+        let image = document.getElementById('upload').files[0];
+        getBase64(image).then(base64 => {
+            let id = Math.floor(Math.random() * 9000000) + 1000000;
+            message = "file: " + id;
+            uploadFile(base64, id);
+
+            document.getElementById('upload').value = '';
+            let chat = {
+                text: message,
+                location: classId,
+                sender: osis,
+                OSIS: current_class.OSIS,
+                id: Math.floor(Math.random() * 10000),
+                timestamp: Date.now()
+            }
+            post_message(chat);
+            document.getElementById('image-container').innerHTML = '';
+        }).catch(error => {
+            console.error(error);
+        });
+        return;
+    }
+    
+    let inputField = document.getElementById('message-input');
+    message = inputField.value;
     inputField.value = '';
 
-    if (message || document.getElementById('upload').files.length > 0) {
-        const chat = {
-            text: message,
-            threadId: currentThreadId,
-            sender: currentUserOsis,
-            id: Math.floor(Math.random() * 10000),
-            timestamp: Date.now()
-        };
-
-        await postMessage(chat);
-        await loadThread(currentThreadId);
+    if (!cleanText(message)) {
+        return;
     }
-}
-
-async function handleFileUpload(event) {
-    if (event.target.files.length > 0) {
-        const file = event.target.files[0];
-        const base64 = await getBase64(file);
-        const fileId = Math.floor(Math.random() * 9000000) + 1000000;
-        await uploadFile(base64, fileId);
-
-        const chat = {
-            text: `file: ${fileId}`,
-            threadId: currentThreadId,
-            sender: currentUserOsis,
-            id: Math.floor(Math.random() * 10000),
-            timestamp: Date.now()
-        };
-
-        await postMessage(chat);
-        await loadThread(currentThreadId);
-        event.target.value = '';
-    }
-}
-
-async function loadFriendRequests() {
-    const friendRequests = await fetchRequest('/get_friend_requests', { osis: currentUserOsis });
-    const friendRequestsContainer = document.getElementById('friend-requests');
-    friendRequestsContainer.innerHTML = '';
-
-    friendRequests.forEach(request => {
-        const requestElement = createFriendRequestElement(request);
-        friendRequestsContainer.appendChild(requestElement);
-    });
-}
-
-function createFriendRequestElement(request) {
-    const requestElement = document.createElement('div');
-    requestElement.className = 'friend-request';
     
-    const nameElement = document.createElement('span');
-    nameElement.textContent = `${request.first_name} ${request.last_name}`;
-    requestElement.appendChild(nameElement);
-
-    const acceptButton = document.createElement('button');
-    acceptButton.textContent = 'Accept';
-    acceptButton.onclick = () => handleFriendRequest(request.id, 'accept');
-    requestElement.appendChild(acceptButton);
-
-    const rejectButton = document.createElement('button');
-    rejectButton.textContent = 'Reject';
-    rejectButton.onclick = () => handleFriendRequest(request.id, 'reject');
-    requestElement.appendChild(rejectButton);
-
-    return requestElement;
+    let chat = {
+        text: message,
+        location: current_location,
+        sender: osis,
+        OSIS: current_recipients,
+        id: Math.floor(Math.random() * 10000),
+        timestamp: Date.now()
+    }
+    post_message(chat);
 }
 
-async function handleFriendRequest(requestId, action) {
-    await fetchRequest('/handle_friend_request', { requestId, action, osis: currentUserOsis });
-    await loadFriendRequests();
+async function post_message(message){
+    var a = await fetchRequest('/post_data', {sheet: 'Chat', data: message});
+    refresh();
 }
 
-// Initialize the message center when the page loads
-document.addEventListener('DOMContentLoaded', initializeMessageCenter);
+
+function handleFileUpload(event) {
+    if (this.files && this.files.length > 0) {
+        const file = this.files[0];
+        renderImage(URL.createObjectURL(file));
+    }
+}
+
+function clearInput() {
+    document.getElementById('message-input').value = '';
+    document.getElementById('upload').value = '';
+    document.getElementById('image-container').innerHTML = '';
+}
+
+function renderImage(image) {
+    const img = document.createElement('img');
+    img.src = image;
+    img.width = 60;
+    img.height = 60;
+    document.getElementById('image-container').appendChild(img);
+}
+
+async function getFile(fileId) {
+    var response = await fetchRequest('/get-file', {file: fileId});
+    let file = response.file;
+    let type;
+    if(file.includes('pngbase64')){
+        type = 'png';
+        file = file.replace('dataimage/pngbase64', 'data:image/png;base64,');
+        file = file.slice(0, -1);
+    } else if(file.includes('jpegbase64')){
+        type = 'jpeg';
+        file = file.replace('dataimage/jpegbase64', 'data:image/jpeg;base64,');
+    } else if(file.includes('pdfbase64')){
+        type = 'pdf';
+        file = file.replace('dataapplication/pdfbase64', 'data:application/pdf;base64,');
+    } else {
+        console.log('Error: File type not supported', file);
+    }
+    return [file, type];
+}
+
+async function uploadFile(xfile, id) {
+    var data = await fetchRequest('/upload-file', {file: xfile, name: id});
+    return data;
+}
+
+function base64ToBlob(base64, type = 'application/octet-stream') {
+    base64 = base64.split('base64,')[1];
+    while (base64.length % 4 !== 0) {
+        base64 += '=';
+    }
+    const binaryString = window.atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+    return new Blob([bytes], {type});
+}
+
+

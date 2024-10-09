@@ -26,59 +26,75 @@
 // });
 
 //add the assignments to the page
-function display_assignments(assignmentList, classList){
-  const assignmentListContainer = document.getElementById('assignmentList');
-  // For each assignment, get the class name by looping through assignments, looping through classes, and matching the ids
-    assignmentList.forEach(assignmentData => {
-      let in_user_classes = false;
-      for (const item of classList) {
-        
-        if (item.id === assignmentData['class']) {
-            class_name = item.name;
-            class_id = item.id.toString();
-            class_color = item.color;
-            
-            in_user_classes = true;
-        }
-        
-}
-console.log(in_user_classes)
-//break if the class is not in the user's classes
-  if (in_user_classes){
-//create a div element for each assignment
-      const assignmentItem = document.createElement('div');
-      assignmentItem.classList.add('assignment-item');
-      assignmentItem.style.backgroundColor = class_color;
-      const duedate = processDate(assignmentData.due);
-      assignmentItem.innerHTML = `
-        <h3>Due ${duedate}</h3>
-        <p><a href="/class/${class_name+class_id}">Class: ${class_name}</a></p>
-        <p>Type: ${assignmentData.category}</p>
-        <p>Name: ${assignmentData.name}</p>
-      `;
-      //add an event listener to each assignment div so that when the user clicks on it, they are taken to the assignment page
-      assignmentItem.addEventListener('click', () => {
-        window.location.href = "/assignment/" + assignmentData.id;
-      });
+// ... existing code ...
 
-      assignmentListContainer.appendChild(assignmentItem);
+function display_assignments(assignmentList, classList) {
+  console.log("in display_assignments", assignmentList.length)
+  const assignmentListContainer = document.getElementById('assignmentList');
+  assignmentListContainer.innerHTML = ''; // Clear existing assignments
+
+  assignmentList.forEach(assignmentData => {
+    
+    let class_name, class_id, class_color;
+
+    for (const item of classList) {
+      if (item.id === assignmentData['class']) {
+        class_name = item.name;
+        class_id = item.id.toString();
+        class_color = item.color;
+        break;
+      }
     }
+
+    
+    const assignmentItem = document.createElement('div');
+    assignmentItem.classList.add('assignment-item');
+    assignmentItem.style.borderLeft = `5px solid ${class_color}`;
+    const duedate = processDate(assignmentData.due);
+    
+    assignmentItem.innerHTML = `
+      <h3>${assignmentData.name}</h3>
+      <p><strong>Due:</strong> ${duedate}</p>
+      <p><strong>Class:</strong> <a href="/class/${class_name+class_id}">${class_name}</a></p>
+      <p><strong>Type:</strong> ${assignmentData.category}</p>
+      <button class="view-details">View Details</button>
+    `;
+
+    assignmentItem.querySelector('.view-details').addEventListener('click', () => {
+      window.location.href = "/assignment/" + assignmentData.id;
     });
-  
+
+    assignmentListContainer.appendChild(assignmentItem);
+    
+  });
 }
+
+// ... rest of the existing code ...
+
+// Add this new function to toggle the filter form
+function toggleFilterForm() {
+  const filterForm = document.getElementById('filterForm');
+  filterForm.style.display = filterForm.style.display === 'none' ? 'block' : 'none';
+}
+
+// Add event listener for the filter button
+document.addEventListener('DOMContentLoaded', function() {
+  const filterButton = document.getElementById('filterButton');
+  filterButton.addEventListener('click', toggleFilterForm);
+});
 
 
 
 
 //fetch the assignments from the database
 async function get_assignment(){
-  var data = await fetchRequest('/data', { data: "Assignments, FILTERED Classes" })
+  var data = await fetchRequest('/data', { data: "FILTERED Classes, FILTERED Assignments" })
   
   
   
   assignmentList = data['Assignments']
   classList = data["Classes"]
-  console.log(classList)
+  console.log(classList, assignmentList)
   display_assignments(assignmentList, classList)
   document.getElementById('loadingWheel').style.display = "none";
   
@@ -89,4 +105,4 @@ get_assignment()
 
 
 // filter classes data where period is 3
-data['Classes'].filter(classObj => classObj.period == 3)
+// data['Classes'].filter(classObj => classObj.period == 3)

@@ -2,12 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging.js"
 
 
-//When button with id="scrolltodash" is clicked, scroll to the div with id=dashboard
-document.getElementById('scrolltodash').addEventListener('click', function() {
-    document.getElementById('dashboard').scrollIntoView({
-        behavior: 'smooth'
-    });
-});
 
 
 
@@ -319,5 +313,17 @@ function updateNotificationUI(isEnabled, errorText) {
   errorElement.innerHTML = errorText;
 }
 
+function initializeFeatureBoxes() {
+  const featureBoxes = document.querySelectorAll('.feature-box');
+  featureBoxes.forEach(box => {
+      box.addEventListener('click', () => {
+          window.location.href = box.dataset.href;
+      });
+  });
+}
+
 // Call setupMessaging when the page loads
-window.addEventListener('load', setupMessaging);
+window.addEventListener('load', () => {
+  setupMessaging();
+  initializeFeatureBoxes();
+});

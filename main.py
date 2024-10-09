@@ -17,7 +17,7 @@ import traceback
 # for images
 import base64
 from io import BytesIO
-import tempfile
+
 from pydantic import BaseModel, Field
 from openai import OpenAI
 import random
@@ -362,7 +362,7 @@ def fetch_data():
         response[sheet_name] = get_grades()
       else:
         data = get_data(sheet_name)
-        # if data is of type NoneType, return an empty list
+        # if data is of type NoneType, rfeturn an empty list
         if data == None:
           return json.dumps({})
         
@@ -546,7 +546,7 @@ def get_gclasses():
 
 class ResponseTypeNB(BaseModel):
         topic: str
-        subtopics: list[str]
+        notes: list[str]
         practice_questions: list[str]
 
 @app.route('/process-notebook-file', methods=['POST'])
@@ -570,7 +570,7 @@ def process_notebook_file():
         
         prompts = [
             {"role": "system", "content": "You are an expert at analyzing educational worksheets and creating study materials."},
-            {"role": "user", "content": f"Analyze this worksheet PDF content and provide the following information:\n1. The main topic of the worksheet\n2. A list of specific subtopics or concepts the user needs to know\n3. Several practice questions related to the worksheet content\n\nPDF Content:\n{text_content[:4000]}"}  # Limit content to 4000 characters to avoid token limits
+            {"role": "user", "content": f"Analyze this worksheet PDF content and provide the following information:\n1. The main topic of the worksheet\n2. A list of specific notes about the content of the worksheet\n3. Several practice questions related to the worksheet content\n\nPDF Content:\n{text_content[:4000]}"}  # Limit content to 4000 characters to avoid token limits
         ]
         
         insights = get_insights(prompts, ResponseTypeNB)
@@ -600,7 +600,7 @@ def process_notebook_file():
     # store the file in the cloud storage
     upload_file("sciweb-files", file_content, blob_id)
     # add to the Notebooks sheet
-    post_data("Notebooks", {"classID": data['classID'], "unit": unit, "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "image": blob_id, "topic": insights.topic, "subtopics": insights.subtopics, "practice_questions": insights.practice_questions})
+    post_data("Notebooks", {"classID": data['classID'], "unit": unit, "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "image": blob_id, "topic": insights.topic, "subtopics": insights.notes, "practice_questions": insights.practice_questions})
     return jsonify({"success": True, "message": "Worksheet processed and stored successfully"})  
   
 # set response format class. for mcq, the key is the question, and the value is the answer

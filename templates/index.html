@@ -10,7 +10,7 @@
        <meta charset="utf-8" />
        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
        <link rel="stylesheet" href="/static/PitchFiles/assets/css/main.css" />
-       <link rel="stylesheet" href="/static/darkmode.css" />
+       <link rel="stylesheet" href="/static/HomePage.css" />
        <link rel="icon" href="static/media/favicon.png" type="image/x-icon">
        <link rel="manifest" href="/static/manifest.json">
        <noscript><link rel="stylesheet" href="/static/PitchFiles/assets/css/noscript.css" /></noscript>
@@ -71,18 +71,56 @@
                    </header>
 
 
-                   <h4>Go to</h4>
-                   <ul class="actions">
-                       <li><a href="#dashboard" class="button primary" id="scrolltodash">Dashboard</a></li>
-                   </ul>
-                   <h4>or see</h4>
-                   <ul class="actions">
-                       <li><a href="/Pitch" class="button">About Us</a></li>
-                   </ul>
-
-
+                   <div class="feature-grid">
+                    <div class="feature-box" data-href="/Classes">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                        <h3>Classes</h3>
+                        <p>Collaborate with SciWebbers in your classes. Chat, add assignments, and more!</p>
+                    </div>
+                    <div class="feature-box" data-href="/Assignments">
+                        <i class="fas fa-tasks"></i>
+                        <h3>Assignments</h3>
+                        <p>Track your assignments and due dates. See estimated completion time. Make a plan to get it done, and let your classmates hold you accountable!</p>
+                    </div>
+                    <div class="feature-box" data-href="/EnterGrades">
+                        <i class="fas fa-edit"></i>
+                        <h3>Enter Grades</h3>
+                        <p>Pull your grades from Jupiter. Keep a record of your academic progress.</p>
+                    </div>
+                    <div class="feature-box" data-href="/GradeAnalysis">
+                        <i class="fas fa-chart-line"></i>
+                        <h3>Analyze Grades</h3>
+                        <p>Visualize and analyze your performance. Identify areas for improvement to target for next test.</p>
+                    </div>
+                    <div class="feature-box" data-href="/Notebook">
+                        <i class="fas fa-book"></i>
+                        <h3>Notebook</h3>
+                        <p>Snap a pic or screenshot of any class material to add it to your notebook. See summaries, questions, and more!</p>
+                    </div>
+                    <div class="feature-box" data-href="/Evaluate">
+                        <i class="fas fa-clipboard-check"></i>
+                        <h3>Evaluate</h3>
+                        <p>Access targeted questions and quizzes to get a snapshot of your understanding of a unit, and areas you may need to focus on.</p>
+                    </div>
+                    <div class="feature-box" data-href="/Messages">
+                        <i class="fas fa-comments"></i>
+                        <h3>Messages</h3>
+                        <p>Chat with Friends, Classes, leagues, and study groups. Send messages, share files, and more!</p>
+                    </div>
+                    <div class="feature-box" data-href="/Profile">
+                        <i class="fas fa-user-plus"></i>
+                        <h3>Friend Requests</h3>
+                        <p>Find friends to share stats, progress, and more!</p>
+                    </div>
+                    <div class="feature-box" data-href="/Pitch">
+                        <i class="fas fa-info-circle"></i>
+                        <h3>About Us</h3>
+                        <p>Learn more about SciWeb and our mission to enhance your academic experience!</p>
+                    </div>
+                </div>
+                <br><br><br><br>
                    <section id="dashboard">
-                       <h2>This is the dashboard</h2>
+                       <h2>Dashboard</h2>
                        <h3>Recent Messages</h3>
                        <div id="recent_messages"></div>
                    </section>

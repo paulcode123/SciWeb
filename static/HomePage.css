@@ -29,7 +29,7 @@
  
  h1 {
   font-size: 48px; /* Increase font size for h1 */
-  color: #4caf50; /* Lighter green for dark mode */
+  color: #e44c65; /* Lighter green for dark mode */
   margin-top: 0; /* Ensure no top margin for h1 */
  }
  
@@ -111,3 +111,65 @@
   background-color: #45a049;
  }
  
+
+/* ... (existing styles) ... */
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 40px;
+}
+
+.feature-box {
+  background-color: #1e1e1e;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-box:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.feature-box i {
+  font-size: 48px;
+  color: #e44c65;
+  margin-bottom: 15px;
+  transition: transform 0.3s ease;
+}
+
+.feature-box:hover i {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.feature-box h3 {
+  font-size: 24px;
+  color: #e44c65;
+  margin-bottom: 10px;
+}
+
+.feature-box p {
+  font-size: 14px;
+  color: #e0e0e0;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+  .feature-grid {
+      grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .feature-grid {
+      grid-template-columns: 1fr;
+  }
+}
+
+/* ... (existing styles) ... */

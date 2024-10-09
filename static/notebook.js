@@ -111,7 +111,7 @@ function createWorksheetElement(worksheet) {
     worksheetDiv.innerHTML = `
         <h3>${worksheet.topic}</h3>
         <p>Uploaded: ${worksheet.timestamp}</p>
-        <h4>Subtopics:</h4>
+        <h4>Notes:</h4>
         <ul>${worksheet.subtopics.map(subtopic => `<li>${subtopic}</li>`).join('')}</ul>
         <h4>Practice Questions:</h4>
         <ol>${worksheet.practice_questions.map(question => `<li>${question}</li>`).join('')}</ol>

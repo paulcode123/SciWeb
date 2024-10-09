@@ -53,31 +53,32 @@
                     </ul>
                   </nav>
             </header>
-
+            
             <div id="main" class="wrapper style1">
                 <div class="container">
-                    <!-- Message Center Content -->
-                    <div class="message-center-container">
+                    <div class="messages-container">
                         <div class="sidebar">
-                            <h2>Threads</h2>
-                            <div id="sidebar-threads"></div>
-                            <h3>New Message</h3>
-                            <form id="new-message-form">
-                                <input type="text" id="recipients" placeholder="Recipients (comma-separated)" required>
-                                <textarea id="new-message" placeholder="Type your message" required></textarea>
-                                <button type="submit">Create Thread</button>
-                            </form>
-                            <h3>Friend Requests</h3>
-                            <div id="friend-requests"></div>
-                        </div>
-                        <div class="main-content">
-                            <div id="chat-box"></div>
-                            <div class="input-container">
-                                <input type="text" id="message-input" placeholder="Type a message...">
-                                <input type="file" id="upload" accept="image/*,application/pdf" style="display: none;">
-                                <label for="upload" id="upload-label">📎</label>
-                                <button id="send-button">Send</button>
+                            <div class="sidebar-section">
+                                <h3 class="sidebar-title" onclick="toggleSection('friends')">Friends</h3>
+                                <ul id="friends-list" class="sidebar-list"></ul>
                             </div>
+                            <div class="sidebar-section">
+                                <h3 class="sidebar-title" onclick="toggleSection('classes')">Classes</h3>
+                                <ul id="classes-list" class="sidebar-list"></ul>
+                            </div>
+                            <div class="sidebar-section">
+                                <h3 class="sidebar-title" onclick="toggleSection('leagues')">Leagues</h3>
+                                <ul id="leagues-list" class="sidebar-list"></ul>
+                            </div>
+                        </div>
+                        <div class="chat-area">
+                            <ul id="message-list"></ul> <!-- List to display messages -->
+                            <div id="image-container"></div> <!-- Container for uploaded images -->
+                            <input type="text" id="message-input" placeholder="Type your message here..." />
+                            <input type="file" id="upload" accept="image/*,application/pdf" />
+                            <button id="send-button">Send</button>
+                            <button id="clear">Clear</button>
+                            <button id="refresh-chat">Refresh Chat</button>
                         </div>
                     </div>
                 </div>
@@ -97,5 +98,6 @@
         <script type="module" src="/static/notifications.js"></script>
         <script src="/static/messages.js"></script>
 
+		</div>
 	</body>
 </html>

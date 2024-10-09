@@ -1,185 +1,117 @@
-body {
-    font-family: Arial, sans-serif;
+body, html {
     margin: 0;
     padding: 0;
-    background-color: #1a1a1a;
-    color: #e0e0e0;
+    height: 100%;
+}
+
+#page-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+#main {
+    flex: 1;
+    display: flex;
+    padding: 0;
 }
 
 .container {
+    width: 100%;
+    max-width: none;
+    padding: 0;
+    margin: 0;
+}
+
+.messages-container {
     display: flex;
-    height: 100vh;
+    height: calc(100vh - 60px); /* Adjust 60px to match your navbar height */
 }
 
 .sidebar {
     width: 250px;
-    background-color: #2a2a2a;
+    background-color: #4a4646; /* Grey color */
     padding: 20px;
     overflow-y: auto;
+    height: calc(100vh - 60px); /* Adjust 60px to match your navbar height */
+    position: fixed;
+    left: 0;
+    top: 60px; /* Set to navbar height */
+    bottom: 0;
 }
 
-.main-content {
+.chat-area {
     flex-grow: 1;
+    padding: 20px;
+    margin-left: 250px; /* Same as sidebar width */
+    margin-top: 60px; /* Add top margin to match navbar height */
     display: flex;
     flex-direction: column;
-    padding: 20px;
 }
 
-#chat-box {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 20px;
-    background-color: #2a2a2a;
-    border-radius: 5px;
-    margin-bottom: 20px;
-}
 
-.input-container {
-    display: flex;
-    margin-top: 10px;
+
+#image-container {
+    margin-bottom: 10px; /* Space for input area */
 }
 
 #message-input {
-    flex-grow: 1;
+    width: calc(100% - 120px); /* Adjust width to fit with buttons */
     padding: 10px;
-    border: none;
-    border-radius: 5px;
-    background-color: #3a3a3a;
-    color: #e0e0e0;
 }
 
-#send-button, #refresh-chat {
+#upload {
     margin-left: 10px;
-    padding: 10px 20px;
-    border: none;
-    background-color: #ff69b4;
-    color: white;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
 }
 
-#send-button:hover, #refresh-chat:hover {
-    background-color: #ff1493;
+button {
+    margin-left: 10px;
+    padding: 10px 20px; /* Add padding for better spacing */
+    background-color: #4a4646; /* Initial button color */
+    color: white; /* Text color */
+    border: none; /* Remove default border */
+    border-radius: 5px; /* Rounded corners */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: background-color 0.3s ease; /* Smooth transition for hover effect */
 }
 
-.thread-item {
-    padding: 10px;
-    margin-bottom: 10px;
-    background-color: #3a3a3a;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
+button:hover {
+    background-color: #ff69b4; /* Change to pink on hover */
 }
 
-.thread-item:hover {
-    background-color: #4a4a4a;
+#message-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-bottom: 10px; /* Space for input area */
+    list-style-type: none; /* Remove bullet points */
+    padding: 0; /* Remove default padding */
 }
 
 .message {
-    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    background-color: #f9f9f9; /* Light background for messages */
+    border-radius: 8px;
     padding: 10px;
-    background-color: #3a3a3a;
-    border-radius: 5px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    color:black
 }
 
 .sender {
-    font-weight: bold;
-    margin-bottom: 5px;
-    color: #ff69b4;
-}
-
-.content {
+    font-weight: bold; /* Bold the sender's name */
     margin-bottom: 5px;
 }
 
-.message-image {
-    max-width: 100%;
-    max-height: 300px;
-    border-radius: 5px;
-}
-
-.reactions {
-    display: flex;
-    gap: 5px;
-    margin-top: 5px;
-}
-
-.reaction-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1.2em;
-    transition: transform 0.2s;
-}
-
-.reaction-button:hover {
-    transform: scale(1.2);
+.message div {
+    word-wrap: break-word; /* Ensure long words break to fit */
 }
 
 .pdf {
-    display: inline-block;
-    padding: 5px 10px;
-    background-color: #ff69b4;
-    color: white;
+    color: #007bff; /* Link color for PDFs */
     text-decoration: none;
-    border-radius: 3px;
-    margin-top: 5px;
 }
 
-#new-message-form {
-    margin-bottom: 20px;
-}
-
-#new-message-form input, #new-message-form textarea {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 10px;
-    border: none;
-    border-radius: 5px;
-    background-color: #3a3a3a;
-    color: #e0e0e0;
-}
-
-#new-message-form button {
-    padding: 10px 20px;
-    border: none;
-    background-color: #ff69b4;
-    color: white;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-#new-message-form button:hover {
-    background-color: #ff1493;
-}
-
-#friend-requests {
-    margin-top: 20px;
-}
-
-.friend-request {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    margin-bottom: 10px;
-    background-color: #3a3a3a;
-    border-radius: 5px;
-}
-
-.friend-request button {
-    padding: 5px 10px;
-    border: none;
-    background-color: #ff69b4;
-    color: white;
-    border-radius: 3px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    margin-left: 5px;
-}
-
-.friend-request button:hover {
-    background-color: #ff1493;
+.pdf:hover {
+    text-decoration: underline;
 }

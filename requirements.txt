@@ -8,3 +8,6 @@ google-cloud-storage
 firebase-admin
 pillow
 beautifulsoup4
+openai
+PyPDF2
+pydantic
