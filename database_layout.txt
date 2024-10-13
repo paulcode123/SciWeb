@@ -3,13 +3,15 @@ Sheet name: Assignments
     category(str)
     class(id of class that this assignment belongs to)
     class_name(name of class that this assignment belongs to)
-    difficulty(int)
     due(YYYY-MM-DD)
     id(4 digit id)
     name(name of assignment)
+    description
     points(int)
-    time_spent(int)
-    perc_comp(percentage of assignment completed, int)
+    time_spent(dictionary of {OSIS: time spent, OSIS: time spent, ...})
+    difficulty(dictionary of {OSIS: difficulty, OSIS: difficulty, ...})
+    completed(dictionary of {OSIS: completed(true/false), OSIS: completed, ...})
+
 
 Sheet name: Chat
 

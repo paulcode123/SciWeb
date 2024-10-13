@@ -45,6 +45,7 @@ async function pullfromJupiter(){
   else{
   console.log("got response")
   document.getElementById('loadingWheel').style.visibility = "hidden";
+  document.getElementById("loadingBar").style.visibility = "hidden";
   // if data is a dict with error key, show error message
   if(data['error']){
     alert(data['error']);

@@ -1,0 +1,58 @@
+.assignment-details {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #333;
+    color: #fff;
+    border-radius: 8px;
+}
+
+.assignment-details h2 {
+    text-align: center;
+}
+
+.assignment-details label {
+    display: block;
+    margin-top: 10px;
+}
+
+.assignment-details input, 
+.assignment-details textarea, 
+.assignment-details select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    background-color: #444; /* Set a darker background color */
+    color: #fff; /* Set text color to white for visibility */
+}
+
+.assignment-details button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-top: 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.assignment-details button:hover {
+    background-color: #0056b3;
+}
+
+#done {
+    width: 10px; /* Default width for checkboxes */
+    height: 10px;
+    margin-top: 10px; /* Add some margin for spacing */
+    margin-bottom: 10px;
+    /* color: light grey */
+    visibility: visible;
+    display: inline-block;
+    accent-color: #007bff; /* Change the color of the checkbox (if supported) */
+    border: 1px solid red;
+    
+}

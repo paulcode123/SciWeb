@@ -33,7 +33,7 @@ from database import get_data, post_data, update_data, delete_data, download_fil
 from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups, get_stats, update_leagues, get_compliments
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades, confirm_category_match
-from study import get_insights, get_insights_from_file
+from study import get_insights, get_insights_from_file, chat_with_function_calling
 
 #get api keys from static/api_keys.json file
 keys = json.load(open('api_keys.json'))  
@@ -220,13 +220,18 @@ def league_page(leagueid):
 # Assignment page, for specific assignments
 @app.route('/assignment/<assignmentid>')
 def assignment_page(assignmentid):
-  assignments = get_data("Assignments")
-  assignment_data = next(
-    (row for row in assignments if int(row['id']) == int(assignmentid)), None)
-  assignment_name = assignment_data['name']
-  return render_template('assignment.html',
-                         assignment_name=assignment_name,
-                         assignment_data=assignment_data)
+  assignments_data = get_data("Assignments")
+  osis = str(session['user_data']['osis'])
+  assignment_data = next((row for row in assignments_data if str(row['id']) == str(assignmentid)), None)
+  print("assignment_data", assignment_data, "osis", osis)
+  # if assignment_data.difficulty.user_data['osis'] exists, set it to the user's difficulty
+  diff = assignment_data['difficulty'].get(osis, "") if 'difficulty' in assignment_data else ""
+  ts = assignment_data['time_spent'].get(osis, "") if 'time_spent' in assignment_data else ""
+  pc = assignment_data['completed'].get(osis, "") if 'completed' in assignment_data else ""
+  print("diff", diff, "ts", ts, "pc", pc)
+
+  return render_template('assignment.html', assignment=assignment_data, diff=diff, ts=ts, pc=pc)
+
 
 @app.route('/users/<userid>')
 def public_profile(userid):
@@ -421,6 +426,13 @@ def delete_data_route():
 @app.route('/AI', methods=['POST'])
 def get_AI():
   return json.dumps(study_response(request.json['data']))
+
+# make route for AI with function calling
+@app.route('/AI_function_calling', methods=['POST'])
+def get_AI_function_calling():
+  response = chat_with_function_calling(request.json['data'])
+  print("response", response)
+  return json.dumps(response)
 
 #function to generate insights and return them to the Grade Analysis page
 @app.route('/insights', methods=['POST'])

@@ -1,60 +1,12 @@
-<!DOCTYPE html>
-<html>
+{% extends "darkThemeTemplate.html" %}
 
-<link rel="stylesheet" href="static/terms.css">
-<link rel="stylesheet" href="static/navbar.css">
-<link rel="manifest" href="/static/manifest.json">
+<!-- title block -->
+{% block title %}
+<title>SciWeb | Terms and Conditions</title>
+{% endblock %}
 
-
-<head>
-  <title>SciWeb Home</title>
-  <link rel="icon" href="static/media/favicon.png" type="image/x-icon">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-
-<body>
-  <ul class="navbar">
-    <li><a href="#">Home</a></li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Achieve</button>
-      <div class="dropdown-content">
-        <a href="/EnterGrades">Enter</a>
-        <a href="/GradeAnalysis">Analyse</a>
-        <a href="/Goals">Goals</a>
-        
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Study</button>
-      <div class="dropdown-content">
-        <a href="/StudyLevels">Levels</a>
-<a href="/StudyBot">StudyBot</a>
-<a href="/Evaluate">Evaluate</a>
-<a href="/Battle">Battle</a>
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Connect</button>
-      <div class="dropdown-content">
-        <a href="/Classes">Classes</a>
-        <a href="/Assignments">Assignments</a>
-        <a href="/Leagues">Leagues</a>
-        <a href="#">Questions</a>
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">About</button>
-      <div class="dropdown-content">
-        <a href="/Pitch">Pitch</a>
-        <a href="/GetStart">Getting Started</a>
-        
-      </div>
-    </li>
-    <li><a href="/Login" id="profile">Login</a></li>
-  </ul>
-  <div id="notification-container"></div>
-  <main>
+<!-- content block -->
+{% block content %}
     <section>
         <h1>Terms and Conditions</h1>
         <ol>
@@ -71,12 +23,5 @@
           <li>By Pulling Grades from Jupiter, the user acknowledges that this data will be stored on the platform until the user deletes it. The user grants permission for SciWeb to access this data</li>
         </ol>
     </section>
-  </main>
+{% endblock %}
   
-<script src="/static/user_data.js"></script>
-  <script src="/static/notifications.js" type="module"></script>
-
-
-</body>
-
-</html>

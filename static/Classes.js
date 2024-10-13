@@ -190,3 +190,14 @@ async function post_classes(data, update){
   location.reload();
   
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+  const joinButton = document.getElementById('joinButton');
+  const classForm = document.getElementById('classForm');
+
+
+  joinButton.addEventListener('click', function(e) {
+      e.preventDefault();
+      classForm.style.display = classForm.style.display === 'none' ? 'block' : 'none';
+  });
+});

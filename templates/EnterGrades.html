@@ -1,69 +1,17 @@
-<!DOCTYPE HTML>
-<!--
-	Landed by HTML5 UP
-	html5up.net | @ajlkn
-	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
--->
-<html>
-	<head>
-		<title>SciWeb | Enter Grades</title>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-		<link rel="stylesheet" href="/static/PitchFiles/assets/css/main.css" />
-    <link rel="stylesheet" href="/static/EG.css">
+{% extends "darkThemeTemplate.html" %}
 
-        <link rel="icon" href="static/media/favicon.png" type="image/x-icon">
-		<noscript><link rel="stylesheet" href="/static/PitchFiles/assets/css/noscript.css" /></noscript>
-	</head>
-	<body class="is-preload">
-		<div id="page-wrapper">
+<!-- title block -->
+{% block title %}
+<title>SciWeb | Enter Grades</title>
+{% endblock %}
 
-			<!-- Header -->
-            <header id="header">
-                <!-- <h1 id="logo"><a href="/">Landed</a></h1> -->
-                <nav id="nav">
-                    <ul>
-                      <li><a href="/">Home</a></li>
-                      <li>
-                        <a>Achieve</a>
-                        <ul>
-                          <li><a href="/EnterGrades">Enter</a></li>
-                          <li><a href="/GradeAnalysis">Analyse</a></li>
-                          <li><a href="/Notebook">Notebook</a></li>
-                        </ul>
-                      </li>
-                      <li>
-                        <a>Study</a>
-                        <ul>
-                          <li><a href="/Evaluate">Evaluate</a></li>
-                          <li><a href="/StudyLevels">Levels</a></li>
-                          <li><a href="/Battle">Battle</a></li>
-                        </ul>
-                      </li>
-                      <li>
-                        <a>Connect</a>
-                        <ul>
-                          <li><a href="/Classes">Classes</a></li>
-                          <li><a href="/Assignments">Assignments</a></li>
-                          <li><a href="/Leagues">Leagues</a></li>
-                          <li><a href="#">Questions</a></li>
-                        </ul>
-                      </li>
-                      <li>
-                        <a>About</a>
-                        <ul>
-                          <li><a href="/Pitch">Pitch</a></li>
-                          <li><a href="/GetStart">Getting Started</a></li>
-                        </ul>
-                      </li>
-                      <li><a href="/Login" class="button primary" id="profile">Login</a></li>
-                    </ul>
-                  </nav>
-            </header>
-            <div id="main" class="wrapper style1">
-                <div class="container">
+<!-- css block -->
+{% block css %}
+<link rel="stylesheet" href="/static/EG.css">
+{% endblock %}
 
-    <div id="loadingWheel"></div>
+<!-- content block -->
+{% block content %}
     <header class="major">
       <h2>Enter Grades</h2>
       <p>Simply pull your grades directly from Jupiter to unlock powerful analysis and insights</p>
@@ -80,7 +28,7 @@
     <br>
     <p>By pulling grades from Jupiter, you agree to our <a target="_blank" href="/Terms">Terms and Conditions</a></p>
     <button id="Jupull">Pull from Jupiter</button>
-    <div class="loading-bar-container">
+    <div id="loadingBar" class="loading-bar-container">
       <div class="loading-bar"></div>
     </div>
   </div>
@@ -230,22 +178,9 @@
     </tbody>
   </table>
 
-<script src="/static/util.js"></script>
-<script src="/static/user_data.js"></script>
-<script src="static/EG.js" type="module"></script>
-  <script src="/static/notifications.js" type="module"></script>
+{% endblock %}
 
-
-<!-- Scripts -->
-<script src="/static/util.js"></script>
-<script src="/static/PitchFiles/assets/js/jquery.min.js"></script>
-<script src="/static/PitchFiles/assets/js/jquery.scrolly.min.js"></script>
-<script src="/static/PitchFiles/assets/js/jquery.dropotron.min.js"></script>
-<script src="/static/PitchFiles/assets/js/jquery.scrollex.min.js"></script>
-<script src="/static/PitchFiles/assets/js/browser.min.js"></script>
-<script src="/static/PitchFiles/assets/js/breakpoints.min.js"></script>
-<script src="/static/PitchFiles/assets/js/util.js"></script>
-<script src="/static/PitchFiles/assets/js/main.js"></script>
-
-</body>
-</html>
+<!-- js block -->
+{% block js %}
+<script type="module" src="/static/EG.js"></script>
+{% endblock %}

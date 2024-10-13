@@ -92,3 +92,91 @@
       background-position: center; /* Center the image */
       background-repeat: no-repeat; /* Do not repeat the image */
     }
+
+    body {
+      background-color: #1c1d26; /* Updated to match darkThemeTemplate.html */
+      color: #ffffff;
+  }
+  #page-wrapper {
+      background-color: #1c1d26; /* Updated to match darkThemeTemplate.html */
+  }
+  #main {
+      background-color: #1c1d26; /* Updated to match darkThemeTemplate.html */
+      padding: 3em 0;
+  }
+  .container {
+      padding: 0 2em;
+  }
+  h1 {
+      color: #ff4d4d; /* Red color from darkThemeTemplate.html */
+      margin: 0.5em 0 1em;
+      font-size: 3.5em; /* Slightly reduced for a more professional look */
+      font-weight: 600; /* Semi-bold for a cleaner appearance */
+      text-align: center;
+      text-transform: uppercase; /* Uppercase for added emphasis */
+      letter-spacing: 2px; /* Improved letter spacing */
+      position: relative;
+      padding-bottom: 0.5em;
+  }
+  h1::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 3px;
+      background-color: #ff4d4d; /* Red color from darkThemeTemplate.html */
+  }
+  #classList {
+      background-color: #222;
+      padding: 1em;
+      border-radius: 4px;
+      margin-bottom: 2em;
+  }
+  .class-item {
+      background-color: #1a1a1a;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      transition: background-color 0.3s ease;
+      color: #ffffff; /* Make the text white */
+  }
+  .class-item:hover {
+      background-color: #222;
+  }
+  .class-item h3 {
+      margin: 0 0 10px 0;
+      font-size: 1.2em;
+  }
+  .class-item p {
+      margin: 5px 0;
+      font-size: 0.9em;
+  }
+  #joinButton {
+      background-color: #4a90e2;
+      color: #ffffff;
+      transition: background-color 0.3s ease;
+  }
+  #joinButton:hover {
+      background-color: #3a7bc8;
+  }
+  #classForm {
+      background-color: #333;
+      padding: 2em;
+      border-radius: 4px;
+      margin-top: 2em;
+      display: none;
+  }
+  input[type="text"], input[type="number"] {
+      background-color: #444;
+      color: #ffffff;
+      border: 1px solid #555;
+  }
+  input[type="submit"] {
+      background-color: #4a90e2;
+      color: #ffffff;
+  }
+  input[type="submit"]:hover {
+      background-color: #3a7bc8;
+  }

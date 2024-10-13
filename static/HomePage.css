@@ -19,8 +19,6 @@
   left: 0;
   right: 0;
   height: 425px; /* Height of the repeating background */
-  background-image: url('Spider.png');
-  background-repeat: repeat;
   background-size: 150px;
   z-index: -1; /* Ensure it's behind the content */
   opacity: 0.1; /* Reduce opacity for dark mode */

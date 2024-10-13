@@ -1,107 +1,53 @@
-<!DOCTYPE html>
-<html>
-<link rel="stylesheet" href="/static/chatBox.css">
-<link rel="stylesheet" href="/static/navbar.css">
-<head>
-    <title>SciWeb {{ assignment_name }}</title>
-    <link rel="icon" href="/static/media/favicon.png" type="image/x-icon">
-    <link rel="manifest" href="/static/manifest.json">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% extends "darkThemeTemplate.html" %}
 
-</head>
-<body>
-  <ul class="navbar">
-    <li><a href="/">Home</a></li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Achieve</button>
-      <div class="dropdown-content">
-        <a href="/EnterGrades">Enter</a>
-        <a href="/GradeAnalysis">Analyse</a>
-        <a href="/Goals">Goals</a>
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Study</button>
-      <div class="dropdown-content">
-        <a href="/StudyLevels">Levels</a>
-<a href="/StudyBot">StudyBot</a>
-<a href="/Evaluate">Evaluate</a>
-<a href="/Battle">Battle</a>
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Connect</button>
-      <div class="dropdown-content">
-        <a href="/Classes">Classes</a>
-        <a href="/Assignments">Assignments</a>
-        <a href="/Leagues">Leagues</a>
-        <a href="#">Questions</a>
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">About</button>
-      <div class="dropdown-content">
-        <a href="/Pitch">Pitch</a>
-        <a href="/GetStart">Getting Started</a>
-      </div>
-    </li>
-    <li><a href="/Login" id="profile">Login</a></li>
-  </ul>
-  <div id="notification-container"></div>
-  <!-- <div id="loadingWheel"></div> -->
-    <h1>{{ assignment_name }} Assignment Page</h1>
-    <h3 id="description"></h3>
-    <p id="class-name"></p>
-    <p id="due-date"></p>
-    <p id="points"></p>
-    <p id="categories"></p>
+{% block title %}
+<title>SciWeb | Assignment</title>
+{% endblock %}
 
-  <br>
-  <h2>Assignment Score modeler:</h2>
-  <input type="range" id="slider" min="40" max="100" value="50">
-  <p id="slider-value">If score is: 90</p>
-  <p id="category-impact">+0.0%</p>
-  <p id="class-impact">+0.0%</p>
+<!-- css block -->
+{% block css %}
+<link rel="stylesheet" href="/static/assignment.css">
+{% endblock %}
 
-  <h2>Time Stats:</h2>
-  <p>Percent Completion:</p>
-  <input type="range" id="percent-completion" min="0" max="100" value="0">
-  
-  <p>Time Spent:</p>
-  <input type="range" id="time-spent" min="0" max="100" value="0">
-  
-  <p>Difficulty:</p>
-  <input type="range" id="difficulty" min="0" max="100" value="0">
-  
-  <button id="update-button" style="margin-top: 10px;">Update</button>
-  
-  <p id="avg-difficulty">Average Difficulty: 0.0</p>
-  <p id="avg-percent-completion">Average Percent Completion: 0.0%</p>
-  <p id="avg-time-spent">Average Time Spent: 0.0 hours</p>
+{% block content %}
+<div class="assignment-details">
+    <h2>Assignment Details</h2>
+    <form id="assignment-form">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" value="{{ assignment.name }}" required>
 
-  <div id="chat-box">
-    <button id="refresh-chat">🔄</button>
-    <ul id="message-list"></ul>
-    <div id="image-container"></div>
-    <div id="input-container">
-      <input type="text" id="message-input" placeholder="Type your message...">
-      <button id="clear">❌</button>
-      <button id="send-button">Send</button>
-      <input type="file" id="upload" style="display: none;">
-      <label for="upload" id="uploadLabel">📁</label>
-    </div>
-    <div id="loadingWheel"></div>
-  </div>
+        <label for="due">Due Date:</label>
+        <input type="date" id="due" name="due" value="{{ assignment.due }}" required>
 
-  <script>
-    var assignmentData = JSON.parse('{{ assignment_data|tojson|safe }}');
-    var locationData = assignmentData;
-  </script>
-  <script src="/static/util.js"></script>
-  <script src="/static/user_data.js"></script>
-  <script src="/static/notifications.js" type="module"></script>
-  <script src="/static/chatBox.js"></script>
-  <script src="/static/assignment.js"></script>
-</body>
-</html>
+        <label for="description">Description:</label>
+        <textarea id="description" name="description" required>{{ assignment.description }}</textarea>
+
+        <label for="priority">Priority:</label>
+        <select id="priority" name="priority">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+        </select>
+
+        <label for="difficulty">Difficulty:</label>
+        <input type="number" id="difficulty" name="difficulty" min="1" max="10" value="{{ diff }}">
+
+        <label for="time_spent">Time Spent (hours):</label>
+        <input type="number" id="time_spent" name="time_spent" min="0" value="{{ ts }}">
+
+        <p>Mark as Done:</p>
+        <input type="checkbox" id="done" name="done" {% if pc %}checked{% endif %}>
+        <br>
+        <button type="submit">Save Changes</button>
+    </form>
+</div>
+<!-- add average difficulty, average time spent, and percent completed -->
+<div id="average-difficulty"></div>
+<div id="average-time-spent"></div>
+<div id="percent-completed"></div>
+{% endblock %}
+
+<!-- js block -->
+{% block js %}
+<script src="/static/assignment.js"></script>
+{% endblock %}

@@ -426,19 +426,26 @@ document.getElementById('addGoal').addEventListener('click', function() {
   var myPlot = document.getElementById('myGraph');
 
   function clickHandler(data) {
+    console.log("adding goal", myPlot.layout)
     var xaxis = myPlot.layout.xaxis;
     var yaxis = myPlot.layout.yaxis;
-    var l = myPlot.layout.margin.l;
-    var t = myPlot.layout.margin.t;
+    var clickx = data.event.clientX;
+    var clicky = data.event.clientY
+    var left = myPlot.getBoundingClientRect().left;
+    var top = myPlot.getBoundingClientRect().top
+    var minx = xaxis.range[0]
+    var maxx = xaxis.range[1]
+    var miny = yaxis.range[0];
+    var maxy = yaxis.range[1];
 
-    var x = xaxis.p2d(data.event.clientX - myPlot.getBoundingClientRect().left - l);
-    var y = yaxis.p2d(data.event.clientY - myPlot.getBoundingClientRect().top - t);
+    // Calculate the relative position of the click
+    var relX = (clickx - left) / myPlot.clientWidth;
+    var relY = (clicky - top) / myPlot.clientHeight;
 
-    // Round x to the nearest day
-    x = Math.round(x);
-
-    // Ensure y is within a reasonable range (e.g., 0-100 for percentage grades)
-    y = Math.max(0, Math.min(100, y));
+    // Convert relative position to data coordinates
+    var x = xaxis.range[0] + relX * (maxx-minx);
+    var y = yaxis.range[0] + (1 - relY) * (maxy-miny);
+    
 
     addGoal(x, y);
 
@@ -446,15 +453,34 @@ document.getElementById('addGoal').addEventListener('click', function() {
     myPlot.removeListener('click', clickHandler);
     console.log('click event listener removed');
   }
+  // Compress the graph on the horizontal axis and add new date values
+  var currentRange = myPlot.layout.xaxis.range;
+  var newEndDate = currentRange[1]+60
+  var tickvals = myPlot.layout.xaxis.tickvals;
+  var ticktext = myPlot.layout.xaxis.ticktext;
+  var interval = tickvals[1]-tickvals[0];
+  while(tickvals[tickvals.length-1]<newEndDate){
+    newTick = tickvals[tickvals.length-1]+interval;
+    tickvals.push(newTick);
+    date = serialToDate(newTick);
+    ticktext.push(date);
+  }
+  // set xaxis range to currentRange[0] to newEndDate
+  
+
+  Plotly.relayout(myPlot, {
+    'xaxis.range': [currentRange[0], newEndDate]
+  });
 
   // Attach the click handler
-  myPlot.on('click', clickHandler);
-  console.log('click event listener added');
+  myPlot.on('plotly_click', clickHandler);
+  console.log('click event listener added', myPlot);
 });
 
 
 // log the goal to the database and update goals
 async function addGoal(xData, yData) {
+  
   // convert xData(serial date) to string date
   let dateString = serialToDate(xData);
   // set dateSet to today's date
@@ -469,7 +495,7 @@ async function addGoal(xData, yData) {
   // update goals
   updateGoals(goals, currentCategories);
   // update goalTable
-  updateGoalTable(goals);
+  setGoalTable(goals);
 }
 
 function updateGoals(goals, categories) {
@@ -537,6 +563,9 @@ function updateGoals(goals, categories) {
 }
 
 function interpolate(x, xs, ys) {
+  if (x > xs[xs.length - 1]) {
+      x = xs[xs.length - 1];
+  }
   for (let i = 0; i < xs.length - 1; i++) {
       if (x >= xs[i] && x <= xs[i + 1]) {
           let x1 = xs[i], x2 = xs[i + 1];

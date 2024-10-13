@@ -1,202 +1,97 @@
-<!DOCTYPE HTML>
-<html>
-   <head>
-       <title>SciWeb {{ class_name }}</title>
-       <meta charset="utf-8" />
-       <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-       <link rel="stylesheet" href="/static/PitchFiles/assets/css/main.css" />
-       <link rel="stylesheet" href="/static/class.css">
-       <link rel="stylesheet" href="/static/chatBox.css">
-       <link rel="stylesheet" href="/static/darkmode.css" />
-       <link rel="stylesheet" href="/static/notebook.css">
-       <link rel="icon" href="/static/media/favicon.png" type="image/x-icon">
-       <link rel="manifest" href="/static/manifest.json">
-       <noscript><link rel="stylesheet" href="/static/PitchFiles/assets/css/noscript.css" /></noscript>
-       <style>
-           body {
-               font-size: 14px;
-           }
-           h1 {
-               font-size: 2em;
-           }
-           h3 {
-               font-size: 1.5em;
-           }
-           .pro-button {
-               padding: 10px 20px;
-               border-radius: 5px;
-               font-weight: 600;
-               text-transform: uppercase;
-               letter-spacing: 1px;
-               transition: all 0.3s ease;
-               margin: 5px;
-           }
-           .pro-button:hover {
-               transform: translateY(-2px);
-               box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-           }
-           .pro-button.primary {
-               background-color: #3498db;
-               color: white;
-               border: none;
-           }
-           .pro-button.secondary {
-               background-color: #2ecc71;
-               color: white;
-               border: none;
-           }
-           .pro-button.tertiary {
-               background-color: #e74c3c;
-               color: white;
-               border: none;
-           }
-       </style>
-   </head>
-   <body class="is-preload dark-theme">
-       <div id="page-wrapper">
-           <!-- Header -->
-           <header id="header">
-               <nav id="nav">
-                   <ul>
-                       <li><a href="/">Home</a></li>
-                       <li>
-                           <a>Achieve</a>
-                           <ul>
-                               <li><a href="/EnterGrades">Enter</a></li>
-                               <li><a href="/GradeAnalysis">Analyse</a></li>
-                               <li><a href="/Notebook">Notebook</a></li>
-                           </ul>
-                       </li>
-                       <li>
-                           <a>Study</a>
-                           <ul>
-                               <li><a href="/StudyLevels">Levels</a></li>
-                               <li><a href="/StudyBot">StudyBot</a></li>
-                               <li><a href="/Evaluate">Evaluate</a></li>
-                               <li><a href="/Battle">Battle</a></li>
-                           </ul>
-                       </li>
-                       <li>
-                           <a>Connect</a>
-                           <ul>
-                               <li><a href="/Classes">Classes</a></li>
-                               <li><a href="/Assignments">Assignments</a></li>
-                               <li><a href="/Leagues">Leagues</a></li>
-                               <li><a href="#">Questions</a></li>
-                           </ul>
-                       </li>
-                       <li>
-                           <a>About</a>
-                           <ul>
-                               <li><a href="/Pitch">Pitch</a></li>
-                               <li><a href="/GetStart">Getting Started</a></li>
-                           </ul>
-                       </li>
-                       <li><a href="/Login" class="button primary" id="profile">Login</a></li>
-                   </ul>
-               </nav>
-           </header>
+{% extends "darkThemeTemplate.html" %}
+
+{% block title %}
+<title>SciWeb | Class</title>
+{% endblock %}
+
+<!-- css block -->
+{% block css %}
+<link rel="stylesheet" href="/static/class.css">
+{% endblock %}
+
+<!-- content block -->
+{% block content %}
+<!-- Class Section -->
+<section id="class-section">
+<div id="notification-container"></div>
+<div id="loadingWheel"></div>
+<div id="classimgcontainer"></div>
+<div id="head">
+<h1 class="dark-text">{{ class_name }}</h1>
+<button id="joinBtn" class="pro-button primary">Join Class</button>
+<h3 id="description" class="dark-text"></h3>
+<div id="user-list" class="dark-text"></div>
+<div id="assignmentList" class="dark-text"></div>
+</div>
+<input type="file" id="imgupload" style="display: none;">
+<label for="imgupload" id="uploadLabel" class="pro-button secondary">🖼️ Upload Image</label>
 
 
-           <!-- Main -->
-           <div id="main" class="wrapper style1 dark-bg">
-               <div class="container">
-                   <!-- Class Section -->
-                   <section id="class-section">
-                       <div id="notification-container"></div>
-                       <div id="loadingWheel"></div>
-                       <div id="classimgcontainer"></div>
-                       <div id="head">
-                           <h1 class="dark-text">{{ class_name }}</h1>
-                           <button id="joinBtn" class="pro-button primary">Join Class</button>
-                           <h3 id="description" class="dark-text"></h3>
-                           <div id="user-list" class="dark-text"></div>
-                           <div id="assignmentList" class="dark-text"></div>
-                       </div>
-                       <input type="file" id="imgupload" style="display: none;">
-                       <label for="imgupload" id="uploadLabel" class="pro-button secondary">🖼️ Upload Image</label>
+<label for="color" id="colorLabel" class="pro-button secondary">🎨 Choose Color</label>
+<input type="color" id="color" value="#000000" style="display: none;">
+<button id="savecolor" class="pro-button secondary" style="display: none;">Save Color</button>
 
 
-                       <label for="color" id="colorLabel" class="pro-button secondary">🎨 Choose Color</label>
-                       <input type="color" id="color" value="#000000" style="display: none;">
-                       <button id="savecolor" class="pro-button secondary" style="display: none;">Save Color</button>
+<button id="createBtn" class="pro-button primary">➕ Create Assignment</button>
 
 
-                       <button id="createBtn" class="pro-button primary">➕ Create Assignment</button>
+<div id="formContainer" style="display: none;">
+<form id="assignmentForm" class="dark-form">
+<div class="row gtr-uniform gtr-50">
+    <div class="col-6 col-12-xsmall">
+        <input type="text" id="name" name="name" placeholder="Assignment Name" required class="dark-input">
+    </div>
+    <div class="col-6 col-12-xsmall">
+        <input type="date" id="due" name="due" required class="dark-input">
+    </div>
+    <div class="col-6 col-12-xsmall">
+        <input type="number" id="points" name="points" placeholder="Points" required class="dark-input">
+    </div>
+    <div class="col-6 col-12-xsmall">
+        <select id="assignmentType" name="assignmentType" class="dark-input">
+            <option value="default">Loading Classes</option>
+        </select>
+    </div>
+    <div class="col-12">
+        <input type="submit" value="Submit" class="primary dark-button">
+    </div>
+</div>
+</form>
+</div>
+<div id="chat-box" class="dark-chat">
+<button id="refresh-chat" class="pro-button tertiary">🔄</button>
+<ul id="message-list" class="dark-text"></ul>
+<div id="image-container"></div>
+<div id="input-container">
+<input type="text" id="message-input" placeholder="Type your message..." class="dark-input">
+<button id="clear" class="pro-button tertiary">❌</button>
+<button id="send-button" class="pro-button primary">Send</button>
+<input type="file" id="upload" style="display: none;">
+<label for="upload" id="uploadLabel" class="pro-button secondary">📁</label>
+</div>
+</div>
+</section>
 
 
-                       <div id="formContainer" style="display: none;">
-                           <form id="assignmentForm" class="dark-form">
-                               <div class="row gtr-uniform gtr-50">
-                                   <div class="col-6 col-12-xsmall">
-                                       <input type="text" id="name" name="name" placeholder="Assignment Name" required class="dark-input">
-                                   </div>
-                                   <div class="col-6 col-12-xsmall">
-                                       <input type="date" id="due" name="due" required class="dark-input">
-                                   </div>
-                                   <div class="col-6 col-12-xsmall">
-                                       <input type="number" id="points" name="points" placeholder="Points" required class="dark-input">
-                                   </div>
-                                   <div class="col-6 col-12-xsmall">
-                                       <select id="assignmentType" name="assignmentType" class="dark-input">
-                                           <option value="default">Loading Classes</option>
-                                       </select>
-                                   </div>
-                                   <div class="col-12">
-                                       <input type="submit" value="Submit" class="primary dark-button">
-                                   </div>
-                               </div>
-                           </form>
-                       </div>
-                       <div id="chat-box" class="dark-chat">
-                           <button id="refresh-chat" class="pro-button tertiary">🔄</button>
-                           <ul id="message-list" class="dark-text"></ul>
-                           <div id="image-container"></div>
-                           <div id="input-container">
-                               <input type="text" id="message-input" placeholder="Type your message..." class="dark-input">
-                               <button id="clear" class="pro-button tertiary">❌</button>
-                               <button id="send-button" class="pro-button primary">Send</button>
-                               <input type="file" id="upload" style="display: none;">
-                               <label for="upload" id="uploadLabel" class="pro-button secondary">📁</label>
-                           </div>
-                       </div>
-                   </section>
+<!-- Separator -->
+<hr class="major" />
 
 
-                   <!-- Separator -->
-                   <hr class="major" />
+<!-- Notebook Section -->
+<section id="notebook-section">
+<h2 class="dark-text">{{ class_name }} Notebook</h2>
+<input type="file" accept="image/*" capture="environment" id="imageInput" style="display: none;">
+<label for="imageInput" class="pro-button secondary" style="font-size: 1.2em;">📷 Capture Image</label>
+<button id="create_section" class='pro-button secondary'>New Section</button>
+<div id="tabs"></div>
+<button id='save' onclick="postNotebook()" class='pro-button primary'>Save Notebook</button>
+<div id="insights_container"></div>
+</section>
+</div>
+{% endblock %}
 
+<!-- js block -->
+{% block js %}
+<script src="/static/class.js"></script>
+{% endblock %}
 
-                   <!-- Notebook Section -->
-                   <section id="notebook-section">
-                       <h2 class="dark-text">{{ class_name }} Notebook</h2>
-                       <input type="file" accept="image/*" capture="environment" id="imageInput" style="display: none;">
-                       <label for="imageInput" class="pro-button secondary" style="font-size: 1.2em;">📷 Capture Image</label>
-                       <button id="create_section" class='pro-button secondary'>New Section</button>
-                       <div id="tabs"></div>
-                       <button id='save' onclick="postNotebook()" class='pro-button primary'>Save Notebook</button>
-                       <div id="insights_container"></div>
-                   </section>
-               </div>
-           </div>
-       </div>
-
-
-       <!-- Scripts -->
-       <script src="/static/util.js"></script>
-       <script src="/static/user_data.js"></script>
-       <script src="/static/notifications.js" type="module"></script>
-       <script src="/static/setdesign.js"></script>
-       <script src="/static/class.js"></script>
-       <script src="/static/chatBox.js"></script>
-       <script src="/static/notebook.js"></script>
-       <script src="/static/PitchFiles/assets/js/jquery.min.js"></script>
-       <script src="/static/PitchFiles/assets/js/jquery.scrolly.min.js"></script>
-       <script src="/static/PitchFiles/assets/js/jquery.dropotron.min.js"></script>
-       <script src="/static/PitchFiles/assets/js/jquery.scrollex.min.js"></script>
-       <script src="/static/PitchFiles/assets/js/browser.min.js"></script>
-       <script src="/static/PitchFiles/assets/js/breakpoints.min.js"></script>
-       <script src="/static/PitchFiles/assets/js/util.js"></script>
-       <script src="/static/PitchFiles/assets/js/main.js"></script>
-   </body>
-</html>
