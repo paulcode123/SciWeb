@@ -1,81 +1,80 @@
 .profile-container {
-      max-width: 500px;
-      margin: 0 auto;
-      padding: 20px;
-      background-color: #f8f8f8;
-      border-radius: 5px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
 
-    .profile-field {
-      display: flex;
-      align-items: center;
-      margin-bottom: 15px;
-    }
+.profile-field {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
 
-    .profile-label {
-      flex-basis: 120px;
-      font-weight: bold;
-    }
+.profile-label {
+  flex-basis: 120px;
+  font-weight: bold;
+  color: var(--heading-color);
+}
 
-    .profile-input {
-      flex-grow: 1;
-      padding: 5px;
-      border: 1px solid #ccc;
-      border-radius: 3px;
-      background-color: #fff;
-      color: #555;
-    }
-    .profile-user-input{
-      visibility: hidden;
-      position: absolute;
-    }
+.profile-input {
+  flex-grow: 1;
+  padding: 5px;
+  border: solid 1px var(--border-color);
+  border-radius: 4px;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+}
 
-    .profile-edit-button {
-      width: 60px;
-      margin-left: 10px;
-      padding: 5px;
-      background-color: #007bff;
-      color: #fff;
-      border: none;
-      border-radius: 3px;
-      cursor: pointer;
-    }
+.profile-user-input {
+  visibility: hidden;
+  position: absolute;
+}
 
-    .profile-submit-button {
-      width: 60px;
-      margin-left: 10px;
-      padding: 5px;
-      background-color: #28a745;
-      color: #fff;
-      border: none;
-      border-radius: 3px;
-      cursor: pointer;
-      visibility: hidden;
-    }
-
-/* CSS for the button */
-#logout {
-  background-color: red;
-  color: white;
+.profile-edit-button,
+.profile-submit-button {
+  width: 60px;
+  margin-left: 10px;
+  padding: 5px;
+  color: #fff;
   border: none;
-  padding: 10px 13px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.profile-edit-button {
+  background-color: var(--accent-color);
+}
+
+.profile-submit-button {
+  background-color: #28a745;
+  visibility: hidden;
+}
+
+#logout {
+  display: inline-block;
+  background-color: transparent;
+  color: var(--accent-color);
+  border: solid 1px var(--accent-color);
+  border-radius: 4px;
+  padding: 0 2.25em;
+  height: 3em;
+  line-height: 3em;
   text-align: center;
   text-decoration: none;
-  display: inline-block;
-  font-size: 9px;
-  margin: 1px 2px;
+  font-weight: 600;
   cursor: pointer;
-  border-radius: 5px;
-  transition: background-color 0.3s; /* Add a smooth transition */
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
 
-/* CSS for the button on hover */
 #logout:hover {
-  background-color: black;
+  background-color: var(--accent-color);
+  color: #ffffff;
 }
 
-/* Styles for the tabs */
 .tabs {
   display: flex;
   justify-content: space-between;
@@ -84,22 +83,23 @@
 
 .tablinks {
   padding: 10px;
-  background-color: #f8f8f8;
-  border-radius: 5px;
+  background-color: var(--input-bg);
+  border-radius: 4px;
   cursor: pointer;
+  color: var(--text-color);
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
 
 .tablinks.active {
-  background-color: #007bff;
+  background-color: var(--accent-color);
   color: #fff;
 }
 
-/* Styles for the tab content */
 .tabcontent {
   display: none;
   padding: 20px;
-  background-color: #f8f8f8;
-  border-radius: 5px;
+  background-color: var(--input-bg);
+  border-radius: 4px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   width: 40%;
 }
@@ -109,10 +109,10 @@
 }
 
 .friend {
-  border: 1px solid green;
-  transition: border-color 0.3s;
+  border: 1px solid var(--border-color);
+  transition: background-color 0.2s ease-in-out;
   padding: 10px;
-  border-radius: 5px;
+  border-radius: 4px;
   margin-bottom: 5px;
   cursor: pointer;
   display: flex;
@@ -120,42 +120,74 @@
 }
 
 .friend:hover {
-  border-color: darkgreen;
-  background-color: lightblue;
+  background-color: rgba(255, 255, 255, 0.1);
 }
-  /* Add your styles for the friend class here */
 
-/* Styles for green accept button that turns black on hover */
 .accept {
-  background-color: green;
+  background-color: #28a745;
   color: white;
   border: none;
   padding: 10px 13px;
   text-align: center;
   text-decoration: none;
   display: inline-block;
-  font-size: 9px;
+  font-size: 0.9em;
   margin: 1px 2px;
   cursor: pointer;
-  border-radius: 5px;
-  transition: background-color 0.3s; /* Add a smooth transition */
+  border-radius: 4px;
+  transition: background-color 0.2s ease-in-out;
 }
 
-/* Styles for search bar */
+.accept:hover {
+  background-color: #218838;
+}
+
 #search-bar {
   padding: 10px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
+  border-radius: 4px;
+  border: solid 1px var(--border-color);
   margin-bottom: 20px;
+  width: 100%;
+  background-color: var(--input-bg);
+  color: var(--text-color);
 }
 
-.search-result{
-  border: 1px solid green;
-  background-color: lightsalmon;
-  transition: border-color 0.3s;
+.search-result {
+  border: 1px solid var(--border-color);
+  background-color: rgba(255, 255, 255, 0.05);
+  transition: background-color 0.2s ease-in-out;
   padding: 10px;
-  border-radius: 5px;
+  border-radius: 4px;
   margin-bottom: 5px;
   cursor: pointer;
-  
+}
+
+.search-result:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+#profilePicturePreview {
+  display: none;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-left: auto;
+  margin-right: auto;
+  border: 3px solid var(--accent-color);
+}
+
+#pencil {
+  position: absolute;
+  top: 200px;
+  left: calc(50vw + 75px);
+  display: none;
+  background-color: var(--accent-color);
+  border-radius: 50%;
+  padding: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+#pencil:hover {
+  background-color: #d14;
 }

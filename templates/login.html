@@ -1,65 +1,18 @@
-<!DOCTYPE html>
-<html>
+{% extends "darkThemeTemplate.html" %}
 
-<head>
-  <title>SciWeb Login</title>
-  
-  <link rel="icon" href="static/media/favicon.png" type="image/x-icon">
-  <link rel="stylesheet" href="/static/PitchFiles/assets/css/main.css" />
-		<noscript><link rel="stylesheet" href="/static/PitchFiles/assets/css/noscript.css" /></noscript>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="/static/LoginPage.css">
-  <!-- <link rel="stylesheet" href="/static/navbar.css"> -->
-  <link rel="manifest" href="/static/manifest.json">
-</head>
+<!-- title block -->
+{% block title %}
+<title>SciWeb | Login</title>
+{% endblock %}
 
-<body class="is-preload">
-  <div id="page-wrapper">
-    <header id="header">
-      <nav id="nav">
-        <ul>
-          <li><a href="/">Home</a></li>
-          <li>
-            <a>Achieve</a>
-            <ul>
-              <li><a href="/EnterGrades">Enter</a></li>
-              <li><a href="/GradeAnalysis">Analyse</a></li>
-              <li><a href="/Goals">Goals</a></li>
-            </ul>
-          </li>
-          <li>
-            <a>Study</a>
-            <ul>
-              <li><a href="#">Write</a></li>
-              <li><a href="/Study">Study</a></li>
-              <li><a href="/Battle">Battle</a></li>
-            </ul>
-          </li>
-          <li>
-            <a>Connect</a>
-            <ul>
-              <li><a href="/Classes">Classes</a></li>
-              <li><a href="/Assignments">Assignments</a></li>
-              <li><a href="/Leagues">Leagues</a></li>
-              <li><a href="#">Questions</a></li>
-            </ul>
-          </li>
-          <li>
-            <a>About</a>
-            <ul>
-              <li><a href="/Pitch">Pitch</a></li>
-              <li><a href="/GetStart">Getting Started</a></li>
-            </ul>
-          </li>
-          <li><a href="/Login" class="button primary" id="profile">Login</a></li>
-        </ul>
-      </nav>
-    </header>
-  <div id="notification-container"></div>
-  <div id="loadingWheel"></div>
-  <!-- <h1>Sign-up / Login</h1> -->
-  
+<!-- css block -->
+{% block css %}
+<link rel="stylesheet" href="/static/LoginPage.css">
+{% endblock %}
+
+<!-- content block -->
+{% block content %}
+
   <form id="login-form">
     <div id="toggleSlider" class="slider" onclick="toggleSlider()">
       <span id="sliderText" class="slider-text">Log-In</span>
@@ -86,19 +39,10 @@
   <hr />
   <h3>If you're just giving SciWeb a try, you can also <button onclick="demo()" class="button primary">Try Demo Account</button></h3>
 </div>
-  <script src="/static/util.js"></script>
-  <script src="/static/user_data.js"></script>
-  <script src="/static/notifications.js" type="module"></script>
-  <script src="/static/Loginscript.js"></script>
-  <script src="/static/PitchFiles/assets/js/jquery.min.js"></script>
-			<script src="/static/PitchFiles/assets/js/jquery.scrolly.min.js"></script>
-			<script src="/static/PitchFiles/assets/js/jquery.dropotron.min.js"></script>
-			<script src="/static/PitchFiles/assets/js/jquery.scrollex.min.js"></script>
-			<script src="/static/PitchFiles/assets/js/browser.min.js"></script>
-			<script src="/static/PitchFiles/assets/js/breakpoints.min.js"></script>
-			<script src="/static/PitchFiles/assets/js/util.js"></script>
-			<script src="/static/PitchFiles/assets/js/main.js"></script>
-  
-</body>
+{% endblock %}
 
-</html>
+<!-- js block -->
+{% block js %}
+<script src="/static/LoginScript.js"></script>
+{% endblock %}
+

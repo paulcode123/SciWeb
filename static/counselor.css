@@ -1,0 +1,45 @@
+/* ... existing styles ... */
+
+/* Styles for AI Counselor Sidebar */
+.ai-sidebar {
+    position: fixed;
+    right: 0;
+    top: 60px; /* Adjusted to position below the navbar */
+    transform: translateY(0);
+    width: 300px;
+    background-color: #333;
+    color: white;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.toggle-logo {
+    width: 50px; /* Adjust size as needed */
+    height: auto;
+    cursor: pointer;
+    display: block;
+    margin: 10px auto; /* Center the logo */
+}
+
+.chat-area {
+    padding: 10px;
+}
+
+.chat-log {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+.user-message {
+    text-align: right;
+    color: #007bff;
+}
+
+.ai-message {
+    text-align: left;
+    color: #fff;
+}
+
+/* ... existing styles ... */

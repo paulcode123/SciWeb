@@ -1,88 +1,82 @@
-<!DOCTYPE html>
-<html>
-<link rel="stylesheet" href="static/HomePage.css">
-<link rel="stylesheet" href="static/navbar.css">
+{% extends "darkThemeTemplate.html" %}
 
-<head>
-  <title>SciWeb Home</title>
-  <link rel="icon" href="static/media/favicon.png" type="image/x-icon">
-  <link rel="manifest" href="/static/manifest.json">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- title block -->
+{% block title %}
+<title>SciWeb | Home</title>
+{% endblock %}
 
-</head>
+<!-- css block -->
+{% block css %}
+<link rel="stylesheet" href="/static/HomePage.css">
+{% endblock %}
 
-<body>
-  <ul class="navbar">
-    <li><a href="#">Home</a></li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Achieve</button>
-      <div class="dropdown-content">
-        <a href="/EnterGrades">Enter</a>
-        <a href="/GradeAnalysis">Analyse</a>
-        <a href="/Goals">Goals</a>
-        
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Study</button>
-      <div class="dropdown-content">
-        <a href="/StudyLevels">Levels</a>
-<a href="/StudyBot">StudyBot</a>
-<a href="/Evaluate">Evaluate</a>
-<a href="/Battle">Battle</a>
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Connect</button>
-      <div class="dropdown-content">
-        <a href="/Classes">Classes</a>
-        <a href="/Assignments">Assignments</a>
-        <a href="/Leagues">Leagues</a>
-        <a href="#">Questions</a>
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">About</button>
-      <div class="dropdown-content">
-        <a href="/Pitch">Pitch</a>
-        <a href="/GetStart">Getting Started</a>
-        
-      </div>
-    </li>
-    <li><a href="/Login" id="profile">Login</a></li>
-  </ul>
-  <div id="notification-container"></div>
-  <main>
-    <div class="container">
-      <h1> Welcome To SciWeb</h1>
-      <h5>A Data-Driven Approach to Academics, built for BxSci</h5>
- 
-    
-      
-      
-    <h4>Go to</h4>
-    <button class="btn" id="scrolltodash">Dashboard</button>
-    <h4>or see</h4>
-    <a href="/Pitch">
-  <button class="btn">About Us</button>
-</a>
-<br><br><br><br><br>
-<section id="dashboard">
-<h2>This is the dashboard</h2>
-<br>
-<h3>Recent Messages</h3>
-<div id="recent_messages"></div>
-</section>
-  
+<!-- content block -->
+{% block content %}
+<header class="major">
+    <h1>Welcome To SciWeb</h1>
+        <h5>A Data-Driven Approach to Academics, built for BxSci</h5>
+</header>
+
+
+<div class="feature-grid">
+<div class="feature-box" data-href="/Classes">
+    <i class="fas fa-chalkboard-teacher"></i>
+    <h3>Classes</h3>
+    <p>Collaborate with SciWebbers in your classes. Chat, add assignments, and more!</p>
 </div>
-  </main>
-  
-  <script src="/static/util.js"></script>
-<script src="/static/user_data.js"></script>
-  <script src="/static/notifications.js" type="module"></script>
-<script src="/static/Home.js" type="module"></script>
+<div class="feature-box" data-href="/Assignments">
+    <i class="fas fa-tasks"></i>
+    <h3>Assignments</h3>
+    <p>Track your assignments and due dates. See estimated completion time. Make a plan to get it done, and let your classmates hold you accountable!</p>
+</div>
+<div class="feature-box" data-href="/EnterGrades">
+    <i class="fas fa-edit"></i>
+    <h3>Enter Grades</h3>
+    <p>Pull your grades from Jupiter. Keep a record of your academic progress.</p>
+</div>
+<div class="feature-box" data-href="/GradeAnalysis">
+    <i class="fas fa-chart-line"></i>
+    <h3>Analyze Grades</h3>
+    <p>Visualize and analyze your performance. Identify areas for improvement to target for next test.</p>
+</div>
+<div class="feature-box" data-href="/Notebook">
+    <i class="fas fa-book"></i>
+    <h3>Notebook</h3>
+    <p>Snap a pic or screenshot of any class material to add it to your notebook. See summaries, questions, and more!</p>
+</div>
+<div class="feature-box" data-href="/Evaluate">
+    <i class="fas fa-clipboard-check"></i>
+    <h3>Evaluate</h3>
+    <p>Access targeted questions and quizzes to get a snapshot of your understanding of a unit, and areas you may need to focus on.</p>
+</div>
+<div class="feature-box" data-href="/Messages">
+    <i class="fas fa-comments"></i>
+    <h3>Messages</h3>
+    <p>Chat with Friends, Classes, leagues, and study groups. Send messages, share files, and more!</p>
+</div>
+<div class="feature-box" data-href="/Profile">
+    <i class="fas fa-user-plus"></i>
+    <h3>Friend Requests</h3>
+    <p>Find friends to share stats, progress, and more!</p>
+</div>
+<div class="feature-box" data-href="/Pitch">
+    <i class="fas fa-info-circle"></i>
+    <h3>About Us</h3>
+    <p>Learn more about SciWeb and our mission to enhance your academic experience!</p>
+</div>
+</div>
+<br><br><br><br>
+<section id="dashboard">
+    <h2>Dashboard</h2>
+    <h3>Recent Messages</h3>
+    <div id="recent_messages"></div>
+</section>
 
-</body>
+{% endblock %}
 
-</html>
+<!-- js block -->
+{% block js %}
+<script type="module" src="/static/Home.js"></script>
+{% endblock %}
+
+

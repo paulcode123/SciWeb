@@ -1,0 +1,64 @@
+{% extends "darkThemeTemplate.html" %}
+
+<!-- title block -->
+{% block title %}
+<title>SciWeb | Evaluate</title>
+{% endblock %}
+
+<!-- css block -->
+{% block css %}
+<link rel="stylesheet" href="/static/Evaluate.css">
+{% endblock %}
+
+<!-- content block -->
+{% block content %}
+<header class="major">
+    <h2>Evaluate Your Knowledge</h2>
+</header>
+
+<section id="class-selection">
+    <h3>Select a Class and Unit</h3>
+    <select id="class-select">
+        <option value="">Select a class</option>
+    </select>
+    <select id="unit-select" disabled>
+        <option value="">Select a unit</option>
+    </select>
+    <button id="start-evaluation" class="button primary">Start Evaluation</button>
+</section>
+
+<section id="evaluation" style="display: none;">
+    <div id="question-container">
+        <h3 id="question"></h3>
+        <div id="choices-container">
+            <!-- This will be dynamically populated by JavaScript -->
+        </div>
+    </div>
+    <div id="progress">Question <span id="current-question">1</span> of 5</div>
+    <button id="next-question" class="button primary" style="display: none;">Next Question</button>
+    <div id="result" style="display: none;"></div>
+</section>
+
+<div id="loading" style="display: none;">
+    <div class="spinner"></div>
+    <p id="loading-text">Generating questions...</p>
+</div>
+<!-- ... (previous code remains the same) -->
+
+<section id="evaluation" style="display: none;">
+<div id="question-container">
+    <h3 id="question"></h3>
+    <div id="choices-container">
+        <!-- This will be dynamically populated by JavaScript -->
+    </div>
+</div>
+<div id="progress">Question <span id="current-question">1</span> of 5</div>
+<button id="next-question" class="button primary" style="display: none;">Next Question</button>
+<div id="result" style="display: none;"></div>
+</section>
+
+{% endblock %}
+
+{% block js %}
+<script src="/static/Evaluate.js"></script>
+{% endblock %}

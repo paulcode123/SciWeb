@@ -1,126 +1,97 @@
-<!DOCTYPE html>
-<html>
+{% extends "darkThemeTemplate.html" %}
+
+{% block title %}
+<title>SciWeb | Class</title>
+{% endblock %}
+
+<!-- css block -->
+{% block css %}
 <link rel="stylesheet" href="/static/class.css">
-<link rel="stylesheet" href="/static/chatBox.css">
-<link rel="stylesheet" href="/static/navbar.css">
-<head>
-  
-    <title>SciWeb {{ class_name }}</title>
-    <link rel="icon" href="/static/media/favicon.png" type="image/x-icon">
-    <link rel="manifest" href="/static/manifest.json">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% endblock %}
 
-</head>
-<body>
-  <ul class="navbar">
-    <li><a href="/">Home</a></li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Achieve</button>
-      <div class="dropdown-content">
-        <a href="/EnterGrades">Enter</a>
-        <a href="/GradeAnalysis">Analyse</a>
-        <a href="/Goals">Goals</a>
-        
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Study</button>
-      <div class="dropdown-content">
-        <a href="/StudyLevels">Levels</a>
-<a href="/StudyBot">StudyBot</a>
-<a href="/Evaluate">Evaluate</a>
-<a href="/Battle">Battle</a>
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Connect</button>
-      <div class="dropdown-content">
-        <a href="/Classes">Classes</a>
-        <a href="/Assignments">Assignments</a>
-        <a href="/Leagues">Leagues</a>
-        <a href="#">Questions</a>
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">About</button>
-      <div class="dropdown-content">
-        <a href="/Pitch">Pitch</a>
-        <a href="/GetStart">Getting Started</a>
-        
-      </div>
-    </li>
-    <li><a href="/Login" id="profile">Login</a></li>
-  </ul>
-  <div id="notification-container"></div>
-  <div id="loadingWheel"></div>
-  <div class="container">
-  <div id="classimgcontainer"></div>
-  <div id="head">
-    <h1>{{ class_name }}</h1>
-    <button id="joinBtn">Join Class</button>
-    <h3 id="description"></h3>
-    <div id="user-list"></div>
-    <div id="assignmentList"></div>
-    <br>
+<!-- content block -->
+{% block content %}
+<!-- Class Section -->
+<section id="class-section">
+<div id="notification-container"></div>
+<div id="loadingWheel"></div>
+<div id="classimgcontainer"></div>
+<div id="head">
+<h1 class="dark-text">{{ class_name }}</h1>
+<button id="joinBtn" class="pro-button primary">Join Class</button>
+<h3 id="description" class="dark-text"></h3>
+<div id="user-list" class="dark-text"></div>
+<div id="assignmentList" class="dark-text"></div>
+</div>
+<input type="file" id="imgupload" style="display: none;">
+<label for="imgupload" id="uploadLabel" class="pro-button secondary">🖼️ Upload Image</label>
+
+
+<label for="color" id="colorLabel" class="pro-button secondary">🎨 Choose Color</label>
+<input type="color" id="color" value="#000000" style="display: none;">
+<button id="savecolor" class="pro-button secondary" style="display: none;">Save Color</button>
+
+
+<button id="createBtn" class="pro-button primary">➕ Create Assignment</button>
+
+
+<div id="formContainer" style="display: none;">
+<form id="assignmentForm" class="dark-form">
+<div class="row gtr-uniform gtr-50">
+    <div class="col-6 col-12-xsmall">
+        <input type="text" id="name" name="name" placeholder="Assignment Name" required class="dark-input">
     </div>
+    <div class="col-6 col-12-xsmall">
+        <input type="date" id="due" name="due" required class="dark-input">
     </div>
-    <!-- create input image upload element with a label "🖼️" -->
-    <input type="file" id="imgupload" style="display: none;">
-    <label for="imgupload" id="uploadLabel">🖼️</label>
-
-    <!-- create color input with paint emoji label -->
-    <label for="color" id="colorLabel">🎨</label>
-    <input type="color" id="color" value="#000000" style="display: none;">
-    <button id="savecolor" style="display: none;">Save Color</button>
-
-    <br>
-  <button id="createBtn">➕</button>
-
-  <div id="formContainer" style="display: none;">
-    <form id="assignmentForm">
-      <label for="name">Name:</label>
-      <input type="text" id="name" name="name" required>
-
-      <label for="due">Due Date:</label>
-      <input type="date" id="due" name="due" required>
-      <label for="points">Points:</label>
-      <input type="number" id="points" name="points" required>
-      <label for="assignmentType">Type:</label>
-    <select id="assignmentType" name="assignmentType">
-      <option value="default">Loading Classes</option>
-      
-    </select>
-    
-      <br>
-      
-    
-      <input type="submit" value="Submit">
-    </form>
-  </div>
-  <br><br>
-  <div id="openNBcont"></div>
-  <br>
-  <div id="chat-box">
-    <button id="refresh-chat">🔄</button>
-    <ul id="message-list"></ul>
-    <div id="image-container"></div>
-    <div id="input-container">
-      <input type="text" id="message-input" placeholder="Type your message...">
-      <button id="clear">❌</button>
-      <button id="send-button">Send</button>
-      <input type="file" id="upload" style="display: none;">
-      <label for="upload" id="uploadLabel">📁</label>
-      
+    <div class="col-6 col-12-xsmall">
+        <input type="number" id="points" name="points" placeholder="Points" required class="dark-input">
     </div>
-    <img scr="" id="testimg">
-    
-  <script src="/static/util.js"></script>
-  <script src="/static/user_data.js"></script>
-  <script src="/static/notifications.js" type="module"></script>
-  <script src="/static/setdesign.js"></script>
-  <script src="/static/class.js"></script>
-  <script src="/static/chatBox.js"></script>
-  
-</body>
-</html>
+    <div class="col-6 col-12-xsmall">
+        <select id="assignmentType" name="assignmentType" class="dark-input">
+            <option value="default">Loading Classes</option>
+        </select>
+    </div>
+    <div class="col-12">
+        <input type="submit" value="Submit" class="primary dark-button">
+    </div>
+</div>
+</form>
+</div>
+<div id="chat-box" class="dark-chat">
+<button id="refresh-chat" class="pro-button tertiary">🔄</button>
+<ul id="message-list" class="dark-text"></ul>
+<div id="image-container"></div>
+<div id="input-container">
+<input type="text" id="message-input" placeholder="Type your message..." class="dark-input">
+<button id="clear" class="pro-button tertiary">❌</button>
+<button id="send-button" class="pro-button primary">Send</button>
+<input type="file" id="upload" style="display: none;">
+<label for="upload" id="uploadLabel" class="pro-button secondary">📁</label>
+</div>
+</div>
+</section>
+
+
+<!-- Separator -->
+<hr class="major" />
+
+
+<!-- Notebook Section -->
+<section id="notebook-section">
+<h2 class="dark-text">{{ class_name }} Notebook</h2>
+<input type="file" accept="image/*" capture="environment" id="imageInput" style="display: none;">
+<label for="imageInput" class="pro-button secondary" style="font-size: 1.2em;">📷 Capture Image</label>
+<button id="create_section" class='pro-button secondary'>New Section</button>
+<div id="tabs"></div>
+<button id='save' onclick="postNotebook()" class='pro-button primary'>Save Notebook</button>
+<div id="insights_container"></div>
+</section>
+</div>
+{% endblock %}
+
+<!-- js block -->
+{% block js %}
+<script src="/static/class.js"></script>
+{% endblock %}
+

@@ -1,7 +1,7 @@
 # Import necessary libraries
 
 # Flask is a web framework for Python that allows backend-frontend communication
-from flask import Flask, render_template, request, session, redirect, url_for, send_from_directory
+from flask import Flask, render_template, request, session, redirect, url_for, send_from_directory, jsonify
 # json is a library for parsing and creating JSON data
 import json
 # requests is a library for getting info from the web
@@ -17,9 +17,13 @@ import traceback
 # for images
 import base64
 from io import BytesIO
-from PIL import Image
 
-# import openai
+from pydantic import BaseModel, Field
+from openai import OpenAI
+import random
+
+import openai
+from PyPDF2 import PdfReader
 
 
 
@@ -28,9 +32,14 @@ from PIL import Image
 from database import get_data, post_data, update_data, delete_data, download_file, upload_file, init_firebase
 from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups, get_stats, update_leagues, get_compliments
+<<<<<<< HEAD
+from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades, confirm_category_match
+from study import get_insights, get_insights_from_file, chat_with_function_calling
+=======
 from goals import calculate_goal_progress, get_goals
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades
 from study import study_response, get_insights
+>>>>>>> parent of 14841af8 (notebook image passed to GPT-4.0, can not be read)
 
 #get api keys from static/api_keys.json file
 keys = json.load(open('api_keys.json'))  
@@ -44,6 +53,7 @@ def init():
   vars = {}
   keys = json.load(open('api_keys.json'))
   vars['openAIAPI'] = keys["OpenAiAPIKey"]
+  openai.api_key = vars['openAIAPI']
   vars['spreadsheet_id'] = '1k7VOAgZY9FVdcyVFaQmY_iW_DXvYQluosM2LYL2Wmc8'
   vars['gSheet_api_key'] = keys["GoogleAPIKey"]
   # URL for the SheetDB API, for POST requests
@@ -58,8 +68,10 @@ def init():
   vars['max_column'] = "O"
   vars['AppSecretKey'] = keys["AppSecretKey"]
   # firebase or gsheet
-  vars['database'] = 'gsheet'
+  vars['database'] = 'firebase'
   vars['allow_demo_change'] = True
+  vars['client'] = OpenAI(api_key=vars['openAIAPI'])
+  vars['google_credentials_path'] = 'cloudRunKey.json'
   
   return vars
 
@@ -67,7 +79,7 @@ vars = init()
 
 app = Flask(__name__)
 app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_PERMANENT'] = True
 
 # App secret key for session management
 app.config['SECRET_KEY'] = vars["AppSecretKey"]
@@ -112,9 +124,18 @@ def pitch():
 def study():
   return render_template('StudyBot.html')
 
+  
+@app.route('/ComingSoon')
+def ComingSoon():
+  return render_template('ComingSoon.html')
+
 @app.route('/StudyLevels')
 def study_levels():
-  return render_template('Levels.html')
+    return render_template('Levels.html')
+  
+@app.route('/Diagnostic')
+def diagnostic():
+  return render_template('Diagnostic.html')
 
 @app.route('/Evaluate')
 def evaluate():
@@ -133,6 +154,10 @@ def classes():
 def leagues():
   return render_template('Leagues.html')
 
+@app.route('/Notebooks')
+def notebooks():
+    return render_template('notebooks.html')
+
 @app.route('/GetStart')
 def getstart():
   return render_template('GetStart.html')
@@ -148,6 +173,10 @@ def assignments():
 @app.route('/CourseSelection')
 def course_selection():
   return render_template('CourseSelection.html')
+
+@app.route('/Messages')
+def messages():
+  return render_template('messages.html')
 
 @app.route('/Join')
 def join():
@@ -187,17 +216,7 @@ def class_page(classurl):
                          class_name=class_name,
                          class_data=class_data)
 
-# For class notebooks of specific classes
-@app.route('/class/<classurl>/notebook')
-def notebook_page(classurl):
-  #Again, pass in class specific data
-  id = re.findall('[0-9]+', classurl)[0]
-  class_name = classurl.replace(id, "").strip()
-  classes = get_data("Classes")
-  class_data = next((row for row in classes if row['id'] == id), None)
-  return render_template('notebook.html',
-                         class_name=class_name,
-                         class_data=class_data)
+
 
 # League page, for specific leagues
 @app.route('/league/<leagueid>')
@@ -212,13 +231,18 @@ def league_page(leagueid):
 # Assignment page, for specific assignments
 @app.route('/assignment/<assignmentid>')
 def assignment_page(assignmentid):
-  assignments = get_data("Assignments")
-  assignment_data = next(
-    (row for row in assignments if int(row['id']) == int(assignmentid)), None)
-  assignment_name = assignment_data['name']
-  return render_template('assignment.html',
-                         assignment_name=assignment_name,
-                         assignment_data=assignment_data)
+  assignments_data = get_data("Assignments")
+  osis = str(session['user_data']['osis'])
+  assignment_data = next((row for row in assignments_data if str(row['id']) == str(assignmentid)), None)
+  print("assignment_data", assignment_data, "osis", osis)
+  # if assignment_data.difficulty.user_data['osis'] exists, set it to the user's difficulty
+  diff = assignment_data['difficulty'].get(osis, "") if 'difficulty' in assignment_data else ""
+  ts = assignment_data['time_spent'].get(osis, "") if 'time_spent' in assignment_data else ""
+  pc = assignment_data['completed'].get(osis, "") if 'completed' in assignment_data else ""
+  print("diff", diff, "ts", ts, "pc", pc)
+
+  return render_template('assignment.html', assignment=assignment_data, diff=diff, ts=ts, pc=pc)
+
 
 @app.route('/users/<userid>')
 def public_profile(userid):
@@ -293,13 +317,19 @@ def Jupiter():
   
   if classes == "WrongPass":
     return json.dumps({"error": "Incorrect credentials"})
+
+  class_data = get_data("Classes")
+
   if str(data['addclasses'])=="True":
-    jupapi_output_to_classes(classes)
+    jupapi_output_to_classes(classes, class_data)
   
   session['user_data']['grades_key'] = str(data['encrypt'])
   grades = jupapi_output_to_grades(classes, data['encrypt'])
+  # if the categories in the grades do not match the categories in the classes, rerun the function
+  if confirm_category_match(grades, class_data):
+     jupapi_output_to_classes(classes, class_data)
+
   if str(data['updateLeagues'])=="True":
-    classes = get_data("Classes")
     update_leagues(grades, classes)
   return json.dumps(grades)
 
@@ -348,7 +378,7 @@ def fetch_data():
         response[sheet_name] = get_grades()
       else:
         data = get_data(sheet_name)
-        # if data is of type NoneType, return an empty list
+        # if data is of type NoneType, rfeturn an empty list
         if data == None:
           return json.dumps({})
         
@@ -360,6 +390,10 @@ def fetch_data():
           # send if item['class'] is the id for any of the rows in response['Classes']
           class_ids = [item['id'] for item in response['Classes']]
           response[sheet_name] = [item for item in data if item['class'] in class_ids]
+        elif sheet_name=="Notebooks":
+          #  send if the classID is the id for any of the rows in response['Classes']
+          class_ids = [item['id'] for item in response['Classes']]
+          response[sheet_name] = [item for item in data if item['classID'] in class_ids]
         elif sheet_name=="FClasses":
           #send all of the classes that the user's friends are in
           friend_osises = [item['targetOSIS'] for item in data if str(session['user_data']['osis']) in item['OSIS']] + [item['OSIS'] for item in data if str(session['user_data']['osis']) in item['targetOSIS']]
@@ -398,14 +432,18 @@ def delete_data_route():
   delete_data(data['row_value'], data['row_name'], data['sheet'])
   return json.dumps({"message": "success"})
 
-@app.route('/goals_progress', methods=['POST'])
-def get_goals_progress():
-  return json.dumps(calculate_goal_progress(session))
 
 # Function to return insights to the Study page
 @app.route('/AI', methods=['POST'])
 def get_AI():
   return json.dumps(study_response(request.json['data']))
+
+# make route for AI with function calling
+@app.route('/AI_function_calling', methods=['POST'])
+def get_AI_function_calling():
+  response = chat_with_function_calling(request.json['data'])
+  print("response", response)
+  return json.dumps(response)
 
 #function to generate insights and return them to the Grade Analysis page
 @app.route('/insights', methods=['POST'])
@@ -448,6 +486,9 @@ def GA_setup():
   weights = get_weights(classes, session['user_data']['osis'])
   grades = get_grades()
   user_data = get_name()
+  goals = get_data("Goals")
+  # filter goals for the user's osis
+  goals = [item for item in goals if str(session['user_data']['osis']) in str(item['OSIS'])]
 
   # if there are no grades, return an error
   # if grades is a dictionary with a key 'class' and the value is 'No grades entered', return an error
@@ -456,14 +497,15 @@ def GA_setup():
     return json.dumps({"error": "Enter your grades before analyzing them"})
   #filter classes for the user's osis
   classes = [item for item in classes if str(session['user_data']['osis']) in str(item['OSIS'])]
-  stats = get_stats(grades, classes)
-  compliments = get_compliments(grades, classes)
-  # convert dates of grades(m/d/yyyy) to ordinal dates
-  ordinal_dated_grades = []
-  for grade in grades:
-    ordinal_dated_grades.append({"date": datetime.datetime.strptime(grade['date'], "%m/%d/%Y").toordinal(), "value": grade['value'], "class": grade['class'], "category": grade['category'], "score": grade['score'], "name": grade['name']})
-
   try:
+    stats = get_stats(grades, classes)
+    compliments = get_compliments(grades, classes)
+    # convert dates of grades(m/d/yyyy) to ordinal dates
+    ordinal_dated_grades = []
+    for grade in grades:
+      ordinal_dated_grades.append({"date": datetime.datetime.strptime(grade['date'], "%m/%d/%Y").toordinal(), "value": grade['value'], "class": grade['class'], "category": grade['category'], "score": grade['score'], "name": grade['name']})
+
+
     grade_spreads = {}
     cat_value_sums = {}
     categories = []
@@ -510,7 +552,8 @@ def GA_setup():
     "categories": categories,
     "stats": stats,
     "compliments": compliments,
-    "cat_value_sums": cat_value_sums
+    "cat_value_sums": cat_value_sums,
+    "goals": goals
   }
 
 
@@ -524,25 +567,195 @@ def get_gclasses():
   print("classes", classes)
   return json.dumps(classes)
 
-@app.route('/process-notebook-image', methods=['POST'])
-def process_notebook_image():
-  data = request.json
-  base64_img = data['image']
-  base64_img = base64_img.split(",")[1]
-  # correct the padding of the base64 string
-  padding_needed = 4 - (len(base64_img) % 4)
-  if padding_needed:
-      base64_img += '=' * padding_needed
-  # Decode the base64 string to bytes
-  image_data = base64.b64decode(base64_img)
-  # Convert the bytes to an image
-  image = Image.open(BytesIO(image_data))
-  prompt = [{"role":"system", "content": "Given the file ID of the image of a worksheet or textbook, list the specific topics covered in it."}, {"role":"user", "content": "file ID: <<fid>>"}]
-  # Get insights from the AI
-  insights = get_insights(prompt, image_data)
-  print("insights", insights)
-  return json.dumps(insights)
+class ResponseTypeNB(BaseModel):
+        topic: str
+        notes: list[str]
+        practice_questions: list[str]
+
+@app.route('/process-notebook-file', methods=['POST'])
+def process_notebook_file():
+    data = request.json
+    file_content = data['file']
+    file_type = data['fileType']
+    unit = data['unit']
+    
+    
+    if file_type == 'application/pdf':
+         # Decode the base64 PDF content
+        pdf_bytes = base64.b64decode(file_content)
+        pdf_file = BytesIO(pdf_bytes)
+        pdf_reader = PdfReader(pdf_file)
+        
+        # Extract text from the PDF
+        text_content = ""
+        for page in pdf_reader.pages:
+            text_content += page.extract_text()
+        
+        prompts = [
+            {"role": "system", "content": "You are an expert at analyzing educational worksheets and creating study materials."},
+            {"role": "user", "content": f"Analyze this worksheet PDF content and provide the following information:\n1. The main topic of the worksheet\n2. A list of specific notes about the content of the worksheet\n3. Several practice questions related to the worksheet content\n\nPDF Content:\n{text_content[:4000]}"}  # Limit content to 4000 characters to avoid token limits
+        ]
+        
+        insights = get_insights(prompts, ResponseTypeNB)
+        
+        
+    else:
+        # Process image (existing code)
+        base64_img = file_content
+        
+        # Fix padding if necessary
+        padding = len(base64_img) % 4
+        if padding:
+            base64_img += '=' * (4 - padding)
+        
+        prompts = [
+            {"role": "system", "content": "You are an expert at analyzing educational worksheets and creating study materials."},
+            {"role": "user", "content": [
+                {"type": "text", "text": "Analyze this worksheet image and provide the following information:\n1. The main topic of the worksheet\n2. A list of specific subtopics or concepts the user needs to know\n3. Several practice questions related to the worksheet content\nFormat your response as JSON with keys 'topic', 'subtopics', and 'practice_questions'."},
+                {"type": "image_url", "image_url": {"url": f"data:image/{file_type.split('/')[-1]};base64,{base64_img}"}}
+            ]}
+        ]
+        
+        insights = get_insights(prompts, ResponseTypeNB)
+    
+    # generate a random 7 digit number
+    blob_id = ''.join([str(random.randint(0, 9)) for _ in range(7)])
+    # store the file in the cloud storage
+    upload_file("sciweb-files", file_content, blob_id)
+    # add to the Notebooks sheet
+    post_data("Notebooks", {"classID": data['classID'], "unit": unit, "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "image": blob_id, "topic": insights.topic, "subtopics": insights.notes, "practice_questions": insights.practice_questions})
+    return jsonify({"success": True, "message": "Worksheet processed and stored successfully"})  
   
+# set response format class. for mcq, the key is the question, and the value is the answer
+class MultipleChoiceQuestion(BaseModel):
+    question: str
+    answers: list[str]
+    correct_answer: str
+
+class response_format(BaseModel):
+    multiple_choice: list[MultipleChoiceQuestion]
+    short_response: list[str]
+
+@app.route('/generate-questions', methods=['POST'])
+def generate_questions():
+    data = request.json
+    class_id = data['classId']
+    unit_name = data['unitName']  # Changed from unitIndex to unitName
+
+    # Get the notebook content for the selected class and unit
+    notebooks = get_data("Notebooks")
+    # get one list of all of the subtopics from all of the images and one list of all of the practice questions from all of the images
+    subtopics = []
+    practice_questions = []
+    for item in notebooks:
+        if item['classID'] == class_id and item['unit'] == unit_name:
+            subtopics += item['subtopics']
+            practice_questions += item['practice_questions']
+
+    
+        
+
+    if not subtopics or not practice_questions:
+        return jsonify({"error": "Notebook content not found"}), 404
+
+  
+    # Generate questions using AI
+    prompt = [
+    {"role": "system", "content": "You are an AI designed to generate educational questions given a list of topics and examples."},
+    {"role": "user", "content": f"Generate 2 multiple-choice questions, each with 4 answer choices, and 3 short-response questions based on these topics: {subtopics} and examples: {practice_questions}. Ensure your response is in the correct JSON format."}
+]
+
+    questions = get_insights(prompt, response_format)
+
+    return json.dumps({"questions": questions.dict()})
+
+
+@app.route('/get-units', methods=['POST'])
+def get_units():
+    data = request.json
+    class_id = data['classId']
+    notebooks = get_data("Notebooks")
+    # Get unique units for the given class_id
+    units = list(set(notebook['unit'] for notebook in notebooks if notebook['classID'] == class_id))
+    
+    return jsonify({"units": units})
+    
+class Feedback(BaseModel):
+    feedback: str
+    score: int
+
+class ResponseTypeQA(BaseModel):
+    feedback: list[Feedback]
+    weaknesses: list[str]
+    strengths: list[str]
+    test_score: int
+
+@app.route('/score-answers', methods=['POST'])
+def score_answers():
+    data = request.json
+    questions = data['questions']
+    user_answers = data['answers']
+
+    score = 0
+
+    for i in range(len(questions['multiple_choice'])):
+        if user_answers[i] == questions['multiple_choice'][i]['correct_answer']:
+            score += 20
+        
+    prompt = [
+        {"role": "system", "content": "You are an AI assistant tasked with scoring a student's answers to open-ended questions. Score each answer on a scale of 0 to 20, provide feedback on each answer, provide a list of areas of strengths and weaknesses over all of the questions, and a predicted score on a test of this material given all of the questions, out of 100."},
+        {"role": "user", "content": f"Questions: {questions['short_response']}\nStudent's Answers: {user_answers}"}
+    ]
+
+    ai_score = get_insights(prompt, ResponseTypeQA)
+    ai_score = ai_score.dict()
+    print("ai_score", ai_score)
+
+    return jsonify({"MCQscore": score, "SAQ_feedback": ai_score})
+
+class BloomQuestion(BaseModel):
+    question: str
+    personalDifficulty: int
+
+class ResponseTypeBloom(BaseModel):
+    questions: list[BloomQuestion]
+
+@app.route('/generate-bloom-questions', methods=['POST'])
+def generate_bloom_questions():
+    data = request.json
+    level = data['level']
+    previous_answers = data['previousAnswers']
+    notebook_content = data['notebookContent']
+
+    # Generate questions using AI
+    prompt = [
+        {"role": "system", "content": f"Generate 5 specific short-response questions about the topics/example questions. The questions should be at the {level} level of Bloom's Taxonomy. After asking about all of the material, use the user's previous answers to generate questions like the ones they got wrong. Assign a personal difficulty to each question based on how well the user did on similar questions in the past, where 1 is easy and 10 is hard."},
+        {"role": "user", "content": "notebook content: " + str(notebook_content) + "\n previous answers: " + str(previous_answers)}
+    ]
+
+    questions = get_insights(prompt, ResponseTypeBloom)
+
+    return json.dumps({"questions": questions.dict()})
+
+class ScoreBloom(BaseModel):
+  score: int
+  feedback: str
+
+@app.route('/evaluate-answer', methods=['POST'])
+def evaluate_answer():
+    data = request.json
+    question = data['question']
+    answer = data['answer']
+    level = data['level']
+
+    prompt = [
+        {"role": "system", "content": f"You are an AI assistant tasked with evaluating a student's answer to a {level}-level question in Bloom's Taxonomy. Score the answer on a scale of 0 to 10, where 10 is a perfect answer. Provide the score and some feedback."},
+        {"role": "user", "content": f"Question: {question}\nStudent's Answer: {answer}"}
+    ]
+
+    evaluation = get_insights(prompt, ScoreBloom)
+
+    return json.dumps({"score": evaluation.score, "feedback": evaluation.feedback})
 
 
 @app.route('/impact', methods=['POST'])
@@ -676,7 +889,6 @@ def get_name(ip=None):
     print("user_data already defined in get_name()")
     return session['user_data']
   
-
   data = get_data("Users")
   print(data)
   # If the user's IP address is in the Users data, return their name and other info
@@ -703,3 +915,30 @@ def get_name(ip=None):
 
 if __name__ == '__main__':
   app.run(host='localhost', port=8080)
+<<<<<<< HEAD
+
+@app.route('/process-image-notebook', methods=['POST'])
+def process_image_notebook():
+    try:
+        data = request.json
+        base64_img = data['image']
+        class_id = data['classId']
+        unit_name = data['unitName']
+
+        # Remove the data URL prefix if present
+        if ',' in base64_img:
+            base64_img = base64_img.split(',')[1]
+
+        # Decode the base64 string to bytes
+        image_data = base64.b64decode(base64_img)
+
+        # Get insights from the image and store in database
+        result = get_insights_from_image(image_data, class_id, unit_name)
+
+        return jsonify(result)
+    except Exception as e:
+        error_message = f"An error occurred: {str(e)}\n{traceback.format_exc()}"
+        print(error_message)  # This will print to your server logs
+        return jsonify({"error": "An internal server error occurred. Please check the server logs."}), 500
+=======
+>>>>>>> parent of 14841af8 (notebook image passed to GPT-4.0, can not be read)

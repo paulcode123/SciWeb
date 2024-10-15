@@ -60,10 +60,12 @@ body {
   }
 }
 
-/* For devices with screen width less than or equal to 768px, set the width to screen width divided by 6 */
+/* For devices with screen width less than or equal to 768px, set the width to screen width-50 divided by 5 */
 @media (max-width: 768px) {
-  .dropdown-btn {
-      padding: 14px calc(100vw / 40);
+  ul.navbar li {
+      width: calc((100vw - 100px) / 5);
+      /* shrink text size if needed to fit fully in div */
+      font-size: 1em;
   }
 }
 

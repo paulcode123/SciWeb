@@ -2,12 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging.js"
 
 
-//When button with id="scrolltodash" is clicked, scroll to the div with id=dashboard
-document.getElementById('scrolltodash').addEventListener('click', function() {
-    document.getElementById('dashboard').scrollIntoView({
-        behavior: 'smooth'
-    });
-});
 
 
 
@@ -118,37 +112,76 @@ const data = await fetchRequest('/data', { data: "Chat, FILTERED Classes, Assign
   return true;
 }
 
-// Register service worker for the app
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' }).then(function(registration) {
-      // Registration was successful
-      console.log('ServiceWorker registration successful with scope: ', registration.scope);
-      // Wait for the service worker to be active
-      if (registration.active) {
-        console.log('Service worker is active and ready.');
-        init_messaging(registration);
-      } else {
-        console.log('Service worker not active yet, waiting for it to be active.');
-        registration.addEventListener('updatefound', () => {
-          registration.installing.addEventListener('statechange', (event) => {
-            if (event.target.state === 'activated') {
-              console.log('Service worker activated.');
-              init_messaging(registration);
-            }
-          });
-        });
-      }
-    })
-    .catch((error) => {
-      console.error('ServiceWorker registration failed: ', error);
-    });
-});
-} else {
-console.log('Service workers are not supported in this browser.');
 
+
+main();
+
+function playFullScreenVideo() {
+  const videoContainer = document.createElement('div');
+  videoContainer.style.position = 'fixed';
+  videoContainer.style.top = '0';
+  videoContainer.style.left = '0';
+  videoContainer.style.width = '100%';
+  videoContainer.style.height = '100%';
+  videoContainer.style.backgroundColor = 'black';
+  videoContainer.style.zIndex = '9999';
+
+  const video = document.createElement('video');
+  video.src = '/static/media/SignUpVid.mp4'; // Adjust the path as needed
+  video.style.width = '100%';
+  video.style.height = '100%';
+  video.style.objectFit = 'contain';
+  video.autoplay = true;
+  video.muted = true; // Mute the video initially
+  video.playsInline = true; // For iOS support
+
+  const unmuteButton = document.createElement('button');
+  unmuteButton.textContent = 'Unmute';
+  unmuteButton.style.position = 'absolute';
+  unmuteButton.style.bottom = '20px';
+  unmuteButton.style.left = '50%';
+  unmuteButton.style.transform = 'translateX(-50%)';
+  unmuteButton.style.padding = '10px 20px';
+  unmuteButton.style.fontSize = '16px';
+  unmuteButton.style.cursor = 'pointer';
+
+  unmuteButton.onclick = () => {
+    video.muted = false;
+    unmuteButton.style.display = 'none';
+  };
+
+  video.onended = () => {
+    document.body.removeChild(videoContainer);
+  };
+
+  videoContainer.appendChild(video);
+  videoContainer.appendChild(unmuteButton);
+  document.body.appendChild(videoContainer);
+  
+
+  // Attempt to play the video
+  const playPromise = video.play();
+
+  if (playPromise !== undefined) {
+    playPromise.then(_ => {
+      // Autoplay started successfully
+      console.log("Video started playing automatically");
+    }).catch(error => {
+      // Autoplay was prevented
+      console.log("Autoplay was prevented. Please interact with the page to play the video.");
+      // You could add a play button here if needed
+    });
+  }
 }
 
+// Add this code at the end of the file
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('signup') === 'true') {
+  playFullScreenVideo();
+}
+
+
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAj7iUJlTR_JDvq62rmfe6eZZXvtsO8Cac",
   authDomain: "sturdy-analyzer-381018.firebaseapp.com",
@@ -159,34 +192,138 @@ const firebaseConfig = {
   measurementId: "G-TGW6CJ0H1Q"
 };
 
+// VAPID key for web push
+const vapidKey = 'BCoZeBvXxYJwgPvsOtcd1JNaqkzw2-KvZlsEGp1UdWVJ67HOF_1T70IfJKKiCOF1tvx4M1aSvm4u-IJZA_ZTPUk';
 
-function init_messaging(registration){
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-console.log("firebase initialized")
-  // Retrieve Firebase Messaging object
-  const messagingobj = getMessaging(app);
-  // messagingobj.useServiceWorker(registration);
+// Initialize Firebase and get messaging object
+function initializeFirebase() {
+  const app = initializeApp(firebaseConfig);
+  return getMessaging(app);
+}
 
-  Notification.requestPermission().then((permission) => {
-    if (permission === 'granted') {
-      console.log('Notification permission granted.');
-      // Get the token
-      getToken(messagingobj, { vapidKey: 'BCoZeBvXxYJwgPvsOtcd1JNaqkzw2-KvZlsEGp1UdWVJ67HOF_1T70IfJKKiCOF1tvx4M1aSvm4u-IJZA_ZTPUk' }).then((currentToken) => {
-        if (currentToken) {
-          console.log('Token:', currentToken);
-          fetchRequest('/post_data', {data: {"token": currentToken, "OSIS": osis}, sheet: "Tokens"});
-          // Send the token to your server and update the UI if necessary
-        } else {
-          console.log('No registration token available. Request permission to generate one.');
-        }
-      }).catch((err) => {
-        console.log('An error occurred while retrieving token. ', err);
-      });
-    } else {
-      console.log('Unable to get permission to notify.');
+// Request notification permission
+async function requestNotificationPermission() {
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') {
+    updateNotificationUI(false, "Please allow notifications for SciWeb.");
+    throw new Error('Notification permission not granted.');
+  }
+}
+
+// Get FCM token
+async function getFCMToken(messaging) {
+  try {
+    const currentToken = await getToken(messaging, { vapidKey: vapidKey });
+    if (!currentToken) {
+      updateNotificationUI(false, "No registration token available.");
+      throw new Error('No registration token available.');
     }
+    return currentToken;
+  } catch (error) {
+    console.error('An error occurred while retrieving token.', error);
+    updateNotificationUI(false, "An error occurred while retrieving token.");
+    throw error;
+  }
+}
+
+// Save token to server
+async function saveTokenToServer(token) {
+  const deviceName = navigator.userAgent;
+  const currentTokens = await fetchRequest('/data', {data: "FILTERED Tokens"});
+  const userTokens = currentTokens['Tokens'].filter(t => t.OSIS === osis);
+  const timeStamp = Date.now();
+  
+  if (!userTokens.some(t => t.token === token)) {
+    await fetchRequest('/post_data', {
+      data: {
+        "token": token,
+        "OSIS": osis,
+        "deviceName": deviceName,
+        "timeStamp": timeStamp
+      },
+      sheet: "Tokens"
+    });
+    console.log("New token added for device:", deviceName);
+    updateNotificationUI(true, "Notifications are enabled for this device.");
+  } else {
+    console.log("Token already exists for this user and device.");
+    updateNotificationUI(true, "Notifications are already enabled for this device.");
+  }
+}
+
+// Main function to handle messaging setup
+async function setupMessaging() {
+  if (!('serviceWorker' in navigator)) {
+    console.log('Service workers are not supported in this browser.');
+    updateNotificationUI(false, "Sorry, but notifications are not supported in this browser.");
+    return;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+    console.log('ServiceWorker registration successful with scope:', registration.scope);
+
+    await new Promise((resolve) => {
+      if (registration.active) {
+        resolve();
+      } else {
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'activated') {
+              resolve();
+            }
+          });
+        });
+      }
+    });
+
+    const messaging = initializeFirebase();
+    await requestNotificationPermission();
+    const token = await getFCMToken(messaging);
+    await saveTokenToServer(token);
+
+    // Set up message listener
+    onMessage(messaging, (payload) => {
+      console.log('Message received:', payload);
+      // Handle incoming message here
+    });
+
+  } catch (error) {
+    console.error('Error setting up messaging:', error);
+  }
+}
+
+
+
+
+function updateNotificationUI(isEnabled, errorText) {
+  // define all the elements that are used in the function
+  const notificationsIcon = document.getElementById('notificationsIcon');
+  const notificationsEnabled = document.getElementById('notificationsEnabled');
+  const notificationsDisabled = document.getElementById('notificationsDisabled');
+  const retryButton = document.getElementById('retryButton');
+  const errorElement = document.getElementById('errorText');
+  // update the elements
+  notificationsEnabled.style.display = isEnabled ? 'inline' : 'none';
+  notificationsDisabled.style.display = isEnabled ? 'none' : 'inline';
+  errorElement.style.display = isEnabled ? 'none' : 'block';
+  retryButton.style.display = isEnabled ? 'none' : 'block';
+
+  errorElement.innerHTML = errorText;
+}
+
+function initializeFeatureBoxes() {
+  const featureBoxes = document.querySelectorAll('.feature-box');
+  featureBoxes.forEach(box => {
+      box.addEventListener('click', () => {
+          window.location.href = box.dataset.href;
+      });
   });
 }
 
-main();
+// Call setupMessaging when the page loads
+window.addEventListener('load', () => {
+  setupMessaging();
+  initializeFeatureBoxes();
+});

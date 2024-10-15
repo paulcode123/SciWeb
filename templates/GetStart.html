@@ -1,62 +1,16 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <link rel="stylesheet" href="static/navbar.css">
-  <title>SciWeb Getting Started</title>
-  <link rel="icon" href="static/media/favicon.png" type="image/x-icon">
-  <link rel="manifest" href="/static/manifest.json">
+{% extends "darkThemeTemplate.html" %}
 
-  
-</head>
-<body>
-  <ul class="navbar">
-    <li><a href="/">Home</a></li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Achieve</button>
-      <div class="dropdown-content">
-        <a href="/EnterGrades">Enter</a>
-        <a href="/GradeAnalysis">Analyse</a>
-        <a href="/Goals">Goals</a>
+<!-- title block -->
+{% block title %}
+<title>SciWeb | Getting Started</title>
+{% endblock %}
 
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Study</button>
-      <div class="dropdown-content">
-        <a href="/StudyLevels">Levels</a>
-<a href="/StudyBot">StudyBot</a>
-<a href="/Evaluate">Evaluate</a>
-<a href="/Battle">Battle</a>
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">Connect</button>
-      <div class="dropdown-content">
-        <a href="/Classes">Classes</a>
-        <a href="/Assignments">Assignments</a>
-        <a href="/Leagues">Leagues</a>
-        <a href="#">Questions</a>
-      </div>
-    </li>
-    <li class="dropdown">
-      <button class="dropdown-btn">About</button>
-      <div class="dropdown-content">
-        <a href="/Pitch">Pitch</a>
-        <a href="/GetStart">Getting Started</a>
-
-      </div>
-    </li>
-    <li><a href="/Login" id="profile">Login</a></li>
-  </ul>
-  <div id="notification-container"></div>
+<!-- content block -->
+{% block content %}
 <h1>Getting Started</h1>
 <br>
 <h3>To get started, you will need to create an account. To do this, click the <a href="/Login">Login</a> button at the top of the page. Once you have logged in, you can join your classes or create new classes, enter your grades, and analyse your grades. </h3>
 <br>
 <h3>To try out the tools, you can also try out the demo account by <a href="/Login">Logging in</a> and clicking the use demo account button. This will give you demo data for you to try out the various tools that SciWeb offers</h3>
-<script src="/static/util.js"></script>
-<script src="/static/user_data.js"></script>
-  <script src="/static/notifications.js" type="module"></script>
+{% endblock %}
 
-</body>
-</html>

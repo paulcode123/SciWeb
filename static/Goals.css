@@ -1,22 +1,28 @@
-
+/* Dark theme styles */
+body {
+  background-color: #1c1c1c;
+  color: #ffffff;
+}
 
 h1 {
   text-align: center;
+  color: #ffffff;
 }
 
 form {
   max-width: 400px;
   margin: 0 auto;
   padding: 20px;
-  background-color: #f5f5f5;
+  background-color: #2c2c2c;
   border-radius: 5px;
-  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
 }
 
 label {
   display: block;
   margin-bottom: 10px;
   font-weight: bold;
+  color: #ffffff;
 }
 
 select,
@@ -25,11 +31,13 @@ input[type="text"],
 input[type="number"] {
   width: 100%;
   padding: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid #444;
   border-radius: 4px;
   box-sizing: border-box;
   font-size: 14px;
   margin-bottom: 10px;
+  background-color: #333;
+  color: #ffffff;
 }
 
 button[type="submit"] {
@@ -48,8 +56,33 @@ button[type="submit"]:hover {
 }
 
 .error-message {
-  color: red;
+  color: #ff6b6b;
   font-size: 12px;
   margin-top: 5px;
 }
 
+/* Adjustments for dark theme compatibility */
+#main {
+  background-color: #1c1c1c;
+}
+
+.wrapper.style1 {
+  background-color: #1c1c1c;
+}
+
+/* Ensure text inputs are readable */
+input::placeholder {
+  color: #999;
+}
+
+/* Style dropdown arrows for better visibility */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.7em top 50%;
+  background-size: 0.65em auto;
+  padding-right: 1.5em;
+}

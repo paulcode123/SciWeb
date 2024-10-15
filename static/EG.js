@@ -1,4 +1,5 @@
-
+// Add this import at the top of the file
+import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
 
 
@@ -8,6 +9,11 @@ const form = document.querySelector("#gradeform");
 const tbody = document.querySelector("#mytbody");
 var grades;
 const Pullbutton = document.querySelector('#Jupull');
+
+// when OpenGA button is clicked, open the GradeAnalysis page
+document.getElementById('OpenGA').addEventListener('click', () => {
+  window.location.href = '/GradeAnalysis';
+});
 
 //add event listener to the pull button
 Pullbutton.addEventListener('click', pullfromJupiter);
@@ -39,6 +45,7 @@ async function pullfromJupiter(){
   else{
   console.log("got response")
   document.getElementById('loadingWheel').style.visibility = "hidden";
+  document.getElementById("loadingBar").style.visibility = "hidden";
   // if data is a dict with error key, show error message
   if(data['error']){
     alert(data['error']);
@@ -46,6 +53,10 @@ async function pullfromJupiter(){
   else{
   grades = data;
   createGradesTable(grades);
+  // If new classes were added, send notifications
+  if (data.new_classes && data.new_classes.length > 0) {
+    notifyClassmates(data.new_classes, data.class_tokens);
+  }
   }
 }
 }
@@ -210,38 +221,6 @@ selectElement.removeChild(selectElement.querySelector('option[value="default"]')
   
 }
 
-//Add previously inputted grades to the table
-function createGradesTable(grades) {
-  const tableBody = document.getElementById('gradesBody');
-  tableBody.innerHTML = ''; // Clear any existing rows
-  if (grades.length>1) {
-    document.getElementById('DeleteGrades').style.visibility = "visible";
-    document.getElementById('OpenGA').style.visibility = "visible";
-    document.getElementById('DownloadGrades').style.visibility = "visible";
-  
-  // sort grades by date from most recent to least recent
-  grades.sort((a, b) => new Date(b.date) - new Date(a.date));
-  }
-  for (let i = 0; i < grades.length; i++) {
-    const row = document.createElement('tr');
-
-    const grade = grades[i];
-    const { date, score, value, class: className, category, name } = grade;
-
-    const cells = [
-      createTableCell(date),
-      createTableCell(score),
-      createTableCell(value),
-      createTableCell(className),
-      createTableCell(category),
-      createTableCell(name),
-      createEditButton(i)
-    ];
-
-    cells.forEach(cell => row.appendChild(cell));
-    tableBody.appendChild(row);
-  }
-}
 
 // Function to create a table cell
 function createTableCell(value) {
@@ -250,82 +229,34 @@ function createTableCell(value) {
   return cell;
 }
 
-// Function to create an edit button for a row
-function createEditButton(index) {
-  const button = document.createElement('button');
-  button.textContent = 'Edit';
-  button.addEventListener('click', () => {
-    const row = document.getElementById('gradesBody').children[index];
-    makeRowEditable(row, index);
-  });
-
+// Function to create an share button for the row
+function createShareButton(index) {
+  const row = document.getElementById('gradesBody').children[index];
   const cell = document.createElement('td');
-  cell.appendChild(button);
+  // add the image /static/media/shareicon.png, and onclick, run navigator.share
+  const span = document.createElement('span');
+  const icon = document.createElement('img');
+  icon.src = '/static/media/shareicon.png';
+  icon.style.width = '20px';
+  icon.style.height = '20px';
+  span.appendChild(icon);
+  span.addEventListener('click', () => {
+    const grade = grades[index];
+    navigator.share({
+      title: 'Grade',
+      text: `I got a ${grade.score}/${grade.value} on ${grade.name} in ${grade.class}! Check out your grades using the link below.`,
+      url: "https://bxsciweb.org/EnterGrades"
+    });
+  });
+  cell.appendChild(span);
   return cell;
 }
 
-// Function to make a row editable
-function makeRowEditable(row, index) {
-  input_types = ["date", "number", "number", "text", "text", "text"]
-  const cells = row.children;
-  for (let i = 0; i < cells.length - 1; i++) {
-    const cell = cells[i];
-    const value = cell.textContent;
-    let type = input_types[i];
-    cell.innerHTML = `<input type="${type}" value="${value}">`;
-    
-  }
 
-  const saveButton = document.createElement('button');
-  saveButton.textContent = 'Save';
 
-// When the user clicks the save button, save the changes made to the row
-saveButton.addEventListener('click', () => {
-    saveRowChanges(row, index);
-  });
 
-  const actionCell = cells[cells.length - 1];
-  actionCell.innerHTML = '';
-  actionCell.appendChild(saveButton);
-}
 
-// Function to save the changes made to a row
-function saveRowChanges(row, index) {
-  const cells = row.children;
-  const updatedValues = {};
 
-  for (let i = 0; i < cells.length - 1; i++) {
-    const cell = cells[i];
-    const input = cell.firstChild;
-    const value = input.value;
-    const property = getPropertyByIndex(i);
-    updatedValues[property] = value;
-    cell.textContent = value;
-  }
-  updatedValues['id'] = grades[index]['id']
-  updatedValues['osis'] = grades[index]['osis']
-  const saveButton = document.createElement('button');
-  saveButton.textContent = 'Edit';
-  saveButton.addEventListener('click', () => {
-    makeRowEditable(row, index);
-  });
-
-  const actionCell = cells[cells.length - 1];
-  actionCell.innerHTML = '';
-  actionCell.appendChild(saveButton);
-  index = grades[index]['id']
-  // Process the updated values as needed
-  console.log('Updated Values:', updatedValues);
-  console.log('Original Index:', index);
-  update_grades(index, updatedValues)
-}
-
-// Function to get the property name based on the index
-function getPropertyByIndex(index) {
-  const properties = ['date', 'score', 'value', 'class', 'category', 'name'];
-  return properties[index];
-}
-// Create the grades table
 
 async function update_grades(id, grades){
   await fetchRequest('/update_data', {"sheet": "Grades", "data": grades, "row_name": "id", "row_value": id});
@@ -435,4 +366,204 @@ function parseCSV(text) {
   });
 
   return grades;
+}
+
+
+
+
+
+
+
+
+
+
+function createGradesTable(grades) {
+  const tableBody = document.getElementById('gradesBody');
+  tableBody.innerHTML = ''; // Clear any existing rows
+  if (grades.length>1) {
+    document.getElementById('DeleteGrades').style.visibility = "visible";
+    document.getElementById('OpenGA').style.visibility = "visible";
+    document.getElementById('DownloadGrades').style.visibility = "visible";
+  
+  // sort grades by date from most recent to least recent
+  grades.sort((a, b) => new Date(b.date) - new Date(a.date));
+  }
+  for (let i = 0; i < grades.length; i++) {
+    const row = document.createElement('tr');
+
+    const grade = grades[i];
+    const { date, score, value, class: className, category, name } = grade;
+
+    const cells = [
+      createTableCell(date),
+      createTableCell(score),
+      createTableCell(value),
+      createTableCell(className),
+      createTableCell(category),
+      createTableCell(name),
+      createShareButton(i),
+      createShowFriendsButton(grade) // New column
+    ];
+
+    cells.forEach(cell => row.appendChild(cell));
+    tableBody.appendChild(row);
+  }
+}
+
+
+
+// Function to create the Show Friends button
+function createShowFriendsButton(grade) {
+  const cell = document.createElement('td');
+  const button = document.createElement('button');
+  button.textContent = 'Show Friends';
+  button.classList.add('show-friends-button');
+  button.addEventListener('click', () => showFriends(grade));
+  cell.appendChild(button);
+  return cell;
+}
+
+async function showFriends(grade) {
+  const db = getFirestore();
+  
+  // Get user's friends
+  const friendsData = await fetchRequest('/data', { data: 'Friends' });
+  console.log(friendsData)
+  const friends = friendsData['Friends'].filter(friend => friend.OSIS === osis && friend.status === 'accepted');
+
+  // Get friends' tokens
+  const usersData = await fetchRequest('/data', { data: 'Tokens' });
+  const friendTokens = friends.map(friend => {
+    const user = usersData.find(u => u.OSIS === friend.targetOSIS);
+    return user ? user.token : null;
+  }).filter(token => token !== null);
+
+  // Prepare the notification message
+  const message = {
+    title: "Friend's Grade Update",
+    body: `${osis} got ${grade.score}/${grade.value} in ${grade.class} for ${grade.name}!`,
+    data: {
+      gradeId: grade.id,
+      senderOSIS: osis
+    }
+  };
+
+  console.log(friendTokens)
+  // Send notifications to friends
+  for (const token of friendTokens) {
+    try {
+      await addDoc(collection(db, "notifications"), {
+        token: token,
+        message: message
+      });
+      console.log("Notification sent successfully to", token);
+    } catch (error) {
+      console.error("Error sending notification:", error);
+    }
+  }
+
+  alert("Grade shared with friends!");
+}
+
+// Function to handle high five
+async function handleHighFive(gradeId, senderOSIS) {
+  const db = getFirestore();
+  const usersData = await fetchRequest('/data', { data: 'Tokens' });
+  const sender = usersData.find(u => u.OSIS === senderOSIS);
+
+  if (sender && sender.token) {
+    const message = {
+      title: "High Five Received!",
+      body: `${osis} gave you a high five for your grade!`,
+      data: {
+        type: "highFive",
+        receiverOSIS: senderOSIS
+      }
+    };
+
+    try {
+      await addDoc(collection(db, "notifications"), {
+        token: sender.token,
+        message: message
+      });
+      console.log("High five notification sent successfully");
+    } catch (error) {
+      console.error("Error sending high five notification:", error);
+    }
+  }
+}
+
+// Add this to your existing event listeners
+document.addEventListener('DOMContentLoaded', () => {
+  // ... existing code ...
+
+  // Listen for notifications
+  const db = getFirestore();
+  const notificationsRef = collection(db, "notifications");
+  onSnapshot(notificationsRef, (snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+      if (change.type === "added") {
+        const notification = change.doc.data();
+        if (notification.message.data.type === "highFive" && notification.message.data.receiverOSIS === osis) {
+          showNotification(notification.message.title, notification.message.body);
+        } else if (notification.message.data.senderOSIS && notification.message.data.senderOSIS !== osis) {
+          showNotification(notification.message.title, notification.message.body, () => {
+            handleHighFive(notification.message.data.gradeId, notification.message.data.senderOSIS);
+          });
+        }
+      }
+    });
+  });
+});
+
+function showNotification(title, body, onClickCallback = null) {
+  if ("Notification" in window) {
+    Notification.requestPermission().then(function (permission) {
+      if (permission === "granted") {
+        const notification = new Notification(title, {
+          body: body,
+          icon: '/static/media/favicon.png'
+        });
+
+        if (onClickCallback) {
+          notification.onclick = () => {
+            onClickCallback();
+            notification.close();
+          };
+        }
+      }
+    });
+  }
+}
+
+async function notifyClassmates(newClasses, classTokens) {
+  const db = getFirestore();
+
+  for (const className of newClasses) {
+    const tokens = classTokens[className];
+
+    // Prepare the notification message
+    const message = {
+      title: "New Classmate",
+      body: `${first_name} has joined ${className}!`,
+      data: {
+        type: "newClassmate",
+        className: className,
+        newClassmateOSIS: osis
+      }
+    };
+
+    // Send notifications to classmates
+    for (const token of tokens) {
+      try {
+        await addDoc(collection(db, "notifications"), {
+          token: token,
+          message: message
+        });
+        console.log("Notification sent successfully to", token);
+      } catch (error) {
+        console.error("Error sending notification:", error);
+      }
+    }
+  }
 }

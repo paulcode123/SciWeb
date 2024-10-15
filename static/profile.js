@@ -111,6 +111,7 @@ function set_public_profile(userData){
   getFile(userData.ProfPic).then(image => {
   imgPreview.src = image;
   imgPreview.style.display = 'block';
+  document.getElementById('pencil').style.display = 'block';
   })
   }
   //Set the input fields to the user's public profile data if it exists
@@ -133,6 +134,7 @@ document.getElementById('profilePictureInput').addEventListener('change', functi
       console.log(imgPreview);
       imgPreview.src = fileUrl;
       imgPreview.style.display = 'block';
+      document.getElementById('pencil').style.display = 'block';
   }
 });
 

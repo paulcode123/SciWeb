@@ -1,0 +1,117 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+#page-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+#main {
+    flex: 1;
+    display: flex;
+    padding: 0;
+}
+
+.container {
+    width: 100%;
+    max-width: none;
+    padding: 0;
+    margin: 0;
+}
+
+.messages-container {
+    display: flex;
+    height: calc(100vh - 60px); /* Adjust 60px to match your navbar height */
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #4a4646; /* Grey color */
+    padding: 20px;
+    overflow-y: auto;
+    height: calc(100vh - 60px); /* Adjust 60px to match your navbar height */
+    position: fixed;
+    left: 0;
+    top: 60px; /* Set to navbar height */
+    bottom: 0;
+}
+
+.chat-area {
+    flex-grow: 1;
+    padding: 20px;
+    margin-left: 250px; /* Same as sidebar width */
+    margin-top: 60px; /* Add top margin to match navbar height */
+    display: flex;
+    flex-direction: column;
+}
+
+
+
+#image-container {
+    margin-bottom: 10px; /* Space for input area */
+}
+
+#message-input {
+    width: calc(100% - 120px); /* Adjust width to fit with buttons */
+    padding: 10px;
+}
+
+#upload {
+    margin-left: 10px;
+}
+
+button {
+    margin-left: 10px;
+    padding: 10px 20px; /* Add padding for better spacing */
+    background-color: #4a4646; /* Initial button color */
+    color: white; /* Text color */
+    border: none; /* Remove default border */
+    border-radius: 5px; /* Rounded corners */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+}
+
+button:hover {
+    background-color: #ff69b4; /* Change to pink on hover */
+}
+
+#message-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-bottom: 10px; /* Space for input area */
+    list-style-type: none; /* Remove bullet points */
+    padding: 0; /* Remove default padding */
+}
+
+.message {
+    display: flex;
+    flex-direction: column;
+    background-color: #f9f9f9; /* Light background for messages */
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    color:black
+}
+
+.sender {
+    font-weight: bold; /* Bold the sender's name */
+    margin-bottom: 5px;
+}
+
+.message div {
+    word-wrap: break-word; /* Ensure long words break to fit */
+}
+
+.pdf {
+    color: #007bff; /* Link color for PDFs */
+    text-decoration: none;
+}
+
+.pdf:hover {
+    text-decoration: underline;
+}

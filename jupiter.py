@@ -99,54 +99,63 @@ def post_grades(grades, encrypt):
   
   return
   
-def jupapi_output_to_classes(data):
-  #this function suggests which classes the user should create or join based on their jupiter classes
-  #for each class, if the class exists in class_data, update the db it with the user's osis in the 'OSIS' col of that class
-  # If the class does not yet exist, add the class to the db: {"teacher": teacher name, "name": class name, "OSIS": user's osis, "id": random 4 digit number, "period": period, "categories": [name, weight, name, weight, ...]}
-  
-  # get the classes data from the db
-  class_data = get_data("Classes")
-  # get the user's classes from the jupiter data
-  classes = data["courses"]
+def jupapi_output_to_classes(data, class_data):
+    print("jupapi_output_to_classes")
+    # get the user's classes from the jupiter data
+    classes = data["courses"]
+    
+    for c in classes:
+        class_exists = False
+        class_name = c["name"]
+        
+        # get the teacher's last name
+        teacher = c["teacher"]
+        teacher = teacher.split(" ")[-1]
+        schedule = c["schedule"]
+        raw_cat = c["categories"]
+        categories = []
+        for cat in raw_cat:
+            categories.extend([cat["name"], cat["weight"]*100])
+        
+        for class_info in class_data:
+            # check if the class exists in the db
+            if "name" in class_info and class_info["name"] == class_name and class_info["teacher"] == teacher and class_info["schedule"] == schedule:
+                class_exists = True
+                need_update = False
+                
+                # Update categories regardless of whether the user is already in the class
+                if class_info["categories"] != categories:
+                    need_update = True
+                    class_info["categories"] = categories
+                
+                # Add user to the class if not already present
+                if str(session['user_data']['osis']) not in str(class_info["OSIS"]):
+                    class_info["OSIS"] = str(session['user_data']['osis']) + ", " + str(class_info["OSIS"])
+                    need_update = True
 
-  # for each class in the user's jupiter data, check if the class exists in the db
-  for c in classes:
-    class_exists = False
-    class_name = c["name"]
-    
-    # get the teacher's last name
-    teacher = c["teacher"]
-    teacher = teacher.split(" ")[-1]
-    schedule = c["schedule"]
-    raw_cat = c["categories"]
-    categories = []
-    for cat in raw_cat:
-      categories.extend([cat["name"], cat["weight"]*100])
-    
-    # if class_name and teacher match a class in class_data, update the class with the user's osis
-    for class_info in class_data:
-      # check if the class exists in the db
-      if not("name" in class_info and class_info["name"] == class_name and class_info["teacher"] == teacher and class_info["schedule"] == schedule):
-        continue
-      # check if the user is already in the class
-      if str(session['user_data']['osis']) in class_info["OSIS"]:
-        class_exists = True
-        break
-      else:
-        class_info["OSIS"] = str(session['user_data']['osis']) + ", " + class_info["OSIS"]
-        # update_data(class_info["id"], "id", class_info, "Classes", session, sheetdb_url, allow_demo_change)
-        update_data(class_info["id"], "id", class_info, "Classes")
+                if need_update:
+                    # Update the class in the database
+                    print("Updating class in the database", class_info)
+                    update_data(class_info["id"], "id", class_info, "Classes")
+                break
         
-        class_exists = True
-        break
-      
-        
-    
-    if not class_exists:
-      #generate 4 digit random number
-      id = random.randint(1000, 9999)
-      class_info = {"period": "", "teacher": teacher, "name": class_name, "OSIS": session['user_data']['osis'], "assignments": "", "description": "", "id": str(id), "schedule": c["schedule"], "categories": categories}
-      post_data("Classes", class_info)
+        if not class_exists:
+            # generate 4 digit random number
+            id = random.randint(1000, 9999)
+            class_info = {
+                "period": "",
+                "teacher": teacher,
+                "name": class_name,
+                "OSIS": session['user_data']['osis'],
+                "assignments": "",
+                "description": "",
+                "id": str(id),
+                "schedule": c["schedule"],
+                "categories": categories
+            }
+            post_data("Classes", class_info)
+
+    return class_data  # Return the updated class data
 
   
     
@@ -169,6 +178,9 @@ def get_grades():
 
   # get the line dict without the osis and encrypted keys
   gline = {key: line[key] for key in line if key != "OSIS" and key != "encrypted" and key != "docid"}
+  # if there are no remaining keys, return the default dict
+  if len(gline) == 0:
+    return {"date": "1/1/2021", "score": 0, "value": 0, "class": "No grades entered", "category": "No grades entered", "name": "None"}
   # get the highest number of the keys in the line dict
   num_elements = max([int(key) for key in gline.keys()])+1
   
@@ -251,8 +263,8 @@ def convert_date(date_str):
         input_date_with_current_year = datetime.datetime.strptime(date_str + f"/{current_year}", "%m/%d/%Y")
     except:
       print("Error parsing date", date_str)
-    # If the resulting date is in the future, subtract one year
-    if input_date_with_current_year > current_date:
+    # If the resulting date is more than 20 days in the future, subtract one year
+    if input_date_with_current_year > current_date + datetime.timedelta(days=20):
         input_date_with_current_year = input_date_with_current_year.replace(year=current_year - 1)
     
     # Return the formatted date string without leading zeros in a platform-independent way
@@ -286,3 +298,33 @@ def decrypt_grades(cipher_text, number):
         decrypted_bytes.append(encrypted_bytes[i] ^ key_bytes[i % len(key_bytes)])
     
     return decrypted_bytes.decode()
+
+def confirm_category_match(grades, classes):
+    # Check if the category of each grade is in the categories list of each class
+    # Return True if any mismatch is found
+
+    # filter classes that the user is in
+    classes = [class_info for class_info in classes if str(session['user_data']['osis']) in str(class_info['OSIS'])]
+    for class_info in classes:
+        class_name = class_info['name']
+        class_categories = class_info['categories']
+        
+        # Create a set of existing category names for faster lookup
+        existing_categories = set(class_categories[::2])  # Every other item is a category name
+
+        # Check grades for this class
+        for grade in grades:
+            if grade['class'] == class_name:
+                category = grade['category']
+                if category not in existing_categories:
+                    print(f"Mismatch found: Category '{category}' not in class '{class_name} with class_info={class_info}'")
+                    return True
+
+    # If we've gone through all classes and grades without finding a mismatch, return False
+    return False
+
+
+def notify_new_classes(classes):
+    # This function is left empty as per the original code
+    pass
+  

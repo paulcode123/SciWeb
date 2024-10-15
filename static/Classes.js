@@ -146,7 +146,6 @@ function display_classes(classList, user_data){
       classItem.innerHTML = `
         <h3>${classData.name}</h3>
         <p>Teacher: ${classData.teacher}</p>
-        <p>Period ${classData.period}</p>
       `;
       // if the class is clicked, go to the class page
       classItem.addEventListener('click', () => {
@@ -190,3 +189,14 @@ async function post_classes(data, update){
   location.reload();
   
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+  const joinButton = document.getElementById('joinButton');
+  const classForm = document.getElementById('classForm');
+
+
+  joinButton.addEventListener('click', function(e) {
+      e.preventDefault();
+      classForm.style.display = classForm.style.display === 'none' ? 'block' : 'none';
+  });
+});

@@ -1,4 +1,3 @@
-/* Main section styles */
 /* Parent container */
 .container {
   margin-top: 100px; /* Space for the fixed header */
@@ -9,37 +8,39 @@
   flex-direction: column; /* Arrange content in a column */
   justify-content: center; /* Center vertically */
   position: relative; /* Needed for the pseudo-element positioning */
-}
-
-/* Pseudo-element for the background */
-.container::before {
+ }
+ 
+ 
+ /* Pseudo-element for the background */
+ .container::before {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 425px; /* Height of the repeating background */
-  background-image: url('Spider.png');
-  background-repeat: repeat;
   background-size: 150px;
   z-index: -1; /* Ensure it's behind the content */
-}
-
-
-h1 {
+  opacity: 0.1; /* Reduce opacity for dark mode */
+ }
+ 
+ 
+ h1 {
   font-size: 48px; /* Increase font size for h1 */
-  color: rgb(18, 74, 5);
+  color: #e44c65; /* Lighter green for dark mode */
   margin-top: 0; /* Ensure no top margin for h1 */
-}
-
-p {
+ }
+ 
+ 
+ p {
   font-size: 24px; /* Increase font size for paragraphs */
-  color: black; /* Set text color to white */
+  color: #e0e0e0; /* Light gray for dark mode */
   margin-top: 0; /* Ensure no top margin for paragraphs */
-}
-
-.btn {
-  background-color: #58cf39; /* Change button color */
+ }
+ 
+ 
+ .btn {
+  background-color: #4caf50; /* Slightly darker green for button */
   color: white; /* Set text color to white */
   padding: 12px 25px; /* Increase padding for better button appearance */
   border: none;
@@ -51,22 +52,122 @@ p {
   /* center hoizontally on page */
   margin-left: auto;
   margin-right: auto;
-}
-
-.btn:hover {
-  background-color: #00660f; /* Darken on hover */
-}
-
-.myptag{
-  color: black;
-  background-color: yellow;
+ }
+ 
+ 
+ .btn:hover {
+  background-color: #45a049; /* Darker green on hover */
+ }
+ 
+ 
+ .myptag {
+  color: #121212; /* Dark text for contrast */
+  background-color: #ffd700; /* Gold color for dark mode */
   font-size: 24px;
   padding: 20px;
   margin-top: 0;
-  
-}
-/* add hover animation */
-.myptag:hover {
-  background-color: #f1f1f1;
+  }
+ 
+ 
+ /* add hover animation */
+ .myptag:hover {
+  background-color: #e6c200; /* Darker gold on hover */
   transform: scale(1.1);
+ }
+ 
+ 
+ /* Dark mode styles */
+ body.dark-mode {
+  background-color: #121212;
+  color: #e0e0e0;
+ }
+ 
+ 
+ /* Dark mode specific styles for existing elements */
+ .dark-mode #header {
+  background-color: #1e1e1e;
+ }
+ 
+ 
+ .dark-mode #nav ul li a {
+  color: #e0e0e0;
+ }
+ 
+ 
+ .dark-mode #nav ul li a:hover {
+  color: #4caf50;
+ }
+ 
+ 
+ .dark-mode .button.primary {
+  background-color: #4caf50;
+  color: white;
+ }
+ 
+ 
+ .dark-mode .button.primary:hover {
+  background-color: #45a049;
+ }
+ 
+
+/* ... (existing styles) ... */
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 40px;
 }
+
+.feature-box {
+  background-color: #1e1e1e;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-box:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.feature-box i {
+  font-size: 48px;
+  color: #e44c65;
+  margin-bottom: 15px;
+  transition: transform 0.3s ease;
+}
+
+.feature-box:hover i {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.feature-box h3 {
+  font-size: 24px;
+  color: #e44c65;
+  margin-bottom: 10px;
+}
+
+.feature-box p {
+  font-size: 14px;
+  color: #e0e0e0;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+  .feature-grid {
+      grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .feature-grid {
+      grid-template-columns: 1fr;
+  }
+}
+
+/* ... (existing styles) ... */
