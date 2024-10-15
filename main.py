@@ -33,6 +33,7 @@ from database import get_data, post_data, update_data, delete_data, download_fil
 from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups, get_stats, update_leagues, get_compliments
 <<<<<<< HEAD
+<<<<<<< HEAD
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades, confirm_category_match
 from study import get_insights, get_insights_from_file, chat_with_function_calling
 =======
@@ -40,6 +41,10 @@ from goals import calculate_goal_progress, get_goals
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades
 from study import study_response, get_insights
 >>>>>>> parent of 14841af8 (notebook image passed to GPT-4.0, can not be read)
+=======
+from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades, confirm_category_match
+from study import get_insights, get_insights_from_file, chat_with_function_calling
+>>>>>>> 3f328462f004a4f600f34828373042739ff1e169
 
 #get api keys from static/api_keys.json file
 keys = json.load(open('api_keys.json'))  
@@ -137,6 +142,10 @@ def study_levels():
 def diagnostic():
   return render_template('Diagnostic.html')
 
+@app.route('/Diagnostic')
+def diagnostic():
+  return render_template('Diagnostic.html')
+
 @app.route('/Evaluate')
 def evaluate():
   return render_template('Evaluate.html')
@@ -154,9 +163,15 @@ def classes():
 def leagues():
   return render_template('Leagues.html')
 
+<<<<<<< HEAD
 @app.route('/Notebooks')
 def notebooks():
     return render_template('notebooks.html')
+=======
+@app.route('/Notebook')
+def notebook():
+  return render_template('notebook.html')
+>>>>>>> 3f328462f004a4f600f34828373042739ff1e169
 
 @app.route('/GetStart')
 def getstart():
