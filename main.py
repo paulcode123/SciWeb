@@ -32,19 +32,8 @@ from PyPDF2 import PdfReader
 from database import get_data, post_data, update_data, delete_data, download_file, upload_file, init_firebase
 from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups, get_stats, update_leagues, get_compliments
-<<<<<<< HEAD
-<<<<<<< HEAD
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades, confirm_category_match
 from study import get_insights, get_insights_from_file, chat_with_function_calling
-=======
-from goals import calculate_goal_progress, get_goals
-from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades
-from study import study_response, get_insights
->>>>>>> parent of 14841af8 (notebook image passed to GPT-4.0, can not be read)
-=======
-from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades, confirm_category_match
-from study import get_insights, get_insights_from_file, chat_with_function_calling
->>>>>>> 3f328462f004a4f600f34828373042739ff1e169
 
 #get api keys from static/api_keys.json file
 keys = json.load(open('api_keys.json'))  
@@ -129,18 +118,9 @@ def pitch():
 def study():
   return render_template('StudyBot.html')
 
-  
-@app.route('/ComingSoon')
-def ComingSoon():
-  return render_template('ComingSoon.html')
-
 @app.route('/StudyLevels')
 def study_levels():
-    return render_template('Levels.html')
-  
-@app.route('/Diagnostic')
-def diagnostic():
-  return render_template('Diagnostic.html')
+  return render_template('Levels.html')
 
 @app.route('/Diagnostic')
 def diagnostic():
@@ -163,15 +143,9 @@ def classes():
 def leagues():
   return render_template('Leagues.html')
 
-<<<<<<< HEAD
-@app.route('/Notebooks')
-def notebooks():
-    return render_template('notebooks.html')
-=======
 @app.route('/Notebook')
 def notebook():
   return render_template('notebook.html')
->>>>>>> 3f328462f004a4f600f34828373042739ff1e169
 
 @app.route('/GetStart')
 def getstart():
@@ -196,6 +170,10 @@ def messages():
 @app.route('/Join')
 def join():
   return render_template('About/Join.html')
+
+@app.route('/ComingSoon')
+def ComingSoon():
+  return render_template('ComingSoon.html')
 
 @app.route('/Features/AI')
 def ai_features():
@@ -904,6 +882,7 @@ def get_name(ip=None):
     print("user_data already defined in get_name()")
     return session['user_data']
   
+
   data = get_data("Users")
   print(data)
   # If the user's IP address is in the Users data, return their name and other info
@@ -930,30 +909,3 @@ def get_name(ip=None):
 
 if __name__ == '__main__':
   app.run(host='localhost', port=8080)
-<<<<<<< HEAD
-
-@app.route('/process-image-notebook', methods=['POST'])
-def process_image_notebook():
-    try:
-        data = request.json
-        base64_img = data['image']
-        class_id = data['classId']
-        unit_name = data['unitName']
-
-        # Remove the data URL prefix if present
-        if ',' in base64_img:
-            base64_img = base64_img.split(',')[1]
-
-        # Decode the base64 string to bytes
-        image_data = base64.b64decode(base64_img)
-
-        # Get insights from the image and store in database
-        result = get_insights_from_image(image_data, class_id, unit_name)
-
-        return jsonify(result)
-    except Exception as e:
-        error_message = f"An error occurred: {str(e)}\n{traceback.format_exc()}"
-        print(error_message)  # This will print to your server logs
-        return jsonify({"error": "An internal server error occurred. Please check the server logs."}), 500
-=======
->>>>>>> parent of 14841af8 (notebook image passed to GPT-4.0, can not be read)
