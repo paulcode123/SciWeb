@@ -7,6 +7,36 @@
 <!-- css block -->
 {% block css %}
 <link rel="stylesheet" href="/static/class.css">
+<style>
+    .button-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* Increased min width */
+        gap: 15px; /* Increased space between buttons */
+        margin-top: 30px; /* Increased space above the button grid */
+    }
+    .large-button {
+        padding: 20px 30px; /* Increased button size */
+        font-size: 1.5em; /* Increased font size */
+        background-color: #007bff; /* Example primary color */
+        color: white; /* Text color */
+        border: none; /* Remove border */
+        border-radius: 8px; /* More rounded corners */
+        cursor: pointer; /* Pointer cursor on hover */
+        width: 100%; /* Make buttons take full width */
+    }
+    .large-button:hover {
+        background-color: #0056b3; /* Darker shade on hover */
+    }
+    #class-section {
+        padding: 20px; /* Add padding to the section */
+    }
+    #head h1 {
+        font-size: 2.5em; /* Increase header size */
+    }
+    #description {
+        font-size: 1.2em; /* Increase description size */
+    }
+</style>
 {% endblock %}
 
 <!-- content block -->
@@ -16,9 +46,12 @@
 <div id="notification-container"></div>
 <div id="loadingWheel"></div>
 <div id="classimgcontainer"></div>
-<div id="head">
-<h1 class="dark-text">{{ class_name }}</h1>
-<button id="joinBtn" class="pro-button primary">Join Class</button>
+<div id="head" style="text-align: center;">
+<h1 class="dark-text">{{ class_name | replace(" ", "&nbsp;") }}</h1>
+<div class="button-grid">
+<button id="joinBtn" class="pro-button primary large-button">Join Class</button>
+<button id="createBtn" class="pro-button primary large-button">➕ Create Assignment</button>
+</div>
 <h3 id="description" class="dark-text"></h3>
 <div id="user-list" class="dark-text"></div>
 <div id="assignmentList" class="dark-text"></div>
@@ -30,9 +63,6 @@
 <label for="color" id="colorLabel" class="pro-button secondary">🎨 Choose Color</label>
 <input type="color" id="color" value="#000000" style="display: none;">
 <button id="savecolor" class="pro-button secondary" style="display: none;">Save Color</button>
-
-
-<button id="createBtn" class="pro-button primary">➕ Create Assignment</button>
 
 
 <div id="formContainer" style="display: none;">
@@ -72,26 +102,9 @@
 </div>
 </section>
 
-
-<!-- Separator -->
-<hr class="major" />
-
-
-<!-- Notebook Section -->
-<section id="notebook-section">
-<h2 class="dark-text">{{ class_name }} Notebook</h2>
-<input type="file" accept="image/*" capture="environment" id="imageInput" style="display: none;">
-<label for="imageInput" class="pro-button secondary" style="font-size: 1.2em;">📷 Capture Image</label>
-<button id="create_section" class='pro-button secondary'>New Section</button>
-<div id="tabs"></div>
-<button id='save' onclick="postNotebook()" class='pro-button primary'>Save Notebook</button>
-<div id="insights_container"></div>
-</section>
-</div>
 {% endblock %}
 
 <!-- js block -->
 {% block js %}
 <script src="/static/class.js"></script>
 {% endblock %}
-
