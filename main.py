@@ -171,10 +171,6 @@ def messages():
 def join():
   return render_template('About/Join.html')
 
-@app.route('/ComingSoon')
-def ComingSoon():
-  return render_template('ComingSoon.html')
-
 @app.route('/Features/AI')
 def ai_features():
   return render_template('About/AI.html')
