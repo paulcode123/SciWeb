@@ -172,6 +172,8 @@ button:hover {
   font-size: 48px;
   font-weight: bold;
   margin: 10px 0;
+  /* make sure text on consecutive lines doesn't overlap */
+  line-height: 1.2;
 }
 
 .caption {

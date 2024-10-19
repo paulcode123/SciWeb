@@ -1,5 +1,5 @@
 const chatLog = document.getElementById('chat-log');
-
+console.log("in counselor.js")
 // function to type out text in a message div in chatLog
 async function typeOutText(text, speed) {
     // make a message div
@@ -19,11 +19,11 @@ document.getElementById('toggle-sidebar').addEventListener('click', function() {
     chatArea.style.display = chatArea.style.display === 'none' ? 'block' : 'none';
     // if the chat Log is empty, call main
     if (chatLog.children.length === 0) {
-        main();
+        main_counselor();
     }
 });
 
-async function main(){
+async function main_counselor(){
     prompts = [{"role": "system", "content": "You are the user's College Counselor. It's your responsibility to tell them their assignments, if they have any tests coming up, recent grades, their goals, etc. You can access any of their data at any time from the database with the get_data/get_grades function."}]
     prompt = "Hello, I am your SciWeb Counselor. How can I help you today?"
     prompts.push({"role": "assistant", "content": prompt});

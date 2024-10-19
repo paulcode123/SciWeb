@@ -7,7 +7,7 @@
 
 <!-- css block -->
 {% block css %}
-<link rel="stylesheet" href="/static/Evaluate.css">
+<link rel="stylesheet" href="/static/evaluate.css">
 {% endblock %}
 
 <!-- content block -->
@@ -43,22 +43,10 @@
     <div class="spinner"></div>
     <p id="loading-text">Generating questions...</p>
 </div>
-<!-- ... (previous code remains the same) -->
 
-<section id="evaluation" style="display: none;">
-<div id="question-container">
-    <h3 id="question"></h3>
-    <div id="choices-container">
-        <!-- This will be dynamically populated by JavaScript -->
-    </div>
-</div>
-<div id="progress">Question <span id="current-question">1</span> of 5</div>
-<button id="next-question" class="button primary" style="display: none;">Next Question</button>
-<div id="result" style="display: none;"></div>
-</section>
 
 {% endblock %}
 
 {% block js %}
-<script src="/static/Evaluate.js"></script>
+<script src="/static/evaluate.js"></script>
 {% endblock %}

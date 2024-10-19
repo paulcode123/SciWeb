@@ -1,4 +1,3 @@
-
 //add event lister to button with id=authorizeGclass to redirect to /init_oauth
 // document.getElementById('authorizeGclass').addEventListener('click', function() {
 //   window.location.href = "/init_oauth";
@@ -38,7 +37,7 @@ function display_assignments(assignmentList, classList) {
     let class_name, class_id, class_color;
 
     for (const item of classList) {
-      if (item.id === assignmentData['class']) {
+      if (item.id === assignmentData['class'].toString()) {
         class_name = item.name;
         class_id = item.id.toString();
         class_color = item.color;
@@ -106,3 +105,28 @@ get_assignment()
 
 // filter classes data where period is 3
 // data['Classes'].filter(classObj => classObj.period == 3)
+
+// Function to handle image upload
+document.getElementById('uploadButton').addEventListener('click', async function() {
+    const fileInput = document.getElementById('assignmentImage');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert("Please select an image file to upload.");
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = async function() {
+        const base64Image = reader.result.split(',')[1]; // Get base64 string without the prefix
+        const response = await fetchRequest('/upload_assignments', { image: base64Image });
+
+        if (response && response.data) {
+            get_assignment()
+        } else {
+            console.error("Failed to upload assignments.");
+        }
+    };
+
+    reader.readAsDataURL(file); // Convert image to base64
+});

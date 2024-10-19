@@ -142,3 +142,22 @@ select, button {
     background-color: #4e5266;
     border-radius: 3px;
 }
+
+
+
+.submit-answer-button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    background-color: #e44c65;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.submit-answer-button:hover {
+    background-color: #d43b55;
+}

@@ -44,3 +44,37 @@
 #next-level {
     margin-top: 20px;
 }
+
+#submit-answer, #next-question {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    background-color: #e44c65;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#submit-answer:hover, #next-question:hover {
+    background-color: #d43b55;
+}
+
+.start-evaluation-button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    background-color: #e44c65;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.start-evaluation-button:hover {
+    background-color: #d43b55;
+}

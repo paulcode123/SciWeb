@@ -1,0 +1,29 @@
+{% extends "darkThemeTemplate.html" %}
+
+{% block title %}
+<title>Inspire</title>
+{% endblock %}
+
+{% block content %}
+<div class="inspire-container" style="text-align: center; margin-top: 50px;">
+    <header class="major">
+        <h2>What do you need motivation for?</h2>
+    </header>
+    <input type="text" id="motivation-input" placeholder="Enter your topic..." class="input" />
+    <ul class="actions">
+        <li><a href="#" id="inspire-button" class="button primary">Get Inspired</a></li>
+    </ul>
+    
+    <div id="video-result" style="margin-top: 20px;">
+        <h3 id="video-name"></h3>
+        <a id="video-url" href="#" target="_blank"></a>
+        <div style="display: flex; justify-content: center;">
+            <iframe id="video-player" width="560" height="315" style="display:none;" frameborder="0" allowfullscreen></iframe>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script src="/static/inspire.js"></script>
+{% endblock %}

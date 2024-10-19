@@ -1,11 +1,11 @@
 var toggleMode = "Login";
 
 //hide loading wheel
-document.getElementById("loadingWheel").style.display = "none";
+// document.getElementById("loadingWheel").style.display = "none";
 const form = document.getElementById('login-form');
 console.log("loginscript ip:"+ip);
 function demo(){
-  document.getElementById("loadingWheel").style.display = "block";
+  // document.getElementById("loadingWheel").style.display = "block";
   console.log(ip)
   post_login({data: {
     "first_name": "Demo", 
@@ -17,7 +17,7 @@ function demo(){
   }, mode: "Login"});
 }
 form.addEventListener('submit', function(event) {
-  document.getElementById("loadingWheel").style.display = "block";
+  // document.getElementById("loadingWheel").style.display = "block";
   // Prevent the form from submitting normally
   event.preventDefault();
 
@@ -59,7 +59,7 @@ async function post_login(data){
     }
   } else {
     alert("Invalid login credentials");
-    document.getElementById("loadingWheel").style.display = "none";
+    // document.getElementById("loadingWheel").style.display = "none";
     // clear form
     document.getElementById("login-form").reset();
   }

@@ -8,17 +8,27 @@ from jupiter import get_grades
 
 
 # Query the LLM API to get insights
-def get_insights(prompts, format):
+def get_insights(prompts, format=None):
   from main import init
   vars = init()
-  completion = vars['client'].beta.chat.completions.parse(
-    model="gpt-4o-mini",
-    messages=prompts,
-    response_format=format,
+  if format is None:
+    completion = vars['client'].beta.chat.completions.parse(
+      model="gpt-4o-mini",
+      messages=prompts
     )
+    insights = completion.choices[0].message.content
+  else:
+    completion = vars['client'].beta.chat.completions.parse(
+      model="gpt-4o-mini",
+      messages=prompts,
+      response_format=format
+    )
+    # completion = completion.to_dict()
+    # print("completion: " + completion)
+    insights = completion.choices[0].message.content
 
-
-  insights = completion.choices[0].message.parsed
+  
+  
   print("insights: "+str(insights))
   return insights
 
@@ -153,3 +163,74 @@ def chat_with_function_calling(prompt):
     # If no function call was needed, return the initial response
     return message['content']
 
+
+
+
+def search_youtube(query):
+    """
+    Searches YouTube for the given query and returns the titles, descriptions, and URLs of the first 5 results.
+    
+    Parameters:
+        query (str): The search query.
+    
+    Returns:
+        list of dict: A list of dictionaries containing 'title', 'description', and 'url' keys.
+    """
+    from main import init
+    vars = init()
+    api_key = vars['gSheet_api_key']
+    # YouTube Data API endpoint
+    search_url = "https://www.googleapis.com/youtube/v3/search"
+    
+    # Parameters for the API request
+    params = {
+        'part': 'snippet',
+        'q': query,
+        'key': api_key,
+        'maxResults': 5,
+        'type': 'video'  # Ensures that we only get videos, not channels or playlists
+    }
+    
+    # Make the API request
+    response = requests.get(search_url, params=params)
+    response.raise_for_status()  # Check for HTTP errors
+    
+    # Parse the response JSON
+    data = response.json()
+    
+    # Extract video details
+    results = []
+    for item in data.get('items', []):
+        video_id = item['id']['videoId']
+        title = item['snippet']['title']
+        description = item['snippet']['description']
+        url = f"https://www.youtube.com/watch?v={video_id}"
+        
+        results.append({
+            'title': title,
+            'description': description,
+            'url': url
+        })
+    
+    return results
+
+
+
+def run_inspire(user_input, inspire_format):
+    # take in user_input, which is something the user needs motivation for, such as an assignment or studying for a test
+    # call get_insights() to generate a youtube query for a video about an inspiring story about how that topic led to a discovery
+    # call search_youtube() to search for videos on youtube, and return the top 5 titles, descriptions, and urls
+    # call get_insights() again to pick which video to watch based on the results
+    # return the video url
+
+    prompts = [
+        {"role": "system", "content": "You are an expert at generating youtube queries to find inspiring stories about a topic. Return the query text in a string."},
+        {"role": "user", "content": user_input}
+    ]
+    
+    youtube_query = get_insights(prompts)
+    youtube_results = search_youtube(youtube_query)
+    prompts.append({"role": "assistant", "content": str(youtube_query)})
+    prompts.append({"role": "user", "content": "choose the best video from the following results: " + str(youtube_results)})
+    youtube_video = get_insights(prompts, inspire_format)
+    return youtube_video

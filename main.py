@@ -33,7 +33,7 @@ from database import get_data, post_data, update_data, delete_data, download_fil
 from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups, get_stats, update_leagues, get_compliments
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades, confirm_category_match
-from study import get_insights, get_insights_from_file, chat_with_function_calling
+from study import get_insights, get_insights_from_file, chat_with_function_calling, run_inspire
 
 #get api keys from static/api_keys.json file
 keys = json.load(open('api_keys.json'))  
@@ -130,6 +130,9 @@ def diagnostic():
 def evaluate():
   return render_template('Evaluate.html')
 
+@app.route('/Inspire')
+def inspire():
+  return render_template('inspire.html')
 
 @app.route('/Battle')
 def battle():
@@ -333,6 +336,17 @@ def submit():
   post_data("Join", data)
   return json.dumps({"message": "success"})
 
+class inspire_format(BaseModel):
+    video_name: str
+    video_url: str
+
+@app.route('/inspire', methods=['POST'])
+def inspire_handler():
+  data = request.json
+  print("data", data)
+  video = run_inspire(data['data'], inspire_format)
+  return json.dumps({"data": video})
+
 @app.route('/oauth2callback', methods=['GET'])
 def oauth2callback_handler():
   token = oauth2callback()
@@ -377,8 +391,8 @@ def fetch_data():
           response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in item['OSIS'] or str(session['user_data']['osis']) in item['targetOSIS']]
         elif sheet_name=="Assignments":
           # send if item['class'] is the id for any of the rows in response['Classes']
-          class_ids = [item['id'] for item in response['Classes']]
-          response[sheet_name] = [item for item in data if item['class'] in class_ids]
+          class_ids = [int(item['id']) for item in response['Classes']]
+          response[sheet_name] = [item for item in data if int(item['class']) in class_ids]
         elif sheet_name=="Notebooks":
           #  send if the classID is the id for any of the rows in response['Classes']
           class_ids = [item['id'] for item in response['Classes']]
@@ -466,7 +480,47 @@ def get_insights_ga():
   insights = get_insights(prompt)
   return json.dumps(insights)
 
+class assignment_obj(BaseModel):
+  classID: int
+  class_name: str
+  assignment_name: str
+  assignment_date: str
 
+
+class GC_assignments(BaseModel):
+  assignments: list[assignment_obj]
+
+# Google Classroom screenshot Assignment Upload Route
+@app.route('/upload_assignments', methods=['POST'])
+def upload_assignments():
+  data = request.json
+  classes = get_data("Classes")
+  # filter classes for the user's osis and include only the id and name columns
+  classes = [{"id": item["id"], "name": item["name"]} for item in classes if str(session['user_data']['osis']) in str(item['OSIS'])]
+  # call get_insights with the image file, data['image']
+  base64_img = data['image']
+  # set the date, in the format "Monday, 1/2/2024"
+  date = datetime.datetime.now().strftime('%A, %m/%d/%Y')
+
+  prompts = [
+        {"role": "system", "content": "You're role is to extract the name, due date(yyyy-mm-dd), and class of assignments from a Google Classroom assignment screenshot. You will be given the image, a list of all of the class names and ids that the user is i, and today's date. Return the class name that most closely matches the class in the image."},
+        {"role": "user", "content": [
+            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_img}"}},
+            {"type": "text", "text": f"Classes: {classes}"},
+            {"type": "text", "text": f"Today's date: {date}"}
+        ]}
+    ]
+  # print("prompts", prompts)
+  response = get_insights(prompts, GC_assignments)
+  #convert response from string to dictionary
+  response = json.loads(response)
+  print("response", str(response))
+  
+  # add the assignments to the Assignments sheet with post_data
+  for assignment in response['assignments']:
+    rand_id = ''.join([str(random.randint(0, 9)) for _ in range(4)])
+    post_data("Assignments", {"class": str(assignment['classID']), "name": assignment['assignment_name'], "due_date": assignment['assignment_date'], "class_name": assignment['class_name'], "id": rand_id})
+  return json.dumps({"data": "success"})
 
 @app.route('/GAsetup', methods=['POST'])
 def GA_setup():
@@ -503,6 +557,8 @@ def GA_setup():
     # Convert back to dates for min and max
     min_date = datetime.datetime.fromordinal(min(times))
     max_date = datetime.datetime.fromordinal(max(times))
+    # calculate 10 times(in ordinal form) between min and max date
+    times = [(min_date + datetime.timedelta(days=i*(max_date-min_date).days/10)).toordinal() for i in range(11)]
     # For each category in each class, filter the grades for it
     for c in weights:
       grade_spreads[c] = {}
@@ -510,12 +566,9 @@ def GA_setup():
       for category in weights[c]:
         if category not in categories:
           categories.append(category)
-        fgrades = filter_grades(grades, user_data, [c.lower(), category.lower()])
-        cat_value_sums[c][category] = sum([int(grade['value']) for grade in fgrades])
-        # If the user has grades for the class, add the class and the grades to the list of grade spreads
-        if fgrades:
-          print("fgrades", fgrades)
-          times, g = process_grades(fgrades, user_data, classes, s_max_date=max_date, s_min_date=min_date)
+        g = process_grades(grades, c, category, times)
+        print("c", c, "category", category, "g", g, "len grades", len(grades), "len times", len(times))
+        if g:
           grade_spreads[c][category] = g
    
     # Get the goals that the user has set, and create objects to overlay on the graph
@@ -531,7 +584,7 @@ def GA_setup():
     return json.dumps({"error": "You have encountered an error :( Please contact pauln30@nycstudents.net with this text:    "+error_message})
   # Create a dictionary to return the calculated data to the frontend
   response_data = {
-    "times": times.tolist(),
+    "times": times,
     "grade_spreads": grade_spreads,
     # "goals": goals,
     # "goal_set_coords": set_coords,
@@ -656,7 +709,7 @@ def generate_questions():
 
     questions = get_insights(prompt, response_format)
 
-    return json.dumps({"questions": questions.dict()})
+    return json.dumps({"questions": json.loads(questions)})
 
 
 @app.route('/get-units', methods=['POST'])
@@ -697,7 +750,7 @@ def score_answers():
     ]
 
     ai_score = get_insights(prompt, ResponseTypeQA)
-    ai_score = ai_score.dict()
+    ai_score = json.loads(ai_score)
     print("ai_score", ai_score)
 
     return jsonify({"MCQscore": score, "SAQ_feedback": ai_score})
@@ -724,7 +777,7 @@ def generate_bloom_questions():
 
     questions = get_insights(prompt, ResponseTypeBloom)
 
-    return json.dumps({"questions": questions.dict()})
+    return json.dumps({"questions": json.loads(questions)})
 
 class ScoreBloom(BaseModel):
   score: int
@@ -743,8 +796,9 @@ def evaluate_answer():
     ]
 
     evaluation = get_insights(prompt, ScoreBloom)
-
-    return json.dumps({"score": evaluation.score, "feedback": evaluation.feedback})
+    evaluation = json.loads(evaluation)
+    print("evaluation", evaluation)
+    return json.dumps({"score": evaluation['score'], "feedback": evaluation['feedback']})
 
 
 @app.route('/impact', methods=['POST'])
@@ -759,7 +813,7 @@ def get_impact():
   #get current date
   current_date = datetime.datetime.now().date()
   #get grade at current date
-  current_grade = calculate_grade(current_date, category_grades, weights)
+  current_grade = calculate_grade(category_grades, weights, current_date)
   print("current_grade", current_grade)
   #get total number of points from all grades in the category
   total_points = sum([int(grade['value']) for grade in category_grades])

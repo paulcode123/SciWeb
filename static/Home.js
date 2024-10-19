@@ -16,7 +16,7 @@ function show_recent_messages(messages, classes, assignments){
     var in_classes = in_user_classes(message.location, classes);
     var in_assignments = in_user_assignments(class_ids, assignments, message.location);
     var recent = is_recent(message.timestamp);
-    console.log(in_classes, in_assignments, recent)
+    // console.log(in_classes, in_assignments, recent)
     //Check if the message was sent in the last 24 hours
     if (recent && (in_classes !== false || in_assignments !== false)){
       //Check if the location of the message is already in the locations list

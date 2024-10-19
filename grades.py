@@ -99,118 +99,68 @@ def get_weights(classes_data, osis):
     weights[name.lower()] = weight_dict
   return weights
 
-# Calculate the user's grades over time
-def process_grades(grades, user_data, classes_data, interval=10, s_min_date=None, s_max_date=None):
-  print("in process_grades")
-  
-  if not s_min_date:
-    # Get the minimum and maximum dates of the user's grades
-    min_date, max_date, z = get_min_max(grades, interval=interval)
-    # override max_date to today
-    max_date = datetime.datetime.now().date()
-    
-    
-    
-    if min_date == 0:
-      return 0, []
-    
-    # Generate 10 evenly spaced dates between the minimum and maximum dates
-    date_range = np.linspace(min_date.toordinal(),
-                            max_date.toordinal(),
-                            num=interval,
-                            dtype=int)
-    evenly_spaced_dates = [datetime.date.fromordinal(d) for d in date_range]
-    #Throw out the dates that are past mx, the maximum date of the user's grades
-    evenly_spaced_dates = [date for date in evenly_spaced_dates]
-  else:
-    # Generate 10 evenly spaced dates between the minimum and maximum dates
-    date_range = np.linspace(s_min_date.toordinal(),
-                            s_max_date.toordinal(),
-                            num=interval,
-                            dtype=int)
-    evenly_spaced_dates = [datetime.date.fromordinal(d) for d in date_range]
+# make a process_grades function that takes in grades, weights, class, category, and times and returns a list that is the user's grade for the given class and category at the given time
+def process_grades(grades, class_name, category, times):
+  print("in process_grades: times", times, "class_name", class_name, "category", category)
+  # filter grades for the given class and category
+  fgrades = [grade for grade in grades if grade['class'].lower() == class_name.lower() and grade['category'].lower() == category.lower()]
+  print("len fgrades", len(fgrades))
+  if len(fgrades) == 0:
+    return False
+  # loop through each time and get the grade for the given class and category at that time
+  grades_at_time = []
+  for time in times:
+    # filter fgrades for those with a date less than or equal to the given time
+    fgrades_at_time = []
+    for grade in fgrades:
+      grade_date_ordinal = datetime.datetime.strptime(grade['date'], '%m/%d/%Y').toordinal()
+      if grade_date_ordinal <= time:
+        fgrades_at_time.append(grade)
+    grade = get_category_grade(fgrades_at_time)
+    if grade:
+      grades_at_time.append(grade)
+    else:
+      grades_at_time.append(99.993)
+  return grades_at_time
 
-  
-  weights = get_weights(classes_data, session['user_data']['osis'])
+def get_category_grade(grades):
+  if len(grades) == 0:
+    return False
+  # get the weighted average of the grades
+  grade = sum([float(grade['score']) for grade in grades])/sum([float(grade['value']) for grade in grades])*100
+  return grade
 
-  # get grades for each date
-  grade_spread = []
-  for date in range(len(evenly_spaced_dates)-1):
-    grade_spread.append(calculate_grade(evenly_spaced_dates[date], grades, weights))
-  grade_spread.append(calculate_grade(evenly_spaced_dates[-1], grades, weights, all_dates=True))
-
-  # add "none" values to the end of the grade spread to make it the same length as the date range
-  while len(grade_spread) < interval:
-    grade_spread.append('none')
-
-  return date_range, grade_spread
-
-# Calculate grade at given date
-def calculate_grade(time, data, weights, return_class_grades=False, all_dates=False):
+# make a calculate_grade function that takes in grades, weights, and time and returns the user's grade for the given time
+def calculate_grade(grades, weights, time, return_class_grades=False):
   print("in calculate_grade")
-  categories = {}
-  
-  # For each assignment(with grade) in the data...
-  for datum in data:
-    #get the date of the grade
-    grade_time = datetime.datetime.strptime(datum['date'], '%m/%d/%Y').date()
-    # If the date of the grade is after the date we're calculating the grade for, skip it
-    if time < grade_time and not all_dates:
+  # sort grades into class/category groups
+  class_category_groups = {}
+  class_grades = {}
+  for grade in grades:
+    # filter for grades with a date less than or equal to the given time
+    if datetime.datetime.strptime(grade['date'], '%m/%d/%Y').date() > time:
       continue
-    # If the class has not yet been added to the categories dictionary, add it
-    if datum["class"] not in categories:
-      categories[datum["class"]] = {}
-    # If the category has not yet been added to the class's dictionary, add it, and initialize the category's data
-    if datum["category"] not in categories[datum["class"]]:
-      if datum["category"].lower() not in weights[datum["class"].lower()]:
-        print("Strange error: category "+ datum['category'].lower() + " not in weights: " + str(weights[datum["class"].lower()]) + " for class " + datum["class"].lower())
-        continue
-      categories[datum["class"]][datum["category"]] = {
-        "scoreSum": 0,
-        "valueSum": 0,
-        "count": 0,
-        "weight": weights[(datum["class"].lower())][(datum["category"].lower())]
-      }
+    if grade['class'] not in class_category_groups:
+      class_category_groups[grade['class']] = {}
+    if grade['category'] not in class_category_groups[grade['class']]:
+      class_category_groups[grade['class']][grade['category']] = []
+    class_category_groups[grade['class']][grade['category']].append(grade)
+  # loop through each class/category group and get the grade for the given time
+  for class_name, category_groups in class_category_groups.items():
+    weight_sum = 0
+    for category, grades in category_groups.items():
+      grade = get_category_grade(grades)
+      if grade:
+        weight_sum += weights[class_name.lower()][category.lower()]
+        class_category_groups[class_name][category] = grade*weights[class_name.lower()][category.lower()]
+    # get the grade for the class
+    class_grade = sum(category_groups.values())/weight_sum
+    class_grades[class_name] = class_grade
+  total_grade = sum(class_grades.values())/len(class_grades)
+  if return_class_grades:
+    return total_grade, class_grades
+  return total_grade
 
-    category = categories[datum["class"]][datum["category"]]
-    # Add the score and value of the grade to the category's data
-    category["scoreSum"] += float(datum["score"])
-    category["valueSum"] += int(datum["value"])
-    category["count"] += 1
-
-  totalGrade = 0
-  classCount = 0
-  classGrades = {}
-# For each class in the categories dictionary...
-  for className, classData in categories.items():
-    # Initialize the class's grade, category count, and weight sum
-    classGrade = 0
-    categoryCount = 0
-    weightSum = 0 # Purpose: if the weights don't add up to 1, the grade will be scaled to 100
-    # For each category in the class's data...
-    for categoryName, category in classData.items():
-      # Add the weighted category grade to the class's grade
-      classGrade += (category["scoreSum"] /
-                     category["valueSum"]) * category["weight"]
-      weightSum += category["weight"]
-
-      categoryCount += 1
-
-    if categoryCount > 0:
-      # print(weightSum)
-      totalGrade += classGrade / weightSum
-
-      classCount += 1
-      classGrades[className] = (classGrade / weightSum)*100
-
-  if classCount > 0:
-    finalGrade = totalGrade*100 / classCount
-    if return_class_grades:
-      return finalGrade, classGrades
-    return finalGrade
-  else:
-    print("error: no grades found in calculate_grade.", len(data), "grades passed in")
-    return 100
 
 def get_grade_points(grades, user_data, classes_data):
   print("in get_grade_points")
@@ -306,7 +256,7 @@ def get_stats(grades, classes):
   grades = filter_grades(grades, session['user_data'], ["all", "All"])
   weights = get_weights(classes, session['user_data']['osis'])
   current_date = datetime.datetime.now().date()
-  raw_avg, current_grades = calculate_grade(current_date, grades, weights, return_class_grades=True)
+  raw_avg, current_grades = calculate_grade(grades, weights, current_date, return_class_grades=True)
   raw_avg = round(raw_avg, 2)
   # get the GPA by taking the average of the rounded class grades
   gpa = round(sum([round(grade) for grade in current_grades.values()])/len(current_grades), 2)
@@ -315,7 +265,7 @@ def get_stats(grades, classes):
   thirty_days_ago = current_date - datetime.timedelta(days=30)
  
   try:
-    t30_avg, t30_grades = calculate_grade(thirty_days_ago, grades, weights, return_class_grades=True)
+    t30_avg, t30_grades = calculate_grade(grades, weights, thirty_days_ago, return_class_grades=True)
     t30_avg = round(t30_avg, 3)
 
     # Calculate the change in grades for each class
@@ -339,7 +289,7 @@ def get_stats(grades, classes):
 
   # filter grades for only those from the past 30 days
   grades_past_30_days = [grade for grade in grades if datetime.datetime.strptime(grade['date'], '%m/%d/%Y').date() >= thirty_days_ago]
-  past30_avg = calculate_grade(current_date, grades_past_30_days, weights)
+  past30_avg = calculate_grade(grades_past_30_days, weights, thirty_days_ago)
   past30_avg = round(past30_avg, 2)
 
   return {"gpa": gpa, "raw_avg": raw_avg, "avg_change": avg_change, "most_improved_class": most_improved_class, "most_worsened_class": most_worsened_class, "past30_avg": past30_avg, "t30_avg": t30_avg, "grade_changes": grade_changes}
@@ -452,7 +402,6 @@ def get_compliments(grades, classes, days=90):
                  
 
 def get_grade_impact(grade, grades, weights):
-  print("in get_grade_impact")
   category_weight = weights[grade['class'].lower()][(grade['category'].lower())]
   num_classes = len(weights)
   grade_score = float(grade['score'])

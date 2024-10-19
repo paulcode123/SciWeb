@@ -22,7 +22,7 @@ async function pullfromJupiter(){
   start_loading(12);
   console.log("pulling from Jupiter")
   // make loading wheel visible
-  document.getElementById('loadingWheel').style.visibility = "visible";
+  // document.getElementById('loadingWheel').style.visibility = "visible";
   const osis = document.getElementById('osis').value;
   const password = document.getElementById('password').value;
   const addClasses = document.getElementById('addclasses').checked;
@@ -38,14 +38,14 @@ async function pullfromJupiter(){
   }
   //Send to python with fetch request
   const data = await fetchRequest('/jupiter', {"osis": osis, "password": password, "addclasses": addClasses, "encrypt": key, "updateLeagues": updateLeagues});
-  document.getElementById('loadingWheel').style.visibility = "hidden";
+  // document.getElementById('loadingWheel').style.visibility = "hidden";
   if(data['error']){
     alert(data['error']);
   }
   else{
   console.log("got response")
-  document.getElementById('loadingWheel').style.visibility = "hidden";
-  document.getElementById("loadingBar").style.visibility = "hidden";
+  // document.getElementById('loadingWheel').style.visibility = "hidden";
+  // document.getElementById("loadingBar").style.visibility = "hidden";
   // if data is a dict with error key, show error message
   if(data['error']){
     alert(data['error']);
@@ -194,7 +194,7 @@ async function post_grades(grades){
 document.getElementById("class"+z).addEventListener("change", () => {optionSelected(z, classes)});
 }
   createGradesTable(grades);
-  document.getElementById('loadingWheel').style.visibility = "hidden";
+  // document.getElementById('loadingWheel').style.visibility = "hidden";
 
 
 function setClassOptions(filteredClasses){

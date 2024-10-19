@@ -241,7 +241,7 @@ for (const spread_class in grade_spreads) {
     // if cla includes spread['class'] or all AND cat includes spread['category'] or all, add spread to spreads
     if ((cat.includes(spread_class) || cat.includes('all')) && (cat.includes(spread_category) || cat.includes('All'))) {
       spreads.push(spread);
-      spread_names.push(spread_class + " " + spread_category);
+      spread_names.push(spread_category + " " + spread_class); // Switch order to "category class"
       w.push(weights[spread_class][spread_category]);
     }
   }
@@ -254,6 +254,8 @@ for (let i = 0; i < spreads.length; i++) {
   // generate random color
   let randomColor = Math.floor(Math.random()*16777215).toString(16);
   let spread = spreads[i];
+  // correct 99.993 to 100
+  spread = spread.map(value => value === 99.993 ? 100 : value);
   let trace = {
     x: times,
     y: spread,
@@ -262,7 +264,9 @@ for (let i = 0; i < spreads.length; i++) {
       color: randomColor,
       width: 1
     },
-    name: spread_names[i]
+    name: spread_names[i],
+    hovertemplate: `${spread_names[i]}<br>Date: %{x}<br>Grade: %{y}<extra></extra>`, // Custom hover template
+    text: spread_names[i] // Use text for the full label
   };
   spreadTraces.push(trace);
 }
@@ -326,13 +330,12 @@ const layout = {
   },
   showlegend: false,
   displayModeBar: false,
-  //shapes: goals // Add the goal zone shape
-  // images: goals
   paper_bgcolor: 'rgba(0,0,0,0)', // Transparent background
   plot_bgcolor: 'rgba(0,0,0,0)',  // Transparent plot area
   font: {
     color: 'white' // White text
-  }
+  },
+  hovermode: 'closest' // Show hover info only for the closest point
 };
 
 // create final, combined line: at each timepoint, sum the weighted grade_spreads
@@ -341,10 +344,14 @@ for (let i = 0; i < times.length; i++) {
   let gradesum = 0;
   let weightsum = 0;
   for (let j = 0; j < spreads.length; j++) {
-    gradesum += spreads[j][i]*w[j];
-    weightsum += w[j];
+    // Check if the category value is exactly 99.993
+    if (spreads[j][i] !== 99.993) {
+      gradesum += spreads[j][i] * w[j];
+      weightsum += w[j];
+    }
   }
-  sum = gradesum/weightsum;
+  // Only calculate the sum if weightsum is greater than 0 to avoid division by zero
+  let sum = weightsum > 0 ? gradesum / weightsum : 100;
   final.push(sum);
 }
 console.log(final)

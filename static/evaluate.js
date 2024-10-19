@@ -153,6 +153,7 @@ function showQuestion(index) {
 
         const submitButton = document.createElement('button');
         submitButton.textContent = 'Submit Answer';
+        submitButton.classList.add('submit-answer-button'); // Add this line
         submitButton.addEventListener('click', handleOpenAnswer);
         choicesContainer.appendChild(submitButton);
     }
