@@ -62,36 +62,21 @@ margin-top: 5px;
 
 
 /* Button styles */
-#createBtn, #joinButton {
-padding: 10px 20px;
-background-color: #337ab7;
-color: white;
-border: none;
-border-radius: 4px;
-cursor: pointer;
+.large-button {
+    padding: 15px 20px; /* Increase button size */
+    background-color: #337ab7; /* Button background color */
+    color: white; /* Button text color */
+    border: none; /* Remove border */
+    border-radius: 4px; /* Rounded corners */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: background-color 0.3s ease; /* Smooth background color transition */
 }
 
-
-#createBtn:hover, #joinButton:hover {
-background-color: #286090;
+.large-button:hover {
+    background-color: #286090; /* Darker shade on hover */
 }
 
-
-#openNB {
-padding: 10px 20px;
-border-color: black;
-color: white;
-border: none;
-border-radius: 8px;
-cursor: pointer;
-font-size: 10px;
-}
-
-
-#openNB:hover {
-background-color: #0d366b;
-}
-
+/* Existing styles... */
 
 /* Assignment styles */
 .assignment-item {
@@ -210,3 +195,81 @@ background-color: #0d366b;
     color: #ffffff;
     border: 1px solid #555;
   }
+
+#class-section {
+    max-width: 1200px; /* Set a max width for the section */
+    margin: 0 auto; /* Center the section */
+    padding: 20px; /* Add some padding */
+}
+
+.dark-chat {
+    background-color: #333; /* Dark background for chat */
+    padding: 20px; /* Padding for chat area */
+    border-radius: 8px; /* Rounded corners */
+}
+
+.dark-input {
+    background-color: #444; /* Dark background for inputs */
+    color: #ffffff; /* White text for inputs */
+    border: 1px solid #555; /* Dark border */
+}
+
+.pro-button {
+    padding: 10px 15px; /* Padding for buttons */
+    border-radius: 5px; /* Rounded corners */
+}
+
+.large-button {
+    padding: 15px 20px; /* Increase button size */
+    background-color: #337ab7; /* Button background color */
+    color: white; /* Button text color */
+    border: none; /* Remove border */
+    border-radius: 4px; /* Rounded corners */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: background-color 0.3s ease; /* Smooth background color transition */
+}
+
+.large-button:hover {
+    background-color: #286090; /* Darker shade on hover */
+}
+
+/* Chat message styles */
+.user-bubble {
+    display: inline-block;
+    margin: 5px;
+    padding: 10px;
+    background-color: green;
+    border-radius: 20px;
+    cursor: pointer;
+}
+
+.user-bubble:hover {
+    background-color: turquoise;
+}
+
+
+/* New Page Styles */
+#new-section {
+    max-width: 800px; /* Set a max width for the section */
+    margin: 0 auto; /* Center the section */
+    padding: 20px; /* Add some padding */
+}
+
+.dark-text {
+    color: #ff4d4d; /* Dark theme text color */
+    font-size: 2em; /* Font size for the heading */
+}
+
+.large-button {
+    padding: 15px 20px; /* Increase button size */
+    background-color: #337ab7; /* Button background color */
+    color: white; /* Button text color */
+    border: none; /* Remove border */
+    border-radius: 4px; /* Rounded corners */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: background-color 0.3s ease; /* Smooth background color transition */
+}
+
+.large-button:hover {
+    background-color: #286090; /* Darker shade on hover */
+}

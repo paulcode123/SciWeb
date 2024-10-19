@@ -12,11 +12,20 @@ body {
 }
 
 #sidebar {
+<<<<<<< HEAD
+  width: 200px;
+=======
   width: 250px;
+>>>>>>> 3f328462f004a4f600f34828373042739ff1e169
   background-color: #2d2d2d;
   padding: 20px;
   overflow-y: auto;
   transition: width 0.3s ease;
+<<<<<<< HEAD
+  position: fixed;
+  height: 100vh;
+=======
+>>>>>>> 3f328462f004a4f600f34828373042739ff1e169
 }
 
 #sidebar.collapsed {
@@ -24,7 +33,11 @@ body {
 }
 
 #content {
+<<<<<<< HEAD
+  margin-left: 220px;
+=======
   flex-grow: 1;
+>>>>>>> 3f328462f004a4f600f34828373042739ff1e169
   padding: 20px;
   overflow-y: auto;
   transition: margin-left 0.3s ease;
@@ -70,8 +83,11 @@ button {
   z-index: 1000;
 }
 
+<<<<<<< HEAD
+=======
 
 
+>>>>>>> 3f328462f004a4f600f34828373042739ff1e169
 .unit-item {
     margin-left: 20px;
     margin-bottom: 5px;
@@ -86,8 +102,11 @@ button {
     margin-top: 10px;
 }
 
+<<<<<<< HEAD
+=======
 
 
+>>>>>>> 3f328462f004a4f600f34828373042739ff1e169
 .create-unit {
     margin-bottom: 10px;
     background-color: #4CAF50;
@@ -132,4 +151,41 @@ button {
 
 .delete-worksheet:hover {
   background-color: #c9302c;
+<<<<<<< HEAD
+}
+
+.class-button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: rgb(228, 76, 101);
+    color: white;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+}
+
+.class-section {
+    margin-bottom: 40px;
+}
+
+.notebook-content {
+    display: flex;
+    gap: 20px;
+}
+
+.practice-questions, .notes {
+    flex: 1;
+}
+
+textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #444;
+    background-color: #2d2d2d;
+    color: #e0e0e0;
+    resize: vertical;
+=======
+>>>>>>> 3f328462f004a4f600f34828373042739ff1e169
 }

@@ -185,6 +185,10 @@ def social_features():
 @app.route('/Features/Analytic')
 def analytic_features():
   return render_template('About/Analytic.html')
+  
+@app.route('/ComingSoon')
+def coming_soon():
+  return render_template('ComingSoon.html')
 
 @app.route('/firebase-messaging-sw.js')
 def service_worker():

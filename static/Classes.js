@@ -146,7 +146,6 @@ function display_classes(classList, user_data){
       classItem.innerHTML = `
         <h3>${classData.name}</h3>
         <p>Teacher: ${classData.teacher}</p>
-        <p>Period ${classData.period}</p>
       `;
       // if the class is clicked, go to the class page
       classItem.addEventListener('click', () => {
