@@ -54,7 +54,12 @@ def run_puppeteer_script(osis, password):
 def jupapi_output_to_grades(data, encrypt):
   print("jupapi_output_to_grades")
   grades = []
-  classes= data["courses"]
+  classes = data["courses"]
+  
+  # Get grade corrections for the current user
+  corrections = get_data("GradeCorrections")
+  corrections = [corr for corr in corrections if corr['osis'] == session['user_data']['osis']]
+  
   for c in classes:
     assignments = c["assignments"]
     for a in assignments:
@@ -64,13 +69,41 @@ def jupapi_output_to_grades(data, encrypt):
       date = convert_date(date)
       # if score is None, make it 'null'
       score = a["score"] if a["score"] != None else "null"
-      grades.append({"name": a["name"], "date": date, "score": score, "value": a["points"], "class": c["name"], "category": a["category"], "OSIS": session['user_data']['osis'], "id": id})
+      value = a["points"]
+      # if there are quotes in name, remove them
+      a["name"] = a["name"].replace('"', '')
+      
+      # Check if there's a correction for this assignment
+      correction = next((corr for corr in corrections if corr['assignment'] == a['name'] and corr['class'] == c['name']), None)
+      
+      if correction:
+        print("correction applied to ", a['name'], "in class", c['name'])
+        # Apply the correction
+        score = float(correction['score'])
+        value = float(correction['value'])
+        
+        # If weight is provided, adjust the score
+        if 'weight' in correction:
+          weight = float(correction['weight'])
+          score = score * weight / value
+      
+      grades.append({
+        "name": a["name"],
+        "date": date,
+        "score": score,
+        "value": value,
+        "class": c["name"],
+        "category": a["category"],
+        "OSIS": session['user_data']['osis'],
+        "id": id
+      })
   
   # filter out grades where grade["score"] = 'null' or grade["date"] = ''
-  grades = [grade for grade in grades if grade['score'] != 'null']
+  grades = [grade for grade in grades if grade['score'] != 'null' and grade['date'] != '']
 
   post_grades(grades, encrypt)
   return grades
+
 
 def post_grades(grades, encrypt):
   print("len grades posted", len(grades))
@@ -297,7 +330,9 @@ def decrypt_grades(cipher_text, number):
     for i in range(len(encrypted_bytes)):
         decrypted_bytes.append(encrypted_bytes[i] ^ key_bytes[i % len(key_bytes)])
     
-    return decrypted_bytes.decode()
+    decrypted_bytes = decrypted_bytes.decode()
+    return decrypted_bytes
+
 
 def confirm_category_match(grades, classes):
     # Check if the category of each grade is in the categories list of each class

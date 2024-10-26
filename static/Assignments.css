@@ -130,3 +130,19 @@ h1::after {
 #filterForm button:hover {
   background-color: #3a7bc8;
 }
+
+#uploadButton {
+  background-color: #e44c65; /* Button background color */
+  color: #ffffff; /* Text color */
+  border: none; /* Remove default border */
+  padding: 10px 20px; /* Padding for the button */
+  border-radius: 4px; /* Rounded corners */
+  cursor: pointer; /* Pointer cursor on hover */
+  transition: background-color 0.3s ease; /* Smooth transition for background color */
+  margin-bottom: 1em; /* Space below the button */
+  display: inline-block; /* Display as inline-block for better alignment */
+}
+
+#uploadButton:hover {
+  background-color: #d43b55; /* Darker shade on hover */
+}

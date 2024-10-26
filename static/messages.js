@@ -69,19 +69,21 @@ function DisplayThreads(data) {
 
     // Display Classes
     classes.forEach(cls => {
-        const li = document.createElement('li');
-        li.textContent = cls.name;
-        classesList.appendChild(li);
-        li.onclick = () => displayChat(cls.id, cls.OSIS, chat);
+        const button = document.createElement('button');
+        button.textContent = cls.name;
+        button.threadId = cls.id;
+        classesList.appendChild(button);
+        button.onclick = () => displayChat(cls.id, cls.OSIS, chat);
         location_to_recipients[cls.id] = cls.OSIS;
     });
 
     // Display Leagues
     leagues.forEach(league => {
-        const li = document.createElement('li');
-        li.textContent = league.Name;
-        leaguesList.appendChild(li);
-        li.onclick = () => displayChat(league.id, league.OSIS, chat);
+        const button = document.createElement('button');
+        button.textContent = league.Name;
+        button.threadId = league.id;
+        leaguesList.appendChild(button);
+        button.onclick = () => displayChat(league.id, league.OSIS, chat);
         location_to_recipients[league.id] = league.OSIS;
     });
 
@@ -90,28 +92,42 @@ function DisplayThreads(data) {
         if(friend.status == "accepted"){
             other_persons_osis = friend.targetOSIS == osis ? friend.OSIS : friend.targetOSIS;
             otherUser = users.find(user => user.osis == other_persons_osis);
-
-            const li = document.createElement('li');
-            li.textContent = `${otherUser.first_name} ${otherUser.last_name}`;
-            friendsList.appendChild(li);
             let combosis = otherUser.osis.toString()+osis.toString()
             let csvOsis = otherUser.osis.toString()+", "+osis.toString()
-            li.onclick = () => displayChat(combosis, csvOsis, chat);
+            const button = document.createElement('button');
+            button.textContent = `${otherUser.first_name} ${otherUser.last_name}`;
+            button.threadId = combosis;
+            friendsList.appendChild(button);
+            
+            button.onclick = () => displayChat(combosis, csvOsis, chat);
             location_to_recipients[combosis] = csvOsis;
             console.log(osis, otherUser.osis)
         }
     });
-    isThreadSet()
+
+    isThreadSet();
 }
 
 function displayChat(location, recipients, chat) {
-    console.log("displaying chat:", location)
+    console.log("displaying chat:", location);
     const newUrl = `Messages?thread=${location}`;
     history.pushState({ thread: location }, '', newUrl);
-    current_location = location
-    current_recipients = recipients
-    console.log(current_recipients)
+    current_location = location;
+    current_recipients = recipients;
+    console.log(current_recipients);
     receive_messages(chat, users, location);
+
+    // Highlight the active thread button
+    const buttons = document.querySelectorAll('.sidebar-list button');
+    buttons.forEach(button => {
+        button.classList.remove('active-thread');
+    });
+
+
+    const activeButton = Array.from(buttons).find(button => button.threadId == location);
+    if (activeButton) {
+        activeButton.classList.add('active-thread');
+    }
 }
 
 function receive_messages(messages, users, location) {
@@ -305,5 +321,6 @@ function base64ToBlob(base64, type = 'application/octet-stream') {
     }
     return new Blob([bytes], {type});
 }
+
 
 

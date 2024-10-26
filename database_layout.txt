@@ -127,5 +127,11 @@ Sheet name: Users
     password(password)
     
 
-    
+Sheet name: Aspirations
 
+    id(5 digit number)
+    OSIS(7 digit number)
+    goal(str: main goal of the aspiration)
+    description(str: detailed description of the aspiration)
+    steps(list of dictionaries: each containing 'text' and 'time' for steps to achieve the goal)
+    accountability(list of dictionaries: each containing 'text' and 'time' for accountability reminders)

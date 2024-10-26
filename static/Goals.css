@@ -1,88 +1,114 @@
-/* Dark theme styles */
-body {
-  background-color: #1c1c1c;
-  color: #ffffff;
+.goal-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    text-align: center;
 }
 
-h1 {
-  text-align: center;
-  color: #ffffff;
+#chat-box {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px;
+    margin-top: 20px;
 }
 
-form {
-  max-width: 400px;
-  margin: 0 auto;
-  padding: 20px;
-  background-color: #2c2c2c;
-  border-radius: 5px;
-  box-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
+#chat-log-div {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    text-align: left;
 }
 
-label {
-  display: block;
-  margin-bottom: 10px;
-  font-weight: bold;
-  color: #ffffff;
+.user-message {
+    background-color: #515450;
+    color: #f1f8e9;
+    padding: 5px;
+    border-radius: 5px;
+    margin-bottom: 5px;
 }
 
-select,
-input[type="date"],
-input[type="text"],
-input[type="number"] {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #444;
-  border-radius: 4px;
-  box-sizing: border-box;
-  font-size: 14px;
-  margin-bottom: 10px;
-  background-color: #333;
-  color: #ffffff;
+.ai-message {
+    background-color: #464448;
+    color: #f1f8e9;
+    padding: 5px;
+    border-radius: 5px;
+    margin-bottom: 5px;
 }
 
-button[type="submit"] {
-  width: 100%;
-  padding: 10px;
-  background-color: #4CAF50;
-  border: none;
-  color: white;
-  cursor: pointer;
-  border-radius: 4px;
-  font-size: 16px;
+#user-input-field {
+    width: calc(100% - 100px);
+    padding: 10px;
+    margin-right: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
 }
 
-button[type="submit"]:hover {
-  background-color: #45a049;
+#send-response {
+    padding: 10px 20px;
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
 }
 
-.error-message {
-  color: #ff6b6b;
-  font-size: 12px;
-  margin-top: 5px;
+#send-response:hover {
+    background-color: #0056b3;
 }
 
-/* Adjustments for dark theme compatibility */
-#main {
-  background-color: #1c1c1c;
+#goal-response {
+    margin-top: 20px;
+    text-align: left;
 }
 
-.wrapper.style1 {
-  background-color: #1c1c1c;
+#aspirations-container {
+    margin-top: 20px;
 }
 
-/* Ensure text inputs are readable */
-input::placeholder {
-  color: #999;
+.aspiration {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Style dropdown arrows for better visibility */
-select {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.7em top 50%;
-  background-size: 0.65em auto;
-  padding-right: 1.5em;
+.aspiration h3 {
+    margin-top: 0;
+    color: #007bff;
 }
+
+.aspiration p {
+    margin: 10px 0;
+}
+
+.aspiration ul.steps {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.aspiration ul.steps li {
+    margin-bottom: 5px;
+}
+
+.aspiration .deadline {
+    font-size: 0.9em;
+    color: #6c757d;
+    margin-left: 10px;
+}
+
+.aspiration i {
+    margin-right: 5px;
+    width: 20px;
+    text-align: center;
+}
+
+/* Icon colors */
+.fa-star { color: #ffc107; }
+.fa-info-circle { color: #17a2b8; }
+.fa-exclamation-circle { color: #dc3545; }
+.fa-tasks { color: #28a745; }
+.fa-calendar-alt { color: #6c757d; }
+.fa-bell { color: #fd7e14; }
+.fa-clock { color: #20c997; }

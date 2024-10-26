@@ -31,7 +31,7 @@ from PyPDF2 import PdfReader
 # Get functions from other files
 from database import get_data, post_data, update_data, delete_data, download_file, upload_file, init_firebase
 from classroom import init_oauth, oauth2callback, list_courses
-from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, make_category_groups, decode_category_groups, get_stats, update_leagues, get_compliments
+from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, get_stats, update_leagues, get_compliments, get_grade_impact
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades, confirm_category_match
 from study import get_insights, get_insights_from_file, chat_with_function_calling, run_inspire
 
@@ -443,7 +443,34 @@ def delete_data_route():
 # Function to return insights to the Study page
 @app.route('/AI', methods=['POST'])
 def get_AI():
-  return json.dumps(study_response(request.json['data']))
+  return json.dumps(get_insights(request.json['data']))
+
+class text_and_time(BaseModel):
+  text: str
+  time: str
+
+class aspirations_format(BaseModel):
+  goal: str
+  description: str
+  importance: str
+  steps: list[text_and_time]
+  accountability: list[text_and_time]
+
+  
+@app.route('/set_aspirations', methods=['POST'])
+def set_aspirations():
+    response = get_insights(request.json['data'], aspirations_format)
+    
+    # Parse the JSON string into a Python dictionary
+    response_dict = json.loads(response)
+    response_dict['id'] = ''.join([str(random.randint(0, 9)) for _ in range(4)])
+    response_dict['OSIS'] = session['user_data']['osis']
+    
+    # Post the dictionary to the Aspirations sheet
+    post_data("Aspirations", response_dict)
+    
+    # Return the original response
+    return response
 
 # make route for AI with function calling
 @app.route('/AI_function_calling', methods=['POST'])
@@ -552,6 +579,12 @@ def GA_setup():
     for grade in grades:
       ordinal_dated_grades.append({"date": datetime.datetime.strptime(grade['date'], "%m/%d/%Y").toordinal(), "value": grade['value'], "class": grade['class'], "category": grade['category'], "score": grade['score'], "name": grade['name']})
 
+    # run get_grade_impact for each grade, and add cat_impact, class_impact, GPA_impact to each grade dictionary
+    for grade in ordinal_dated_grades:
+      grade_impact = get_grade_impact(grade, grades, weights)
+      grade['cat_impact'] = grade_impact[0]
+      grade['class_impact'] = grade_impact[1]
+      grade['GPA_impact'] = grade_impact[2]
 
     grade_spreads = {}
     cat_value_sums = {}
@@ -571,7 +604,6 @@ def GA_setup():
         if category not in categories:
           categories.append(category)
         g = process_grades(grades, c, category, times)
-        print("c", c, "category", category, "g", g, "len grades", len(grades), "len times", len(times))
         if g:
           grade_spreads[c][category] = g
    
@@ -963,3 +995,4 @@ def get_name(ip=None):
 
 if __name__ == '__main__':
   app.run(host='localhost', port=8080)
+

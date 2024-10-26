@@ -36,11 +36,12 @@
         <input type="number" id="time_spent" name="time_spent" min="0" value="{{ ts }}">
 
         <p>Mark as Done:</p>
-        <input type="checkbox" id="done" name="done" {% if pc %}checked{% endif %}>
+        
         <br>
         <button type="submit">Save Changes</button>
     </form>
 </div>
+<input type="checkbox" id="done">
 <!-- add average difficulty, average time spent, and percent completed -->
 <div id="average-difficulty"></div>
 <div id="average-time-spent"></div>

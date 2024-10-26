@@ -45,14 +45,14 @@
 }
 
 #done {
-    width: 10px; /* Default width for checkboxes */
-    height: 10px;
+    width: 20px; /* Increase the width for better visibility */
+    height: 20px; /* Increase the height for better visibility */
     margin-top: 10px; /* Add some margin for spacing */
     margin-bottom: 10px;
-    /* color: light grey */
-    visibility: visible;
-    display: inline-block;
+    visibility: visible; /* Ensure the checkbox is visible */
+    display: inline-block; /* Ensure the checkbox is displayed inline */
     accent-color: #007bff; /* Change the color of the checkbox (if supported) */
-    border: 1px solid red;
-    
+    border: 1px solid red; /* Optional: border for visibility */
+    position: relative; /* Ensure it is positioned correctly */
+    z-index: 1; /* Bring the checkbox to the front */
 }

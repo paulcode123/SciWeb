@@ -76,7 +76,7 @@ button {
 }
 
 button:hover {
-    background-color: #ff69b4; /* Change to pink on hover */
+    background-color: #e44c65;
 }
 
 #message-list {
@@ -114,4 +114,32 @@ button:hover {
 
 .pdf:hover {
     text-decoration: underline;
+}
+
+.sidebar-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Space between buttons */
+}
+
+.sidebar-list button {
+    background-color: #4a4646;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease; /* Add transform for hover animation */
+    text-align: left; /* Align text to the left */
+}
+
+.sidebar-list button:hover {
+    background-color: #e44c65;
+    transform: scale(1.05); /* Slightly enlarge the button on hover */
+}
+
+.sidebar-list button.active-thread {
+    background-color: #e44c65; /* Highlight color */
+    transform: scale(1.1); /* Enlarge the button */
+    font-weight: bold; /* Make text bold */
 }

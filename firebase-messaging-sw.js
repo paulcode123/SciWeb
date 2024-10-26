@@ -22,13 +22,14 @@ self.addEventListener('fetch', function(event) {
   event.respondWith(
     caches.match(event.request)
       .then(function(response) {
-        // Cache hit - return response
         if (response) {
           return response;
         }
-        return fetch(event.request);
-      }
-    )
+        return fetch(event.request).catch(function(error) {
+          console.error('Fetch failed:', error);
+          throw error;
+        });
+      })
   );
 });
 

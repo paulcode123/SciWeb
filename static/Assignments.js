@@ -49,7 +49,7 @@ function display_assignments(assignmentList, classList) {
     const assignmentItem = document.createElement('div');
     assignmentItem.classList.add('assignment-item');
     assignmentItem.style.borderLeft = `5px solid ${class_color}`;
-    const duedate = processDate(assignmentData.due);
+    const duedate = processDate(assignmentData.due_date);
     
     assignmentItem.innerHTML = `
       <h3>${assignmentData.name}</h3>
@@ -107,14 +107,10 @@ get_assignment()
 // data['Classes'].filter(classObj => classObj.period == 3)
 
 // Function to handle image upload
-document.getElementById('uploadButton').addEventListener('click', async function() {
+document.getElementById('assignmentImage').addEventListener('change', async function() {
+  console.log("in assignmentImage")
     const fileInput = document.getElementById('assignmentImage');
     const file = fileInput.files[0];
-
-    if (!file) {
-        alert("Please select an image file to upload.");
-        return;
-    }
 
     const reader = new FileReader();
     reader.onloadend = async function() {
@@ -130,3 +126,14 @@ document.getElementById('uploadButton').addEventListener('click', async function
 
     reader.readAsDataURL(file); // Convert image to base64
 });
+
+// Add event listener to the upload button to trigger the file input
+document.getElementById('uploadButton').addEventListener('click', function() {
+  document.getElementById('assignmentImage').click();
+});
+
+function processDate(dateString) {
+  // Assuming dateString is in the format 'yyyy-mm-dd'
+  const [year, month, day] = dateString.split('-');
+  return `${month}/${day}/${year}`; // Convert to 'mm/dd/yyyy' or any desired format
+}

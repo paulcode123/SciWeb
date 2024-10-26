@@ -64,40 +64,25 @@ function setClasses(weights){
     var classes = Object.keys(weights)
     var class_div = document.getElementById("classes")
     console.log(classes)
-    
-      //create an all checkbox that checks all the checkboxes in the class and their subcategories
-      let [t, cb, m] = createCheckbox("All");
-      t.appendChild(m);
-      t.appendChild(cb);
-      class_div.appendChild(t);
-      cb.addEventListener('change', function() {
-        if(this.checked) {
-          t.style.backgroundColor = 'rgba(228, 76, 101, 1)'; // Directly change the background color
-          checkboxes = document.querySelectorAll('input[name="class"]');
-          for (let i = 0; i < checkboxes.length; i++) {
-            checkboxes[i].checked = true;
-            console.log(checkboxes[i], "checked")
-            checkboxes[i].dispatchEvent(new Event('change'));
-          }
-        } else {
-          t.style.backgroundColor = '#1b1c1c'; // Revert to original color
-          checkboxes = document.querySelectorAll('input[name="class"]:checked');
-          for (let i = 0; i < checkboxes.length; i++) {
-            checkboxes[i].checked = false;
-            checkboxes[i].dispatchEvent(new Event('change'));
-          }
-        }
-      });
+    var all_checkboxes = [];
 
+    //create an all checkbox that checks all the checkboxes in the class and their subcategories
+    let [t, cb, m] = createCheckbox("All");
+    t.appendChild(m);
+    t.appendChild(cb);
+    class_div.appendChild(t);
+      
       for(let x=0;x<classes.length;x++){
       // define the class checkboxes
       let subcategories = document.createElement("div");
       let [text, checkbox, checkmark] = createCheckbox(classes[x])
+      all_checkboxes.push(checkbox);
 
       // for each category in the class, create a checkbox
       for (const category in weights[classes[x]]) {
         let label = document.createElement("label");
         let input = document.createElement("input");
+        all_checkboxes.push(input);
         input.type = 'checkbox';
         input.value = category.toLowerCase();
         input.name = 'class';
@@ -142,6 +127,27 @@ function setClasses(weights){
       class_div.appendChild(text);
       class_div.appendChild(subcategories);
     }
+
+
+    //set all checkbox properties
+    
+    cb.addEventListener('change', function() {
+      if(this.checked) {
+        t.style.backgroundColor = 'rgba(228, 76, 101, 1)'; // Directly change the background color
+        for (let i = 0; i < all_checkboxes.length; i++) {
+          all_checkboxes[i].checked = true;
+          console.log(all_checkboxes[i], "checked")
+          all_checkboxes[i].dispatchEvent(new Event('change'));
+        }
+      } else {
+        t.style.backgroundColor = '#1b1c1c'; // Revert to original color
+        for (let i = 0; i < all_checkboxes.length; i++) {
+          all_checkboxes[i].checked = false;
+          all_checkboxes[i].dispatchEvent(new Event('change'));
+        }
+      }
+    });
+
 
 }
 
@@ -301,41 +307,67 @@ const scatterPlotTrace = {
     size: grade_points.map(point => point['value']/5) // This sets the size of the markers
   },
   text: grade_points.map(point => point['name']), // An array of strings for hover text, one for each point
+  hovertemplate: grade_points.map(point => `
+    Name: ${point.name}<br>
+    Class: ${point.class}<br>
+    Category: ${point.category}<br>
+    Grade: ${(point.score / point.value * 100).toFixed(2)}%<br>
+    Date: ${serialToDate(point.date)}<br>
+    GPA Impact: ${point['GPA_impact'].toFixed(2)}<br>
+    Class Impact: ${point['class_impact'].toFixed(2)}<br>
+    Category Impact: ${point['cat_impact'].toFixed(2)}<br>
+    <extra></extra>
+  `),
   hoverinfo: 'text', // Specify to show only the custom text on hover
   name: 'Individual Grades(click to show)',
-  visible: 'legendonly'
+  visible: 'legendonly',
+  hoverlabel: {
+    bgcolor: '#636261', // Set the background color of the hover box to gray
+    bordercolor: '#e44c65', // Match border color to background for rounded effect
+    font: {
+        color: 'white', // Set the font color to white for better contrast
+        size: 14, // Increase font size for larger text
+    },
+    align: 'left' // Align text to the left
+}
 };
 spreadTraces.unshift(scatterPlotTrace)
 
 
-// combine times and grade_point_dates
-all_dates = times.concat(grade_points_dates)
-// find min and max of all_dates
-min_x = Math.min(...all_dates)
-max_x = Math.max(...all_dates)
-console.log(min_x, max_x)
+// Determine the furthest goal date
+let goalDates = goals && goals.length > 0 ? goals.map(goal => goal.date) : [];
+let maxGoalDate = goalDates.length > 0 ? Math.max(...goalDates) : -Infinity;
+
+// Combine times and grade_point_dates
+let all_dates = times.concat(grade_points_dates, goalDates);
+// Find min and max of all_dates
+let min_x = Math.min(...all_dates);
+let max_x = goalDates.length > 0 ? Math.max(maxGoalDate, Math.max(...all_dates)) : Math.max(...all_dates);
+
+console.log(min_x, max_x);
+
 // Define the layout
 const layout = {
-  title: "Grades Over Time",
-  xaxis: {
-    title: 'Date',
-    tickvals: times,
-    ticktext: dateStrings,
-    range: [min_x - 3, max_x + 3],
-    showgrid: false
-  },
-  yaxis: {
-    title: 'Grades',
-    showgrid: false
-  },
-  showlegend: false,
-  displayModeBar: false,
-  paper_bgcolor: 'rgba(0,0,0,0)', // Transparent background
-  plot_bgcolor: 'rgba(0,0,0,0)',  // Transparent plot area
-  font: {
-    color: 'white' // White text
-  },
-  hovermode: 'closest' // Show hover info only for the closest point
+    title: "Grades Over Time",
+    xaxis: {
+        title: 'Date',
+        tickvals: times,
+        ticktext: dateStrings,
+        range: [min_x - 3, max_x + 3], // Extend range to include furthest goal
+        showgrid: false
+    },
+    yaxis: {
+        title: 'Grades',
+        showgrid: false
+    },
+    showlegend: false,
+    displayModeBar: false,
+    paper_bgcolor: 'rgba(0,0,0,0)', // Transparent background
+    plot_bgcolor: 'rgba(0,0,0,0)',  // Transparent plot area
+    font: {
+        color: 'white' // White text
+    },
+    hovermode: 'closest' // Show hover info only for the closest point
 };
 
 // create final, combined line: at each timepoint, sum the weighted grade_spreads
@@ -404,84 +436,91 @@ setTimeout(function(){
 }, comp_time*500);
 }
 
-function animationGOTC(numTraces, traces){
-  
-  Plotly.animate('myGraph', {
+async function animationGOTC(numTraces, traces){
+  const animationDuration = 3500; // 3.5 seconds for animation
+
+  await Plotly.animate('myGraph', {
     data: traces,
     traces: numTraces,
     layout: {}
   }, {
     transition: {
-      duration: 3000,
+      duration: animationDuration,
       easing: 'cubic-in-out'
     },
     frame: {
-      duration: 3000
+      duration: animationDuration
     }
   });
-  // wait 4000 ms for animation to finish
-setTimeout(function(){
-  console.log('resizing')
+
+  
+  console.log('resizing');
   Plotly.relayout('myGraph', {'yaxis.autorange': true});
-}, 4000);
+  
 }
 
 
-// Add event listener to button addGoal to set a plotly onclick event to add a goal
+// Add event listener to button addGoal to set a general click event to add a goal
 document.getElementById('addGoal').addEventListener('click', function() {
-  console.log('addGoal clicked');
-  var myPlot = document.getElementById('myGraph');
+    console.log('addGoal clicked');
+    var myPlot = document.getElementById('myGraph');
 
-  function clickHandler(data) {
-    console.log("adding goal", myPlot.layout)
-    var xaxis = myPlot.layout.xaxis;
-    var yaxis = myPlot.layout.yaxis;
-    var clickx = data.event.clientX;
-    var clicky = data.event.clientY
-    var left = myPlot.getBoundingClientRect().left;
-    var top = myPlot.getBoundingClientRect().top
-    var minx = xaxis.range[0]
-    var maxx = xaxis.range[1]
-    var miny = yaxis.range[0];
-    var maxy = yaxis.range[1];
+    function clickHandler(event) {
+        console.log("adding goal", myPlot.layout);
+        var xaxis = myPlot.layout.xaxis;
+        var yaxis = myPlot.layout.yaxis;
+        var clickx = event.clientX;
+        var clicky = event.clientY;
+        var left = myPlot.getBoundingClientRect().left;
+        var top = myPlot.getBoundingClientRect().top;
+        var minx = xaxis.range[0];
+        var maxx = xaxis.range[1];
+        var miny = yaxis.range[0];
+        var maxy = yaxis.range[1];
 
-    // Calculate the relative position of the click
-    var relX = (clickx - left) / myPlot.clientWidth;
-    var relY = (clicky - top) / myPlot.clientHeight;
+        // Calculate the relative position of the click
+        var relX = (clickx - left) / myPlot.clientWidth;
+        var relY = (clicky - top) / myPlot.clientHeight;
 
-    // Convert relative position to data coordinates
-    var x = xaxis.range[0] + relX * (maxx-minx);
-    var y = yaxis.range[0] + (1 - relY) * (maxy-miny);
-    
+        // Convert relative position to data coordinates
+        var x = minx + relX * (maxx - minx);
+        var y = miny + (1 - relY) * (maxy - miny);
 
-    addGoal(x, y);
+        console.log(`Click at data coordinates: (${x}, ${y})`);
+        addGoal(x, y);
 
-    // Remove the click event listener after it runs
-    myPlot.removeListener('click', clickHandler);
-    console.log('click event listener removed');
-  }
-  // Compress the graph on the horizontal axis and add new date values
-  var currentRange = myPlot.layout.xaxis.range;
-  var newEndDate = currentRange[1]+60
-  var tickvals = myPlot.layout.xaxis.tickvals;
-  var ticktext = myPlot.layout.xaxis.ticktext;
-  var interval = tickvals[1]-tickvals[0];
-  while(tickvals[tickvals.length-1]<newEndDate){
-    newTick = tickvals[tickvals.length-1]+interval;
-    tickvals.push(newTick);
-    date = serialToDate(newTick);
-    ticktext.push(date);
-  }
-  // set xaxis range to currentRange[0] to newEndDate
-  
+        // Remove the click event listener after it runs
+        myPlot.removeEventListener('click', clickHandler);
+        console.log('click event listener removed');
 
-  Plotly.relayout(myPlot, {
-    'xaxis.range': [currentRange[0], newEndDate]
-  });
+        // reset the x axis range to go from currentRange[0] to currentRange[1] or x, whichever is greater
+        let newRange = [currentRange[0], Math.min(x, currentRange[1])];
+        Plotly.relayout(myPlot, {
+            'xaxis.range': newRange
+        });
+    }
 
-  // Attach the click handler
-  myPlot.on('plotly_click', clickHandler);
-  console.log('click event listener added', myPlot);
+    // Compress the graph on the horizontal axis and add new date values
+    var currentRange = myPlot.layout.xaxis.range;
+    var newEndDate = currentRange[1] + 60;
+    var tickvals = myPlot.layout.xaxis.tickvals;
+    var ticktext = myPlot.layout.xaxis.ticktext;
+    var interval = tickvals[1] - tickvals[0];
+    while (tickvals[tickvals.length - 1] < newEndDate) {
+        var newTick = tickvals[tickvals.length - 1] + interval;
+        tickvals.push(newTick);
+        var date = serialToDate(newTick);
+        ticktext.push(date);
+    }
+
+    // Set xaxis range to currentRange[0] to newEndDate
+    Plotly.relayout(myPlot, {
+        'xaxis.range': [currentRange[0], newEndDate]
+    });
+
+    // Attach the general click handler
+    myPlot.addEventListener('click', clickHandler);
+    console.log('click event listener added', myPlot);
 });
 
 
@@ -830,39 +869,39 @@ let slideIndex = 0;
             dots[slideIndex].classList.add('active');
         }
 
-        function setCompliments(compliments) {
-            const carousel = document.getElementById("crs");
-            const dotsContainer = document.querySelector(".dots");
+function setCompliments(compliments) {
+    const carousel = document.getElementById("crs");
+    const dotsContainer = document.querySelector(".dots");
 
-            // Clear existing slides and dots
-            carousel.innerHTML = '';
-            dotsContainer.innerHTML = '';
+    // Clear existing slides and dots
+    carousel.innerHTML = '';
+    dotsContainer.innerHTML = '';
 
-            for (let x = 0; x < compliments.length; x++) {
-                let slide = document.createElement("div");
-                slide.className = "slide";
-                let text = document.createElement("p");
-                text.textContent = compliments[x];
+    for (let x = 0; x < compliments.length; x++) {
+        let slide = document.createElement("div");
+        slide.className = "slide";
+        let text = document.createElement("p");
+        text.textContent = compliments[x];
 
-                // Generate random color
-                let randomColor = Math.floor(Math.random() * 16777215).toString(16);
-                randomColor = randomColor.padStart(6, '0');
-                console.log(randomColor);
-                slide.style.backgroundColor = "#" + randomColor;
+        // Generate random color
+        let randomColor = Math.floor(Math.random() * 16777215).toString(16);
+        randomColor = randomColor.padStart(6, '0');
+        console.log(randomColor);
+        slide.style.backgroundColor = "#" + randomColor;
 
-                slide.appendChild(text);
-                carousel.appendChild(slide);
+        slide.appendChild(text);
+        carousel.appendChild(slide);
 
-                // Create dot
-                let dot = document.createElement("span");
-                dot.className = "dot";
-                dot.onclick = () => currentSlide(x);
-                dotsContainer.appendChild(dot);
-            }
+        // Create dot
+        let dot = document.createElement("span");
+        dot.className = "dot";
+        dot.onclick = () => currentSlide(x);
+        dotsContainer.appendChild(dot);
+    }
 
-            // Show the first slide
-            showSlide(slideIndex);
-        }
+    // Show the first slide
+    showSlide(slideIndex);
+}
 
 
 
@@ -1004,3 +1043,6 @@ async function deleteGoal(goalId) {
   goals = goals.filter(goal => parseInt(goal.id) != parseInt(goalId));
   return goals
 }
+
+
+

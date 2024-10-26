@@ -402,7 +402,8 @@ function createGradesTable(grades) {
       createTableCell(category),
       createTableCell(name),
       createShareButton(i),
-      createShowFriendsButton(grade) // New column
+      createShowFriendsButton(grade),
+      createEditButton(grade) // New column for edit button
     ];
 
     cells.forEach(cell => row.appendChild(cell));
@@ -565,5 +566,66 @@ async function notifyClassmates(newClasses, classTokens) {
         console.error("Error sending notification:", error);
       }
     }
+  }
+}
+
+// Function to create the edit button
+function createEditButton(grade) {
+  const cell = document.createElement('td');
+  const button = document.createElement('button');
+  button.innerHTML = '✏️'; // Pencil emoji
+  button.classList.add('edit-grade-button');
+  button.addEventListener('click', () => showEditModal(grade));
+  cell.appendChild(button);
+  return cell;
+}
+
+// Function to show the edit modal
+function showEditModal(grade) {
+  console.log(grade)
+  const modal = document.createElement('div');
+  modal.classList.add('edit-modal');
+  modal.innerHTML = `
+    <div class="edit-modal-content">
+      <h3>Edit Grade</h3>
+      <p>Assignment: ${grade.name}</p>
+      <p>Class: ${grade.class}</p>
+      <input type="number" id="editScore" placeholder="New Score" value="${grade.score}">
+      <input type="number" id="editValue" placeholder="New Value" value="${grade.value}">
+      <input type="number" id="editWeight" placeholder="Weight" value="1">
+      <button id="submitEdit">Submit</button>
+      <button id="cancelEdit">Cancel</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  document.getElementById('submitEdit').addEventListener('click', () => submitEdit(grade, modal));
+  document.getElementById('cancelEdit').addEventListener('click', () => document.body.removeChild(modal));
+}
+
+// Function to submit the edit
+async function submitEdit(grade, modal) {
+  const newScore = document.getElementById('editScore').value;
+  const newValue = document.getElementById('editValue').value;
+  const weight = document.getElementById('editWeight').value;
+
+  let score = newScore*weight/newValue;
+
+  const correction = {
+    assignment: grade.name,
+    class: grade.class,
+    score: score,
+    value: parseInt(weight),
+    osis: osis
+  };
+
+  try {
+    await fetchRequest('/post_data', { sheet: "GradeCorrections", data: correction });
+    alert('Grade correction submitted successfully!');
+    document.body.removeChild(modal);
+    // Optionally, refresh the grades table here
+  } catch (error) {
+    console.error('Error submitting grade correction:', error);
+    alert('Failed to submit grade correction. Please try again.');
   }
 }

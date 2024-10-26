@@ -409,11 +409,15 @@ def get_grade_impact(grade, grades, weights):
   # filter grades for the category and class of the grade
   fgrades = [g for g in grades if g['category'] == grade['category'] and g['class'] == grade['class']]
   # get the current category grade
-  score_sum = sum([float(g['score']) for g in fgrades])
-  value_sum = sum([float(g['value']) for g in fgrades])
-  current_category_grade = score_sum/value_sum*100
-  cat_impact = (grade_score/grade_value*100 - current_category_grade)*grade_value/value_sum
-  class_impact = cat_impact*category_weight/100
+  score_sum = sum([float(g['score']) for g in fgrades])-grade_score
+  value_sum = sum([float(g['value']) for g in fgrades])-grade_value
+  if value_sum == 0:
+    current_category_grade = 100
+    cat_impact = 100-(grade_score/grade_value*100)
+  else:
+    current_category_grade = score_sum/value_sum*100
+    cat_impact = (grade_score/grade_value*100 - current_category_grade)*grade_value/value_sum
+  class_impact = cat_impact*category_weight
   GPA_impact = class_impact/num_classes
   # get grade needed on next, equally weighted assignment to bump category grade up to next multiple of 0.5
   next_mult = round(current_category_grade*2)/2
