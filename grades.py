@@ -1,4 +1,4 @@
-from database import get_data, update_data
+from database import get_user_data, update_data
 from flask import session
 import datetime
 import numpy as np
@@ -101,10 +101,8 @@ def get_weights(classes_data, osis):
 
 # make a process_grades function that takes in grades, weights, class, category, and times and returns a list that is the user's grade for the given class and category at the given time
 def process_grades(grades, class_name, category, times):
-  print("in process_grades: times", times, "class_name", class_name, "category", category)
   # filter grades for the given class and category
   fgrades = [grade for grade in grades if grade['class'].lower() == class_name.lower() and grade['category'].lower() == category.lower()]
-  print("len fgrades", len(fgrades))
   if len(fgrades) == 0:
     return False
   # loop through each time and get the grade for the given class and category at that time
@@ -299,7 +297,7 @@ def update_leagues(grades, classes):
 
   print("in update_leagues")
   # filter the leagues for those that the user is in and get all of the activities that need to be calculated
-  leagues = get_data("Leagues")
+  leagues = get_user_data("Leagues")
   fleagues = []
   distinct_activities = []
   for league in leagues:

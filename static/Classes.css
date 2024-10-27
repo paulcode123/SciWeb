@@ -86,12 +86,7 @@
     }
 
 
-    body {
-      background-image: url('/static/media/Classesbgd.png'); /* URL of the background image */
-      background-size: cover; /* Cover the entire page */
-      background-position: center; /* Center the image */
-      background-repeat: no-repeat; /* Do not repeat the image */
-    }
+    
 
     body {
       background-color: #1c1d26; /* Updated to match darkThemeTemplate.html */

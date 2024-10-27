@@ -17,7 +17,7 @@ function fetchClasses() {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ data: 'FILTERED Classes' }),
+        body: JSON.stringify({ data: 'Name, Classes' }),
     })
     .then(response => response.json())
     .then(data => {

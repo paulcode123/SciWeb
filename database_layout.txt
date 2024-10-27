@@ -1,4 +1,4 @@
-Sheet name: Assignments
+Sheet name: Assignments; accessed by getting the assignments for each of the classes in the user's Classes sheet
 
     category(str)
     class(id of class that this assignment belongs to)
@@ -13,7 +13,7 @@ Sheet name: Assignments
     completed(dictionary of {OSIS: completed(true/false), OSIS: completed, ...})
 
 
-Sheet name: Chat
+Sheet name: Chat; accessed by classid, assignmentid, or leagueid
 
     id(4 digit id)
     OSIS(user id, 7 digits)
@@ -22,7 +22,7 @@ Sheet name: Chat
     text(text of the message)
     timestamp(timestamp of the message)
 
-Sheet name: Classes
+Sheet name: Classes; accessed by getting the classes for the user from the Users sheet
 
     OSIS(list of 7 digit numbers, for each student in the class)
     name(name of the class)

@@ -3,7 +3,7 @@ import json
 import random
 import datetime
 import requests
-from database import get_data, update_data, post_data, delete_data
+from database import get_user_data, update_data, post_data, delete_data, get_data
 import re
 from flask import session
 
@@ -57,7 +57,7 @@ def jupapi_output_to_grades(data, encrypt):
   classes = data["courses"]
   
   # Get grade corrections for the current user
-  corrections = get_data("GradeCorrections")
+  corrections = get_user_data("GradeCorrections")
   corrections = [corr for corr in corrections if corr['osis'] == session['user_data']['osis']]
   
   for c in classes:
@@ -122,7 +122,7 @@ def post_grades(grades, encrypt):
     grades_obj[str(i+1)] = grade_fragment
    
   #get list of all values in 'OSIS' column
-  grades_data = get_data("GradeData")
+  grades_data = get_user_data("GradeData")
   osis_list = [str(grade['OSIS']) for grade in grades_data]
   # If the user's osis is already in the osis column, update, otherwise post
   if str(session['user_data']['osis']) in osis_list:
@@ -161,9 +161,13 @@ def jupapi_output_to_classes(data, class_data):
                     need_update = True
                     class_info["categories"] = categories
                 
+                # Ensure OSIS is a list
+                if isinstance(class_info["OSIS"], str):
+                    class_info["OSIS"] = class_info["OSIS"].split(", ")
+                
                 # Add user to the class if not already present
-                if str(session['user_data']['osis']) not in str(class_info["OSIS"]):
-                    class_info["OSIS"] = str(session['user_data']['osis']) + ", " + str(class_info["OSIS"])
+                if str(session['user_data']['osis']) not in class_info["OSIS"]:
+                    class_info["OSIS"].append(str(session['user_data']['osis']))
                     need_update = True
 
                 if need_update:
@@ -187,6 +191,7 @@ def jupapi_output_to_classes(data, class_data):
                 "categories": categories
             }
             post_data("Classes", class_info)
+            
 
     return class_data  # Return the updated class data
 
@@ -195,7 +200,7 @@ def jupapi_output_to_classes(data, class_data):
   
 
 def get_grades():
-  data = get_data("GradeData")
+  data = get_data("GradeData", row_name="OSIS", row_val=str(session['user_data']['osis']))
   #filter for osis
   has_grades = False
   for grade in data:

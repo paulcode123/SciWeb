@@ -4,7 +4,7 @@ var userData;
 var users;
 setTimeout(async function() {
   
-data = await fetchRequest('/data', { data: "Name, FILTERED Profiles, FILTERED Friends, Users" })
+data = await fetchRequest('/data', { data: "Name, Profiles, Friends, Users" })
 
 userData = data['Name'];
 console.log(userData);
@@ -13,7 +13,6 @@ displayUserInfo(userData);
 set_public_profile(data['Profiles']);
 console.log(data['Friends']);
 showFriends(data['Friends'], users, userData.osis);
-document.getElementById('loadingWheel').style.display = "none";
 
 }, 300);
 

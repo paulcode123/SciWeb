@@ -11,7 +11,7 @@ function loadContext() {
     fetch('/data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: 'FILTERED Classes, FILTERED Notebooks' })
+        body: JSON.stringify({ data: 'Classes, Notebooks' })
     })
     .then(response => response.json())
     .then(data => {

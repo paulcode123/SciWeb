@@ -179,7 +179,7 @@ async function post_grades(grades){
 
 
 
-  data = await fetchRequest('/data', {"data": 'FILTERED Grades, FILTERED Classes'});
+  data = await fetchRequest('/data', {"data": 'Name, Grades, Classes'});
   
   
   grades = data['Grades']

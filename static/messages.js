@@ -30,7 +30,7 @@ function toggleSection(sectionId) {
 
 async function refresh(){
     console.log("refreshing...")
-    data = await fetchRequest('/data', { data: "FILTERED Chat"});
+    data = await fetchRequest('/data', { data: "Chat"});
     current_chat = data.Chat;
     receive_messages(data.Chat, users, current_location);
 }
@@ -45,7 +45,7 @@ function isThreadSet(){
 }
 
 async function getData(){
-    return await fetchRequest('/data', { data: "FILTERED Classes, FILTERED Leagues, FILTERED Friends, Users, FILTERED Chat" });
+    return await fetchRequest('/data', { data: "Classes, Leagues, Friends, Users, Chat" });
 }
 
 function DisplayThreads(data) {

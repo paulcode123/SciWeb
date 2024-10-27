@@ -181,10 +181,10 @@ async function get_messages(){
   }
   else{
     group_name = 'Assignments'
-    sheet_name = 'Classes, FILTERED Assignments';
+    sheet_name = 'Name, Classes, Assignments';
   }
 
-  var data = await fetchRequest('/data', {data: `FILTERED Chat, Users, FILTERED ${sheet_name}`});
+  var data = await fetchRequest('/data', {data: `Name, Chat, Users, FILTERED ${sheet_name}`});
   
   var messages = data['Chat']
   var users = data['Users']

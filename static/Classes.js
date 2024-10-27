@@ -166,14 +166,14 @@ setTimeout(() => {
     }, 0.1);
 async function init_fetch(){
   console.log("in init_fetch")
-  const data = await fetchRequest('/data', { data: 'Classes, Name' });
+  const data = await fetchRequest('/data', { data: 'Name, Classes' });
 
   
   classList = data['Classes']
   user_data = data['Name']
   console.log(classList)
   display_classes(classList, user_data)
-  document.getElementById('loadingWheel').style.display = "none";
+  // document.getElementById('loadingWheel').style.display = "none";
   
 }
 

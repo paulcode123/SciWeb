@@ -29,7 +29,7 @@ from PyPDF2 import PdfReader
 
 
 # Get functions from other files
-from database import get_data, post_data, update_data, delete_data, download_file, upload_file, init_firebase
+from database import get_data, post_data, update_data, delete_data, download_file, upload_file, init_firebase, get_user_data
 from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, get_stats, update_leagues, get_compliments, get_grade_impact
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades, confirm_category_match
@@ -194,13 +194,18 @@ def coming_soon():
 def service_worker():
     return send_from_directory('.', 'firebase-messaging-sw.js')
 
+@app.errorhandler(404)
+def page_not_found(e):
+    # note that we set the 404 status explicitly
+    return render_template('ComingSoon.html'), 404
+
 # The following routes are pages for specific classes and assignments
 @app.route('/class/<classurl>')
 def class_page(classurl):
   # Pass the class name and class data to the class page
   id = classurl[-4:]
   class_name = classurl.replace(id, "").strip()
-  classes = get_data("Classes")
+  classes = get_user_data("Classes")
   print(classes)
   class_data = next((row for row in classes if str(row['id']) == str(id)), None)
   print(classes[4]['id'], str(id), str(classes[4]['id']) == str(id))
@@ -217,7 +222,7 @@ def class_page(classurl):
 # League page, for specific leagues
 @app.route('/league/<leagueid>')
 def league_page(leagueid):
-  leagues = get_data("Leagues")
+  leagues = get_user_data("Leagues")
   league_data = next(
     (row for row in leagues if int(row['id']) == int(leagueid)), None)
   league_name = league_data['Name']
@@ -227,7 +232,8 @@ def league_page(leagueid):
 # Assignment page, for specific assignments
 @app.route('/assignment/<assignmentid>')
 def assignment_page(assignmentid):
-  assignments_data = get_data("Assignments")
+  classes_data = get_user_data("Classes")
+  assignments_data = get_user_data("Assignments", {"Classes": classes_data})
   osis = str(session['user_data']['osis'])
   assignment_data = next((row for row in assignments_data if str(row['id']) == str(assignmentid)), None)
   print("assignment_data", assignment_data, "osis", osis)
@@ -242,8 +248,8 @@ def assignment_page(assignmentid):
 
 @app.route('/users/<userid>')
 def public_profile(userid):
-  users = get_data("Users")
-  profiles = get_data("Profiles")
+  users = get_user_data("Users")
+  profiles = get_user_data("Profiles")
   
   profile = next((row for row in profiles if str(row['OSIS']) == str(userid)), None)
   # if profile is not found, return an error without a separate page
@@ -257,7 +263,7 @@ def public_profile(userid):
   #If the user wishes to show their classes
   class_data = ""
   if 'showClasses' in profile and profile['showClasses'] == "TRUE":
-    classes = get_data("Classes")
+    classes = get_user_data("Classes")
     class_data = [row for row in classes if str(userid) in row['OSIS']]
     #Turn it into a string with "Classes: x, y, z"
     class_data = "Classes: " + ", ".join([row['name'] for row in class_data])
@@ -268,7 +274,7 @@ def public_profile(userid):
 
 @app.route('/reviews/<courseid>')
 def course_reviews(courseid):
-  courses = get_data("Courses")
+  courses = get_user_data("Courses")
   course_data = next((row for row in courses if row['id'] == courseid), None)
   # convert course_data to json
   course_data = json.loads(json.dumps(course_data))
@@ -314,7 +320,7 @@ def Jupiter():
   if classes == "WrongPass":
     return json.dumps({"error": "Incorrect credentials"})
 
-  class_data = get_data("Classes")
+  class_data = get_user_data("Classes")
 
   if str(data['addclasses'])=="True":
     jupapi_output_to_classes(classes, class_data)
@@ -369,55 +375,7 @@ def fetch_data():
   response = {}
 
   for sheet in sheets:
-    print("sheet", sheet)
-    # if trying to get just the user's data, call the get_name function
-    if sheet=="Name":
-      response[sheet] = get_name()
-    # if trying to get data from sheet, but only rows where OSIS column includes the user's osis
-    elif "FILTERED" in sheet:
-      # if session['user_data'] is not defined, throw an error
-      if 'user_data' not in session:
-        return json.dumps({"error": "User data not found"})
-      # get the sheet name without the "FILTERED " prefix
-      sheet_name = sheet.replace("FILTERED ", "")
-      # special case for the Grades, since it's not a normal sheet: it must be processed differently
-      if sheet_name=="Grades":
-        response[sheet_name] = get_grades()
-      else:
-        data = get_data(sheet_name)
-        # if data is of type NoneType, rfeturn an empty list
-        if data == None:
-          return json.dumps({})
-        
-        # if the sheet is one of these exceptions that require special filtering
-        if sheet_name=="Friends":
-          #send if the user's osis is in the OSIS or targetOSIS of the row
-          response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in item['OSIS'] or str(session['user_data']['osis']) in item['targetOSIS']]
-        elif sheet_name=="Assignments":
-          # send if item['class'] is the id for any of the rows in response['Classes']
-          class_ids = [int(item['id']) for item in response['Classes']]
-          response[sheet_name] = [item for item in data if int(item['class']) in class_ids]
-        elif sheet_name=="Notebooks":
-          #  send if the classID is the id for any of the rows in response['Classes']
-          class_ids = [item['id'] for item in response['Classes']]
-          response[sheet_name] = [item for item in data if item['classID'] in class_ids]
-        elif sheet_name=="FClasses":
-          #send all of the classes that the user's friends are in
-          friend_osises = [item['targetOSIS'] for item in data if str(session['user_data']['osis']) in item['OSIS']] + [item['OSIS'] for item in data if str(session['user_data']['osis']) in item['targetOSIS']]
-          r = []
-          classes = get_data("Classes")
-          for friend in friend_osises:
-            r += [item for item in classes if friend in item['OSIS']]
-          response[sheet_name] = r
-        else:
-          #Otherwise, filter the data for the user's osis
-          response[sheet_name] = [item for item in data if str(session['user_data']['osis']) in str(item['OSIS'])]
-    elif sheet=="Users":
-      #only include the first 3 columns of the Users sheet, first_name, last_name, and osis
-      data = get_data(sheet)
-      response[sheet] = [{key: item[key] for key in item if key in ['first_name', 'last_name', 'osis']} for item in data]
-    else:
-      response[sheet] = get_data(sheet)
+    response[sheet] = get_user_data(sheet, response)
   return json.dumps(response)
 
 @app.route('/post_data', methods=['POST'])
@@ -482,7 +440,7 @@ def get_AI_function_calling():
 #function to generate insights and return them to the Grade Analysis page
 @app.route('/insights', methods=['POST'])
 def get_insights_ga():
-  classes_data = get_data("Classes")
+  classes_data = get_user_data("Classes")
   user_data = get_name()
   grades = get_grades()
   grade_spreads = {}
@@ -525,7 +483,7 @@ class GC_assignments(BaseModel):
 @app.route('/upload_assignments', methods=['POST'])
 def upload_assignments():
   data = request.json
-  classes = get_data("Classes")
+  classes = get_user_data("Classes")
   # filter classes for the user's osis and include only the id and name columns
   classes = [{"id": item["id"], "name": item["name"]} for item in classes if str(session['user_data']['osis']) in str(item['OSIS'])]
   # call get_insights with the image file, data['image']
@@ -556,11 +514,11 @@ def upload_assignments():
 @app.route('/GAsetup', methods=['POST'])
 def GA_setup():
   # get the user's grades and classes
-  classes = get_data("Classes")
+  classes = get_user_data("Classes")
   weights = get_weights(classes, session['user_data']['osis'])
   grades = get_grades()
   user_data = get_name()
-  goals = get_data("Goals")
+  goals = get_user_data("Goals")
   # filter goals for the user's osis
   goals = [item for item in goals if str(session['user_data']['osis']) in str(item['OSIS'])]
 
@@ -721,7 +679,7 @@ def generate_questions():
     unit_name = data['unitName']  # Changed from unitIndex to unitName
 
     # Get the notebook content for the selected class and unit
-    notebooks = get_data("Notebooks")
+    notebooks = get_user_data("Notebooks")
     # get one list of all of the subtopics from all of the images and one list of all of the practice questions from all of the images
     subtopics = []
     practice_questions = []
@@ -752,7 +710,7 @@ def generate_questions():
 def get_units():
     data = request.json
     class_id = data['classId']
-    notebooks = get_data("Notebooks")
+    notebooks = get_user_data("Notebooks")
     # Get unique units for the given class_id
     units = list(set(notebook['unit'] for notebook in notebooks if notebook['classID'] == class_id))
     
@@ -842,7 +800,7 @@ def get_impact():
   data = request.json
   
   grades = get_grades()
-  classes = get_data("Classes")
+  classes = get_user_data("Classes")
   category_grades = filter_grades(grades, session['user_data'], [data['class'], data['category']])
   
   weights = get_weights(classes, session['user_data']['osis'])
@@ -881,7 +839,7 @@ def postLogin():
   data = raw_data['data']
   mode = raw_data['mode']
   session['ip_add'] = data['IP']
-  logins = get_data("Users")
+  logins = get_user_data("Users")
   #remove the user's ip addresses from all other accounts
   # for row in logins:
   #   if session['ip_add'] in row['IP']:
@@ -914,7 +872,7 @@ def postLogin():
 # Send notebook data and Generate Practice Questions for the class notebook
 @app.route('/notebook', methods=['POST'])
 def get_notebook():
-  notebooks = get_data("Notebooks")
+  notebooks = get_user_data("Notebooks")
   id = request.json['data']
   insights = 'none'
   # Find the notebook with the matching class ID
@@ -932,7 +890,7 @@ def get_notebook():
 @app.route('/accept-friend', methods=['POST'])
 def acceptFriend():
   data = request.json
-  friends = get_data("Friends")
+  friends = get_user_data("Friends")
   # If status is pending and there already is a row with the same osis and targetOSIS, update the row
   if data['status'] == "accepted":
     update_data(data['id'], 'id', data, "Friends")
@@ -955,22 +913,29 @@ def post_grades_route():
 
 
 #Function to get the user's name from Users data
-def get_name(ip=None):
+def get_name(ip=None, update=False):
   global session
-  
+
   # If an IP address is passed in, store it in the session
   if ip:
     print("ip", ip)
     session['ip_add'] = ip
     
   # If the user's data is already stored in the session, return it
-  if 'user_data' in session:
+  if 'user_data' in session and not update:
     print("user_data already defined in get_name()")
     return session['user_data']
   
-
+  # If the user's data is already stored in the session, return it
+  if 'user_data' in session and 'osis' in session['user_data']:
+    data = get_data("Users", row_name="osis", row_val=int(session['user_data']['osis']))
+    if data and len(data) > 0:
+      session['user_data'] = data[-1]
+      print("User's name from session", session['user_data']['first_name'])
+      return session['user_data']
+  
+  # If the user's data is not stored in the session, get it from the Users sheet
   data = get_data("Users")
-  print(data)
   # If the user's IP address is in the Users data, return their name and other info
   if 'ip_add' in session:
     filtered_data = [entry for entry in data if str(session['ip_add']) in str(entry.get('IP'))]
@@ -984,9 +949,6 @@ def get_name(ip=None):
     return session['user_data']
   # If the user's IP address is not in the Users data, then don't do anything
   return "Login", 404
-
-
-
 
 
 

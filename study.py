@@ -3,7 +3,7 @@ from flask import session
 import requests
 import openai
 import time
-from database import get_data
+from database import get_user_data
 from jupiter import get_grades
 
 
@@ -142,7 +142,7 @@ def chat_with_function_calling(prompt):
         # Call the get_data function if requested
         if function_name == "get_data":
             sheet = eval(arguments).get("sheet")  # Extract sheet name
-            function_response = get_data(sheet)
+            function_response = get_user_data(sheet)
         elif function_name == "get_grades":
             function_response = get_grades()
         follow_up_prompt = {"role": "function", "name": function_name, "content": str(function_response)}

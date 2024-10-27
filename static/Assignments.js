@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //fetch the assignments from the database
 async function get_assignment(){
-  var data = await fetchRequest('/data', { data: "FILTERED Classes, FILTERED Assignments" })
+  var data = await fetchRequest('/data', { data: "Name, Classes, Assignments" })
   
   
   

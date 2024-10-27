@@ -13,7 +13,7 @@ createLeagueButton.addEventListener('click', () => {
 
 async function main() {
     // get all leagues
-    const data = await fetchRequest('/data', { data: "Users, FILTERED Leagues, Name" })
+    const data = await fetchRequest('/data', { data: "Name, Users, Leagues" })
     const leagues = data.Leagues;
     const users = data.Users;
     

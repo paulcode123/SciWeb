@@ -121,8 +121,9 @@ def init_firebase():
     cred = credentials.Certificate('service_key.json')
     firebase_admin.initialize_app(cred)
 
-def get_data_firebase(collection, row_name, row_val):
-    print("getting data from firebase: ", collection)
+def get_data_firebase(collection, row_name, row_val, operator):
+    print(f"Getting data from firebase: {collection}")
+    
     # Initialize Firestore DB
     db = firestore.client()
 
@@ -137,7 +138,15 @@ def get_data_firebase(collection, row_name, row_val):
         if row_name == "":
             docs = collection_ref.stream()
         else:
-            docs = collection_ref.where(row_name, '==', [str(row_val)]).stream()
+            if operator == 'in':
+                # For 'in' operator, ensure row_val is a list
+                if not isinstance(row_val, list):
+                    row_val = [row_val]
+                docs = collection_ref.where(row_name, operator, row_val).stream()
+            else:
+                # For other operators, convert to string
+                docs = collection_ref.where(row_name, operator, row_val).stream()
+        
         for doc in docs:
             # Each doc is a DocumentSnapshot, convert to dict and append to results
             doc_dict = doc.to_dict()
@@ -146,8 +155,7 @@ def get_data_firebase(collection, row_name, row_val):
     except Exception as e:
         print(f"An error occurred: {e}")
         return json.dumps({'error': str(e)})
-    
-    
+    print(f"returned {len(results)} documents from {collection} with {row_name} {operator} {row_val}")
     return results
 
 def post_firebase_data(collection, data):
@@ -177,7 +185,7 @@ def update_data_firebase(row_val, row_name, new_row, collection):
 
     # Query for documents with the matching row_name and row_val
     print(row_val, row_name, collection)
-    docs = collection_ref.where(row_name, '==', str(row_val)).stream()
+    docs = collection_ref.where(row_name, '==', row_val).stream()
     
     # Keep track of updates
     updated_documents = []
@@ -214,12 +222,12 @@ def delete_data_firebase(row_val, row_name, collection):
 
     return deleted_documents
 
-def get_data(collection, row_name="", row_val=""):
+def get_data(collection, row_name="", row_val="", operator="=="):
   from main import init
   vars = init()
   if vars['database'] == 'gsheet':
     return get_data_gsheet(collection, row_name, row_val)
-  return get_data_firebase(collection, row_name, row_val)
+  return get_data_firebase(collection, row_name, row_val, operator)
 
 def post_data(collection, data):
     print("posting data")
@@ -242,3 +250,56 @@ def delete_data(row_val, row_name, collection):
   if vars['database'] == 'gsheet':
     return delete_data_gsheet(collection, row_val, row_name, session)
   return delete_data_firebase(row_val, row_name, collection)
+
+def get_user_data(sheet, prev_sheets=[]):
+  from main import get_name
+  from jupiter import get_grades
+  print("sheet", sheet)
+  # if trying to get just the user's data, call the get_name function
+  if sheet=="Name":
+    return get_name()
+  
+  # if session['user_data'] is not defined, throw an error
+  if 'user_data' not in session:
+    return json.dumps({"error": "User data not found"})
+  
+  # special case for the Grades, since it's not a normal sheet: it must be processed differently
+  if sheet=="Grades":
+    return get_grades()
+  
+  # if the sheet is one of these exceptions that require special filtering
+  if sheet=="Users":
+    #only include the first 3 columns of the Users sheet, first_name, last_name, and osis
+    data = get_data(sheet)
+    return [{key: item[key] for key in item if key in ['first_name', 'last_name', 'osis']} for item in data]
+  if sheet=="Friends":
+    #send if the user's osis is in the OSIS or targetOSIS of the row
+    combined = get_data("Friends", row_name="OSIS", row_val=str(session['user_data']['osis'])) + get_data("Friends", row_name="targetOSIS", row_val=str(session['user_data']['osis']))
+    return combined
+  if sheet=="Classes":
+    return get_data("Classes", row_name="OSIS", row_val=str(session['user_data']['osis']), operator="array_contains")
+  if sheet=="Assignments":
+    # send if item['class'] is the id for any of the rows in response['Classes']
+    class_ids = [int(item['id']) for item in prev_sheets['Classes']]
+    return get_data("Assignments", row_name="class", row_val=class_ids, operator="in")
+  if sheet=="Notebooks":
+    #  send if the classID is the id for any of the rows in response['Classes']
+    class_ids = [str(item['id']) for item in prev_sheets['Classes']]
+    return get_data("Notebooks", row_name="classID", row_val=class_ids, operator="in")
+  if sheet=="FClasses":
+    #send all of the classes that the user's friends are in
+    friend_request_data = prev_sheets['Friends']
+    friend_osises = [item['targetOSIS'] for item in friend_request_data if str(session['user_data']['osis']) in item['OSIS']] + [item['OSIS'] for item in friend_request_data if str(session['user_data']['osis']) in item['targetOSIS']]
+    friend_classes = get_data("Classes", row_name="OSIS", row_val=friend_osises, operator="in")
+    return friend_classes
+
+  if sheet=="Courses":
+     return get_data(sheet)
+  else:
+    #Otherwise, filter the data for the user's osis
+    int_data = get_data(sheet, row_name="OSIS", row_val=int(session['user_data']['osis']), operator="==")
+    if int_data and len(int_data) > 0:
+      return int_data
+    return get_data(sheet, row_name="OSIS", row_val=str(session['user_data']['osis']), operator="==")
+    
+  

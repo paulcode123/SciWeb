@@ -98,16 +98,23 @@ function get_classes_ids(classes){
 //Create a fetch request to /data to get Chat, Classes, and Assignments data
 async function main(){
 console.log("fetching data")
-const data = await fetchRequest('/data', { data: "Chat, FILTERED Classes, Assignments" });
+const data = await fetchRequest('/data', { data: "Name, Chat, Classes, Assignments, Aspirations, Friends, Grades, Users" });
 
   console.log("got data")
   //Store the data in variables
   var messages = data['Chat']
   var classes = data['Classes']
   var assignments = data['Assignments']
-  
+  var aspirations = data['Aspirations']
+  var friends = data['Friends']
+  var grades = data['Grades']
+  var users = data['Users']
   
   show_recent_messages(messages, classes, assignments);
+  show_assignments_due_tmrw(assignments);
+  show_aspirations_due_today(aspirations);
+  show_pending_friend_requests(friends, users);
+  show_recent_grades(grades);
   console.log("done")
   return true;
 }
@@ -229,7 +236,7 @@ async function getFCMToken(messaging) {
 // Save token to server
 async function saveTokenToServer(token) {
   const deviceName = navigator.userAgent;
-  const currentTokens = await fetchRequest('/data', {data: "FILTERED Tokens"});
+  const currentTokens = await fetchRequest('/data', {data: "Name, Tokens"});
   const userTokens = currentTokens['Tokens'].filter(t => t.OSIS === osis);
   const timeStamp = Date.now();
   
@@ -327,3 +334,82 @@ window.addEventListener('load', () => {
   setupMessaging();
   initializeFeatureBoxes();
 });
+
+function show_assignments_due_tmrw(assignments){
+  const assignments_container = document.getElementById('assignments_due_tmrw');
+  // get tomorrow's date
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  // filter assignment due date for tomorrow
+  const assignments_due_tmrw = assignments.filter(assignment => assignment.due_date === tomorrow.toISOString().split('T')[0]);
+  
+  // display the number of assignments due tomorrow in large lettering
+  const num_assignments_div = document.createElement('div');
+  num_assignments_div.style.fontSize = '48px';
+  num_assignments_div.style.fontWeight = 'bold';
+  num_assignments_div.innerHTML = `${assignments_due_tmrw.length}`;
+  assignments_container.appendChild(num_assignments_div);
+
+  // display the assignments due tomorrow with class/name and link to assignment page
+  assignments_due_tmrw.forEach(assignment => {
+    const assignment_div = document.createElement('div');
+    const assignment_link = document.createElement('a');
+    assignment_link.href = `/assignment/${assignment.id}`;
+    assignment_link.innerHTML = `${assignment.class} - ${assignment.name}`;
+    assignment_div.appendChild(assignment_link);
+    assignments_container.appendChild(assignment_div);
+  });
+}
+
+function show_aspirations_due_today(aspirations){
+  return true;
+}
+
+function show_pending_friend_requests(friends, users){
+  const pending_friend_requests_container = document.getElementById('pending_friend_requests');
+  // filter for requests where request.status is pending
+  const pending_friend_requests = friends.filter(friend => friend.status === 'pending');
+  // display the number of pending friend requests in large lettering
+  const num_pending_friend_requests_div = document.createElement('div');
+  num_pending_friend_requests_div.style.fontSize = '48px';
+  num_pending_friend_requests_div.style.fontWeight = 'bold';
+  num_pending_friend_requests_div.innerHTML = `${pending_friend_requests.length}`;
+  pending_friend_requests_container.appendChild(num_pending_friend_requests_div);
+  // display the pending friend requests with name and link to profile page
+  pending_friend_requests.forEach(friend => {
+    // get other user's osis: there is OSIS and targetOSIS, pick the one that is not osis
+    const other_user_osis = friend.OSIS === osis ? friend.targetOSIS : friend.OSIS;
+    // get other user's name
+    const other_user_name = users.filter(user => user.osis == other_user_osis)[0].first_name;
+    const friend_div = document.createElement('div');
+    friend_div.innerHTML = other_user_name;
+    pending_friend_requests_container.appendChild(friend_div);
+  });
+  // add a link to the friend requests page
+  const friend_requests_link = document.createElement('a');
+  friend_requests_link.href = '/Profile';
+  friend_requests_link.innerHTML = 'View All';
+  pending_friend_requests_container.appendChild(friend_requests_link);
+}
+
+function show_recent_grades(grades){
+  const recent_grades_container = document.getElementById('recent_grades');
+  // get the date 4 days ago
+  const four_days_ago = new Date();
+  four_days_ago.setDate(four_days_ago.getDate() - 4);
+  // filter grades for date 4 days ago
+  const recent_grades = grades.filter(grade => new Date(grade.date) > four_days_ago);
+  // display the number of recent grades in large lettering
+  const num_grades_div = document.createElement('div');
+  num_grades_div.style.fontSize = '48px';
+  num_grades_div.style.fontWeight = 'bold';
+  num_grades_div.innerHTML = `${recent_grades.length}`;
+  recent_grades_container.appendChild(num_grades_div);
+  // display the recent grades with class name and grade
+  recent_grades.forEach(grade => {
+    const grade_div = document.createElement('div');
+    grade_div.innerHTML = `${grade.class} - ${grade.name}  →  ${grade.score}/${grade.value}`;
+    recent_grades_container.appendChild(grade_div);
+  });
+}
+
