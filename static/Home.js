@@ -13,21 +13,13 @@ var thursBellSchedule = [0, 486, 530, 574, 618, 633, 677, 721, 765, 809, 853, 89
 function setPeriod(userClasses, friendsData, friendsClasses, currentPeriod) {
   
   const userClass = userClasses.find(classItem => classItem.period === currentPeriod);
-
-  // Set the HTML element to the name of the user's class
   if (userClass) {
       document.getElementById("current-class").textContent = `Current Class: ${userClass.name}`;
   }
-
-  // Loop through each friend
   friendsData.forEach(friend => {
-      // Find the class in friendsClasses where the period matches and the friend's OSIS is included
       const friendClass = friendsClasses.find(classItem => classItem.period === currentPeriod && classItem.osisList.includes(friend.osis));
-
-      
       if (friendClass) {
           const friendClassElement = document.createElement('h5');
-          // Set the textContent property to the name of the class
           friendClassElement.textContent = `${friend.name}: ${friendClass.name}`;
 
           
