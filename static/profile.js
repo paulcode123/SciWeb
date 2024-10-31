@@ -199,7 +199,7 @@ function addToFriendsTab(friend) {
   //Create message link,  💬, and go to profile link,👤
   let messageLink = document.createElement('a');
   messageLink.textContent = "💬";
-  messageLink.href = `/chat/${otherosis}`;
+  messageLink.href = `/Messages?thread=${otherosis}`;
   messageLink.target = "_blank";
   
 

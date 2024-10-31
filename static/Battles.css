@@ -1,100 +1,168 @@
-/* Styles for the Battle heading */
-h1 {
-    font-size: 2.5em;
-    color: #333;
-    text-align: center;
-    margin-bottom: 20px;
+/* Base styles */
+body {
+    font-family: Arial, sans-serif;
+    color: #e0e0e0;
 }
 
-/* Styles for the description paragraph */
+h1 {
+    color: rgb(228, 76, 101);
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 2.5em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
+
+h1:before {
+    content: '\f6dc';  /* Duel swords icon */
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+}
+
 #description {
     font-size: 1.2em;
-    color: #555;
+    color: #e0e0e0;
     text-align: center;
-    margin: 0 20px 20px;
-    line-height: 1.5;
+    margin: 0 20px 30px;
+    line-height: 1.6;
+    background-color: #2d2d2d;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Styles for buttons */
+/* Button styles */
 button {
-    background-color: #4CAF50; /* Green */
-    color: white;
-    padding: 15px 20px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 1em;
-    margin: 10px 5px;
-    cursor: pointer;
+    padding: 15px 25px;
     border: none;
-    border-radius: 5px;
-    transition: background-color 0.3s ease;
+    border-radius: 6px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 10px auto;
+    min-width: 200px;
 }
 
-button:hover {
-    background-color: #45a049;
+#createGame {
+    background-color: rgb(228, 76, 101);
+    color: white;
 }
 
-/* Styles for the game code section */
+#createGame:before {
+    content: '\f11b';  /* Gamepad icon */
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+}
+
+#createGame:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(228, 76, 101, 0.3);
+}
+
+/* Game code section */
 #gameCode {
+    background-color: #2d2d2d;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px auto;
+    max-width: 500px;
     text-align: center;
-    margin-top: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 #gameCodeText {
-    font-size: 1.2em;
-    color: #333;
+    font-size: 1.4em;
+    color: #4CAF50;
+    margin-right: 10px;
 }
 
-#copyCode,
-#joinCreated {
-    background-color: #008CBA; /* Blue */
+#copyCode {
+    background-color: #2196F3;
     color: white;
     padding: 10px 15px;
-    margin-left: 5px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
+    min-width: auto;
 }
 
-#copyCode:hover,
-#joinCreated:hover {
-    background-color: #007bb5;
+#copyCode:before {
+    content: '\f0c5';  /* Copy icon */
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
 }
 
-/* Styles for the input field */
-#joinCode {
-    width: calc(100% - 40px);
-    padding: 15px;
-    margin: 20px 20px 10px;
-    box-sizing: border-box;
-    font-size: 1.5em; /* Large font size */
-    font-weight: bold; /* Bold letters */
-    letter-spacing: 0.3em; /* Spread apart letters */
-    text-transform: uppercase; /* All caps */
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    text-align: center;
-    font-family: 'Arial Black', Gadget, sans-serif; /* Bulky font */
-}
-
-/* Additional button styles for join game button */
-#joinGame {
-    background-color: #f44336; /* Red */
+#joinCreated {
+    background-color: #4CAF50;
     color: white;
-    padding: 15px 20px;
+    padding: 10px 15px;
+    min-width: auto;
+}
+
+#joinCreated:before {
+    content: '\f090';  /* Sign in icon */
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+}
+
+/* Join game section */
+#joinCode {
+    width: 100%;
+    max-width: 400px;
+    padding: 15px;
+    margin: 20px auto;
+    display: block;
+    background-color: #363636;
+    border: 2px solid #444;
+    border-radius: 6px;
+    color: #e0e0e0;
+    font-size: 1.3em;
     text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 1em;
-    margin: 10px 5px;
-    cursor: pointer;
-    border: none;
-    border-radius: 5px;
-    transition: background-color 0.3s ease;
+    letter-spacing: 0.2em;
+    transition: border-color 0.3s ease;
+}
+
+#joinCode:focus {
+    border-color: rgb(228, 76, 101);
+    outline: none;
+}
+
+#joinCode::placeholder {
+    color: #888;
+    letter-spacing: normal;
+}
+
+#joinGame {
+    background-color: #4CAF50;
+    color: white;
+}
+
+#joinGame:before {
+    content: '\f52b';  /* Door open icon */
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
 }
 
 #joinGame:hover {
-    background-color: #da190b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+}
+
+/* Loading animation */
+#loadingWheel {
+    border: 4px solid #363636;
+    border-top: 4px solid rgb(228, 76, 101);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }

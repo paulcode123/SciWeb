@@ -37,8 +37,12 @@ async function refresh(){
 
 function isThreadSet(){
     const urlParams = new URLSearchParams(window.location.search);
-    const threadId = urlParams.get('thread');
+    var threadId = urlParams.get('thread');
     if (threadId) {
+        // if the threadId is 7 digits, then it is a friend thread and the threadId is the other person's OSIS. in this case, find the key in location_to_recipients that has the threadId as a substring
+        if(threadId.length == 7){
+            threadId = Object.keys(location_to_recipients).find(key => key.includes(threadId));
+        }
         console.log(current_chat)
         displayChat(threadId, location_to_recipients[threadId], current_chat);
     }

@@ -94,7 +94,7 @@ async function startEvaluation() {
     document.getElementById('class-selection').style.display = 'none';
     document.getElementById('loading').style.display = 'block';
 
-    const notebooks = await fetchRequest('/data', {"data": "Notebooks"})
+    const notebooks = await fetchRequest('/data', {"data": "Classes, Notebooks"})
     // filter notebooks by classId and unitName
     const filteredNotebooks = notebooks.Notebooks.filter(notebook => notebook.classID === classId && notebook.unit === unitName);
     let topics = []

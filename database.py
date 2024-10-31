@@ -268,6 +268,8 @@ def get_user_data(sheet, prev_sheets=[]):
     return get_grades()
   
   # if the sheet is one of these exceptions that require special filtering
+  if sheet=="FULLUsers":
+    return get_data("Users")
   if sheet=="Users":
     #only include the first 3 columns of the Users sheet, first_name, last_name, and osis
     data = get_data(sheet)
@@ -292,14 +294,17 @@ def get_user_data(sheet, prev_sheets=[]):
     friend_osises = [item['targetOSIS'] for item in friend_request_data if str(session['user_data']['osis']) in item['OSIS']] + [item['OSIS'] for item in friend_request_data if str(session['user_data']['osis']) in item['targetOSIS']]
     friend_classes = get_data("Classes", row_name="OSIS", row_val=friend_osises, operator="in")
     return friend_classes
-
+  if sheet=="Chat":
+    return get_data("Chat", row_name="OSIS", row_val=str(session['user_data']['osis']), operator="array_contains")
+  if sheet=="Leagues":
+    return get_data("Leagues", row_name="OSIS", row_val=str(session['user_data']['osis']), operator="array_contains")
   if sheet=="Courses":
      return get_data(sheet)
-  else:
-    #Otherwise, filter the data for the user's osis
-    int_data = get_data(sheet, row_name="OSIS", row_val=int(session['user_data']['osis']), operator="==")
-    if int_data and len(int_data) > 0:
-      return int_data
-    return get_data(sheet, row_name="OSIS", row_val=str(session['user_data']['osis']), operator="==")
-    
+  
+  #Otherwise, filter the data for the user's osis
+  int_data = get_data(sheet, row_name="OSIS", row_val=int(session['user_data']['osis']), operator="==")
+  if int_data and len(int_data) > 0:
+    return int_data
+  return get_data(sheet, row_name="OSIS", row_val=str(session['user_data']['osis']), operator="==")
+  
   

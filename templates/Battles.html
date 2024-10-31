@@ -4,27 +4,39 @@
 <title>SciWeb | Battles</title>
 {% endblock %}
 
-<!-- css block -->
 {% block css %}
 <link rel="stylesheet" href="/static/Battles.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 {% endblock %}
 
 {% block content %}
-<h1>Battle</h1>
-<p id="description">With Study Battle, you can get ready for your tests in a fun and social way! Create or Join a game, and answer class-specific questions as quickly and accurately as possible!</p>
-<br>
-<button id="createGame">Create Game</button>
-<!-- have a text field with a copy button that the user can click to copy the code to their clipboard. Have it be hidden at first -->
-<div id="gameCode" style="display: none;"> 
-<h3 id="gameCodeText" style="display: inline;">Game Code: </h3><button id="copyCode">📋</button><button id="joinCreated">Join</button>
+<div class="battle-container">
+    <h1>Study Battle</h1>
+    <p id="description">
+        <i class="fas fa-trophy"></i>
+        With Study Battle, you can get ready for your tests in a fun and social way! Create or Join a game, and answer class-specific questions as quickly and accurately as possible!
+    </p>
+    
+    <button id="createGame">Create Game</button>
+    
+    <div id="gameCode" style="display: none;"> 
+        <h3 id="gameCodeText"></h3>
+        <div class="button-group">
+            <button id="copyCode" title="Copy to clipboard">Copy</button>
+            <button id="joinCreated">Join Game</button>
+        </div>
+    </div>
+    
+    <div class="join-section">
+        <input type="text" id="joinCode" placeholder="Enter Game Code">
+        <button id="joinGame">Join Game</button>
+    </div>
+    
+    <div id="loadingWheel" style="display: none;"></div>
 </div>
-<br>
-<input type="text" id="joinCode" placeholder="Enter Game Code">
-<button id="joinGame">Join Game</button>
 {% endblock %}
 
-<!-- js block -->
 {% block js %}
-<script src="/static/Battles.js"></script>
+<script type="module" src="/static/Battles.js"></script>
 {% endblock %}
 

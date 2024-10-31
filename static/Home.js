@@ -6,52 +6,30 @@ import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/fireb
 
 
 // Create function show_recent_messages to display the number and location of messages that were sent in the last 24 hours in classes and assignments that the user is in
-function show_recent_messages(messages, classes, assignments){
-  //Create a variable to store the data in format [{location: assignment and/or class, num_messages: number of messages sent in the last 24 hours, id: id of the assignment or class}]
-  var locations = [];
-  var class_ids = get_classes_ids(classes);
-  console.log(class_ids)
-  //Iterate over all messages
-  for (const message of messages) {
-    var in_classes = in_user_classes(message.location, classes);
-    var in_assignments = in_user_assignments(class_ids, assignments, message.location);
-    var recent = is_recent(message.timestamp);
-    // console.log(in_classes, in_assignments, recent)
-    //Check if the message was sent in the last 24 hours
-    if (recent && (in_classes !== false || in_assignments !== false)){
-      //Check if the location of the message is already in the locations list
-      var exists = false;
-      for (const location of locations) {
-        
-        if (location.location === in_classes[0] || location.location === in_assignments[0]){
-          location.num_messages += 1;
-          exists = true;
-          break;
-        }
-      }
-      //If the location is not in the list, add it
-      if (!exists){
-      // locations.append({location: in_classes[0] || in_assignments[0], num_messages: 1, id: in_classes[1] || in_assignments[1], type: in_classes !== false ? "class" : "assignment"});
-      locations.push({location: in_classes[0] || in_assignments[0], num_messages: 1, id: in_classes[1] || in_assignments[1], type: in_classes !== false ? "class" : "assignment"});
-      }
-    }
-  }
-  //Display the number of messages sent in the last 24 hours in each location
-  var rms = document.getElementById('recent_messages');
-  locations.forEach(location => {
-    let location_div = document.createElement('div');
-    let location_name = document.createElement('h3');
-    let location_num = document.createElement('p');
-    let link = document.createElement('a');
-    location_name.innerHTML = location.location;
-    location_num.innerHTML = location.num_messages;
-    link.innerHTML = "View";
-    link.href = "/"+location.type+"/" + location.location+location.id;
-    location_div.appendChild(location_name);
-    location_div.appendChild(location_num);
-    location_div.appendChild(link);
-    rms.appendChild(location_div);
-});
+function show_recent_messages(messages, classes, assignments, friends, users){
+  const recent_messages_container = document.getElementById('recent_messages');
+  const recent_messages = messages.filter(message => is_recent(message.timestamp));
+  // show the number of recent messages in large lettering
+  const num_messages_div = document.createElement('div');
+  num_messages_div.style.fontSize = '48px';
+  num_messages_div.style.fontWeight = 'bold';
+  num_messages_div.innerHTML = `${recent_messages.length}`;
+  recent_messages_container.appendChild(num_messages_div);
+  // for each location of recent messages, display the number of messages, the location, and the link to the message page
+  // get unique locations
+  const unique_locations = [...new Set(recent_messages.map(message => message.location))];
+  unique_locations.forEach(location => {
+    const message_div = document.createElement('div');
+    let name = get_location_name(location, classes, assignments, friends, users);
+    let num_messages = recent_messages.filter(message => message.location == location).length;
+    let link = `/Messages?thread=${location}`;
+    const message_link = document.createElement('a');
+    message_link.href = link;
+    message_link.innerHTML = `${name}`;
+    message_div.appendChild(message_link);
+    message_div.innerHTML += ` (${num_messages})`;
+    recent_messages_container.appendChild(message_div);
+  });
 }
 
 
@@ -63,37 +41,29 @@ function is_recent(timestamp){
   return false;
 }
 
-function in_user_classes(message_id, classes){
-  //Iterate over all classes
-  for (const classData of classes) {
-    //Check if the class is in the user's classes
-    if (classData.id === message_id){
-      return [classData['name'], classData['id']];
+function get_location_name(location, classes, assignments, friends, users){
+  // if one of the ids of a class is the location, return the name of the class
+  if (classes.some(c => c.id == location)){
+    return classes.filter(c => c.id == location)[0].name;
+  }
+  // if one of the ids of an assignment is the location, return the name of the assignment
+  if (assignments.some(a => a.id == location)){
+    return assignments.filter(a => a.id == location)[0].name;
+  }
+  // if one of the ids of a league is the location, return the name of the league
+  if (leagues.some(l => l.id == location)){
+    return leagues.filter(l => l.id == location)[0].name;
+  }
+  // if one of the ids of a friend is the location, return the name of the friend
+  if (friends.some(f => f.OSIS+f.targetOSIS == location || f.targetOSIS+f.OSIS == location)){
+    if (f.OSIS == osis){
+      return users.filter(u => u.osis == f.targetOSIS)[0].first_name;
+    } else {
+      return users.filter(u => u.osis == f.OSIS)[0].first_name;
     }
   }
-  return false;
+  return "Unknown Location";
 }
-
-function in_user_assignments(class_ids, assignments, message_id){
-  //Iterate over all assignments
-  for (const assignment of assignments) {
-    //Check if the assignment is in the user's classes
-    if (assignment.id == message_id && class_ids.includes(assignment.class)){
-      return [assignment['name'], assignment['id']];
-    }
-  }
-  return false;
-}
-
-function get_classes_ids(classes){
-  //create a list of all the values in the id column of classes
-  var ids = [];
-  for (const classData of classes) {
-    ids.push(classData.id);
-  }
-  return ids;
-}
-
 
 //Create a fetch request to /data to get Chat, Classes, and Assignments data
 async function main(){
@@ -110,7 +80,7 @@ const data = await fetchRequest('/data', { data: "Name, Chat, Classes, Assignmen
   var grades = data['Grades']
   var users = data['Users']
   
-  show_recent_messages(messages, classes, assignments);
+  show_recent_messages(messages, classes, assignments, friends, users);
   show_assignments_due_tmrw(assignments);
   show_aspirations_due_today(aspirations);
   show_pending_friend_requests(friends, users);

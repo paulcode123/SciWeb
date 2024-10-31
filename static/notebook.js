@@ -40,7 +40,7 @@ function createClassElement(classItem) {
     classDiv.innerHTML = `
         <h3>${classItem.name}</h3>
         <div class="units-container" style="display: none;">
-            <button class="create-unit">Create Unit</button>
+            <button class="create-unit" title="Create Unit"><i class="fas fa-plus"></i></button>
         </div>
     `;
     
@@ -51,15 +51,14 @@ function createClassElement(classItem) {
         unitsContainer.appendChild(unitElement);
     });
 
-    classDiv.addEventListener('click', (e) => {
-        if (e.target.classList.contains('create-unit')) {
-            e.stopPropagation();
-            createNewUnit(classItem.id);
-        } else {
-            unitsContainer.style.display = unitsContainer.style.display === 'none' ? 'block' : 'none';
-        }
+    classDiv.querySelector('h3').addEventListener('click', () => {
+        unitsContainer.style.display = unitsContainer.style.display === 'none' ? 'block' : 'none';
     });
 
+    classDiv.querySelector('.create-unit').addEventListener('click', (e) => {
+        e.stopPropagation();
+        createNewUnit(classItem.id);
+    });
 
     return classDiv;
 }
@@ -76,7 +75,7 @@ function createUnitElement(classId, unitName) {
     unitDiv.dataset.name = unitName;
     unitDiv.innerHTML = `
         <h4>${unitName}</h4>
-        <button class="upload-worksheet">Upload Worksheet</button>
+        <button class="upload-worksheet" title="Upload Worksheet"><i class="fas fa-file-upload"></i></button>
     `;
     unitDiv.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -98,6 +97,17 @@ function loadUnitWorksheets(classId, unitName) {
         notebook.classID === classId && notebook.unit === unitName
     );
     
+    // Remove highlight from all units
+    document.querySelectorAll('.unit-item').forEach(unit => {
+        unit.classList.remove('selected-unit');
+    });
+    
+    // Add highlight to selected unit
+    const selectedUnit = document.querySelector(`.unit-item[data-name="${unitName}"]`);
+    if (selectedUnit) {
+        selectedUnit.classList.add('selected-unit');
+    }
+    
     const contentArea = document.getElementById('content-area');
     contentArea.innerHTML = `<h2>Worksheets for ${unitName}</h2>`;
     worksheets.forEach(worksheet => {
@@ -110,15 +120,37 @@ function createWorksheetElement(worksheet) {
     const worksheetDiv = document.createElement('div');
     worksheetDiv.className = 'worksheet-item';
     worksheetDiv.innerHTML = `
-        <h3>${worksheet.topic}</h3>
-        <p>Uploaded: ${worksheet.timestamp}</p>
-        <h4>Notes:</h4>
-        <ul>${worksheet.subtopics.map(subtopic => `<li>${subtopic}</li>`).join('')}</ul>
-        <h4>Practice Questions:</h4>
-        <ol>${worksheet.practice_questions.map(question => `<li>${question}</li>`).join('')}</ol>
+        <h3><i class="fas fa-book-open"></i> ${worksheet.topic}</h3>
+        <p><i class="far fa-clock"></i> ${worksheet.timestamp}</p>
+        <div class="notes-section">
+            <h4><i class="fas fa-pencil-alt"></i> Notes:</h4>
+            <ul class="notes-list">
+                ${worksheet.subtopics.map(subtopic => 
+                    `<li>
+                        <i class="fas fa-angle-right"></i>
+                        <span class="note-text">${subtopic}</span>
+                    </li>`
+                ).join('')}
+            </ul>
+        </div>
+        <div class="practice-section">
+            <h4><i class="fas fa-tasks"></i> Practice Questions:</h4>
+            <ol class="practice-list">
+                ${worksheet.practice_questions.map(question => 
+                    `<li>
+                        <i class="fas fa-question-circle"></i>
+                        <span class="question-text">${question}</span>
+                    </li>`
+                ).join('')}
+            </ol>
+        </div>
         <div class="worksheet-actions">
-            <button class="view-worksheet" data-image="${worksheet.image}">View Worksheet</button>
-            <button class="delete-worksheet" data-id="${worksheet.id}">Delete Worksheet</button>
+            <button class="view-worksheet" data-image="${worksheet.image}" title="View Worksheet">
+                <i class="fas fa-eye"></i>
+            </button>
+            <button class="delete-worksheet" data-id="${worksheet.id}" title="Delete Worksheet">
+                <i class="fas fa-trash"></i>
+            </button>
         </div>
     `;
     worksheetDiv.querySelector('.view-worksheet').addEventListener('click', (e) => {
@@ -238,8 +270,22 @@ async function viewWorksheet(imageReference, worksheetDiv) {
 }
 
 function setupEventListeners() {
-    document.getElementById('toggle-sidebar').addEventListener('click', () => {
-        document.getElementById('sidebar').classList.toggle('collapsed');
-        document.getElementById('content').classList.toggle('expanded');
+    const toggleButton = document.getElementById('notebook-toggle-sidebar');
+    const sidebar = document.getElementById('sidebar');
+    const content = document.getElementById('content');
+
+    toggleButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        sidebar.classList.toggle('collapsed');
+        content.classList.toggle('expanded');
+        
+        const icon = toggleButton.querySelector('i');
+        if (sidebar.classList.contains('collapsed')) {
+            icon.classList.remove('fa-bars');
+            icon.classList.add('fa-times');
+        } else {
+            icon.classList.remove('fa-times');
+            icon.classList.add('fa-bars');
+        }
     });
 }

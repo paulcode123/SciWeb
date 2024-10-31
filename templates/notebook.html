@@ -8,20 +8,19 @@
 <!-- css block -->
 {% block css %}
 <link rel="stylesheet" href="/static/notebook.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 {% endblock %}
 
 <!-- content block -->
 {% block content %}
-<button id="toggle-sidebar">Toggle Sidebar</button>
+<button id="notebook-toggle-sidebar"><i class="fas fa-bars"></i></button>
 <div id="sidebar">
     <!-- Classes will be dynamically added here -->
 </div>
-  <div id="content">
-      <div id="content-area">
-          <!-- Worksheet content will be dynamically added here -->
-      </div>
-  </div>
-</div>
+<div id="content">
+    <div id="content-area">
+        <!-- Worksheet content will be dynamically added here -->
+    </div>
 </div>
 {% endblock %}
 

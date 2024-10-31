@@ -679,7 +679,8 @@ def generate_questions():
     unit_name = data['unitName']  # Changed from unitIndex to unitName
 
     # Get the notebook content for the selected class and unit
-    notebooks = get_user_data("Notebooks")
+    classes = get_user_data("Classes")
+    notebooks = get_user_data("Notebooks", {"Classes":classes})
     # get one list of all of the subtopics from all of the images and one list of all of the practice questions from all of the images
     subtopics = []
     practice_questions = []
@@ -710,7 +711,8 @@ def generate_questions():
 def get_units():
     data = request.json
     class_id = data['classId']
-    notebooks = get_user_data("Notebooks")
+    classes = get_user_data("Classes")
+    notebooks = get_user_data("Notebooks", {"Classes":classes})
     # Get unique units for the given class_id
     units = list(set(notebook['unit'] for notebook in notebooks if notebook['classID'] == class_id))
     
@@ -839,7 +841,7 @@ def postLogin():
   data = raw_data['data']
   mode = raw_data['mode']
   session['ip_add'] = data['IP']
-  logins = get_user_data("Users")
+  logins = get_user_data("FULLUsers")
   #remove the user's ip addresses from all other accounts
   # for row in logins:
   #   if session['ip_add'] in row['IP']:
@@ -854,6 +856,8 @@ def postLogin():
   if mode == "Login":    
     for row in logins:
       # If the user's osis is already in the Users sheet...
+      if not 'password' in row:
+        print("no password in row", row)
       if row['password'] == data['password'] and row['first_name'] == data['first_name']:
         # Add their new IP address to the list of IP addresses
         row['IP'] = f"{session['ip_add']}, {row['IP']}"
