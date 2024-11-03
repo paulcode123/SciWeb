@@ -1,0 +1,128 @@
+.battle-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    min-height: 100vh;
+    background-color: #121212;
+}
+
+#battleCanvas {
+    width: 100%;
+    max-width: 1200px;
+    background-color: #1a1a1a;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#gameInterface {
+    width: 100%;
+    max-width: 1200px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+#playersList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+}
+
+.player-item {
+    background-color: #2a2a2a;
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 150px;
+}
+
+.player-name {
+    font-size: 1.2em;
+    color: #ffffff;
+    margin-bottom: 5px;
+}
+
+.player-status {
+    font-size: 0.9em;
+    color: #888888;
+}
+
+#questionArea {
+    background-color: #2a2a2a;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+#questionText {
+    font-size: 1.4em;
+    color: #ffffff;
+    margin-bottom: 20px;
+}
+
+#answerOptions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.answer-option {
+    background-color: #3a3a3a;
+    padding: 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.answer-option:hover {
+    background-color: #4a4a4a;
+}
+
+#timer {
+    font-size: 1.2em;
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+#gameControls {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: transform 0.2s, background-color 0.3s;
+}
+
+#readyButton {
+    background-color: #4CAF50;
+    color: white;
+}
+
+#leaveGame {
+    background-color: #f44336;
+    color: white;
+}
+
+button:hover {
+    transform: translateY(-2px);
+}
+
+#scoreBoard {
+    background-color: #2a2a2a;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+}

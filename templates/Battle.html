@@ -10,7 +10,26 @@
 {% endblock %}
 
 {% block content %}
-    <h1>Battle</h1>
+    <div class="battle-container">
+        <canvas id="battleCanvas"></canvas>
+        
+        <div id="gameInterface">
+            <div id="playersList"></div>
+            
+            <div id="questionArea">
+                <div id="questionText"></div>
+                <div id="answerOptions"></div>
+                <div id="timer"></div>
+            </div>
+            
+            <div id="scoreBoard"></div>
+        </div>
+        
+        <div id="gameControls">
+            <button id="readyButton">Ready</button>
+            <button id="leaveGame">Leave Game</button>
+        </div>
+    </div>
 {% endblock %}
 
 <!-- js block -->

@@ -166,6 +166,7 @@ setTimeout(() => {
     }, 0.1);
 async function init_fetch(){
   console.log("in init_fetch")
+  startLoading();
   const data = await fetchRequest('/data', { data: 'Name, Classes' });
 
   
@@ -173,8 +174,7 @@ async function init_fetch(){
   user_data = data['Name']
   console.log(classList)
   display_classes(classList, user_data)
-  // document.getElementById('loadingWheel').style.display = "none";
-  
+  endLoading();
 }
 
 //if the user joined or created a class, update the class sheet in the database

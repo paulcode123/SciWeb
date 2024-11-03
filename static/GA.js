@@ -15,13 +15,14 @@ var combinedx;
 var combinedy;
 
 async function main(){
+  startLoading();
   const data = await fetchRequest('/GAsetup', { data: '' });
 
     if(data['error']){
       const errorMessage = document.getElementById("error");
       errorMessage.textContent = data['error'];
       // hide loading wheel
-      document.getElementById('loadingWheel').style.visibility = "hidden";
+      endLoading();
       // stop any further execution
       window.stop();
       return;
@@ -45,6 +46,7 @@ async function main(){
     
     draw_graphs(grade_spreads, times, weights, grades, ['All', 'all'], val_sums, 5, goals);
     setGoalTable(goals)
+    endLoading();
 }
 
 function setStats(stats){
@@ -449,14 +451,23 @@ async function animationGOTC(numTraces, traces){
       easing: 'cubic-in-out'
     },
     frame: {
-      duration: animationDuration
+      duration: animationDuration,
+      redraw: true  // Force complete redraw
     }
   });
 
+  // Wait for animation to complete before resizing
+  await new Promise(resolve => setTimeout(resolve, animationDuration));
   
-  console.log('resizing');
-  Plotly.relayout('myGraph', {'yaxis.autorange': true});
+  // Store current goals and images
+  const currentLayout = document.getElementById('myGraph').layout;
+  const currentGoals = currentLayout.images || [];
   
+  // Perform relayout with preserved goals
+  await Plotly.relayout('myGraph', {
+    'yaxis.autorange': true,
+    images: currentGoals
+  });
 }
 
 
@@ -764,6 +775,7 @@ function draw_graphs(grade_spreads, times, weights, grades, cat, val_sums, comp_
   currentCategories = cat;
   draw_gotc(grade_spreads, times, weights, grades, cat, val_sums, comp_time, goals);
   draw_histogram(grades, cat, comp_time);
+  draw_change_graph(grade_spreads, times, weights, cat, 15);
 }
 
 document.getElementById("class-form").addEventListener("submit", function(event) {
@@ -1042,6 +1054,190 @@ async function deleteGoal(goalId) {
   await fetchRequest('/delete_data', { sheet: "Goals", row_name: "id", row_value: parseInt(goalId) });
   goals = goals.filter(goal => parseInt(goal.id) != parseInt(goalId));
   return goals
+}
+
+function draw_change_graph(grade_spreads, times, weights, cat, timeframe=15) {
+  // Filter spreads based on categories like in draw_gotc
+  let spreads = [];
+  let spread_names = [];
+  let w = [];
+  for (const spread_class in grade_spreads) {
+    for (const spread_category in grade_spreads[spread_class]) {
+      let spread = grade_spreads[spread_class][spread_category];
+      if ((cat.includes(spread_class) || cat.includes('all')) && 
+          (cat.includes(spread_category) || cat.includes('All'))) {
+        spreads.push(spread);
+        spread_names.push(spread_category + " " + spread_class);
+        w.push(weights[spread_class][spread_category]);
+      }
+    }
+  }
+
+  // Calculate grade changes for each timeframe
+  let changes = [];
+  let periods = [];
+  
+  // Convert timeframe from days to number of data points
+  const pointsPerDay = times.length / (times[times.length-1] - times[0]);
+  const pointsPerFrame = Math.round(timeframe * pointsPerDay);
+  
+  for (let i = pointsPerFrame; i < times.length; i += pointsPerFrame) {
+    let periodStart = times[i - pointsPerFrame];
+    let periodEnd = times[i];
+    
+    // Format dates without years
+    const startDate = serialToDate(periodStart).split('/');
+    const endDate = serialToDate(periodEnd).split('/');
+    periods.push(`${startDate[0]}/${startDate[1]} to ${endDate[0]}/${endDate[1]}`);
+    
+    // Calculate changes for each spread
+    let periodChanges = spreads.map(spread => {
+      return spread[i] - spread[i - pointsPerFrame];
+    });
+    changes.push(periodChanges);
+  }
+
+  // Calculate combined changes (weighted average)
+  let combinedChanges = changes.map(periodChanges => {
+    let weightedSum = 0;
+    let weightSum = 0;
+    for (let i = 0; i < periodChanges.length; i++) {
+      weightedSum += periodChanges[i] * w[i];
+      weightSum += w[i];
+    }
+    return weightedSum / weightSum;
+  });
+
+  // Define a color palette for components
+  const colorPalette = [
+    'rgba(228, 76, 101, 0.7)',  // Pink
+    'rgba(55, 128, 191, 0.7)',  // Blue
+    'rgba(50, 171, 96, 0.7)',   // Green
+    'rgba(255, 193, 7, 0.7)',   // Yellow
+    'rgba(153, 102, 255, 0.7)', // Purple
+    'rgba(255, 159, 64, 0.7)',  // Orange
+    'rgba(201, 203, 207, 0.7)', // Grey
+    'rgba(75, 192, 192, 0.7)',  // Teal
+    'rgba(255, 99, 132, 0.7)',  // Red
+    'rgba(54, 162, 235, 0.7)'   // Light Blue
+  ];
+
+  // Create traces for each spread with unique colors and filter small changes
+  let traces = [];
+  for (let i = 0; i < spreads.length; i++) {
+    const spreadChanges = changes.map(change => change[i]);
+    
+    if (spreadChanges.some(change => Math.abs(change) >= 0.1)) {
+      let trace = {
+        x: periods,
+        y: spreadChanges.map(change => Math.abs(change) >= 0.1 ? change : 0),
+        type: 'bar',
+        name: spread_names[i],
+        marker: {
+          color: colorPalette[i % colorPalette.length]
+        },
+        hovertemplate: '%{y:.1f}%<br>%{x}<extra>' + spread_names[i] + '</extra>'
+      };
+      traces.push(trace);
+    }
+  }
+
+  // Create combined trace
+  let combinedTrace = [{
+    x: periods,
+    y: combinedChanges,
+    type: 'bar',
+    marker: {
+      color: combinedChanges.map(change => 
+        change >= 0 ? 'rgba(228, 76, 101, 0.7)' : 'rgba(55, 128, 191, 0.7)')
+    },
+    hovertemplate: '%{y:.1f}%<br>%{x}<extra>Combined</extra>'
+  }];
+
+  let layout = {
+    title: 'Grade Changes by Time Period',
+    barmode: 'stack',
+    hovermode: 'closest',  // Only show closest hover
+    yaxis: {
+      title: 'Grade Change (%)',
+      zeroline: true,
+      zerolinecolor: 'white',
+      zerolinewidth: 2,
+      showgrid: false,
+      range: [
+        Math.min(...combinedChanges.concat(...changes.flat())) * 1.1,
+        Math.max(...combinedChanges.concat(...changes.flat())) * 1.1
+      ]
+    },
+    xaxis: {
+      title: 'Time Period',
+      showgrid: false,
+      tickangle: -45
+    },
+    showlegend: true,
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: 'white' }
+  };
+
+  // Initial plot with combined trace
+  Plotly.newPlot('myChangeGraph', combinedTrace, layout)
+    .then(() => {
+      Plotly.relayout('myChangeGraph', {
+        'yaxis.autorange': true
+      });
+    });
+
+  // Remove existing event listeners
+  const componentsCheckbox = document.getElementById('componentsChange');
+  const timeframeSlider = document.getElementById('timeframeSlider');
+  
+  componentsCheckbox.removeEventListener('change', componentsCheckbox.changeHandler);
+  timeframeSlider.removeEventListener('input', timeframeSlider.inputHandler);
+
+  // Add new event listener for components toggle
+  componentsCheckbox.changeHandler = function() {
+    if (this.checked) {
+      // When showing components, update the entire data array at once
+      Plotly.react('myChangeGraph', traces, {
+        ...layout,
+        barmode: 'stack'
+      }).then(() => {
+        Plotly.relayout('myChangeGraph', {
+          'yaxis.autorange': true
+        });
+      });
+    } else {
+      // When showing combined, update to single trace
+      Plotly.react('myChangeGraph', combinedTrace, {
+        ...layout,
+        barmode: 'group'
+      }).then(() => {
+        Plotly.relayout('myChangeGraph', {
+          'yaxis.autorange': true
+        });
+      });
+    }
+  };
+  componentsCheckbox.addEventListener('change', componentsCheckbox.changeHandler);
+
+  // Add debounced event listener for timeframe slider
+  let timeoutId = null;
+  timeframeSlider.inputHandler = function() {
+    const value = this.value;
+    document.getElementById('timeframeValue').textContent = value;
+    
+    // Clear any existing timeout
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    
+    // Set new timeout
+    timeoutId = setTimeout(() => {
+      draw_change_graph(grade_spreads, times, weights, cat, parseInt(value));
+    }, 250); // Wait 250ms after last change before redrawing
+  };
+  timeframeSlider.addEventListener('input', timeframeSlider.inputHandler);
 }
 
 

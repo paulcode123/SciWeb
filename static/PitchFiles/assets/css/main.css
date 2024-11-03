@@ -4109,3 +4109,46 @@ input, select, textarea {
 					}
 
 	}
+
+
+	/* Loading Animation */
+.loading-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10000;
+    display: none;
+}
+
+.loading-image {
+    position: absolute;
+    left: 50%;
+    width: 100px;
+    height: 100px;
+    display: none;
+}
+
+.loading-image.active {
+    display: block;
+    animation: loadingSpin 1.5s ease-in-out;
+}
+
+@keyframes loadingSpin {
+    0% {
+        transform: translateX(-50%) translateY(100px) rotate(0deg);
+        opacity: 0;
+    }
+    20% {
+        transform: translateX(-50%) translateY(0) rotate(0deg);
+        opacity: 1;
+    }
+    80% {
+        transform: translateX(-50%) translateY(0) rotate(360deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(-50%) translateY(-100px) rotate(360deg);
+        opacity: 0;
+    }
+}

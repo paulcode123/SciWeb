@@ -112,3 +112,52 @@
 .fa-calendar-alt { color: #6c757d; }
 .fa-bell { color: #fd7e14; }
 .fa-clock { color: #20c997; }
+
+#timeline-container {
+    position: relative;
+    margin: 40px 0;
+    height: 150px;
+    overflow-x: auto;
+    padding: 20px 0;
+}
+
+.timeline-line {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #007BFF, #00FF88);
+    transform: translateY(-50%);
+}
+
+.timeline-event {
+    position: absolute;
+    transform: translateX(-50%);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.timeline-event.future {
+    top: 0;
+}
+
+.timeline-event.past {
+    bottom: 0;
+}
+
+.timeline-dot {
+    width: 16px;
+    height: 16px;
+    background: #007BFF;
+    border-radius: 50%;
+    margin: 0 auto;
+    box-shadow: 0 0 10px rgba(0,123,255,0.5);
+}
+
+.timeline-label {
+    padding: 8px;
+    background: #464448;
+    color: white;
+    border-radius: 4px;
+}

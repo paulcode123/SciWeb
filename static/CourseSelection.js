@@ -20,6 +20,7 @@ const color_key = {
 // const categories = ['science', 'math', 'english', 'history', 'language', 'elective', 'lunch', 'free', 'research', 'chem', 'bio', 'physics', 'CS', 'AP']
 //write fetch request to /data for Courses sheet
 async function main(){
+    startLoading();
     const data = await fetchRequest('/data', { data: "Courses" });
 
         var courses = data['Courses']
@@ -30,7 +31,7 @@ async function main(){
         display_courses(courses)
         set_event_listeners(courses)
         set_search(courses)
-    
+    endLoading();
 }
 main()
 //display the courses in the courses container

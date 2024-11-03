@@ -19,6 +19,7 @@ document.getElementById('OpenGA').addEventListener('click', () => {
 Pullbutton.addEventListener('click', pullfromJupiter);
 
 async function pullfromJupiter(){
+  startLoading();
   start_loading(12);
   console.log("pulling from Jupiter")
   // make loading wheel visible
@@ -53,6 +54,7 @@ async function pullfromJupiter(){
   else{
   grades = data;
   createGradesTable(grades);
+  endLoading();
   // If new classes were added, send notifications
   if (data.new_classes && data.new_classes.length > 0) {
     notifyClassmates(data.new_classes, data.class_tokens);
@@ -174,7 +176,9 @@ for (let i = 0; i < pasted.length; i += 2) {
 
 
 async function post_grades(grades){
+  startLoading();
   await fetchRequest('/post_grades', {"data": grades});
+  endLoading();
 }
 
 

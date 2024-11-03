@@ -134,4 +134,10 @@ Sheet name: Aspirations
     goal(str: main goal of the aspiration)
     description(str: detailed description of the aspiration)
     steps(list of dictionaries: each containing 'text' and 'time' for steps to achieve the goal)
-    accountability(list of dictionaries: each containing 'text' and 'time' for accountability reminders)
+    
+Sheet name: Battles
+
+    id(8 digit number)
+    class(id of the class)
+    gameMode(type of game mode)
+    unit(id of the unit)

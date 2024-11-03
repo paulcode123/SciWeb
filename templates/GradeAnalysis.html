@@ -67,6 +67,22 @@
       <input type="checkbox" id="componentsHisto">
       <label for="componentsHisto">Components</label>
     </span>
+    
+    <span onclick="shareGraph('myChangeGraph')">
+        <img class="share-icon" src="/static/media/white_share_icon.png">
+      </span>
+      <div id="myChangeGraph"></div>
+      <div class="graph-controls">
+        <span>
+          <input type="checkbox" id="componentsChange">
+          <label for="componentsChange">Components</label>
+        </span>
+        <span>
+          <label for="timeframeSlider">Timeframe (days): </label>
+          <input type="range" id="timeframeSlider" min="3" max="30" value="15">
+          <span id="timeframeValue">15</span>
+        </span>
+      </div>
     <br><br>
     <p id="error" style="color: red;"></p>
 

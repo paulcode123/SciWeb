@@ -67,6 +67,7 @@ function get_location_name(location, classes, assignments, friends, users){
 
 //Create a fetch request to /data to get Chat, Classes, and Assignments data
 async function main(){
+  startLoading();
 console.log("fetching data")
 const data = await fetchRequest('/data', { data: "Name, Chat, Classes, Assignments, Aspirations, Friends, Grades, Users" });
 
@@ -86,6 +87,7 @@ const data = await fetchRequest('/data', { data: "Name, Chat, Classes, Assignmen
   show_pending_friend_requests(friends, users);
   show_recent_grades(grades);
   console.log("done")
+  endLoading();
   return true;
 }
 

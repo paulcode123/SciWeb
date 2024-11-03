@@ -338,3 +338,65 @@ h2 {
 .delete-goal:hover {
   color: rgb(228, 76, 101);
 }
+
+#myChangeGraph {
+  border-radius: 6px;
+  border: 20px solid rgb(228, 76, 101);
+  width: 100%;
+  height: calc(50vw - 10px);
+  margin: 10px;
+}
+
+.graph-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: #1b1c1c;
+  border-radius: 6px;
+  margin: 10px;
+}
+
+#timeframeSlider {
+  -webkit-appearance: none;
+  width: 200px;
+  height: 10px;
+  border-radius: 5px;
+  background: #322f2f;
+  outline: none;
+  margin: 0 10px;
+}
+
+#timeframeSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgb(228, 76, 101);
+  cursor: pointer;
+  transition: background 0.15s ease-in-out;
+}
+
+#timeframeSlider::-webkit-slider-thumb:hover {
+  background: rgba(228, 76, 101, 0.8);
+}
+
+#timeframeSlider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 50%;
+  background: rgb(228, 76, 101);
+  cursor: pointer;
+  transition: background 0.15s ease-in-out;
+}
+
+#timeframeSlider::-moz-range-thumb:hover {
+  background: rgba(228, 76, 101, 0.8);
+}
+
+#timeframeValue {
+  min-width: 30px;
+  text-align: center;
+}

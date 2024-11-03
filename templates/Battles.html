@@ -19,8 +19,33 @@
     
     <button id="createGame">Create Game</button>
     
+    <div id="classSelection" style="display: none;">
+        <h3>Select Class and Unit</h3>
+        <select id="class-select">
+            <option value="">Select a class</option>
+        </select>
+        <select id="unit-select" disabled>
+            <option value="">Select a unit</option>
+        </select>
+        <button id="confirmClass">Continue</button>
+    </div>
+    
+    <div id="gameModeSelection" style="display: none;">
+        <h3>Select Game Mode</h3>
+        <select id="gameMode">
+            <option value="Speed Duel">Speed Duel</option>
+            <option value="Knowledge Ladder">Knowledge Ladder</option>
+            <option value="Team Battle">Team Battle</option>
+            <option value="Elimination Challenge">Elimination Challenge</option>
+            <option value="Topic Conquest">Topic Conquest</option>
+        </select>
+        <p class="game-mode-info" id="gameModeInfo">Select a game mode to continue</p>
+        <button id="confirmGameMode">Confirm Game Mode</button>
+    </div>
+    
     <div id="gameCode" style="display: none;"> 
         <h3 id="gameCodeText"></h3>
+        <p>Game Mode: <span id="gameModeDisplay"></span></p>
         <div class="button-group">
             <button id="copyCode" title="Copy to clipboard">Copy</button>
             <button id="joinCreated">Join Game</button>

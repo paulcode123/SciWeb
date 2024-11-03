@@ -14,7 +14,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="/static/PitchFiles/assets/css/main.css" />
         <link rel="stylesheet" href="/static/counselor.css">
-        <link rel="icon" href="static/media/favicon.png" sizes="48x48" type="image/x-icon">
+        <link rel="icon" href="/static/media/favicon.png" sizes="48x48" type="image/x-icon">
 		<noscript><link rel="stylesheet" href="/static/PitchFiles/assets/css/noscript.css" /></noscript>
     {% block css %}
     {% endblock %}
@@ -26,6 +26,12 @@
           <div id="chat-log" class="chat-log"></div>
           <input type="text" id="user-input" placeholder="Type your message..." />
       </div>
+    </div>
+    <!-- Loading animation -->
+    <div class="loading-container">
+      <img src="/static/media/loading1.png" class="loading-image">
+      <img src="/static/media/loading2.png" class="loading-image">
+      <img src="/static/media/loading3.png" class="loading-image">
     </div>
 	</head>
 	<body class="is-preload">

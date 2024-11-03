@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadContext() {
+    startLoading();
     fetch('/data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -21,6 +22,7 @@ function loadContext() {
             loadUnitWorksheets(currentClassId, currentUnitName);
         }
     });
+    endLoading();
 }
 
 function loadClasses() {

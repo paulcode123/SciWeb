@@ -77,6 +77,7 @@ function post_assignment(data){
 
 
 async function get_assignment(){
+  startLoading();
   var data = await fetchRequest('/data', {data: "Assignments, Classes, Name, Users"});
   var classId = window.location.href.slice(-4);
   var assignmentList = data['Assignments']
@@ -95,7 +96,7 @@ async function get_assignment(){
   show_Join(data['Name'], classData, "Classes");
   // if classData['img'] != "", set the background image of the div to the base64 image string
   
-  document.getElementById('loadingWheel').style.display = "none";
+  endLoading();
 }
 get_assignment()
 

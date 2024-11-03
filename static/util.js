@@ -88,3 +88,36 @@ function processDate(date){
         }
     });
 }
+let currentLoadingImage = 0;
+let loadingInterval;
+
+function startLoading() {
+    const container = document.querySelector('.loading-container');
+    const images = container.querySelectorAll('.loading-image');
+    container.style.display = 'block';
+    // document.body.style.pointerEvents = 'none';
+    document.body.style.opacity = '0.7';
+    
+    // Show first image
+    images[0].classList.add('active');
+    currentLoadingImage = 0;
+    
+    // Rotate through images
+    loadingInterval = setInterval(() => {
+        images[currentLoadingImage].classList.remove('active');
+        currentLoadingImage = (currentLoadingImage + 1) % images.length;
+        images[currentLoadingImage].classList.add('active');
+    }, 1500); // Match animation duration
+}
+
+function endLoading() {
+    const container = document.querySelector('.loading-container');
+    const images = container.querySelectorAll('.loading-image');
+    
+    clearInterval(loadingInterval);
+    container.style.display = 'none';
+    images.forEach(img => img.classList.remove('active'));
+    
+    // document.body.style.pointerEvents = 'auto';
+    document.body.style.opacity = '1';
+}

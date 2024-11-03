@@ -8,7 +8,7 @@ const completed = document.getElementById('done');
 
 document.addEventListener('DOMContentLoaded', function() {
   const form = document.getElementById('assignment-form');
-
+  startLoading();
   // Fetch assignment data and calculate averages
   fetchRequest('/data', {
     "data": "Assignments"
@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
               document.getElementById('average-time-spent').textContent = `Average Time Spent: ${averageTimeSpent} hours`;
               document.getElementById('percent-completed').textContent = `Class Completion: ${percentCompleted}%`;
           }
+          endLoading();
       })
       .catch(error => console.error('Error fetching assignment data:', error));
 

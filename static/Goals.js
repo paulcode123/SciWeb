@@ -4,6 +4,9 @@ let conversation = [
 ];
 var aspirations = [];
 
+// Add after existing variables
+let timelineEvents = [];
+
 document.getElementById('send-response').addEventListener('click', function() { // when the button is clicked
     var userInput = userInputField.value;
     userInputField.value = '';
@@ -65,11 +68,62 @@ function get_aspirations(){
     })
 }
 
-function display_aspirations(data){
+// Add this function to update the timeline
+function updateTimeline(step, deadline) {
+    const timelineContainer = document.getElementById('timeline-events');
+    const containerWidth = timelineContainer.parentElement.offsetWidth;
+    
+    // Convert all dates to timestamps
+    const now = new Date().getTime();
+    const deadlineDate = new Date(deadline).getTime();
+    
+    // Add new event to array and sort by date
+    timelineEvents.push({ step, date: deadlineDate });
+    timelineEvents.sort((a, b) => a.date - b.date);
+    
+    // Clear and rebuild timeline
+    timelineContainer.innerHTML = '';
+    
+    // Find date range
+    const earliestDate = Math.min(now, ...timelineEvents.map(e => e.date));
+    const latestDate = Math.max(...timelineEvents.map(e => e.date));
+    const timeRange = latestDate - earliestDate;
+    
+    timelineEvents.forEach(event => {
+        const position = ((event.date - earliestDate) / timeRange) * (containerWidth - 100) + 50;
+        const isPast = event.date < now;
+        
+        const eventEl = document.createElement('div');
+        eventEl.className = `timeline-event ${isPast ? 'past' : 'future'} new`;
+        eventEl.style.left = `${position}px`;
+        
+        eventEl.innerHTML = `
+            <div class="timeline-label">
+                ${event.step}
+                <div class="timeline-date">${new Date(event.date).toLocaleDateString()}</div>
+            </div>
+            <div class="timeline-dot"></div>
+        `;
+        
+        timelineContainer.appendChild(eventEl);
+    });
+}
+
+// Modify the display_aspirations function to update timeline
+function display_aspirations(data) {
+    // Clear timeline events
+    timelineEvents = [];
+    
     console.log(data);
     const aspirationsContainer = document.getElementById('aspirations-container');
     aspirationsContainer.innerHTML = '';
+    
     data.forEach(aspiration => {
+        // Add each step to timeline
+        aspiration.steps.forEach(step => {
+            updateTimeline(step.text, step.time);
+        });
+        
         let stepsHtml = aspiration.steps.map((step, index) => `
             <li>
                 <i class="fas fa-tasks"></i> ${step.text}

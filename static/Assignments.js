@@ -87,6 +87,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //fetch the assignments from the database
 async function get_assignment(){
+  startLoading();
   var data = await fetchRequest('/data', { data: "Name, Classes, Assignments" })
   
   
@@ -95,7 +96,7 @@ async function get_assignment(){
   classList = data["Classes"]
   console.log(classList, assignmentList)
   display_assignments(assignmentList, classList)
-  document.getElementById('loadingWheel').style.display = "none";
+  endLoading();
   
 }
 get_assignment()

@@ -3,7 +3,7 @@
 var userData;
 var users;
 setTimeout(async function() {
-  
+  startLoading();
 data = await fetchRequest('/data', { data: "Name, Profiles, Friends, Users" })
 
 userData = data['Name'];
@@ -13,7 +13,7 @@ displayUserInfo(userData);
 set_public_profile(data['Profiles']);
 console.log(data['Friends']);
 showFriends(data['Friends'], users, userData.osis);
-
+endLoading();
 }, 300);
 
 function displayUserInfo(userData){

@@ -248,8 +248,8 @@ def assignment_page(assignmentid):
 
 @app.route('/users/<userid>')
 def public_profile(userid):
-  users = get_user_data("Users")
-  profiles = get_user_data("Profiles")
+  users = get_data("Users")
+  profiles = get_data("Profiles")
   
   profile = next((row for row in profiles if str(row['OSIS']) == str(userid)), None)
   # if profile is not found, return an error without a separate page
