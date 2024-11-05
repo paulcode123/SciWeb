@@ -1,284 +1,209 @@
-// Global variables to store class data, questions, and user progress
-let classes = [];
-let currentQuestions = [];
-let currentQuestionIndex = 0;
-let score = 0;
+// State management
+const state = {
+    classes: [],
+    currentQuestions: [],
+    currentIndex: 0,
+    userAnswers: [],
+    scoringPrompts: {
+        accuracy: "Score based on factual accuracy and correctness. Focus on correct information and concepts.",
+        specificity: "Score based on detail level and examples. Focus on explanation quality and support.",
+        depth: "Score based on conceptual understanding and connections. Focus on deep comprehension."
+    }
+};
 
-// Event listener for when the DOM content is fully loaded
-document.addEventListener('DOMContentLoaded', function() {
-    fetchClasses();
-    setupEventListeners();
-});
+// DOM manipulation helpers
+const dom = {
+    show: (id) => document.getElementById(id).style.display = 'block',
+    hide: (id) => document.getElementById(id).style.display = 'none',
+    get: (id) => document.getElementById(id),
+    setValue: (id, value) => document.getElementById(id).textContent = value
+};
 
-// Function to fetch available classes from the server
-function fetchClasses() {
+// Initialize app
+document.addEventListener('DOMContentLoaded', () => {
     fetch('/data', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ data: 'Name, Classes' }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: 'Name, Classes' })
     })
-    .then(response => response.json())
+    .then(res => res.json())
     .then(data => {
-        classes = data.Classes;
-        populateClassSelect();
-    })
-    .catch(error => console.error('Error:', error));
-}
-
-// Function to populate the class selection dropdown
-function populateClassSelect() {
-    const classSelect = document.getElementById('class-select');
-    classes.forEach(classItem => {
-        const option = document.createElement('option');
-        option.value = classItem.id;
-        option.textContent = classItem.name;
-        classSelect.appendChild(option);
+        state.classes = data.Classes;
+        const select = dom.get('class-select');
+        state.classes.forEach(c => {
+            select.appendChild(new Option(c.name, c.id));
+        });
     });
-}
 
-// Function to set up event listeners for various UI elements
-function setupEventListeners() {
-    document.getElementById('class-select').addEventListener('change', handleClassSelect);
-    document.getElementById('start-evaluation').addEventListener('click', startEvaluation);
-    document.getElementById('next-question').addEventListener('click', showNextQuestion);
-    document.querySelectorAll('.choice').forEach(button => {
-        button.addEventListener('click', handleAnswer);
-    });
-}
+    // Event listeners
+    dom.get('class-select').onchange = loadUnits;
+    dom.get('start-evaluation').onclick = startEvaluation;
+    dom.get('next-question').onclick = () => showQuestion(++state.currentIndex);
+});
 
-// Function to handle class selection and fetch corresponding units
-function handleClassSelect() {
-    const unitSelect = document.getElementById('unit-select');
+// Load units for selected class
+function loadUnits() {
+    const unitSelect = dom.get('unit-select');
     unitSelect.innerHTML = '<option value="">Select a unit</option>';
     unitSelect.disabled = true;
 
-    const selectedClassId = document.getElementById('class-select').value;
-
     fetch('/get-units', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ classId: selectedClassId }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classId: dom.get('class-select').value })
     })
-    .then(response => response.json())
+    .then(res => res.json())
     .then(data => {
         if (data.units) {
-            data.units.forEach((unit, index) => {
-                const option = document.createElement('option');
-                option.value = unit;
-                option.textContent = unit;
-                unitSelect.appendChild(option);
-            });
+            data.units.forEach(unit => unitSelect.appendChild(new Option(unit, unit)));
             unitSelect.disabled = false;
-        } else if (data.error) {
-            console.error('Error fetching units:', data.error);
-            showNotification('Failed to fetch units. Please try again.', 'error');
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showNotification('An error occurred while fetching units.', 'error');
     });
 }
 
-// Modify the startEvaluation function to handle the new format
+// Start evaluation
 function startEvaluation() {
-    const classId = document.getElementById('class-select').value;
-    const unitName = document.getElementById('unit-select').value;
+    const settings = {
+        classId: dom.get('class-select').value,
+        unitName: dom.get('unit-select').value,
+        mcqCount: parseInt(dom.get('mcq-count').value),
+        writtenCount: parseInt(dom.get('written-count').value)
+    };
 
-    if (!classId || !unitName) {
-        showNotification('Please select both a class and a unit.', 'warning');
+    if (!settings.classId || !settings.unitName) {
+        alert('Please select both a class and a unit.');
         return;
     }
 
-    document.getElementById('class-selection').style.display = 'none';
-    document.getElementById('loading').style.display = 'block';
+    ['class-selection', 'settings-panel'].forEach(id => dom.hide(id));
+    dom.show('loading');
 
     fetch('/generate-questions', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ classId, unitName }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
     })
-    .then(response => response.json())
+    .then(res => res.json())
     .then(data => {
-        console.log(data);
-        currentQuestions = data.questions;
-        userAnswers = new Array(currentQuestions.multiple_choice.length + currentQuestions.short_response.length).fill(null);
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('evaluation').style.display = 'block';
+        state.currentQuestions = data.questions;
+        state.userAnswers = new Array(data.questions.multiple_choice.length + 
+                                    data.questions.short_response.length).fill(null);
+        dom.hide('loading');
+        dom.show('evaluation');
         showQuestion(0);
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showNotification('Failed to generate questions. Please try again.', 'error');
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('class-selection').style.display = 'block';
     });
 }
 
-// Function to display a question and its answer choices
+// Display question
 function showQuestion(index) {
-    let question;
-    if (index < 2) {
-        // Multiple choice question
-        question = currentQuestions.multiple_choice[index];
-        document.getElementById('question').textContent = question.question;
-        const choicesContainer = document.getElementById('choices-container');
-        choicesContainer.innerHTML = '';
-
-        question.answers.forEach((choice, i) => {
-            const button = document.createElement('button');
-            button.textContent = choice;
-            button.classList.add('choice');
-            button.addEventListener('click', () => handleAnswer(choice));
-            choicesContainer.appendChild(button);
+    console.log("showing question", index);
+    // hide next button
+    dom.hide('next-question');
+    const mcqCount = state.currentQuestions.multiple_choice.length;
+    const question = index < mcqCount ? 
+        state.currentQuestions.multiple_choice[index] :
+        state.currentQuestions.short_response[index - mcqCount];
+    
+    dom.setValue('question', index < mcqCount ? question.question : question);
+    // console.log(document.getElementById('current-question'));
+    // dom.setValue('current-question', index + 1);
+    dom.setValue('progress', `Question ${index + 1} of ${mcqCount + state.currentQuestions.short_response.length}`);
+    
+    const container = dom.get('choices-container');
+    container.innerHTML = '';
+    
+    if (index < mcqCount) {
+        question.answers.forEach(choice => {
+            const btn = document.createElement('button');
+            btn.textContent = choice;
+            btn.className = 'choice';
+            btn.onclick = () => handleAnswer(choice, question.correct_answer);
+            container.appendChild(btn);
         });
     } else {
-        // Short response question
-        question = currentQuestions.short_response[index - 2];
-        document.getElementById('question').textContent = question;
-        const choicesContainer = document.getElementById('choices-container');
-        choicesContainer.innerHTML = '';
-
-        const textarea = document.createElement('textarea');
-        textarea.id = 'short-answer';
-        textarea.rows = 4;
-        textarea.cols = 50;
-        choicesContainer.appendChild(textarea);
-
-        const submitButton = document.createElement('button');
-        submitButton.textContent = 'Submit Answer';
-        submitButton.classList.add('submit-answer-button'); // Add this line
-        submitButton.addEventListener('click', handleOpenAnswer);
-        choicesContainer.appendChild(submitButton);
+        container.appendChild(Object.assign(document.createElement('textarea'), {
+            id: 'short-answer',
+            rows: 4,
+            cols: 50
+        }));
+        const submitBtn = document.createElement('button');
+        submitBtn.textContent = 'Submit';
+        submitBtn.className = 'button primary';
+        submitBtn.onclick = handleOpenAnswer;
+        container.appendChild(submitBtn);
     }
-
-    document.getElementById('current-question').textContent = index + 1;
-    document.getElementById('next-question').style.display = 'none';
 }
 
-// Function to handle user's answer for multiple-choice questions
-function handleAnswer(selectedAnswer) {
-    const currentQuestion = currentQuestions.multiple_choice[currentQuestionIndex];
-    userAnswers[currentQuestionIndex] = selectedAnswer;
-
-    document.querySelectorAll('.choice').forEach(button => {
-        button.disabled = true;
-        if (button.textContent === currentQuestion.correct_answer) {
-            button.style.backgroundColor = '#4CAF50';
-        } else if (button.textContent === selectedAnswer) {
-            button.style.backgroundColor = '#FF6347';
-        }
+// Handle answers
+function handleAnswer(choice, correct) {
+    state.userAnswers[state.currentIndex] = choice;
+    document.querySelectorAll('.choice').forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent === correct) btn.classList.add('correct');
+        else if (btn.textContent === choice) btn.classList.add('incorrect');
     });
-
-    showNextButton();
+    showNextOrSubmit();
 }
-    
 
-// Function to handle user's answer for open-ended questions
 function handleOpenAnswer() {
-    const answer = document.getElementById('short-answer').value;
-    userAnswers[currentQuestionIndex] = answer;
-    document.getElementById('short-answer').disabled = true;
-    showNextButton();
+    state.userAnswers[state.currentIndex] = dom.get('short-answer').value;
+    dom.get('short-answer').disabled = true;
+    showNextOrSubmit();
 }
 
-// Function to show the 'Next' button or submit answers if it's the last question
-function showNextButton() {
-    if (currentQuestionIndex < 4) {
-        document.getElementById('next-question').style.display = 'block';
+function showNextOrSubmit() {
+    const totalQuestions = state.currentQuestions.multiple_choice.length + 
+                          state.currentQuestions.short_response.length;
+    if (state.currentIndex < totalQuestions - 1) {
+        dom.show('next-question');
     } else {
         submitAnswers();
     }
 }
 
-// Function to show the next question
-function showNextQuestion() {
-    currentQuestionIndex++;
-    showQuestion(currentQuestionIndex);
-}
-
-// Function to submit all answers for scoring
+// Submit and show results
 function submitAnswers() {
-    console.log(userAnswers);
-    document.getElementById('loading').style.display = 'block';
-    document.getElementById('loading-text').textContent = 'Evaluating responses...';
-    document.getElementById('evaluation').style.display = 'none';
-
+    const scoringType = document.querySelector('input[name="scoring-type"]:checked').value;
+    
     fetch('/score-answers', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-            questions: currentQuestions,
-            answers: userAnswers
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            questions: state.currentQuestions,
+            answers: state.userAnswers,
+            scoringPrompt: state.scoringPrompts[scoringType]
+        })
     })
-    .then(response => response.json())
-    .then(data => {
-        console.log(data);
-        document.getElementById('loading').style.display = 'none';
-        showResult(data);
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showNotification('Failed to score answers. Please try again.', 'error');
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('evaluation').style.display = 'block';
-    });
+    .then(res => res.json())
+    .then(showResult);
 }
 
 function showResult(data) {
-    console.log(data);
-    document.getElementById('evaluation').style.display = 'block';
-    document.getElementById('question-container').style.display = 'none';
-    document.getElementById('progress').style.display = 'none';
-    document.getElementById('next-question').style.display = 'none';
-    document.getElementById('result').style.display = 'block';
-
-    const mcqScore = data.MCQscore;
-    const saqFeedback = data.SAQ_feedback;
-
-    let resultHTML = `
+    ['question-container', 'progress', 'next-question'].forEach(id => dom.hide(id));
+    dom.show('result');
+    
+    dom.get('result').innerHTML = `
         <h3>Evaluation Results</h3>
         <div class="score-summary">
-            <p>Multiple Choice Questions Score: ${mcqScore} / 40</p>
-            <p>Short Answer Questions Score: ${saqFeedback.feedback.reduce((total, item) => total + item.score, 0)} / 60</p>
-            <p class="total-score">Predicted Test Score: ${mcqScore + saqFeedback.test_score} / 100</p>
+            <p>Multiple Choice: ${data.MCQscore}/40</p>
+            <p>Short Answer: ${data.SAQ_feedback.feedback.reduce((t, i) => t + i.score, 0)}/60</p>
+            <p class="total-score">Predicted Score: ${data.MCQscore + data.SAQ_feedback.test_score}/100</p>
         </div>
+        ${generateFeedbackHTML(data.SAQ_feedback)}
+    `;
+}
+
+function generateFeedbackHTML(feedback) {
+    return `
         <div class="feedback-section">
             <h4>Detailed Feedback</h4>
-            <ul>
-                ${saqFeedback.feedback.map((feedback, index) => `
-                    <li>
-                        <strong>Question ${index + 1}:</strong>
-                        <p>Score: ${feedback.score} / 20</p>
-                        <p>${feedback.feedback}</p>
-                    </li>
-                `).join('')}
-            </ul>
+            <ul>${feedback.feedback.map((f, i) => 
+                `<li><strong>Q${i + 1}:</strong> Score: ${f.score}/20<br>${f.feedback}</li>`
+            ).join('')}</ul>
         </div>
-        <div class="strengths-weaknesses">
-            <div class="strengths">
-                <h4>Strengths</h4>
-                <ul>
-                    ${saqFeedback.strengths.map(strength => `<li>${strength}</li>`).join('')}
-                </ul>
-            </div>
-            <div class="weaknesses">
-                <h4>Areas for Improvement</h4>
-                <ul>
-                    ${saqFeedback.weaknesses.map(weakness => `<li>${weakness}</li>`).join('')}
-                </ul>
-            </div>
+        <div class="analysis">
+            <div><h4>Strengths</h4><ul>${feedback.strengths.map(s => `<li>${s}</li>`).join('')}</ul></div>
+            <div><h4>Areas for Improvement</h4><ul>${feedback.weaknesses.map(w => `<li>${w}</li>`).join('')}</ul></div>
         </div>
     `;
-
-    document.getElementById('result').innerHTML = resultHTML;
 }

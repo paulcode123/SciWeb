@@ -58,7 +58,6 @@ def jupapi_output_to_grades(data, encrypt):
   
   # Get grade corrections for the current user
   corrections = get_user_data("GradeCorrections")
-  corrections = [corr for corr in corrections if corr['osis'] == session['user_data']['osis']]
   
   for c in classes:
     assignments = c["assignments"]
@@ -106,32 +105,38 @@ def jupapi_output_to_grades(data, encrypt):
 
 
 def post_grades(grades, encrypt):
-  print("len grades posted", len(grades))
-  #To avoid size issues, split the grades into groups of 100 assignments each
-  grades_split = [grades[i:i + 100] for i in range(0, len(grades), 100)]
+    print("len grades posted", len(grades))
+    grades_split = [grades[i:i + 100] for i in range(0, len(grades), 100)]
 
-  grades_obj = {"OSIS": str(session['user_data']['osis']), "encrypted": "False"}
+    grades_obj = {"OSIS": str(session['user_data']['osis']), "encrypted": "False"}
 
-  #modify the line above to include all the grades
-  for i in range(0, len(grades_split)):
-    grade_fragment = grades_split[i]
     if encrypt != "none":
-      print("encrypting")
-      grade_fragment = encrypt_grades(str(grade_fragment), int(encrypt))
-      grades_obj["encrypted"] = "True"
-    grades_obj[str(i+1)] = grade_fragment
-   
-  #get list of all values in 'OSIS' column
-  grades_data = get_user_data("GradeData")
-  osis_list = [str(grade['OSIS']) for grade in grades_data]
-  # If the user's osis is already in the osis column, update, otherwise post
-  if str(session['user_data']['osis']) in osis_list:
-    update_data(str(session['user_data']['osis']), "OSIS", grades_obj, "GradeData")
-  else:
-    post_data("GradeData", grades_obj)
-  
-  return
-  
+        print("encrypting")
+        # Split the key into prefix and full key
+        key_prefix, full_key = encrypt.split(':')
+        # Store the prefix in the grades object
+        grades_obj["key_prefix"] = key_prefix
+        
+        for i in range(0, len(grades_split)):
+            grade_fragment = grades_split[i]
+            grade_fragment = encrypt_grades(str(grade_fragment), int(full_key))
+            grades_obj["encrypted"] = "True"
+            grades_obj[str(i+1)] = grade_fragment
+    else:
+        for i in range(0, len(grades_split)):
+            grades_obj[str(i+1)] = grades_split[i]
+
+    grades_data = get_user_data("GradeData")
+    osis_list = [str(grade['OSIS']) for grade in grades_data]
+    
+    if str(session['user_data']['osis']) in osis_list:
+        update_data(str(session['user_data']['osis']), "OSIS", grades_obj, "GradeData")
+    else:
+        post_data("GradeData", grades_obj)
+    
+    return
+
+
 def jupapi_output_to_classes(data, class_data):
     print("jupapi_output_to_classes")
     # get the user's classes from the jupiter data
@@ -200,87 +205,93 @@ def jupapi_output_to_classes(data, class_data):
   
 
 def get_grades():
-  data = get_data("GradeData", row_name="OSIS", row_val=str(session['user_data']['osis']))
-  #filter for osis
-  has_grades = False
-  for grade in data:
+    data = get_data("GradeData", row_name="OSIS", row_val=str(session['user_data']['osis']))
+    #filter for osis
+    has_grades = False
+    for grade in data:
+        
+        if str(grade['OSIS']) == str(session['user_data']['osis']):
+            line = grade
+            has_grades = True
     
-    if str(grade['OSIS']) == str(session['user_data']['osis']):
-      line = grade
-      has_grades = True
-  
-  if not has_grades:
-    return {"date": "1/1/2021", "score": 0, "value": 0, "class": "No grades entered", "category": "No grades entered", "name": "None"}
-  
-  grades = []
-
-  # get the line dict without the osis and encrypted keys
-  gline = {key: line[key] for key in line if key != "OSIS" and key != "encrypted" and key != "docid"}
-  # if there are no remaining keys, return the default dict
-  if len(gline) == 0:
-    return {"date": "1/1/2021", "score": 0, "value": 0, "class": "No grades entered", "category": "No grades entered", "name": "None"}
-  # get the highest number of the keys in the line dict
-  num_elements = max([int(key) for key in gline.keys()])+1
-  
-  # convert string to boolean
-  encrypted = line['encrypted'] == "True"
-  if encrypted:
-    if 'grades_key' not in session['user_data'] or session['user_data']['grades_key'] == "none":
-        print("No grades key")
-        return []
+    if not has_grades:
+        return {"date": "1/1/2021", "score": 0, "value": 0, "class": "No grades entered", "category": "No grades entered", "name": "None"}
     
-    for i in range(1, num_elements):
-      cell = line[str(i)]
-      cell = decrypt_grades(cell, int(session['user_data']['grades_key']))
-      # convert single quotes to double quotes
-      cell = cell.replace("{'", '{"')
-      cell = cell.replace("':", '":')
-      cell = cell.replace(", '", ', "')
-      cell = cell.replace("'}", '"}')
-      cell = cell.replace(": '", ': "')
-      cell = cell.replace("',", '",')
-      
-      cell = json.loads(cell)
-      for grade in cell:
-        if grade['score'] == 'null':
-          grade['score'] = None
-      grades.extend(cell)
-  else:
-    for i in range(1, num_elements):
-      cell = line[str(i)]
-      if type(cell) == str:
-        cell = json.loads(cell)
-      grades.extend(cell)
-  
-  #convert date of each grade from format m/dd to mm/dd/yyyy
-  
-  dated_grades = []
-  for grade in grades:
-    try:
-      grade['score'] = float(grade['score'])
-      grade['value'] = float(grade['value'])
-    except:
-      print("Error converting score or value to float", grade)
-      continue
-    # if category is NoneType, print
-    if type(grade['category']) == type(None) or type(grade['score']) == type('m') or type(grade['score']) == type(None):
-      print("Skipping", grade)
-      continue
+    grades = []
+    gline = {key: line[key] for key in line if key != "OSIS" and key != "encrypted" and key != "docid" and key != "key_prefix"}
     
-    #convert date to datetime object
-    date = str(grade['date'])
+    if len(gline) == 0:
+        return {"date": "1/1/2021", "score": 0, "value": 0, "class": "No grades entered", "category": "No grades entered", "name": "None"}
     
-    #If date="None" or score is of type Nonetype
-    if date == "None" or date=="":
-      print("skipping", grade)
-      continue
+    num_elements = max([int(key) for key in gline.keys()])+1
+    encrypted = line['encrypted'] == "True"
     
-    date = convert_date(date)
+    if encrypted:
+        if 'grades_key' not in session['user_data'] or session['user_data']['grades_key'] == "none":
+            print("No grades key")
+            return []
+        
+        # Verify key prefix matches
+        stored_prefix = line.get('key_prefix')
+        user_key = int(session['user_data']['grades_key'])
+        user_prefix = str(user_key // 10000000000000)
+        
+        if stored_prefix != user_prefix:
+            print("Key prefix mismatch")
+            return []
+        
+        for i in range(1, num_elements):
+            cell = line[str(i)]
+            cell = decrypt_grades(cell, user_key)
+            # convert single quotes to double quotes
+            cell = cell.replace("{'", '{"')
+            cell = cell.replace("':", '":')
+            cell = cell.replace(", '", ', "')
+            cell = cell.replace("'}", '"}')
+            cell = cell.replace(": '", ': "')
+            cell = cell.replace("',", '",')
+            
+            cell = json.loads(cell)
+            for grade in cell:
+                if grade['score'] == 'null':
+                    grade['score'] = None
+            grades.extend(cell)
+    else:
+        for i in range(1, num_elements):
+            cell = line[str(i)]
+            if type(cell) == str:
+                cell = json.loads(cell)
+            grades.extend(cell)
     
-    grade['date'] = date
-    dated_grades.append(grade)
-  # print(len(dated_grades), len(grades))
-  return dated_grades
+    #convert date of each grade from format m/dd to mm/dd/yyyy
+    
+    dated_grades = []
+    for grade in grades:
+        try:
+            grade['score'] = float(grade['score'])
+            grade['value'] = float(grade['value'])
+        except:
+            print("Error converting score or value to float", grade)
+            continue
+        # if category is NoneType, print
+        if type(grade['category']) == type(None) or type(grade['score']) == type('m') or type(grade['score']) == type(None):
+            print("Skipping", grade)
+            continue
+        
+        #convert date to datetime object
+        date = str(grade['date'])
+        
+        #If date="None" or score is of type Nonetype
+        if date == "None" or date=="":
+            print("skipping", grade)
+            continue
+        
+        date = convert_date(date)
+        
+        grade['date'] = date
+        dated_grades.append(grade)
+    # print(len(dated_grades), len(grades))
+    return dated_grades
 
 
 def convert_date(date_str):

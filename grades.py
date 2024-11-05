@@ -154,6 +154,8 @@ def calculate_grade(grades, weights, time, return_class_grades=False):
     # get the grade for the class
     class_grade = sum(category_groups.values())/weight_sum
     class_grades[class_name] = class_grade
+  if len(class_grades) == 0:
+    return 100
   total_grade = sum(class_grades.values())/len(class_grades)
   if return_class_grades:
     return total_grade, class_grades

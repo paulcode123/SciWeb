@@ -35,7 +35,11 @@ async function pullfromJupiter(){
   if(encrypt == true){
     console.log("encrypting")
     key = Math.floor(Math.random() * 10000000000000000);
+    // Store first 3 digits of key
+    const keyPrefix = Math.floor(key / 10000000000000);
     document.cookie = "gradeKey="+key;
+    // Include keyPrefix in the request
+    key = `${keyPrefix}:${key}`;
   }
   //Send to python with fetch request
   const data = await fetchRequest('/jupiter', {"osis": osis, "password": password, "addclasses": addClasses, "encrypt": key, "updateLeagues": updateLeagues});
@@ -620,12 +624,12 @@ async function submitEdit(grade, modal) {
     class: grade.class,
     score: score,
     value: parseInt(weight),
-    osis: osis
+    OSIS: osis
   };
 
   try {
     await fetchRequest('/post_data', { sheet: "GradeCorrections", data: correction });
-    alert('Grade correction submitted successfully!');
+    alert('Grade corrected successfully! Repull from Jupiter to apply it.');
     document.body.removeChild(modal);
     // Optionally, refresh the grades table here
   } catch (error) {

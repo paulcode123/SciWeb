@@ -676,12 +676,15 @@ class response_format(BaseModel):
 def generate_questions():
     data = request.json
     class_id = data['classId']
-    unit_name = data['unitName']  # Changed from unitIndex to unitName
+    unit_name = data['unitName']
+    mcq_count = data.get('mcqCount', 2)  # Default to 2 if not specified
+    written_count = data.get('writtenCount', 3)  # Default to 3 if not specified
 
     # Get the notebook content for the selected class and unit
     classes = get_user_data("Classes")
     notebooks = get_user_data("Notebooks", {"Classes":classes})
-    # get one list of all of the subtopics from all of the images and one list of all of the practice questions from all of the images
+    
+    # get one list of all of the subtopics and practice questions
     subtopics = []
     practice_questions = []
     for item in notebooks:
@@ -689,18 +692,14 @@ def generate_questions():
             subtopics += item['subtopics']
             practice_questions += item['practice_questions']
 
-    
-        
-
     if not subtopics or not practice_questions:
         return jsonify({"error": "Notebook content not found"}), 404
 
-  
-    # Generate questions using AI
+    # Generate questions using AI with dynamic counts
     prompt = [
-    {"role": "system", "content": "You are an AI designed to generate educational questions given a list of topics and examples."},
-    {"role": "user", "content": f"Generate 2 multiple-choice questions, each with 4 answer choices, and 3 short-response questions based on these topics: {subtopics} and examples: {practice_questions}. Ensure your response is in the correct JSON format."}
-]
+        {"role": "system", "content": "You are an AI designed to generate educational questions given a list of topics and examples."},
+        {"role": "user", "content": f"Generate {mcq_count} multiple-choice questions, each with 4 answer choices, and {written_count} short-response questions based on these topics: {subtopics} and examples: {practice_questions}. Ensure your response is in the correct JSON format."}
+    ]
 
     questions = get_insights(prompt, response_format)
 
@@ -733,21 +732,23 @@ def score_answers():
     data = request.json
     questions = data['questions']
     user_answers = data['answers']
+    scoring_prompt = data['scoringPrompt']
 
     score = 0
+    mcq_count = len(questions['multiple_choice'])
+    points_per_mcq = 40 / mcq_count if mcq_count > 0 else 0
 
-    for i in range(len(questions['multiple_choice'])):
+    for i in range(mcq_count):
         if user_answers[i] == questions['multiple_choice'][i]['correct_answer']:
-            score += 20
+            score += points_per_mcq
         
     prompt = [
-        {"role": "system", "content": "You are an AI assistant tasked with scoring a student's answers to open-ended questions. Score each answer on a scale of 0 to 20, provide feedback on each answer, provide a list of areas of strengths and weaknesses over all of the questions, and a predicted score on a test of this material given all of the questions, out of 100."},
-        {"role": "user", "content": f"Questions: {questions['short_response']}\nStudent's Answers: {user_answers}"}
+        {"role": "system", "content": scoring_prompt},
+        {"role": "user", "content": f"Questions: {questions['short_response']}\nStudent's Answers: {user_answers[mcq_count:]}"}
     ]
 
     ai_score = get_insights(prompt, ResponseTypeQA)
     ai_score = json.loads(ai_score)
-    print("ai_score", ai_score)
 
     return jsonify({"MCQscore": score, "SAQ_feedback": ai_score})
 
@@ -764,15 +765,15 @@ def generate_bloom_questions():
     level = data['level']
     previous_answers = data['previousAnswers']
     notebook_content = data['notebookContent']
+    custom_prompt = data['customPrompt']
 
     # Generate questions using AI
     prompt = [
-        {"role": "system", "content": f"Generate 5 specific short-response questions about the topics/example questions. The questions should be at the {level} level of Bloom's Taxonomy. After asking about all of the material, use the user's previous answers to generate questions like the ones they got wrong. Assign a personal difficulty to each question based on how well the user did on similar questions in the past, where 1 is easy and 10 is hard."},
+        {"role": "system", "content": custom_prompt.replace("{level}", level)},
         {"role": "user", "content": "notebook content: " + str(notebook_content) + "\n previous answers: " + str(previous_answers)}
     ]
 
     questions = get_insights(prompt, ResponseTypeBloom)
-
     return json.dumps({"questions": json.loads(questions)})
 
 class ScoreBloom(BaseModel):
@@ -785,15 +786,16 @@ def evaluate_answer():
     question = data['question']
     answer = data['answer']
     level = data['level']
+    custom_prompt = data['customPrompt']
 
+    
     prompt = [
-        {"role": "system", "content": f"You are an AI assistant tasked with evaluating a student's answer to a {level}-level question in Bloom's Taxonomy. Score the answer on a scale of 0 to 10, where 10 is a perfect answer. Provide the score and some feedback."},
+        {"role": "system", "content": custom_prompt.replace("{level}", level)},
         {"role": "user", "content": f"Question: {question}\nStudent's Answer: {answer}"}
     ]
 
     evaluation = get_insights(prompt, ScoreBloom)
     evaluation = json.loads(evaluation)
-    print("evaluation", evaluation)
     return json.dumps({"score": evaluation['score'], "feedback": evaluation['feedback']})
 
 
@@ -841,7 +843,7 @@ def postLogin():
   data = raw_data['data']
   mode = raw_data['mode']
   session['ip_add'] = data['IP']
-  logins = get_user_data("FULLUsers")
+  logins = get_data("Users")
   #remove the user's ip addresses from all other accounts
   # for row in logins:
   #   if session['ip_add'] in row['IP']:
