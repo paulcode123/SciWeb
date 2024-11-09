@@ -176,6 +176,18 @@
 
     <button onclick="getInsights()" id="perfana">Get AI Generated Performance Analysis</button>
     <div id="insightContainer"></div>
+
+    <!-- Add this after the change graph section, before the class-form -->
+    
+    <div id="distributionsContainer">
+      <h2>Grade Distributions</h2>
+      <p>Search for assignments, then opt-in to anonymously report your score and see the distribution of scores</p>
+      <div class="search-container">
+        <input type="text" id="gradeSearch" placeholder="Search for assignments...">
+      </div>
+      <div id="searchResults"></div>
+      <div id="distributionGraph"></div>
+    </div>
 {% endblock %}
 
 <!-- js block -->

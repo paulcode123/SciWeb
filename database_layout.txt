@@ -141,3 +141,14 @@ Sheet name: Battles
     class(id of the class)
     gameMode(type of game mode)
     unit(id of the unit)
+
+Sheet name: Distributions
+
+    id(assignment id from Assignments sheet)
+    class_id(id of the class)
+    OSIS(list of 7 digit numbers of users who opted in)
+    scores(list of scores corresponding to each OSIS)
+    name(name of assignment)
+    category(category of assignment)
+    class_name(name of class)
+    value(total points possible)

@@ -171,3 +171,74 @@
 }
 
 /* ... (existing styles) ... */
+
+#chat-interface {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #1e1e1e;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+#chatLog {
+    min-height: 100px;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+}
+
+.ai-message, .user-message {
+    margin: 10px 0;
+    padding: 10px 15px;
+    border-radius: 15px;
+    max-width: 80%;
+}
+
+.ai-message {
+    background-color: #e44c65;
+    color: white;
+    margin-right: auto;
+}
+
+.user-message {
+    background-color: #2a2a2a;
+    color: white;
+    margin-left: auto;
+}
+
+.input-container {
+    display: flex;
+}
+
+#user-input {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #2a2a2a;
+    color: white;
+}
+
+#user-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px #e44c65;
+}
+
+/* Add this new style for the notifications icon */
+#notificationsIcon {
+    position: fixed;
+    top: 80px; /* Positioned below navbar */
+    left: 20px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+/* Style for the error text in notifications */
+#errorText {
+    font-size: 12px;
+    margin-top: 5px;
+    max-width: 200px;
+}

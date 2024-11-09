@@ -150,22 +150,25 @@ function createWorksheetElement(worksheet) {
             <button class="view-worksheet" data-image="${worksheet.image}" title="View Worksheet">
                 <i class="fas fa-eye"></i>
             </button>
-            <button class="delete-worksheet" data-id="${worksheet.id}" title="Delete Worksheet">
+            <button class="delete-worksheet" data-image="${worksheet.image}" title="Delete Worksheet">
                 <i class="fas fa-trash"></i>
             </button>
         </div>
     `;
     worksheetDiv.querySelector('.view-worksheet').addEventListener('click', (e) => {
-        viewWorksheet(e.target.dataset.image, worksheetDiv);
+        console.log(e.currentTarget.dataset.image);
+        viewWorksheet(e.currentTarget.dataset.image, worksheetDiv);
     });
     worksheetDiv.querySelector('.delete-worksheet').addEventListener('click', (e) => {
-        deleteWorksheet(e.target.dataset.image, worksheetDiv);
+        console.log(e.currentTarget.dataset.image);
+        deleteWorksheet(e.currentTarget.dataset.image, worksheetDiv);
     });
     return worksheetDiv;
 }
 
 function deleteWorksheet(worksheetId, worksheetElement) {
     if (confirm('Are you sure you want to delete this worksheet?')) {
+        startLoading();
         fetchRequest('/delete_data', {
             row_value: worksheetId,
             row_name: 'image',
@@ -183,6 +186,7 @@ function deleteWorksheet(worksheetId, worksheetElement) {
             console.error('Error:', error);
             alert('Error deleting worksheet. Please try again.');
         });
+        endLoading();
     }
 }
 
@@ -219,6 +223,7 @@ function uploadWorksheet(classId, unitName) {
 }
 
 function sendWorksheetToServer(classId, unitName, base64File, fileType) {
+    startLoading();
     fetch('/process-notebook-file', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -242,12 +247,14 @@ function sendWorksheetToServer(classId, unitName, base64File, fileType) {
         console.error('Error:', error);
         alert('Error uploading worksheet. Please try again.');
     });
+    endLoading();
 }
 
 async function viewWorksheet(imageReference, worksheetDiv) {
     console.log(`Viewing worksheet with image reference: ${imageReference}`);
     
     try {
+        startLoading();
         // Use fetchRequest to get the file from the server
         const data = await fetchRequest('/get-file', { file: imageReference });
         
@@ -269,6 +276,7 @@ async function viewWorksheet(imageReference, worksheetDiv) {
         console.error('Error fetching or displaying the worksheet:', error);
         alert('Failed to load the worksheet. Please try again.');
     }
+    endLoading();
 }
 
 function setupEventListeners() {

@@ -400,3 +400,133 @@ h2 {
   min-width: 30px;
   text-align: center;
 }
+
+/* Add these styles */
+#distributionsContainer {
+  margin: 20px 0;
+  padding: 20px;
+  background-color: #322f2f;
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.search-container {
+  margin-bottom: 20px;
+}
+
+#gradeSearch {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background: #1b1c1c;
+  color: white;
+}
+
+#searchResults {
+  margin-top: 10px;
+}
+
+.result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  margin: 5px 0;
+  background: #1b1c1c;
+  border-radius: 5px;
+}
+
+.opt-in-btn {
+  background-color: rgb(228, 76, 101);
+  color: black;
+  border: none;
+  padding: 5px 15px;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.opt-in-btn:hover {
+  background-color: black;
+  color: white;
+}
+
+#distributionGraph {
+  border-radius: 6px;
+  border: 20px solid rgb(228, 76, 101);
+  width: 100%;
+  height: calc(50vw - 10px);
+  margin: 10px 0;
+}
+
+/* Modify the graph containers */
+#myGraph, #myHisto, #myChangeGraph, #distributionGraph {
+  border-radius: 6px;
+  border: 20px solid rgb(228, 76, 101);
+  width: 100%;
+  margin: 10px 0;
+  
+  /* Default height for desktop */
+  height: calc(50vw - 10px);
+}
+
+/* Media query for mobile devices */
+@media screen and (max-width: 768px) {
+  #myGraph, #myHisto, #myChangeGraph, #distributionGraph {
+    /* Taller height for mobile */
+    height: 80vh;
+    /* Thinner border for mobile */
+    border-width: 10px;
+    /* Remove horizontal margin */
+    margin: 10px 0;
+  }
+
+  /* Adjust StatsContainer for mobile */
+  #StatsContainer {
+    grid-template-columns: 1fr; /* Single column on mobile */
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .number-box {
+    width: 100%;
+    margin-right: 0;
+    padding: 15px;
+  }
+
+  /* Make numbers smaller on mobile */
+  .number {
+    font-size: 36px;
+  }
+
+  /* Adjust search results spacing */
+  .result-item {
+    padding: 8px;
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+
+  .opt-in-btn {
+    width: 100%;
+    padding: 8px;
+  }
+}
+
+.loading-container {
+    position: fixed; /* Default position */
+    left: 50%;
+    z-index: 10000;
+    display: none;
+}
+
+.loading-image {
+    position: absolute;
+    left: 50%;
+    width: 100px;
+    height: 100px;
+    display: none;
+}
+
+/* Rest of your loading animation CSS remains the same */

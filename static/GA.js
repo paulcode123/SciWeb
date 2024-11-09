@@ -6,6 +6,8 @@ var times;
 var weights;
 var grade_spreads;
 var grades;
+var allgrades;
+var currentDistributions;
 var val_sums;
 
 var currentCategories;
@@ -33,6 +35,9 @@ async function main(){
     times = data["times"];
     grade_spreads = data["grade_spreads"];
     grades = data["grades"];
+    allgrades = grades;
+    currentDistributions = data["distributions"];
+    console.log(currentDistributions)
     categories = data["categories"];
     stats = data["stats"];
     compliments = data["compliments"];
@@ -46,6 +51,7 @@ async function main(){
     
     draw_graphs(grade_spreads, times, weights, grades, ['All', 'all'], val_sums, 5, goals);
     setGoalTable(goals)
+    displayGrades(allgrades);
     endLoading();
 }
 
@@ -233,7 +239,8 @@ for (let i = 0; i < grades.length; i++) {
   let grade = grades[i];
   console.log(cat.includes('all') && cat.includes('All'))
   
-  if ((cat.includes(grade['class']) || cat.includes('all')) && (cat.includes(grade['category']) || cat.includes('All'))) {
+  if ((cat.includes(grade['class'].toLowerCase()) || cat.includes('all')) && 
+      (cat.includes(grade['category'].toLowerCase()) || cat.includes('All'))) {
     grade_points.push(grade);
   }
 }
@@ -247,7 +254,8 @@ for (const spread_class in grade_spreads) {
   for (const spread_category in grade_spreads[spread_class]) {
     let spread = grade_spreads[spread_class][spread_category];
     // if cla includes spread['class'] or all AND cat includes spread['category'] or all, add spread to spreads
-    if ((cat.includes(spread_class) || cat.includes('all')) && (cat.includes(spread_category) || cat.includes('All'))) {
+    if ((cat.includes(spread_class.toLowerCase()) || cat.includes('all')) && 
+        (cat.includes(spread_category.toLowerCase()) || cat.includes('All'))) {
       spreads.push(spread);
       spread_names.push(spread_category + " " + spread_class); // Switch order to "category class"
       w.push(weights[spread_class][spread_category]);
@@ -781,16 +789,22 @@ function draw_graphs(grade_spreads, times, weights, grades, cat, val_sums, comp_
 document.getElementById("class-form").addEventListener("submit", function(event) {
   event.preventDefault();
   const errorMessage = document.getElementById("error-message");
-errorMessage.textContent = "";
+  errorMessage.textContent = "";
   const checkboxes = document.querySelectorAll('input[name="class"]:checked');
   const selectedClasses = Array.from(checkboxes).map(function(checkbox) {
     return checkbox.value;
-  });
+  }).filter(value => value.toLowerCase() !== 'all'); // Filter out "All" from selections
   
   if (selectedClasses.length === 0) {
     errorMessage.textContent = "Please select at least one class.";
     return;
   }
+
+  // Uncheck all component and individual grade checkboxes
+  document.getElementById('components').checked = false;
+  document.getElementById('individual').checked = false;
+  document.getElementById('componentsHisto').checked = false;
+  document.getElementById('componentsChange').checked = false;
 
   console.log(document.getElementById('loadingWheel').style.visibility)
   document.getElementById('loadingWheel').style.visibility = "visible";
@@ -798,11 +812,9 @@ errorMessage.textContent = "";
   
   let specificity = document.getElementById("mySlider").value;
   console.log(selectedClasses);
-  // document.getElementById("class-form").reset();
   draw_graphs(grade_spreads, times, weights, grades, selectedClasses, val_sums, specificity);
   console.log("done")
-  
-  });
+});
 
 
 
@@ -1064,8 +1076,8 @@ function draw_change_graph(grade_spreads, times, weights, cat, timeframe=15) {
   for (const spread_class in grade_spreads) {
     for (const spread_category in grade_spreads[spread_class]) {
       let spread = grade_spreads[spread_class][spread_category];
-      if ((cat.includes(spread_class) || cat.includes('all')) && 
-          (cat.includes(spread_category) || cat.includes('All'))) {
+      if ((cat.includes(spread_class.toLowerCase()) || cat.includes('all')) && 
+          (cat.includes(spread_category.toLowerCase()) || cat.includes('All'))) {
         spreads.push(spread);
         spread_names.push(spread_category + " " + spread_class);
         w.push(weights[spread_class][spread_category]);
@@ -1240,5 +1252,166 @@ function draw_change_graph(grade_spreads, times, weights, cat, timeframe=15) {
   timeframeSlider.addEventListener('input', timeframeSlider.inputHandler);
 }
 
+// when the user types in the input field, search and display allgrades for which the name matches
 
+let currentController = null;
 
+document.getElementById('gradeSearch').addEventListener('keyup', function() {
+    // Abort previous search if it exists
+    if (currentController) {
+        currentController.abort();
+    }
+
+    // Create new controller for this search
+    currentController = new AbortController();
+    const signal = currentController.signal;
+
+    const searchTerm = this.value.toLowerCase();
+    
+    try {
+        document.querySelectorAll('.result-item').forEach(item => {
+            // Check if search was aborted
+            if (signal.aborted) {
+                throw new Error('aborted');
+            }
+            
+            if (item.textContent.toLowerCase().includes(searchTerm)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    } catch (e) {
+        if (e.message === 'aborted') {
+            return; // Exit if search was aborted
+        }
+        throw e; // Re-throw if it's a different error
+    }
+});
+
+function displayGrades(grades) {
+  const resultsDiv = document.getElementById('searchResults')
+  grades.forEach(grade => {
+    const resultItem = document.createElement('div');
+    resultItem.style.display = 'none';
+    resultItem.className = 'result-item';
+    
+    const info = document.createElement('span');
+    info.textContent = `${grade.name} - ${grade.category}`;
+    
+    const button = document.createElement('button');
+    button.className = 'opt-in-btn';
+    
+    // Find matching distribution
+    const dist = currentDistributions.find(d => d.name === grade.name && d.class_name === grade.class);
+    const opted_in = dist?.OSIS?.includes(osis);
+    
+    button.textContent = opted_in ? 'View Distribution' : 'Opt In';
+    
+    // Create separate handlers for view and opt-in
+    if (opted_in && dist) {
+      button.onclick = function() {
+        console.log("Viewing existing distribution:", dist);
+        graphDistribution(dist, grade);
+      };
+    } else {
+      button.onclick = function() {
+        console.log("Opting into distribution");
+        optInDistribution(grade, dist);
+      };
+    }
+    
+    resultItem.appendChild(info);
+    resultItem.appendChild(button);
+    resultsDiv.appendChild(resultItem);
+  });
+}
+
+function graphDistribution(dist, grade) {
+  console.log("Graphing distribution:", dist);
+  if (!dist.scores || dist.scores.length === 0) {
+    console.error("No scores available for distribution");
+    return;
+  }
+
+  const data = dist.scores.map(score => score / dist.value * 100);
+  
+  // Calculate bandwidth based on data variance
+  const bandwidth = Math.max(
+    Math.sqrt(data.reduce((acc, val) => 
+      acc + Math.pow(val - data.reduce((a, b) => a + b) / data.length, 2), 0
+    ) / data.length),
+    0.5
+  );
+  
+  const kde = kernelDensityEstimation(data, epanechnikovKernel, bandwidth);
+  
+  // Distribution curve
+  const distributionTrace = {
+    x: kde.x,
+    y: kde.y,
+    mode: 'lines',
+    name: `${dist.class_name} - ${dist.name}`,
+    line: {
+      color: 'rgb(228, 76, 101)'
+    }
+  };
+  
+  // User's grade point
+  const userScore = grade ? grade.score / grade.value * 100 : 
+                   dist.scores[dist.OSIS.indexOf(osis)] / dist.value * 100;
+  
+  const userGradeTrace = {
+    x: [userScore],
+    y: [0], // Place at bottom of graph
+    mode: 'markers',
+    name: 'Your Grade',
+    marker: {
+      size: 12,
+      color: 'white',
+      symbol: 'diamond'
+    }
+  };
+  
+  const layout = {
+    title: 'Grade Distribution',
+    xaxis: {title: 'Grade (%)', showgrid: false},
+    yaxis: {title: 'Density', showgrid: false},
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: 'white' },
+    showlegend: true,
+    legend: {
+      x: 1,
+      y: 1
+    }
+  };
+  
+  Plotly.newPlot('distributionGraph', [distributionTrace, userGradeTrace], layout);
+}
+
+async function optInDistribution(grade, dist) {
+  console.log("Opting in with grade:", grade, "and existing dist:", dist);
+  // if dist is undefined, create a new distribution
+  if (dist === undefined) {
+    dist = {
+      name: grade.name,
+      OSIS: [osis],
+      scores: [grade.score],
+      class_name: grade.class,
+      category: grade.category,
+      value: grade.value,
+      id: Math.floor(Math.random() * 100000000)
+    }
+    await fetchRequest('/post_data', { sheet: "Distributions", data: dist });
+  }
+  else {
+    // add the osis and score to the distribution
+    dist.OSIS.push(osis);
+    dist.scores.push(grade.score);
+    // post the distribution to the database
+    await fetchRequest('/update_data', { sheet: "Distributions", row_name: "id", row_value: dist.id, data: dist });
+  }
+  // update the distribution table
+  graphDistribution(dist);
+}

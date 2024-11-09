@@ -300,6 +300,13 @@ def get_user_data(sheet, prev_sheets=[]):
     return get_data("Leagues", row_name="OSIS", row_val=str(session['user_data']['osis']), operator="array_contains")
   if sheet=="Courses":
      return get_data(sheet)
+  if sheet == "Distributions":
+    # Get all distributions where the class_name matches any of the user's classes
+    class_names = [item['name'] for item in prev_sheets['Classes']]
+    distributions = get_data("Distributions", row_name="class_name", row_val=class_names, operator="in")
+    
+    
+    return distributions
   
   #Otherwise, filter the data for the user's osis
   int_data = get_data(sheet, row_name="OSIS", row_val=int(session['user_data']['osis']), operator="==")

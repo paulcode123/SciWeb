@@ -91,23 +91,32 @@ function processDate(date){
 let currentLoadingImage = 0;
 let loadingInterval;
 
-function startLoading() {
+function startLoading(fixedTop = null) {
     const container = document.querySelector('.loading-container');
     const images = container.querySelectorAll('.loading-image');
     container.style.display = 'block';
-    // document.body.style.pointerEvents = 'none';
     document.body.style.opacity = '0.7';
+    
+    // Position the loading container
+    if (fixedTop !== null) {
+        container.style.position = 'absolute';
+        container.style.top = `${fixedTop}px`;
+        container.style.transform = 'translateX(-50%)'; // Only center horizontally
+    } else {
+        container.style.position = 'fixed';
+        container.style.top = '50%';
+        container.style.transform = 'translate(-50%, -50%)'; // Center both horizontally and vertically
+    }
     
     // Show first image
     images[0].classList.add('active');
     currentLoadingImage = 0;
     
-    // Rotate through images
     loadingInterval = setInterval(() => {
         images[currentLoadingImage].classList.remove('active');
         currentLoadingImage = (currentLoadingImage + 1) % images.length;
         images[currentLoadingImage].classList.add('active');
-    }, 1500); // Match animation duration
+    }, 1500);
 }
 
 function endLoading() {

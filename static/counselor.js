@@ -1,16 +1,21 @@
+export { typeOutText, await_enter, AI_response };
+
 const chatLog = document.getElementById('chat-log');
 console.log("in counselor.js")
 // function to type out text in a message div in chatLog
-async function typeOutText(text, speed) {
+async function typeOutText(text, speed, targetDiv = document.getElementById('chat-log')) {
+    console.log("typeOutText", text, speed, targetDiv)
     // make a message div
     const messageDiv = document.createElement('div');
     messageDiv.className = 'ai-message';
-    chatLog.appendChild(messageDiv);
+    targetDiv.appendChild(messageDiv);
     // for each character in the text, add it to the message div
     for (let i = 0; i < text.length; i++) {
         messageDiv.textContent += text[i];
         await new Promise(resolve => setTimeout(resolve, speed));
     }
+    // Scroll to the bottom of the target div
+    targetDiv.scrollTop = targetDiv.scrollHeight;
 }
 
 // Toggle sidebar visibility

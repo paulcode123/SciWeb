@@ -7,99 +7,112 @@
 <!-- css block -->
 {% block css %}
 <link rel="stylesheet" href="/static/class.css">
-<style>
-    .button-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* Increased min width */
-        gap: 15px; /* Increased space between buttons */
-        margin-top: 30px; /* Increased space above the button grid */
-    }
-    .large-button {
-        padding: 20px 30px; /* Increased button size */
-        font-size: 1.5em; /* Increased font size */
-        background-color: #007bff; /* Example primary color */
-        color: white; /* Text color */
-        border: none; /* Remove border */
-        border-radius: 8px; /* More rounded corners */
-        cursor: pointer; /* Pointer cursor on hover */
-        width: 100%; /* Make buttons take full width */
-    }
-    .large-button:hover {
-        background-color: #0056b3; /* Darker shade on hover */
-    }
-    #class-section {
-        padding: 20px; /* Add padding to the section */
-    }
-    #head h1 {
-        font-size: 2.5em; /* Increase header size */
-    }
-    #description {
-        font-size: 1.2em; /* Increase description size */
-    }
-</style>
+
 {% endblock %}
 
 <!-- content block -->
 {% block content %}
 <!-- Class Section -->
+
 <section id="class-section">
-<div id="notification-container"></div>
-<div id="loadingWheel"></div>
-<div id="classimgcontainer"></div>
-<div id="head" style="text-align: center;">
-<h1 class="dark-text">{{ class_name | replace(" ", "&nbsp;") }}</h1>
-<div class="button-grid">
-<button id="joinBtn" class="pro-button primary large-button">Join Class</button>
-<button id="createBtn" class="pro-button primary large-button">➕ Create Assignment</button>
-</div>
-<h3 id="description" class="dark-text"></h3>
-<div id="user-list" class="dark-text"></div>
-<div id="assignmentList" class="dark-text"></div>
-</div>
-<input type="file" id="imgupload" style="display: none;">
-<label for="imgupload" id="uploadLabel" class="pro-button secondary">🖼️ Upload Image</label>
 
+  <div class="class-header">
+    <div id="classimgcontainer">
+      <input type="file" id="imgupload" accept="image/*" style="display: none;">
+      <label for="imgupload" class="image-upload-label">📷 Change Cover Image</label>
+    </div>
+    <div class="header-content">
+      <h1>{{ class_name }}</h1>
+      <div class="color-picker">
+        <label id="colorLabel" class="color-label">🎨 Change Theme</label>
+        <input type="color" id="color" style="display: none;">
+        <button id="savecolor" style="display: none;">Save</button>
+      </div>
+      <div class="header-actions">
+        <button id="joinBtn" class="action-button" style="display: none;">Join Class</button>
+        <button id="createBtn" class="action-button">Create Assignment</button>
+        <button id="leaveClass" class="action-button danger">Leave Class</button>
+      </div>
+    </div>
+  </div>
+  <!-- Add this form after the header -->
+  <div id="formContainer" class="modal" style="display: none;">
+    <div class="modal-content">
+      <form id="assignmentForm" class="assignment-form">
+        <h3>Create New Assignment</h3>
+        <div class="form-group">
+          <label for="name">Assignment Name</label>
+          <input type="text" id="name" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="assignmentType">Category</label>
+          <select id="assignmentType" required>
+            <!-- Options will be populated by JavaScript -->
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="points">Points</label>
+          <input type="number" id="points" required min="0">
+        </div>
+        
+        <div class="form-group">
+          <label for="due">Due Date</label>
+          <input type="date" id="due" required>
+        </div>
+        
+        <div class="form-actions">
+          <button type="submit" class="action-button">Create</button>
+          <button type="button" class="action-button secondary" id="cancelBtn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-<label for="color" id="colorLabel" class="pro-button secondary">🎨 Choose Color</label>
-<input type="color" id="color" value="#000000" style="display: none;">
-<button id="savecolor" class="pro-button secondary" style="display: none;">Save Color</button>
+  <div class="grid-layout">
+    <div class="info-card class-details">
+      <h3>Class Information</h3>
+      <div id="description"></div>
+      <div class="editable-field">
+        <span>Teacher: </span>
+        <span id="teacher" contenteditable="true"></span>
+      </div>
+      <div class="editable-field">
+        <span>Period: </span>
+        <span id="period" contenteditable="true"></span>
+      </div>
+    </div>
 
+    <div class="info-card grading-categories">
+      <h3>Grading Categories</h3>
+      <div id="categoriesContainer"></div>
+    </div>
 
-<div id="formContainer" style="display: none;">
-<form id="assignmentForm" class="dark-form">
-<div class="row gtr-uniform gtr-50">
-    <div class="col-6 col-12-xsmall">
-        <input type="text" id="name" name="name" placeholder="Assignment Name" required class="dark-input">
+    <div class="info-card class-members">
+      <h3>Class Members</h3>
+      <div id="user-list"></div>
     </div>
-    <div class="col-6 col-12-xsmall">
-        <input type="date" id="due" name="due" required class="dark-input">
+
+    <div class="info-card assignments">
+      <h3>Assignments</h3>
+      <div id="assignmentList"></div>
     </div>
-    <div class="col-6 col-12-xsmall">
-        <input type="number" id="points" name="points" placeholder="Points" required class="dark-input">
+
+    <div class="info-card chat">
+      <h3>Class Discussion</h3>
+      <div id="chat-box">
+        <div id="message-list"></div>
+        <div id="input-container">
+          <input type="text" id="message-input" placeholder="Type your message...">
+          <button id="send-button" class="action-button">Send</button>
+          <button id="clear" class="action-button">Clear</button>
+          <label for="upload" class="action-button">📎</label>
+          <input type="file" id="upload" hidden>
+        </div>
+      </div>
     </div>
-    <div class="col-6 col-12-xsmall">
-        <select id="assignmentType" name="assignmentType" class="dark-input">
-            <option value="default">Loading Classes</option>
-        </select>
-    </div>
-    <div class="col-12">
-        <input type="submit" value="Submit" class="primary dark-button">
-    </div>
-</div>
-</form>
-</div>
-<div id="chat-box" class="dark-chat">
-<button id="refresh-chat" class="pro-button tertiary">🔄</button>
-<ul id="message-list" class="dark-text"></ul>
-<div id="image-container"></div>
-<div id="input-container">
-<input type="text" id="message-input" placeholder="Type your message..." class="dark-input">
-<button id="clear" class="pro-button tertiary">❌</button>
-<button id="send-button" class="pro-button primary">Send</button>
-<input type="file" id="upload" style="display: none;">
-<label for="upload" id="uploadLabel" class="pro-button secondary">📁</label>
-</div>
-</div>
+  </div>
 </section>
 
 {% endblock %}
@@ -107,4 +120,5 @@
 <!-- js block -->
 {% block js %}
 <script src="/static/class.js"></script>
+<script src="/static/setdesign.js"></script>
 {% endblock %}

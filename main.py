@@ -320,7 +320,7 @@ def Jupiter():
   if classes == "WrongPass":
     return json.dumps({"error": "Incorrect credentials"})
 
-  class_data = get_user_data("Classes")
+  class_data = get_data("Classes")
 
   if str(data['addclasses'])=="True":
     jupapi_output_to_classes(classes, class_data)
@@ -519,6 +519,7 @@ def GA_setup():
   grades = get_grades()
   user_data = get_name()
   goals = get_user_data("Goals")
+  distributions = get_user_data("Distributions", {"Classes": classes})
   # filter goals for the user's osis
   goals = [item for item in goals if str(session['user_data']['osis']) in str(item['OSIS'])]
 
@@ -589,7 +590,8 @@ def GA_setup():
     "stats": stats,
     "compliments": compliments,
     "cat_value_sums": cat_value_sums,
-    "goals": goals
+    "goals": goals,
+    "distributions": distributions
   }
 
 
@@ -653,13 +655,15 @@ def process_notebook_file():
         ]
         
         insights = get_insights(prompts, ResponseTypeNB)
-    
+    # if inights is a string, convert it to a dictionary
+    if isinstance(insights, str):
+        insights = json.loads(insights)
     # generate a random 7 digit number
     blob_id = ''.join([str(random.randint(0, 9)) for _ in range(7)])
     # store the file in the cloud storage
     upload_file("sciweb-files", file_content, blob_id)
     # add to the Notebooks sheet
-    post_data("Notebooks", {"classID": data['classID'], "unit": unit, "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "image": blob_id, "topic": insights.topic, "subtopics": insights.notes, "practice_questions": insights.practice_questions})
+    post_data("Notebooks", {"classID": data['classID'], "unit": unit, "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "image": blob_id, "topic": insights["topic"], "subtopics": insights["notes"], "practice_questions": insights["practice_questions"]})
     return jsonify({"success": True, "message": "Worksheet processed and stored successfully"})  
   
 # set response format class. for mcq, the key is the question, and the value is the answer
@@ -927,6 +931,7 @@ def get_name(ip=None, update=False):
     print("ip", ip)
     session['ip_add'] = ip
     
+  utility_function()
   # If the user's data is already stored in the session, return it
   if 'user_data' in session and not update:
     print("user_data already defined in get_name()")
@@ -957,7 +962,8 @@ def get_name(ip=None, update=False):
   return "Login", 404
 
 
-
+def utility_function():
+  pass
 
 #uncomment to run locally, comment to deploy. Before deploying, change db to firebase, add new packages to requirements.txt
 

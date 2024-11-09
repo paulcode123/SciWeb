@@ -12,13 +12,13 @@
 		{% endblock %}
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-		<link rel="stylesheet" href="/static/PitchFiles/assets/css/main.css" />
+		
         <link rel="stylesheet" href="/static/counselor.css">
         <link rel="icon" href="/static/media/favicon.png" sizes="48x48" type="image/x-icon">
 		<noscript><link rel="stylesheet" href="/static/PitchFiles/assets/css/noscript.css" /></noscript>
     {% block css %}
     {% endblock %}
-
+    <link rel="stylesheet" href="/static/PitchFiles/assets/css/main.css" />
     <!-- Collapsible Sidebar for AI Counselor -->
     <div id="ai-counselor-sidebar" class="ai-sidebar">
       <img id="toggle-sidebar" class="toggle-logo" src="/static/media/favicon.png"/>
@@ -93,7 +93,7 @@
 <!-- Scripts -->
 <script src="/static/util.js"></script>
 <script src="/static/user_data.js"></script>
-<script src="/static/counselor.js"></script>
+<script src="/static/counselor.js" type="module"></script>
 
 <script src="/static/PitchFiles/assets/js/jquery.min.js"></script>
 <script src="/static/PitchFiles/assets/js/jquery.scrolly.min.js"></script>

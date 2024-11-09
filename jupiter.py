@@ -154,10 +154,12 @@ def jupapi_output_to_classes(data, class_data):
         categories = []
         for cat in raw_cat:
             categories.extend([cat["name"], cat["weight"]*100])
-        
+        # print(class_data, class_name, teacher)
         for class_info in class_data:
             # check if the class exists in the db
-            if "name" in class_info and class_info["name"] == class_name and class_info["teacher"] == teacher and class_info["schedule"] == schedule:
+            if class_info["teacher"] == teacher:
+                print(class_info, class_name, teacher, schedule)
+            if "name" in class_info and class_info["name"] == class_name and class_info["teacher"] == teacher:
                 class_exists = True
                 need_update = False
                 
@@ -166,6 +168,10 @@ def jupapi_output_to_classes(data, class_data):
                     need_update = True
                     class_info["categories"] = categories
                 
+                # if OSIS is an int, convert to string
+                if isinstance(class_info["OSIS"], int):
+                    class_info["OSIS"] = str(class_info["OSIS"])
+
                 # Ensure OSIS is a list
                 if isinstance(class_info["OSIS"], str):
                     class_info["OSIS"] = class_info["OSIS"].split(", ")
@@ -188,7 +194,7 @@ def jupapi_output_to_classes(data, class_data):
                 "period": "",
                 "teacher": teacher,
                 "name": class_name,
-                "OSIS": session['user_data']['osis'],
+                "OSIS": [str(session['user_data']['osis'])],
                 "assignments": "",
                 "description": "",
                 "id": str(id),

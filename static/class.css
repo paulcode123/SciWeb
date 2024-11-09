@@ -1,275 +1,231 @@
+:root {
+  --primary-color: #4a90e2;
+  --secondary-color: #50c878;
+  --background-dark: #1a1a1a;
+  --card-dark: #2a2a2a;
+  --text-light: #ffffff;
+  --text-muted: #888888;
+  --danger-color: #ff4d4d;
+}
+
+/* Main layout */
+#class-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.class-header {
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+#classimgcontainer {
+  height: 250px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+  position: relative;
+}
+
+#classimgcontainer img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.header-content {
+  background: rgba(26, 26, 26, 0.9);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-top: -50px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Cards */
+.info-card {
+  background: var(--card-dark);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* User bubbles */
 .user-bubble {
-  display: inline-block;
-  margin: 5px;
-  padding: 10px;
-  background-color: green;
+  display: inline-flex;
+  align-items: center;
+  background: var(--primary-color);
+  padding: 0.5rem 1rem;
   border-radius: 20px;
+  margin: 0.25rem;
+  transition: all 0.3s ease;
+}
+
+.user-bubble:hover {
+  background: var(--secondary-color);
+  transform: translateY(-2px);
+}
+
+/* Chat box styling */
+#chat-box {
+  background: var(--card-dark);
+  border-radius: 12px;
+  padding: 1rem;
+  height: 500px;
+  display: flex;
+  flex-direction: column;
+}
+
+#message-list {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.message {
+  background: rgba(74, 144, 226, 0.1);
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+}
+
+#input-container {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
+
+/* Buttons */
+.action-button {
+  background: var(--primary-color);
+  color: var(--text-light);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.action-button:hover {
+  background: darken(var(--primary-color), 10%);
+  transform: translateY(-2px);
+}
+
+/* Modal styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: var(--card-dark);
+  padding: 2rem;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+}
+
+.assignment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  color: var(--text-light);
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select {
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--text-muted);
+  background: var(--background-dark);
+  color: var(--text-light);
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.action-button.secondary {
+  background: transparent;
+  border: 1px solid var(--primary-color);
+}
+
+.action-button.secondary:hover {
+  background: var(--primary-color);
+}
+
+/* Header controls */
+.image-upload-label,
+.color-label {
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.3s ease;
+}
+
+.image-upload-label:hover,
+.color-label:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.color-picker {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+#color {
+  border: none;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
   cursor: pointer;
 }
 
-
-.user-bubble:hover {
-  background-color: turquoise;
-}
-#formContainer {
-margin-top: 20px;
-}
-
-
-#assignmentForm, #classForm {
-display: flex;
-flex-direction: column;
-max-width: 300px;
-margin: 0 auto;
+#savecolor {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  background: var(--primary-color);
+  color: white;
+  cursor: pointer;
 }
 
-
-label {
-margin-bottom: 5px;
-font-weight: bold;
+.action-button.danger {
+  background: var(--danger-color);
 }
 
-
-input[type="text"],
-input[type="date"],
-input[type="number"] {
-padding: 8px;
-margin-bottom: 10px;
-border-radius: 4px;
-border: 1px solid #ccc;
-}
-
-
-input[type="submit"] {
-padding: 10px 20px;
-background-color: #4CAF50;
-color: white;
-border: none;
-border-radius: 4px;
-cursor: pointer;
-}
-
-
-input[type="submit"]:hover {
-background-color: #45a049;
-}
-
-
-.error-message {
-color: red;
-margin-top: 5px;
-}
-
-
-/* Button styles */
-.large-button {
-    padding: 15px 20px; /* Increase button size */
-    background-color: #337ab7; /* Button background color */
-    color: white; /* Button text color */
-    border: none; /* Remove border */
-    border-radius: 4px; /* Rounded corners */
-    cursor: pointer; /* Pointer cursor on hover */
-    transition: background-color 0.3s ease; /* Smooth background color transition */
-}
-
-.large-button:hover {
-    background-color: #286090; /* Darker shade on hover */
-}
-
-/* Existing styles... */
-
-/* Assignment styles */
-.assignment-item {
-    margin-bottom: 10px;
-    padding: 10px;
-    background-color: #f5f5f5;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-
-  .assignment-item:hover {
-    background-color: #e0e0e0;
-  }
-
-
-  .assignment-item h3 {
-    margin: 0;
-    font-size: 18px;
-  }
-
-
-  .assignment-item p {
-    margin: 5px 0 0;
-    font-size: 14px;
-  }
-
-
-  /* Layout styles */
-  .container {
-    display: flex;
-  }
- 
-  #classimgcontainer {
-    /* Set width to auto and height to 200px */
-    height: 200px;
-    overflow: hidden; /* Ensure the image doesn't overflow */
-  }
- 
-  #classimgcontainer img {
-    /* Set height to 100% to fill container, and let width adjust accordingly */
-    height: 100%;
-    width: auto;
-  }
-
-
-  #head {
-    flex-grow: 1; /* Allow the head div to grow and take remaining space */
-  }
- 
-  #joinBtn {
-    padding: 10px 20px;
-    background-color: #337ab7;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    display: none;
-  }
-
-
-  /* Dark theme styles */
-  body {
-    background-color: #1a1a1a;
-    color: #ffffff;
-  }
- 
-  #page-wrapper {
-    background-color: #1a1a1a;
-  }
- 
-  #main {
-    background-color: #2a2a2a;
-    padding: 3em 0;
-  }
- 
-  .container {
-    padding: 0 2em;
-  }
- 
-  h1 {
-    color: #ff4d4d; /* The red color from the dark theme template */
-    margin-bottom: 1em;
-    font-size: 4em; /* Increased font size even more */
-    font-weight: bold;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-    text-align: center; /* Center the text */
-  }
- 
-  #classList {
-    background-color: #222;
-    padding: 1em;
-    border-radius: 4px;
-    margin-bottom: 2em;
-  }
- 
-  #classList button {
-    background-color: #333;
-    color: #ffffff;
-    transition: background-color 0.3s ease;
-  }
- 
-  #classList button:hover {
-    background-color: #444;
-  }
- 
-  #classForm {
-    background-color: #333;
-    padding: 2em;
-    border-radius: 4px;
-    margin-top: 2em;
-  }
- 
-  input[type="text"], input[type="number"] {
-    background-color: #444;
-    color: #ffffff;
-    border: 1px solid #555;
-  }
-
-#class-section {
-    max-width: 1200px; /* Set a max width for the section */
-    margin: 0 auto; /* Center the section */
-    padding: 20px; /* Add some padding */
-}
-
-.dark-chat {
-    background-color: #333; /* Dark background for chat */
-    padding: 20px; /* Padding for chat area */
-    border-radius: 8px; /* Rounded corners */
-}
-
-.dark-input {
-    background-color: #444; /* Dark background for inputs */
-    color: #ffffff; /* White text for inputs */
-    border: 1px solid #555; /* Dark border */
-}
-
-.pro-button {
-    padding: 10px 15px; /* Padding for buttons */
-    border-radius: 5px; /* Rounded corners */
-}
-
-.large-button {
-    padding: 15px 20px; /* Increase button size */
-    background-color: #337ab7; /* Button background color */
-    color: white; /* Button text color */
-    border: none; /* Remove border */
-    border-radius: 4px; /* Rounded corners */
-    cursor: pointer; /* Pointer cursor on hover */
-    transition: background-color 0.3s ease; /* Smooth background color transition */
-}
-
-.large-button:hover {
-    background-color: #286090; /* Darker shade on hover */
-}
-
-/* Chat message styles */
-.user-bubble {
-    display: inline-block;
-    margin: 5px;
-    padding: 10px;
-    background-color: green;
-    border-radius: 20px;
-    cursor: pointer;
-}
-
-.user-bubble:hover {
-    background-color: turquoise;
-}
-
-
-/* New Page Styles */
-#new-section {
-    max-width: 800px; /* Set a max width for the section */
-    margin: 0 auto; /* Center the section */
-    padding: 20px; /* Add some padding */
-}
-
-.dark-text {
-    color: #ff4d4d; /* Dark theme text color */
-    font-size: 2em; /* Font size for the heading */
-}
-
-.large-button {
-    padding: 15px 20px; /* Increase button size */
-    background-color: #337ab7; /* Button background color */
-    color: white; /* Button text color */
-    border: none; /* Remove border */
-    border-radius: 4px; /* Rounded corners */
-    cursor: pointer; /* Pointer cursor on hover */
-    transition: background-color 0.3s ease; /* Smooth background color transition */
-}
-
-.large-button:hover {
-    background-color: #286090; /* Darker shade on hover */
+.action-button.danger:hover {
+  background: darken(var(--danger-color), 10%);
 }

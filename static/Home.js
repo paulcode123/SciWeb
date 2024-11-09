@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging.js"
+import { typeOutText, await_enter, AI_response } from './counselor.js';
 
 
 
@@ -67,9 +68,16 @@ function get_location_name(location, classes, assignments, friends, users){
 
 //Create a fetch request to /data to get Chat, Classes, and Assignments data
 async function main(){
-  startLoading();
-console.log("fetching data")
-const data = await fetchRequest('/data', { data: "Name, Chat, Classes, Assignments, Aspirations, Friends, Grades, Users" });
+  initializeChat(first_name);
+  // Get dashboard position
+  const dashboard = document.getElementById('dashboard');
+  const dashboardTop = dashboard.offsetTop;
+  
+  // Start loading animation above the dashboard
+  startLoading(dashboardTop + 180); // 50px above dashboard
+  
+  console.log("fetching data")
+  const data = await fetchRequest('/data', { data: "Name, Chat, Classes, Assignments, Aspirations, Friends, Grades, Users" });
 
   console.log("got data")
   //Store the data in variables
@@ -383,5 +391,26 @@ function show_recent_grades(grades){
     grade_div.innerHTML = `${grade.class} - ${grade.name}  →  ${grade.score}/${grade.value}`;
     recent_grades_container.appendChild(grade_div);
   });
+}
+
+// Add this function to start the chat
+async function initializeChat(userName) {
+  console.log("initializing chat")
+    const chatLog = document.getElementById('chatLog');
+    const prompts = [
+        {"role": "system", "content": "You are the user's College Counselor. It's your responsibility to tell them their assignments, if they have any tests coming up, recent grades, their goals, etc. You can access any of their data at any time from the database with the get_data/get_grades function."}
+    ];
+    
+    const initialPrompt = `Hey there, ${userName}! How can I help you today?`;
+    prompts.push({"role": "assistant", "content": initialPrompt});
+    await typeOutText(initialPrompt, 50, chatLog);
+
+    // Start the chat loop
+    while (true) {
+        const userResponse = await await_enter();
+        prompts.push({"role": "user", "content": userResponse});
+        const aiResponse = await AI_response(prompts);
+        await typeOutText(aiResponse, 50, chatLog);
+    }
 }
 

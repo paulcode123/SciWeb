@@ -14,9 +14,33 @@
 {% block content %}
 <header class="major">
     <h1>Welcome To SciWeb</h1>
-        <h5>A Data-Driven Approach to Academics, built for BxSci</h5>
+    <h5>A Data-Driven Approach to Academics, built for BxSci</h5>
+    
+    <!-- Add notifications UI -->
+    <div id="notificationsIcon">
+        <span id="notificationsEnabled" style="display: none;">
+            <i class="fas fa-bell" style="color: #4caf50; font-size: 24px;"></i>
+        </span>
+        <span id="notificationsDisabled" style="display: none;">
+            <i class="fas fa-bell-slash" style="color: #e44c65; font-size: 24px;"></i>
+        </span>
+        <div id="errorText" style="display: none;"></div>
+        <button id="retryButton" 
+                style="display: none; background: #4caf50; color: white; border: none; 
+                       padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-top: 5px;"
+                onclick="setupMessaging()">
+            Retry
+        </button>
+    </div>
 </header>
 
+<!-- Add chat interface -->
+<div id="chat-interface">
+    <div id="chatLog"></div>
+    <div class="input-container">
+        <input type="text" id="user-input" placeholder="Type your message...">
+    </div>
+</div>
 
 <div class="feature-grid">
 <div class="feature-box" data-href="/Classes">

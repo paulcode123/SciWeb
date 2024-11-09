@@ -1,70 +1,66 @@
-
 var classData = null;
-//display the class notebook button and description
-function display_NB_btn(classData){
-  console.log(classData)
-document.getElementById("description").textContent = classData['description'];
 
-// Display schedule
-displaySchedule(classData['schedule']);
-
-// Display grading categories
-displayCategories(classData['categories']);
-
-var button = document.createElement("button");
-var href = "/class/"+classData['name']+classData['id']+"/notebook";
-button.textContent = "➡️📒";
-button.id = "openNB";
-button.addEventListener("click", function() {
-        // Navigate to the specified URL
-        window.location.href = href;
-    })
-
-  // Add Leave Class button
-  var leaveButton = document.getElementById('leaveClass');
-  leaveButton.addEventListener("click", function() {
-    leaveClass(classData);
-  });
-
-// Append the button to the document body or any desired element
-document.getElementById('openNBcont').appendChild(button);
-}
 
 //add class form
 const createBtn = document.getElementById('createBtn');
 const formContainer = document.getElementById('formContainer');
 const assignmentForm = document.getElementById('assignmentForm');
+const cancelBtn = document.getElementById('cancelBtn');
 
-// Add event listener to the button
 createBtn.addEventListener('click', () => {
-  // Toggle the visibility of the form container
-  formContainer.style.display = formContainer.style.display === 'none' ? 'block' : 'none';
-
+  formContainer.style.display = 'flex';
+  populateCategoryDropdown();
 });
 
-// Add event listener to the form submission
+cancelBtn.addEventListener('click', () => {
+  formContainer.style.display = 'none';
+  assignmentForm.reset();
+});
+
+// Close modal if clicking outside the form
+formContainer.addEventListener('click', (e) => {
+  if (e.target === formContainer) {
+    formContainer.style.display = 'none';
+    assignmentForm.reset();
+  }
+});
+
+function populateCategoryDropdown() {
+  const categorySelect = document.getElementById('assignmentType');
+  categorySelect.innerHTML = ''; // Clear existing options
+  
+  let categories = classData.categories;
+  if (typeof categories === 'string') {
+    categories = JSON.parse(categories);
+  }
+  
+  // Filter out the weights and keep only category names
+  const categoryNames = categories.filter((_, index) => index % 2 === 0);
+  
+  categoryNames.forEach(category => {
+    const option = document.createElement('option');
+    option.value = category;
+    option.textContent = category;
+    categorySelect.appendChild(option);
+  });
+}
+
 assignmentForm.addEventListener('submit', (e) => {
   e.preventDefault();
-
-  // Get the values from the form inputs
-  const name = document.getElementById('name').value;
-  const due = document.getElementById('due').value;
-  const type = document.getElementById('assignmentType').value;
-  const points = document.getElementById('points').value;
-  document.getElementById("assignmentForm").reset();
-  // Create and display the object containing the name and due date values
+  
   const assignmentObj = {
-    name: name,
-    category: type,
-    points: points,
-    due: due,
+    name: document.getElementById('name').value,
+    category: document.getElementById('assignmentType').value,
+    points: document.getElementById('points').value,
+    due: document.getElementById('due').value,
     id: Math.floor(Math.random() * 10000).toString(),
-    class: classData['id'],
-    class_name: classData['name']
+    class: classData.id,
+    class_name: classData.name
   };
 
   post_assignment(assignmentObj);
-  
+  formContainer.style.display = 'none';
+  assignmentForm.reset();
 });
 
 function post_assignment(data){
@@ -78,27 +74,40 @@ function post_assignment(data){
 
 async function get_assignment(){
   startLoading();
-  var data = await fetchRequest('/data', {data: "Assignments, Classes, Name, Users"});
+  var data = await fetchRequest('/data', {data: "Classes, Assignments, Name, Users"});
   var classId = window.location.href.slice(-4);
   var assignmentList = data['Assignments']
   classData = data['Classes'];
-  console.log(data)
   classData = classData.find(item => item.id == classId);
-  // set head to classData['color']
-  document.getElementById('head').style.backgroundColor = classData['color'];
-  set_class_img(classData['img'])
-  display_assignments(assignmentList, classData);
-  display_NB_btn(classData);
-  add_user_bubbles(classData, data['Users']);
-  optionSelected(classData);
-  setImageEl(classData, "Classes")
-  set_color_EL("Classes", classData)
-  show_Join(data['Name'], classData, "Classes");
-  // if classData['img'] != "", set the background image of the div to the base64 image string
+
+  // Set up the page
+  setupPage(classData, data);
   
   endLoading();
 }
-get_assignment()
+
+function setupPage(classData, data) {
+  // Set background color
+  document.getElementById('class-section').style.backgroundColor = classData.color || 'var(--background-dark)';
+  
+  // Set up design elements
+  set_class_img(classData.img);
+  setImageEl(classData, "Classes");
+  set_color_EL("Classes", classData);
+  
+  // Display class content
+  display_assignments(data.Assignments, classData);
+  display_NB_btn(classData);
+  add_user_bubbles(classData, data.Users);
+  
+  // Set up join functionality
+  show_Join(data.Name, classData, "Classes");
+  
+  // Set up editable fields if user is class owner
+  if (isClassOwner(classData)) {
+    setupEditableFields(classData);
+  }
+}
 
 function display_assignments(assignmentList, classData){
   const assignmentListContainer = document.getElementById('assignmentList');
@@ -193,16 +202,91 @@ function displaySchedule(schedule) {
 }
 
 function displayCategories(categories) {
-  const categoriesContainer = document.getElementById('categoriesContainer');
-  categoriesContainer.innerHTML = '<h4>Grading Categories:</h4>';
+  const container = document.getElementById('categoriesContainer');
+  container.innerHTML = '';
+  
   if (typeof categories === 'string') {
     categories = JSON.parse(categories);
   }
-  const categoryList = document.createElement('ul');
+
+  const table = document.createElement('table');
+  table.className = 'categories-table';
+  
   for (let i = 0; i < categories.length; i += 2) {
-    const listItem = document.createElement('li');
-    listItem.textContent = `${categories[i]}: ${categories[i+1]}%`;
-    categoryList.appendChild(listItem);
+    const row = table.insertRow();
+    const categoryCell = row.insertCell();
+    const weightCell = row.insertCell();
+    
+    categoryCell.textContent = categories[i];
+    weightCell.textContent = `${categories[i+1]}%`;
   }
-  categoriesContainer.appendChild(categoryList);
+  
+  container.appendChild(table);
+}
+
+function add_user_bubbles(classData, users) {
+  const userList = document.getElementById('user-list');
+  userList.innerHTML = '';
+  
+  const userOSIS = classData.OSIS.split(',').filter(osis => osis.trim());
+  
+  userOSIS.forEach(osis => {
+    const user = users.find(u => u.osis === osis);
+    if (!user) return;
+
+    const bubble = document.createElement('div');
+    bubble.className = 'user-bubble';
+    bubble.textContent = `${user.first_name} ${user.last_name}`;
+    bubble.addEventListener('click', () => {
+      window.location.href = `/profile/${user.osis}`;
+    });
+    
+    userList.appendChild(bubble);
+  });
+}
+
+// Add helper functions
+function setupEditableFields(classData) {
+  const editableFields = document.querySelectorAll('[contenteditable="true"]');
+  editableFields.forEach(field => {
+    field.addEventListener('blur', async () => {
+      const updatedData = { ...classData };
+      updatedData[field.id] = field.textContent;
+      
+      await fetchRequest('/update_data', {
+        row_value: classData.id,
+        row_name: "id",
+        data: updatedData,
+        sheet: "Classes"
+      });
+    });
+  });
+}
+
+function isClassOwner(classData) {
+  // Add logic to check if current user is class owner
+  return classData.teacher === currentUserName; // You'll need to define currentUserName
+}
+
+// Add error handling to setdesign functions
+function set_color_EL(sheet, classData) {
+  const saveColorBtn = document.getElementById('savecolor');
+  const colorInput = document.getElementById('color');
+  
+  if (!saveColorBtn || !colorInput) return;
+
+  saveColorBtn.addEventListener('click', function() {
+    const color = make_color_opaque(colorInput.value);
+    document.getElementById('class-section').style.backgroundColor = color;
+    colorInput.style.display = 'none';
+    saveColorBtn.style.display = 'none';
+    
+    classData.color = color;
+    fetchRequest('/update_data', {
+      "row_value": classData.id,
+      "row_name": "id",
+      "data": classData,
+      "sheet": sheet
+    });
+  });
 }
