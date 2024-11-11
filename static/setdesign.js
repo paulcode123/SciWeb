@@ -85,11 +85,11 @@ function show_Join(user, classData, sheet){
     if (user[1] == 404){
     return;
     }
-    if (classData['OSIS'].includes(user['osis'])){
+    if (classData['OSIS'].includes(user['osis'].toString())){
         console.log("user is in class")
     return;
     }
-    console.log("user is not in class")
+    console.log("user is not in class", classData['OSIS'], user['osis'], user)
     joinBtn.style.display = 'block';
     join_class(classData, user, sheet);
 }

@@ -1,40 +1,78 @@
-var classData = null;
+// Global variables
+let classData = null;
 
-
-//add class form
-const createBtn = document.getElementById('createBtn');
-const formContainer = document.getElementById('formContainer');
-const assignmentForm = document.getElementById('assignmentForm');
-const cancelBtn = document.getElementById('cancelBtn');
-
-createBtn.addEventListener('click', () => {
-  formContainer.style.display = 'flex';
-  populateCategoryDropdown();
+// Initialize page
+document.addEventListener('DOMContentLoaded', () => {
+  get_assignment();
+  setupEventListeners();
 });
 
-cancelBtn.addEventListener('click', () => {
-  formContainer.style.display = 'none';
-  assignmentForm.reset();
-});
+// Main setup functions
+function setupEventListeners() {
+  // Form controls
+  const createBtn = document.getElementById('createBtn');
+  const formContainer = document.getElementById('formContainer');
+  const assignmentForm = document.getElementById('assignmentForm');
+  const cancelBtn = document.getElementById('cancelBtn');
 
-// Close modal if clicking outside the form
-formContainer.addEventListener('click', (e) => {
-  if (e.target === formContainer) {
+  createBtn.addEventListener('click', () => {
+    formContainer.style.display = 'flex';
+    populateCategoryDropdown();
+  });
+
+  cancelBtn.addEventListener('click', () => {
     formContainer.style.display = 'none';
     assignmentForm.reset();
-  }
-});
+  });
 
+  // Modal close on outside click
+  formContainer.addEventListener('click', (e) => {
+    if (e.target === formContainer) {
+      formContainer.style.display = 'none';
+      assignmentForm.reset();
+    }
+  });
+
+  // Assignment form submission
+  assignmentForm.addEventListener('submit', handleAssignmentSubmit);
+
+  // Leave class button
+  const leaveBtn = document.getElementById('leaveClass');
+  if (leaveBtn) {
+    leaveBtn.addEventListener('click', () => leaveClass(classData));
+  }
+}
+
+// Assignment form handling
+function handleAssignmentSubmit(e) {
+  e.preventDefault();
+  
+  const assignmentObj = {
+    name: document.getElementById('name').value,
+    category: document.getElementById('assignmentType').value,
+    points: document.getElementById('points').value,
+    due: document.getElementById('due').value,
+    id: Math.floor(Math.random() * 10000),
+    class: classData.id,
+    class_name: classData.name
+  };
+
+  post_assignment(assignmentObj);
+  formContainer.style.display = 'none';
+  assignmentForm.reset();
+}
+
+// Category dropdown population
 function populateCategoryDropdown() {
   const categorySelect = document.getElementById('assignmentType');
-  categorySelect.innerHTML = ''; // Clear existing options
+  categorySelect.innerHTML = '';
   
   let categories = classData.categories;
   if (typeof categories === 'string') {
     categories = JSON.parse(categories);
   }
   
-  // Filter out the weights and keep only category names
+  // Filter out weights and keep only category names
   const categoryNames = categories.filter((_, index) => index % 2 === 0);
   
   categoryNames.forEach(category => {
@@ -45,50 +83,29 @@ function populateCategoryDropdown() {
   });
 }
 
-assignmentForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  
-  const assignmentObj = {
-    name: document.getElementById('name').value,
-    category: document.getElementById('assignmentType').value,
-    points: document.getElementById('points').value,
-    due: document.getElementById('due').value,
-    id: Math.floor(Math.random() * 10000).toString(),
-    class: classData.id,
-    class_name: classData.name
-  };
-
-  post_assignment(assignmentObj);
-  formContainer.style.display = 'none';
-  assignmentForm.reset();
-});
-
-function post_assignment(data){
-  var new_row = classData
-  new_row['assignments'] = new_row['assignments'] + ", "+data['id']
-  fetchRequest('/post_data', {data: data, sheet: "Assignments"});
-  fetchRequest('/update_data', {"row_value": classData['id'], "row_name": "id", "data": new_row, "sheet": "Classes"});
-  location.reload();
-}
-
-
-async function get_assignment(){
+// Data fetching and page setup
+async function get_assignment() {
   startLoading();
-  var data = await fetchRequest('/data', {data: "Classes, Assignments, Name, Users"});
-  var classId = window.location.href.slice(-4);
-  var assignmentList = data['Assignments']
-  classData = data['Classes'];
-  classData = classData.find(item => item.id == classId);
-
-  // Set up the page
-  setupPage(classData, data);
+  const data = await fetchRequest('/data', {data: "Classes, Assignments, Name, Users"});
+  const classId = window.location.href.slice(-4);
   
+  classData = data.Classes.find(item => item.id == classId);
+  if (!classData) {
+    console.error('Class not found');
+    endLoading();
+    return;
+  }
+
+  setupPage(classData, data);
   endLoading();
 }
 
+// Page content setup
 function setupPage(classData, data) {
+  console.log("in setup page")
   // Set background color
-  document.getElementById('class-section').style.backgroundColor = classData.color || 'var(--background-dark)';
+  document.getElementById('class-section').style.backgroundColor = 
+    classData.color || 'var(--background-dark)';
   
   // Set up design elements
   set_class_img(classData.img);
@@ -96,8 +113,9 @@ function setupPage(classData, data) {
   set_color_EL("Classes", classData);
   
   // Display class content
+
   display_assignments(data.Assignments, classData);
-  display_NB_btn(classData);
+  displayCategories(classData.categories);
   add_user_bubbles(classData, data.Users);
   
   // Set up join functionality
@@ -109,184 +127,177 @@ function setupPage(classData, data) {
   }
 }
 
-function display_assignments(assignmentList, classData){
-  const assignmentListContainer = document.getElementById('assignmentList');
-    assignmentList.forEach(assignmentData => {
-      if(!(assignmentData['class']==classData['id'])){return;}
-      
-      const assignmentItem = document.createElement('div');
-      assignmentItem.classList.add('assignment-item');
-      const dueDate = processDate(assignmentData.due);
-      assignmentItem.innerHTML = `
-        <h3>Due ${dueDate}</h3>
-        <p>Type: ${assignmentData.category}</p>
-        <p>Name: ${assignmentData.name}</p>
-      `;
-      
-      assignmentItem.addEventListener('click', () => {
-        window.location.href = "/assignment/" + assignmentData.id;
-      });
+// Data posting functions
+async function post_assignment(data) {
 
-      assignmentListContainer.appendChild(assignmentItem);
-    });
+  await fetchRequest('/post_data', {data: data, sheet: "Assignments"})
+
+  // add assignment to div
+  const assignmentList = document.getElementById('assignmentList');
+  const card = createAssignmentCard(data);
+  assignmentList.appendChild(card);
+}
+
+// Display assignments
+function display_assignments(assignments, classData) {
+  console.log(assignments)
+  const assignmentList = document.getElementById('assignmentList');
+  assignmentList.innerHTML = '';
+
+  // Filter and sort assignments for the current class
+  const relevantAssignments = assignments
+    .filter(assignment => assignment.class == classData.id)
+    .sort((a, b) => new Date(a.due) - new Date(b.due));
+
+  console.log(relevantAssignments)
+  // Create assignment cards
+  relevantAssignments.forEach(assignment => {
+    const card = createAssignmentCard(assignment);
+    assignmentList.appendChild(card);
+  });
+
+  if (relevantAssignments.length === 0) {
+    const emptyMessage = document.createElement('p');
+    emptyMessage.textContent = 'No assignments yet';
+    emptyMessage.className = 'empty-message';
+    assignmentList.appendChild(emptyMessage);
+  }
+}
+
+// Create assignment card
+function createAssignmentCard(assignment) {
+  const card = document.createElement('div');
+  card.className = 'assignment-card';
   
+  // Format due date
+  const dueDate = new Date(assignment.due);
+  const formattedDate = dueDate.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+
+  // Create card content
+  card.innerHTML = `
+    <div class="assignment-header">
+      <h4>${assignment.name}</h4>
+      <span class="category-tag">${assignment.category}</span>
+    </div>
+    <div class="assignment-details">
+      <span class="points">${assignment.points} points</span>
+      <span class="due-date">Due: ${formattedDate}</span>
+    </div>
+  `;
+
+  // Add click handler to navigate to assignment details
+  card.addEventListener('click', () => {
+    window.location.href = `/assignment/${assignment.id}`;
+  });
+
+  return card;
 }
 
-
-
-function optionSelected(classData){
-    
-  console.log(classData);
-  var categories = classData['categories']
-  
-  if(categories){
-    // convert categories to json if it is a string
-    if(typeof categories === 'string'){
-      categories = JSON.parse(categories);
-    }
-    categories = categories.filter(item => typeof item === 'string');
-    
-  var categoryElement = document.getElementById("assignmentType")
-  // Remove all existing options
-  while (categoryElement.firstChild) {
-    categoryElement.removeChild(categoryElement.firstChild);
-}
-  // Add new options
-  for(let x=0; x<categories.length; x++){
-  const newOption = document.createElement("option");
-  newOption.value = categories[x];
-  newOption.textContent = categories[x];
-      // Add the new option to the select element
-categoryElement.appendChild(newOption);
-  }
-  
-  }
-}
-
-function leaveClass(classData) {
-  if (confirm("Are you sure you want to leave this class?")) {
-    //remove the user from the string of the class members' osis
-    classData['OSIS'] = classData['OSIS'].replace(osis, "");
-
-    fetchRequest('/update_data', {
-      "row_value": classData['id'],
-      "row_name": "id",
-      "data": classData,
-      "sheet": "Classes"
-    }).then(response => {
-      if (response.message === "success") {
-        alert("You have left the class successfully.");
-        window.location.href = "/Classes";  // Redirect to the Classes page
-      } else {
-        alert("There was an error leaving the class. Please try again.");
-      }
-    });
-  }
-}
-
-
-function displaySchedule(schedule) {
-  const scheduleContainer = document.getElementById('scheduleContainer');
-  scheduleContainer.innerHTML = '<h4>Schedule:</h4>';
-  if (typeof schedule === 'string') {
-    scheduleContainer.innerHTML += `<p>${schedule}</p>`;
-  } else if (Array.isArray(schedule)) {
-    const scheduleList = document.createElement('ul');
-    schedule.forEach(item => {
-      const listItem = document.createElement('li');
-      listItem.textContent = item;
-      scheduleList.appendChild(listItem);
-    });
-    scheduleContainer.appendChild(scheduleList);
-  }
-}
-
+// Display categories
 function displayCategories(categories) {
-  const container = document.getElementById('categoriesContainer');
-  container.innerHTML = '';
-  
+  const categoriesContainer = document.getElementById('categoriesContainer');
+  categoriesContainer.innerHTML = '';
+
   if (typeof categories === 'string') {
     categories = JSON.parse(categories);
   }
 
-  const table = document.createElement('table');
-  table.className = 'categories-table';
-  
+  // Create category list
+  const categoryList = document.createElement('ul');
+  categoryList.className = 'category-list';
+
+  // Add categories and weights
   for (let i = 0; i < categories.length; i += 2) {
-    const row = table.insertRow();
-    const categoryCell = row.insertCell();
-    const weightCell = row.insertCell();
-    
-    categoryCell.textContent = categories[i];
-    weightCell.textContent = `${categories[i+1]}%`;
+    const category = categories[i];
+    const weight = categories[i + 1];
+
+    const listItem = document.createElement('li');
+    listItem.className = 'category-item';
+    listItem.innerHTML = `
+      <span class="category-name">${category}</span>
+      <span class="category-weight">${weight}%</span>
+    `;
+
+    categoryList.appendChild(listItem);
   }
-  
-  container.appendChild(table);
+
+  categoriesContainer.appendChild(categoryList);
 }
 
-function add_user_bubbles(classData, users) {
-  const userList = document.getElementById('user-list');
-  userList.innerHTML = '';
-  
-  const userOSIS = classData.OSIS.split(',').filter(osis => osis.trim());
-  
-  userOSIS.forEach(osis => {
-    const user = users.find(u => u.osis === osis);
-    if (!user) return;
-
-    const bubble = document.createElement('div');
-    bubble.className = 'user-bubble';
-    bubble.textContent = `${user.first_name} ${user.last_name}`;
-    bubble.addEventListener('click', () => {
-      window.location.href = `/profile/${user.osis}`;
-    });
-    
-    userList.appendChild(bubble);
-  });
-}
-
-// Add helper functions
-function setupEditableFields(classData) {
-  const editableFields = document.querySelectorAll('[contenteditable="true"]');
-  editableFields.forEach(field => {
-    field.addEventListener('blur', async () => {
-      const updatedData = { ...classData };
-      updatedData[field.id] = field.textContent;
-      
-      await fetchRequest('/update_data', {
-        row_value: classData.id,
-        row_name: "id",
-        data: updatedData,
-        sheet: "Classes"
-      });
-    });
-  });
-}
-
+// Check if user is class owner
 function isClassOwner(classData) {
-  // Add logic to check if current user is class owner
-  return classData.teacher === currentUserName; // You'll need to define currentUserName
+  // You'll need to implement this based on your user authentication system
+  // For example, comparing the current user's ID with the class owner's ID
+  return false; // Adjust this based on your data structure
 }
 
-// Add error handling to setdesign functions
-function set_color_EL(sheet, classData) {
-  const saveColorBtn = document.getElementById('savecolor');
-  const colorInput = document.getElementById('color');
-  
-  if (!saveColorBtn || !colorInput) return;
+// Setup editable fields
+function setupEditableFields(classData) {
+  const editableFields = {
+    'teacher': document.getElementById('teacher'),
+    'period': document.getElementById('period')
+  };
 
-  saveColorBtn.addEventListener('click', function() {
-    const color = make_color_opaque(colorInput.value);
-    document.getElementById('class-section').style.backgroundColor = color;
-    colorInput.style.display = 'none';
-    saveColorBtn.style.display = 'none';
-    
-    classData.color = color;
-    fetchRequest('/update_data', {
-      "row_value": classData.id,
-      "row_name": "id",
-      "data": classData,
-      "sheet": sheet
-    });
+  // Set initial values
+  Object.entries(editableFields).forEach(([key, element]) => {
+    if (element) {
+      element.textContent = classData[key] || '';
+      
+      // Add blur event listener to save changes
+      element.addEventListener('blur', async () => {
+        const newValue = element.textContent.trim();
+        if (newValue !== classData[key]) {
+          const updatedData = { ...classData, [key]: newValue };
+          await updateClassData(updatedData);
+        }
+      });
+    }
   });
 }
+
+// Update class data
+async function updateClassData(updatedData) {
+  try {
+    await fetchRequest('/update_data', {
+      row_value: updatedData.id,
+      row_name: "id",
+      data: updatedData,
+      sheet: "Classes"
+    });
+    classData = updatedData;
+  } catch (error) {
+    console.error('Error updating class data:', error);
+  }
+}
+
+// Leave class function
+async function leaveClass(classData) {
+  if (!confirm('Are you sure you want to leave this class?')) {
+    return;
+  }
+
+  try {
+    // Get current user's OSIS
+    const userData = await fetchRequest('/data', {data: "Name"});
+    const userOsis = userData.Name.osis;
+
+    // Remove user from class OSIS list
+    const updatedOsis = classData.OSIS
+      .split(/[\s,]+/)
+      .filter(osis => osis !== userOsis)
+      .join(', ');
+
+    const updatedData = { ...classData, OSIS: updatedOsis };
+
+    await updateClassData(updatedData);
+    window.location.href = '/dashboard'; // Redirect to dashboard after leaving
+  } catch (error) {
+    console.error('Error leaving class:', error);
+  }
+}
+
+// ... rest of your existing helper functions ...

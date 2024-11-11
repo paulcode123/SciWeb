@@ -29,10 +29,10 @@ from PyPDF2 import PdfReader
 
 
 # Get functions from other files
-from database import get_data, post_data, update_data, delete_data, download_file, upload_file, init_firebase, get_user_data
+from database import get_data, post_data, update_data, delete_data, download_file, upload_file, init_firebase, get_user_data, send_notification
 from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, get_stats, update_leagues, get_compliments, get_grade_impact
-from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades, confirm_category_match
+from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades, confirm_category_match, check_new_grades, notify_new_member
 from study import get_insights, get_insights_from_file, chat_with_function_calling, run_inspire
 
 #get api keys from static/api_keys.json file
@@ -174,6 +174,10 @@ def messages():
 def join():
   return render_template('About/Join.html')
 
+@app.route('/Schedule')
+def schedule():
+  return render_template('schedule.html')
+
 @app.route('/Features/AI')
 def ai_features():
   return render_template('About/AI.html')
@@ -312,28 +316,31 @@ def get_home_ip():
 # /Jupiter route
 @app.route('/jupiter', methods=['POST'])
 def Jupiter():
-  print("in jup py route")
-  # get_gclassroom_api_data()
-  data = request.json
-  classes= run_puppeteer_script(data['osis'], data['password'])
-  
-  if classes == "WrongPass":
-    return json.dumps({"error": "Incorrect credentials"})
+    print("in jup py route")
+    data = request.json
+    classes = run_puppeteer_script(data['osis'], data['password'])
+    
+    if classes == "WrongPass":
+        return json.dumps({"error": "Incorrect credentials"})
 
-  class_data = get_data("Classes")
+    class_data = get_data("Classes")
+    tokens_data = get_data("Tokens")
 
-  if str(data['addclasses'])=="True":
-    jupapi_output_to_classes(classes, class_data)
-  
-  session['user_data']['grades_key'] = str(data['encrypt'])
-  grades = jupapi_output_to_grades(classes, data['encrypt'])
-  # if the categories in the grades do not match the categories in the classes, rerun the function
-  if confirm_category_match(grades, class_data):
-     jupapi_output_to_classes(classes, class_data)
+    if str(data['addclasses'])=="True":
+        classes_added = jupapi_output_to_classes(classes, class_data)
+        notify_new_member(classes_added, tokens_data)
+    
+    session['user_data']['grades_key'] = str(data['encrypt'])
+    grades = jupapi_output_to_grades(classes, data['encrypt'])
+    
+    check_new_grades(grades, class_data, tokens_data)
+    
+    if confirm_category_match(grades, class_data):
+        jupapi_output_to_classes(classes, class_data)
 
-  if str(data['updateLeagues'])=="True":
-    update_leagues(grades, classes)
-  return json.dumps(grades)
+    if str(data['updateLeagues'])=="True":
+        update_leagues(grades, classes)
+    return json.dumps(grades)
 
 @app.route('/init_oauth', methods=['POST', 'GET'])
 def init_oauth_handler():
@@ -402,6 +409,17 @@ def delete_data_route():
 @app.route('/AI', methods=['POST'])
 def get_AI():
   return json.dumps(get_insights(request.json['data']))
+
+# /send_notification route
+@app.route('/send_notification', methods=['POST'])
+def send_notification_route():
+  data = request.json
+  
+  # convert list of OSIS to their tokens
+  tokens = get_data("Tokens", row_name="OSIS", row_val=data['OSIS'], operator="in")
+  for token in tokens:
+    send_notification(token['token'], data['title'], data['body'], data['url'])
+  return json.dumps({"message": "success"})
 
 class text_and_time(BaseModel):
   text: str
@@ -631,7 +649,7 @@ def process_notebook_file():
         
         prompts = [
             {"role": "system", "content": "You are an expert at analyzing educational worksheets and creating study materials."},
-            {"role": "user", "content": f"Analyze this worksheet PDF content and provide the following information:\n1. The main topic of the worksheet\n2. A list of specific notes about the content of the worksheet\n3. Several practice questions related to the worksheet content\n\nPDF Content:\n{text_content[:4000]}"}  # Limit content to 4000 characters to avoid token limits
+            {"role": "user", "content": f"Analyze this worksheet PDF content and provide the following information:\n1. The main topic of the worksheet\n2. A complete list of specific notes about the content of the worksheet\n3. 5 questions asked in the worksheet, or, if there are no questions, come up with 5 questions that test the user's understanding of the worksheet content\n\nPDF Content:\n{text_content[:4000]}"}  # Limit content to 4000 characters to avoid token limits
         ]
         
         insights = get_insights(prompts, ResponseTypeNB)
@@ -649,7 +667,7 @@ def process_notebook_file():
         prompts = [
             {"role": "system", "content": "You are an expert at analyzing educational worksheets and creating study materials."},
             {"role": "user", "content": [
-                {"type": "text", "text": "Analyze this worksheet image and provide the following information:\n1. The main topic of the worksheet\n2. A list of specific subtopics or concepts the user needs to know\n3. Several practice questions related to the worksheet content\nFormat your response as JSON with keys 'topic', 'subtopics', and 'practice_questions'."},
+                {"type": "text", "text": "Analyze this worksheet image and provide the following information:\n1. The main topic of the worksheet\n2. A complete list of specific subtopics or concepts the user needs to know\n3. 5 questions asked in the worksheet, or, if there are no questions, come up with 5 questions that test the user's understanding of the worksheet content\nFormat your response as JSON with keys 'topic', 'notes', and 'practice_questions'."},
                 {"type": "image_url", "image_url": {"url": f"data:image/{file_type.split('/')[-1]};base64,{base64_img}"}}
             ]}
         ]
@@ -666,6 +684,28 @@ def process_notebook_file():
     post_data("Notebooks", {"classID": data['classID'], "unit": unit, "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "image": blob_id, "topic": insights["topic"], "subtopics": insights["notes"], "practice_questions": insights["practice_questions"]})
     return jsonify({"success": True, "message": "Worksheet processed and stored successfully"})  
   
+
+@app.route('/get-units', methods=['POST'])
+def get_units():
+    data = request.json
+    class_id = data['classId']
+    classes = get_user_data("Classes")
+    notebooks = get_user_data("Notebooks", {"Classes":classes})
+    # Get unique units for the given class_id
+    units = list(set(notebook['unit'] for notebook in notebooks if notebook['classID'] == class_id))
+    
+    return jsonify({"units": units})
+    
+class Feedback(BaseModel):
+    feedback: str
+    score: int
+
+class ResponseTypeQA(BaseModel):
+    feedback: list[Feedback]
+    weaknesses: list[str]
+    strengths: list[str]
+    test_score: int
+
 # set response format class. for mcq, the key is the question, and the value is the answer
 class MultipleChoiceQuestion(BaseModel):
     question: str
@@ -710,26 +750,6 @@ def generate_questions():
     return json.dumps({"questions": json.loads(questions)})
 
 
-@app.route('/get-units', methods=['POST'])
-def get_units():
-    data = request.json
-    class_id = data['classId']
-    classes = get_user_data("Classes")
-    notebooks = get_user_data("Notebooks", {"Classes":classes})
-    # Get unique units for the given class_id
-    units = list(set(notebook['unit'] for notebook in notebooks if notebook['classID'] == class_id))
-    
-    return jsonify({"units": units})
-    
-class Feedback(BaseModel):
-    feedback: str
-    score: int
-
-class ResponseTypeQA(BaseModel):
-    feedback: list[Feedback]
-    weaknesses: list[str]
-    strengths: list[str]
-    test_score: int
 
 @app.route('/score-answers', methods=['POST'])
 def score_answers():

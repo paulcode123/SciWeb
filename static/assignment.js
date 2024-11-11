@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
   startLoading();
   // Fetch assignment data and calculate averages
   fetchRequest('/data', {
-    "data": "Assignments"
+    "data": "Classes, Assignments"
   })
       .then(data => {
           if (data) {

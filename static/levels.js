@@ -19,6 +19,113 @@ let customPrompts = {
     scoring: DEFAULT_PROMPTS.scoring
 };
 
+// Add new constants for prompt libraries
+const QUESTION_PROMPT_LIBRARY = [
+    {
+        focus: "Detailed Analysis",
+        icon: "fas fa-microscope",
+        prompt: "Generate 5 detailed questions that require deep analysis of the topics. Questions should be at the {level} level of Bloom's Taxonomy, focusing on specific concepts and their relationships. Include follow-up sub-questions when appropriate."
+    },
+    {
+        focus: "Real-World Application",
+        icon: "fas fa-globe",
+        prompt: "Create 5 scenario-based questions at the {level} level that connect the topics to real-world situations. Focus on practical applications and problem-solving in realistic contexts."
+    },
+    {
+        focus: "Concept Connections",
+        icon: "fas fa-project-diagram",
+        prompt: "Generate 5 questions at the {level} level that emphasize connections between different concepts within the topic. Focus on understanding relationships and interdependencies."
+    },
+    {
+        focus: "Critical Thinking",
+        icon: "fas fa-brain",
+        prompt: "Create 5 questions at the {level} level that challenge students to think critically and defend their positions. Include prompts for justification and evidence-based reasoning."
+    },
+    {
+        focus: "Visual Analysis",
+        icon: "fas fa-chart-line",
+        prompt: "Generate 5 questions at the {level} level that involve analyzing diagrams, graphs, or visual representations of the concepts. Focus on interpretation and visual literacy."
+    },
+    {
+        focus: "Historical Context",
+        icon: "fas fa-history",
+        prompt: "Create 5 questions at the {level} level that explore the historical development and evolution of the concepts. Include questions about key discoveries and breakthroughs."
+    },
+    {
+        focus: "Problem-Solving",
+        icon: "fas fa-puzzle-piece",
+        prompt: "Generate 5 problem-solving questions at the {level} level that require step-by-step solutions. Focus on methodology and process explanation."
+    },
+    {
+        focus: "Comparative Analysis",
+        icon: "fas fa-balance-scale",
+        prompt: "Create 5 questions at the {level} level that require comparing and contrasting different aspects of the topics. Focus on similarities, differences, and relationships."
+    },
+    {
+        focus: "Future Implications",
+        icon: "fas fa-rocket",
+        prompt: "Generate 5 questions at the {level} level about potential future developments and implications of the concepts. Focus on prediction and innovation."
+    },
+    {
+        focus: "Ethical Considerations",
+        icon: "fas fa-gavel",
+        prompt: "Create 5 questions at the {level} level that explore ethical implications and societal impacts of the topics. Focus on decision-making and responsibility."
+    }
+];
+
+const SCORING_PROMPT_LIBRARY = [
+    {
+        focus: "Comprehensive Feedback",
+        icon: "fas fa-clipboard-check",
+        prompt: "Evaluate the student's {level}-level response with detailed feedback. Score from 0-10, explain the scoring rationale, provide the correct answer, and suggest specific improvements."
+    },
+    {
+        focus: "Concept Mastery",
+        icon: "fas fa-star",
+        prompt: "Score the {level}-level answer from 0-10 based on concept mastery. Identify key concepts correctly used and those missing. Provide examples of how to better demonstrate understanding."
+    },
+    {
+        focus: "Critical Analysis",
+        icon: "fas fa-search",
+        prompt: "Evaluate the {level}-level response focusing on critical thinking skills. Score 0-10, assess the depth of analysis, and suggest ways to strengthen analytical reasoning."
+    },
+    {
+        focus: "Communication Clarity",
+        icon: "fas fa-comment-alt",
+        prompt: "Score the {level}-level answer from 0-10 emphasizing communication clarity. Assess how well ideas are expressed and organized, suggesting improvements in presentation."
+    },
+    {
+        focus: "Evidence-Based Evaluation",
+        icon: "fas fa-balance-scale-right",
+        prompt: "Rate the {level}-level response from 0-10 based on use of evidence and support. Evaluate the quality of examples and reasoning provided."
+    },
+    {
+        focus: "Problem-Solving Process",
+        icon: "fas fa-tools",
+        prompt: "Score the {level}-level answer from 0-10 focusing on problem-solving methodology. Assess approach, steps taken, and solution efficiency."
+    },
+    {
+        focus: "Creative Application",
+        icon: "fas fa-lightbulb",
+        prompt: "Evaluate the {level}-level response from 0-10 based on creative application of concepts. Assess innovative thinking and unique approaches."
+    },
+    {
+        focus: "Technical Accuracy",
+        icon: "fas fa-check-double",
+        prompt: "Score the {level}-level answer from 0-10 emphasizing technical accuracy. Evaluate precise use of terminology and concepts."
+    },
+    {
+        focus: "Practical Application",
+        icon: "fas fa-hammer",
+        prompt: "Rate the {level}-level response from 0-10 based on practical application ability. Assess how well theoretical knowledge is applied to real situations."
+    },
+    {
+        focus: "Holistic Understanding",
+        icon: "fas fa-circle-nodes",
+        prompt: "Score the {level}-level answer from 0-10 focusing on holistic understanding. Evaluate how well concepts are integrated and interconnected."
+    }
+];
+
 document.addEventListener('DOMContentLoaded', function() {
     fetchClasses();
     setupEventListeners();
@@ -317,6 +424,64 @@ function setupNotebookButton() {
 function initializePrompts() {
     document.getElementById('question-prompt').value = DEFAULT_PROMPTS.questionGeneration;
     document.getElementById('scoring-prompt').value = DEFAULT_PROMPTS.scoring;
+    
+    // Add library buttons
+    const questionPromptArea = document.getElementById('question-prompt').parentElement;
+    const scoringPromptArea = document.getElementById('scoring-prompt').parentElement;
+    
+    questionPromptArea.insertAdjacentHTML('beforeend', `
+        <button class="library-button" onclick="showPromptLibrary('question')">
+            <i class="fas fa-book"></i> Question Prompt Library
+        </button>
+    `);
+    
+    scoringPromptArea.insertAdjacentHTML('beforeend', `
+        <button class="library-button" onclick="showPromptLibrary('scoring')">
+            <i class="fas fa-book"></i> Scoring Prompt Library
+        </button>
+    `);
+}
+
+function showPromptLibrary(type) {
+    const library = type === 'question' ? QUESTION_PROMPT_LIBRARY : SCORING_PROMPT_LIBRARY;
+    const modalContent = createPromptLibraryModal(library, type);
+    
+    // Create and show modal
+    const modal = document.createElement('div');
+    modal.className = 'prompt-library-modal';
+    modal.innerHTML = modalContent;
+    document.body.appendChild(modal);
+    
+    // Add event listeners for prompt selection
+    modal.querySelectorAll('.prompt-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const prompt = item.getAttribute('data-prompt');
+            document.getElementById(`${type}-prompt`).value = prompt;
+            modal.remove();
+        });
+    });
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+    });
+}
+
+function createPromptLibraryModal(library, type) {
+    return `
+        <div class="prompt-library-content">
+            <h3>${type === 'question' ? 'Question' : 'Scoring'} Prompt Library</h3>
+            <div class="prompt-grid">
+                ${library.map(item => `
+                    <div class="prompt-item" data-prompt="${item.prompt}">
+                        <i class="${item.icon}"></i>
+                        <h4>${item.focus}</h4>
+                        <p>${item.prompt}</p>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
 }
 
 // Add new function to toggle settings

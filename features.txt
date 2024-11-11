@@ -1,0 +1,62 @@
+1. Enter Grades
+   a. Users can pull grades from Jupiter Ed or enter them manually
+   b. Grades can be encrypted in the database, classes can be joined based on grade information, and leagues can be updated with new stats
+   c. Grades can be downloaded as a CSV file
+   d. Grades displayed in a table
+   e. Users can override grades uploaded from Jupiter Ed
+   f. Users can share the grade as text which can be auto pasted into a text message or SM post
+   g. (in progress) Users can share grade with friends on the site, which sends them a notification
+
+2. Grade Analysis
+    a. 3 charts: Grades over Time, Score Distribution, and Change in grade bar graph per block of Time
+    b. Users can select which of their classes/categories to graph, and all three charts will update
+    c. Each chart has a checkbox to break it down into components, which will pull apart the line/bar into multiple lines/bars for each category
+    d. Grades over Time chart has a checkbox to graph individual grades, and on hover, shows grade info and impact of the grade on category, class, and overall
+    e. Also on the Grades over Time chart, users can click on the graph to set a goal for that grade, which appears in a table below, including days left to achieve it, % on track, etc.
+    f. Compliments slide carousel with a random sample of compliments based on recent grades
+    g. Stats section with GPA, most improved/worstened class, recent change in grade
+    h. Assignment distributions tool, where users can search their grades, opt in to anonymized sharing, and see a chart of the grade distribution for sharing users of that assignment
+
+3. Goals
+   a. Users can chat with the AI to set long term goals, specifying their motivation, steps, and due dates, which are then represented on a timeline on the page
+
+4. Inspire
+    a. Users can enter something they need motivation for, and the AI will write a youtube search query for an inspirational video, which is then embedded on the website
+
+5. Notebook
+    a. User's classes are listed in a sidebar
+    b. Users can see previously created units within those classes or create new ones
+    c. Within those units, users can upload images or pdfs of notes, the file is stored, and the AI writes notes and extracts questions from the file content
+    d. Users can view the image or delete the notes
+
+6. Evaluate
+    a. Users can select a class and unit, a number of multiple choice and short response questions, and a grading style
+    b. The AI will generate questions based on the notebook data, score the user's answers, and give them a predicted test grade and strengths and weaknesses based on the test(not rigorously tested yet)
+
+7. Levels
+    a. The user can select a class and unit, starting level(of Bloom's Taxonomy), # of points to advance to next level, and specify a custom prompt(or browse a selection of prompts) for question generation and scoring
+    b. The AI will generate questions based on the notebook data, score the user's answers in real time, and update the level
+
+8. Battle(in progress)
+    a. Users can select a class and unit, and a game mode, and a join code will be generated, or enter a join code to join a battle
+    b. Users are redirected to the game page, where they play the game involving answering questions related to the unit
+
+9. Classes
+    a. Users can select the class from the list, be redirected to the class page
+    b. Here, they can see the class info, chat with the class, and create assignments
+    c. Classes can also be joined manually by searching for them
+
+10. Assignments
+    a. Users can see assignments, their class and due date
+    b. on an assignment's assignment page, users can chat with each other about the assignment
+
+11. Calendar
+    a. Users can drag and drop assignments, study blocks, and aspiration steps into the calendar(UI in progress)
+
+12. Messages
+    a. Classes, friends, and leagues appear in the sidebar, and can be selected to chat
+
+13. Leagues(currently unfunctional)
+    a. Users can create leagues, select members, and select shared metrics
+    b. On the league page, users can view their friends share metrics/leaderboard
+

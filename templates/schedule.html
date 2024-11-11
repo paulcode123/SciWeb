@@ -1,0 +1,85 @@
+{% extends "darkThemeTemplate.html" %}
+
+{% block title %}
+<title>SciWeb | Schedule</title>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="/static/schedule.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="schedule-container">
+    <!-- Sidebar for draggable items -->
+    <div class="sidebar">
+        <div class="sidebar-section">
+            <h3><i class="fas fa-tasks"></i> Assignments</h3>
+            <div id="assignments-list" class="draggable-list"></div>
+        </div>
+        
+        <div class="sidebar-section">
+            <h3><i class="fas fa-star"></i> Aspirations</h3>
+            <div id="aspirations-list" class="draggable-list"></div>
+        </div>
+        
+        <div class="sidebar-section">
+            <h3><i class="fas fa-book"></i> Study Blocks</h3>
+            <div id="study-blocks" class="draggable-list"></div>
+        </div>
+
+        <div class="sidebar-section">
+            <h3><i class="fas fa-plus"></i> Custom Task</h3>
+            <div class="custom-task-form">
+                <input type="text" id="custom-task-name" placeholder="Task name">
+                <textarea id="custom-task-desc" placeholder="Description"></textarea>
+                <button id="add-custom-task"><i class="fas fa-plus"></i> Add Task</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main calendar area -->
+    <div class="calendar-container">
+        <div class="calendar-header">
+            <button id="prev-week"><i class="fas fa-chevron-left"></i></button>
+            <h2 id="current-week"></h2>
+            <button id="next-week"><i class="fas fa-chevron-right"></i></button>
+        </div>
+        
+        <div class="calendar-grid">
+            <div class="time-labels">
+                {% for hour in range(8, 22) %}
+                <div class="time-label">{{ hour }}:00</div>
+                {% endfor %}
+            </div>
+            
+            <div class="calendar-content">
+                {% for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
+                <div class="day-column">
+                    <div class="day-header">{{ day }}</div>
+                    {% for hour in range(8, 22) %}
+                    <div class="time-slot" data-day="{{ loop.index0 }}" data-hour="{{ hour }}"></div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Task details popup -->
+    <div id="task-details" class="task-details hidden">
+        <div class="task-details-content">
+            <h3>Task Details</h3>
+            <div class="task-info"></div>
+            <div class="task-actions">
+                <button class="edit-task">Edit</button>
+                <button class="delete-task">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script src="/static/schedule.js"></script>
+{% endblock %} 

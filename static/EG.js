@@ -9,6 +9,8 @@ const form = document.querySelector("#gradeform");
 const tbody = document.querySelector("#mytbody");
 var grades;
 const Pullbutton = document.querySelector('#Jupull');
+var rawclasses;
+var friends;
 
 // when OpenGA button is clicked, open the GradeAnalysis page
 document.getElementById('OpenGA').addEventListener('click', () => {
@@ -59,10 +61,7 @@ async function pullfromJupiter(){
   grades = data;
   createGradesTable(grades);
   endLoading();
-  // If new classes were added, send notifications
-  if (data.new_classes && data.new_classes.length > 0) {
-    notifyClassmates(data.new_classes, data.class_tokens);
-  }
+  
   }
 }
 }
@@ -187,11 +186,12 @@ async function post_grades(grades){
 
 
 
-  data = await fetchRequest('/data', {"data": 'Name, Grades, Classes'});
+  data = await fetchRequest('/data', {"data": 'Name, Grades, Classes, Friends'});
   
   
   grades = data['Grades']
-  var rawclasses = data['Classes']
+  rawclasses = data['Classes']
+  friends = data['Friends']
   const classes = rawclasses.filter(item => (item.OSIS.toString()).includes(osis));
   if(classes.length == 0){
     // check "Join Classes" checkbox in jupiter form to add classes
@@ -433,45 +433,19 @@ function createShowFriendsButton(grade) {
 }
 
 async function showFriends(grade) {
-  const db = getFirestore();
-  
-  // Get user's friends
-  const friendsData = await fetchRequest('/data', { data: 'Friends' });
-  console.log(friendsData)
-  const friends = friendsData['Friends'].filter(friend => friend.OSIS === osis && friend.status === 'accepted');
+  // filter friends where status is "accepted"
+  const acceptedFriends = friends.filter(item => item.status == "accepted");
 
-  // Get friends' tokens
-  const usersData = await fetchRequest('/data', { data: 'Tokens' });
-  const friendTokens = friends.map(friend => {
-    const user = usersData.find(u => u.OSIS === friend.targetOSIS);
-    return user ? user.token : null;
-  }).filter(token => token !== null);
-
-  // Prepare the notification message
-  const message = {
-    title: "Friend's Grade Update",
-    body: `${osis} got ${grade.score}/${grade.value} in ${grade.class} for ${grade.name}!`,
-    data: {
-      gradeId: grade.id,
-      senderOSIS: osis
-    }
-  };
-
-  console.log(friendTokens)
-  // Send notifications to friends
-  for (const token of friendTokens) {
-    try {
-      await addDoc(collection(db, "notifications"), {
-        token: token,
-        message: message
-      });
-      console.log("Notification sent successfully to", token);
-    } catch (error) {
-      console.error("Error sending notification:", error);
+  // for each friend, out of columns "OSIS" and "targetOSIS", add the one that is not the user's osis to a list
+  const friendOSIS = []
+  for(let i=0; i<acceptedFriends.length; i++){
+    if(parseInt(acceptedFriends[i].OSIS) != parseInt(osis)){
+      friendOSIS.push(parseInt(acceptedFriends[i].OSIS))
+    } else {
+      friendOSIS.push(parseInt(acceptedFriends[i].targetOSIS))
     }
   }
-
-  alert("Grade shared with friends!");
+  fetchRequest('/send_notification', { OSIS: friendOSIS, title: first_name+" shared a grade with you!", body: `${first_name} got a ${grade.score}/${grade.value} on ${grade.name} in ${grade.class}!`, url: "https://bxsciweb.org/Stream"});
 }
 
 // Function to handle high five
@@ -545,37 +519,6 @@ function showNotification(title, body, onClickCallback = null) {
   }
 }
 
-async function notifyClassmates(newClasses, classTokens) {
-  const db = getFirestore();
-
-  for (const className of newClasses) {
-    const tokens = classTokens[className];
-
-    // Prepare the notification message
-    const message = {
-      title: "New Classmate",
-      body: `${first_name} has joined ${className}!`,
-      data: {
-        type: "newClassmate",
-        className: className,
-        newClassmateOSIS: osis
-      }
-    };
-
-    // Send notifications to classmates
-    for (const token of tokens) {
-      try {
-        await addDoc(collection(db, "notifications"), {
-          token: token,
-          message: message
-        });
-        console.log("Notification sent successfully to", token);
-      } catch (error) {
-        console.error("Error sending notification:", error);
-      }
-    }
-  }
-}
 
 // Function to create the edit button
 function createEditButton(grade) {

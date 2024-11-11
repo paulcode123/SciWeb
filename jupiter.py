@@ -8,6 +8,7 @@ import re
 from flask import session
 
 
+
 def run_puppeteer_script(osis, password):
   print("runnnning puppeteer script")
   try:
@@ -141,6 +142,7 @@ def jupapi_output_to_classes(data, class_data):
     print("jupapi_output_to_classes")
     # get the user's classes from the jupiter data
     classes = data["courses"]
+    classes_added = []
     
     for c in classes:
         class_exists = False
@@ -180,6 +182,7 @@ def jupapi_output_to_classes(data, class_data):
                 if str(session['user_data']['osis']) not in class_info["OSIS"]:
                     class_info["OSIS"].append(str(session['user_data']['osis']))
                     need_update = True
+                    classes_added.append(class_info)
 
                 if need_update:
                     # Update the class in the database
@@ -204,7 +207,7 @@ def jupapi_output_to_classes(data, class_data):
             post_data("Classes", class_info)
             
 
-    return class_data  # Return the updated class data
+    return classes_added  # Return the updated class data
 
   
     
@@ -385,3 +388,77 @@ def notify_new_classes(classes):
     # This function is left empty as per the original code
     pass
   
+
+def check_new_grades(grades, class_data, tokens_data):
+    from database import send_notification
+    print("check_new_grades")
+    for grade in grades:
+        class_name = grade['class']
+        class_obj = next((item for item in class_data if item['name'] == class_name), None)
+        class_id = class_obj['id']
+        
+            
+        # Only check assessment grades
+        if 'assessment' not in grade['category'].lower() and 'quiz' not in grade['category'].lower() and 'test' not in grade['category'].lower() and 'exam' not in grade['category'].lower() and 'project' not in grade['category'].lower():
+            continue
+        # if grade wasn't in the past 3 days, continue
+        grade_date = datetime.datetime.strptime(grade['date'], '%m/%d/%Y')
+        if grade_date < datetime.datetime.now() - datetime.timedelta(days=6):
+            continue
+
+        # Initialize new_grades array if it doesn't exist
+        if 'new_grades' not in class_obj:
+            class_obj['new_grades'] = []
+            
+        # If this is a new grade
+        if grade['name'] in class_obj['new_grades']:
+            continue
+
+        print("new grade", grade['name'])
+        # Add to new_grades array
+        class_obj['new_grades'].append(grade['name'])
+            
+        # Get all students in the class
+        students = class_obj['OSIS']
+            
+        # Get tokens for all students
+        tokens = []
+        for student in students:
+            for token_obj in tokens_data:
+                if str(token_obj['OSIS']) == str(student):
+                    tokens.append(token_obj['token'])
+        # remove duplicates
+        tokens = list(dict.fromkeys(tokens))
+        
+        # Send notification to all students
+        title = f"New grade posted in {class_obj['name']}: {grade['name']}"
+        body = "Click to pull your grades, see your score, the class distribution, and more!"
+        action = 'https://bxsciweb.org/EnterGrades'
+        for token in tokens:
+            send_notification(token, title, body, action)
+        
+        # Update the classes sheet
+        update_data(class_id, "id", class_obj, "Classes")
+                
+def notify_new_member(classes_added, tokens_data):
+    from database import send_notification
+    print("notify_new_member")
+    tokens = []
+    # for every class that the user joined, notify existing members that that user joined
+    for class_info in classes_added:
+        class_name = class_info['name']
+        students = class_info['OSIS']
+        for student in students:
+            if str(student) == str(session['user_data']['osis']):
+                continue
+            for token_obj in tokens_data:
+                if str(token_obj['OSIS']) == str(student):
+                    tokens.append((token_obj['token'], class_name))
+        
+    for token in tokens:
+        send_notification(token[0], "New Classmate", f"{session['user_data']['first_name']} has joined {token[1]}!", "https://bxsciweb.org/Classes")
+
+
+
+
+

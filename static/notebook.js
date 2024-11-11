@@ -134,6 +134,7 @@ function createWorksheetElement(worksheet) {
                     </li>`
                 ).join('')}
             </ul>
+            <button class="add-note"><i class="fas fa-plus"></i> Add Note</button>
         </div>
         <div class="practice-section">
             <h4><i class="fas fa-tasks"></i> Practice Questions:</h4>
@@ -145,6 +146,7 @@ function createWorksheetElement(worksheet) {
                     </li>`
                 ).join('')}
             </ol>
+            <button class="add-question"><i class="fas fa-plus"></i> Add Question</button>
         </div>
         <div class="worksheet-actions">
             <button class="view-worksheet" data-image="${worksheet.image}" title="View Worksheet">
@@ -155,6 +157,16 @@ function createWorksheetElement(worksheet) {
             </button>
         </div>
     `;
+
+    // Add event listeners for the new buttons
+    worksheetDiv.querySelector('.add-note').addEventListener('click', () => {
+        addNoteToWorksheet(worksheet.image, worksheetDiv);
+    });
+
+    worksheetDiv.querySelector('.add-question').addEventListener('click', () => {
+        addQuestionToWorksheet(worksheet.image, worksheetDiv);
+    });
+
     worksheetDiv.querySelector('.view-worksheet').addEventListener('click', (e) => {
         console.log(e.currentTarget.dataset.image);
         viewWorksheet(e.currentTarget.dataset.image, worksheetDiv);
@@ -277,6 +289,59 @@ async function viewWorksheet(imageReference, worksheetDiv) {
         alert('Failed to load the worksheet. Please try again.');
     }
     endLoading();
+}
+
+async function addNoteToWorksheet(worksheetId, worksheetDiv) {
+    const note = prompt("Enter your note:");
+    if (note) {
+        worksheet = notebookData.Notebooks.find(worksheet => worksheet.image === worksheetId);
+        worksheet.subtopics.push(note);
+        startLoading();
+        await fetchRequest('/update_data', {
+            sheet: 'Notebooks',
+            row_name: 'image',
+            row_value: worksheetId,
+            data: worksheet
+        })
+        
+        const notesList = worksheetDiv.querySelector('.notes-list');
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <i class="fas fa-angle-right"></i>
+            <span class="note-text">${note}</span>
+        `;
+        notesList.appendChild(li);
+    }
+    
+    endLoading();
+    
+}
+
+async function addQuestionToWorksheet(worksheetId, worksheetDiv) {
+    const question = prompt("Enter your practice question:");
+    if (question) {
+        startLoading();
+        await fetchRequest('/update_data', {
+            sheet: 'Notebooks',
+            row_name: 'image',
+            row_value: worksheetId,
+            data: {practice_questions: [...worksheet.practice_questions, question]}
+        })
+        
+        if (data.success) {
+            const questionsList = worksheetDiv.querySelector('.practice-list');
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <i class="fas fa-question-circle"></i>
+                <span class="question-text">${question}</span>
+            `;
+            questionsList.appendChild(li);
+        } else {
+            alert('Failed to add question. Please try again.');
+        }
+        
+        endLoading();
+    }
 }
 
 function setupEventListeners() {

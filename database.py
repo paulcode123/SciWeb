@@ -7,6 +7,9 @@ from firebase_admin import firestore
 import json
 from flask import session
 from google.oauth2 import service_account
+from firebase_admin import messaging
+import firebase_admin
+from firebase_admin import credentials
 
 #get data from Google Sheets API
 def get_data_gsheet(sheet, row_name, row_val):
@@ -314,4 +317,27 @@ def get_user_data(sheet, prev_sheets=[]):
     return int_data
   return get_data(sheet, row_name="OSIS", row_val=str(session['user_data']['osis']), operator="==")
   
-  
+def send_notification(token, title, body, action):
+    """
+    Sends a notification to a specific device token using Firebase Cloud Messaging
+    
+    Args:
+        token (str): The FCM token of the target device
+        notification_text (str): The message to send
+    """
+    try:
+        message = messaging.Message(
+            notification=messaging.Notification(
+                title=title,
+                body=body,
+            ),
+            token=token,
+        )
+        
+        # Send the message
+        messaging.send(message)
+        print(f'Successfully sent notification: {token}')
+        return True
+    except Exception as e:
+        print(f'Error sending notification: {e}')
+        return False
