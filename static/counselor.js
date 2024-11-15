@@ -29,14 +29,14 @@ document.getElementById('toggle-sidebar').addEventListener('click', function() {
 });
 
 async function main_counselor(){
-    prompts = [{"role": "system", "content": "You are the user's College Counselor. It's your responsibility to tell them their assignments, if they have any tests coming up, recent grades, their goals, etc. You can access any of their data at any time from the database with the get_data/get_grades function."}]
-    prompt = "Hello, I am your SciWeb Counselor. How can I help you today?"
+    var prompts = [{"role": "system", "content": "You are the user's College Counselor. It's your responsibility to tell them their assignments, if they have any tests coming up, recent grades, their goals, etc. You can access any of their data at any time from the database with the get_data/get_grades function."}]
+    var prompt = "Hello, I am your SciWeb Counselor. How can I help you today?"
     prompts.push({"role": "assistant", "content": prompt});
     typeOutText(prompt, 50);
     while (true){
-        user_response = await await_enter();
+        var user_response = await await_enter();
         prompts.push({"role": "user", "content": user_response});
-        ai_response = await AI_response(prompts);
+        var ai_response = await AI_response(prompts);
         typeOutText(ai_response, 50);
     }
 }
@@ -48,14 +48,13 @@ function add_user_text(text){
     messageDiv.textContent = text;
 }
 
-async function await_enter() {
+async function await_enter(inputElement=document.getElementById('user-input')) {
     return new Promise(resolve => {
         const handleKeyDown = (event) => {
             if (event.key === 'Enter') {
-                // Get the input value and clear the input field
-                const input = document.getElementById('user-input').value;
+                var input = inputElement.value;
                 add_user_text(input);
-                document.getElementById('user-input').value = '';
+                inputElement.value = '';
                 resolve(input);
                 // Remove the event listener after capturing the input
                 document.removeEventListener('keydown', handleKeyDown);
@@ -68,7 +67,7 @@ async function await_enter() {
 }
 
 async function AI_response(prompt){
-    response = await fetchRequest('/AI_function_calling', {"data": prompt})
+    var response = await fetchRequest('/AI_function_calling', {"data": prompt})
     return response;
 }
 

@@ -1415,3 +1415,28 @@ async function optInDistribution(grade, dist) {
   // update the distribution table
   graphDistribution(dist);
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Tab functionality
+  const tabButtons = document.querySelectorAll('.tab-button');
+  tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      // Remove active class from all buttons and contents
+      tabButtons.forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      // Add active class to clicked button and corresponding content
+      button.classList.add('active');
+      document.getElementById(`${button.dataset.tab}-tab`).classList.add('active');
+    });
+  });
+
+  // Collapsible functionality
+  const collapsibles = document.querySelectorAll('.collapsible-button');
+  collapsibles.forEach(button => {
+    button.addEventListener('click', () => {
+      const content = button.parentElement;
+      content.classList.toggle('active');
+    });
+  });
+});

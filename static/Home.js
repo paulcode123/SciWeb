@@ -407,7 +407,7 @@ async function initializeChat(userName) {
 
     // Start the chat loop
     while (true) {
-        const userResponse = await await_enter();
+        const userResponse = await await_enter(document.getElementById('userInput'));
         prompts.push({"role": "user", "content": userResponse});
         const aiResponse = await AI_response(prompts);
         await typeOutText(aiResponse, 50, chatLog);

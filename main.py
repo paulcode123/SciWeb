@@ -4,12 +4,11 @@
 from flask import Flask, render_template, request, session, redirect, url_for, send_from_directory, jsonify
 # json is a library for parsing and creating JSON data
 import json
-# requests is a library for getting info from the web
-import requests
+
+# hashlib is a library for hashing passwords
+import hashlib
 # datetime is a library for working with dates and times
 import datetime
-# re is a library for working with regular expressions
-import re
 # googleapiclient is a library for working with Google APIs(Getting data from Google Sheets in this case)
 from googleapiclient.discovery import build
 import traceback
@@ -178,17 +177,17 @@ def join():
 def schedule():
   return render_template('schedule.html')
 
-@app.route('/Features/AI')
-def ai_features():
-  return render_template('About/AI.html')
+# @app.route('/Features/AI')
+# def ai_features():
+#   return render_template('About/AI.html')
 
-@app.route('/Features/Social')
-def social_features():
-  return render_template('About/Social.html')
+# @app.route('/Features/Social')
+# def social_features():
+#   return render_template('About/Social.html')
 
-@app.route('/Features/Analytic')
-def analytic_features():
-  return render_template('About/Analytic.html')
+# @app.route('/Features/Analytic')
+# def analytic_features():
+#   return render_template('About/Analytic.html')
   
 @app.route('/ComingSoon')
 def coming_soon():
@@ -543,7 +542,7 @@ def GA_setup():
 
   # if there are no grades, return an error
   # if grades is a dictionary with a key 'class' and the value is 'No grades entered', return an error
-  if 'class' in grades and grades['class'] == 'No grades entered':
+  if ('class' in grades and grades['class'] == 'No grades entered') or grades==[]:
     print("No grades found in GA_setup")
     return json.dumps({"error": "Enter your grades before analyzing them"})
   #filter classes for the user's osis
@@ -667,7 +666,7 @@ def process_notebook_file():
         prompts = [
             {"role": "system", "content": "You are an expert at analyzing educational worksheets and creating study materials."},
             {"role": "user", "content": [
-                {"type": "text", "text": "Analyze this worksheet image and provide the following information:\n1. The main topic of the worksheet\n2. A complete list of specific subtopics or concepts the user needs to know\n3. 5 questions asked in the worksheet, or, if there are no questions, come up with 5 questions that test the user's understanding of the worksheet content\nFormat your response as JSON with keys 'topic', 'notes', and 'practice_questions'."},
+                {"type": "text", "text": "Analyze this worksheet image and provide the following information:\n1. The main topic of the worksheet\n2. A complete list of specific notes about the content of the worksheet\n3. 5 questions asked in the worksheet, or, if there are no questions, come up with 5 questions that test the user's understanding of the worksheet content\nFormat your response as JSON with keys 'topic', 'notes', and 'practice_questions'."},
                 {"type": "image_url", "image_url": {"url": f"data:image/{file_type.split('/')[-1]};base64,{base64_img}"}}
             ]}
         ]
@@ -868,15 +867,9 @@ def postLogin():
   mode = raw_data['mode']
   session['ip_add'] = data['IP']
   logins = get_data("Users")
-  #remove the user's ip addresses from all other accounts
-  # for row in logins:
-  #   if session['ip_add'] in row['IP']:
-  #     row['IP'] = row['IP'].replace(session['ip_add'], "")
-  #     #if the ip address is the only one in the list(no numbers in row['IP']), remove the row
-  #     if not any(char.isdigit() for char in row['IP']):
-  #       delete_data("Users", row['osis'], "osis")
-  #     else:
-  #       update_data(row['osis'], 'osis', row, "Users")
+  # hashed password
+  unhashed_password = data['password']
+  data['password'] = hashlib.sha256(unhashed_password.encode()).hexdigest()
       
   # if the user has logged in before, update their IP address
   if mode == "Login":    
@@ -884,7 +877,7 @@ def postLogin():
       # If the user's osis is already in the Users sheet...
       if not 'password' in row:
         print("no password in row", row)
-      if row['password'] == data['password'] and row['first_name'] == data['first_name']:
+      if (row['password'] == data['password'] or row['password'] == unhashed_password) and row['first_name'] == data['first_name']:
         # Add their new IP address to the list of IP addresses
         row['IP'] = f"{session['ip_add']}, {row['IP']}"
         
@@ -987,6 +980,6 @@ def utility_function():
 
 #uncomment to run locally, comment to deploy. Before deploying, change db to firebase, add new packages to requirements.txt
 
-if __name__ == '__main__':
-  app.run(host='localhost', port=8080)
+# if __name__ == '__main__':
+#   app.run(host='localhost', port=8080)
 

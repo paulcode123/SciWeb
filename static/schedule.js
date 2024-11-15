@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    let currentDate = new Date();
-    let draggedItem = null;
+    let calendar;
     let assignments = [];
     let aspirations = [];
 
@@ -8,22 +7,160 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeCalendar();
     loadItems();
 
-    // Event listeners for week navigation
-    document.getElementById('prev-week').addEventListener('click', () => navigateWeek(-1));
-    document.getElementById('next-week').addEventListener('click', () => navigateWeek(1));
-
-    // Load assignments, aspirations, and study blocks
     async function loadItems() {
-        // Fetch assignments
         const data = await fetchRequest('/data', { data: "Classes, Assignments, Aspirations" });
         assignments = data.Assignments;
         aspirations = data.Aspirations;
 
         displayAssignments(assignments);
         displayAspirations(aspirations);
-
-        // Create study blocks from assignments
         createStudyBlocks(assignments);
+    }
+
+    function initializeCalendar() {
+        const calendarEl = document.getElementById('calendar');
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'timeGridWeek',
+            slotMinTime: '08:00:00',
+            slotMaxTime: '22:00:00',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'timeGridWeek,timeGridDay'
+            },
+            editable: true,
+            droppable: true,
+            eventClick: function(info) {
+                if (confirm(`Delete "${info.event.title}"?`)) {
+                    info.event.remove();
+                }
+            },
+            drop: function(info) {
+                // Handle the drop event
+                const draggedEl = info.draggedEl;
+                const itemData = JSON.parse(draggedEl.dataset.item);
+                
+                // Create the event
+                calendar.addEvent({
+                    title: itemData.title,
+                    start: info.date,
+                    end: new Date(info.date.getTime() + (itemData.duration || 1) * 3600000),
+                    backgroundColor: getEventColor(itemData.type),
+                    extendedProps: itemData
+                });
+            },
+            eventAdd: function(info) {
+                saveEventToDatabase(info.event);
+            },
+            eventChange: function(info) {
+                updateEventToDatabase(info.event);
+            },
+            eventRemove: function(info) {
+                deleteEventFromDatabase(info.event);
+            }
+        });
+        
+        // Load saved events when calendar initializes
+        loadSavedEvents();
+        calendar.render();
+    }
+
+    async function saveEventToDatabase(event) {
+        const eventData = {
+            OSIS: parseInt(osis),
+            id: event.id,
+            title: event.title,
+            start: event.start.toISOString(),
+            end: event.end.toISOString(),
+            type: event.extendedProps.type,
+            backgroundColor: event.backgroundColor,
+            // Include any other custom properties you need
+            originalData: event.extendedProps.data
+        };
+
+        
+        fetchRequest('/post_data', { data: eventData, sheet: 'Calendar' });
+    }
+
+    function deleteEventFromDatabase(event) {
+        
+        fetchRequest('/delete_data', { row_value: event.id, row_name: 'id', sheet: 'Calendar' });
+    }
+
+    function updateEventToDatabase(event) {
+        const eventData = {
+            OSIS: parseInt(osis),
+            id: event.id,
+            title: event.title,
+            start: event.start.toISOString(),
+            end: event.end.toISOString(),
+            type: event.extendedProps.type,
+            backgroundColor: event.backgroundColor,
+            // Include any other custom properties you need
+            originalData: event.extendedProps.data
+        };
+        fetchRequest('/update_data', { row_value: event.id, row_name: 'id', data: eventData, sheet: 'Calendar' });
+    }
+
+    async function loadSavedEvents() {
+        try {
+            const data = await fetchRequest('/data', { data: 'Calendar' });
+            const events = data.Calendar;
+            
+            events.forEach(event => {
+                calendar.addEvent({
+                    id: event.id,
+                    title: event.title,
+                    start: event.start,
+                    end: event.end,
+                    backgroundColor: event.backgroundColor,
+                    extendedProps: {
+                        type: event.type,
+                        data: event.originalData
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('Failed to load events:', error);
+        }
+    }
+
+    // Modified createDraggableItem function
+    function createDraggableItem(item) {
+        const element = document.createElement('div');
+        element.className = 'draggable-item fc-event';
+        element.draggable = true;
+        element.innerHTML = `
+            <div class="item-title">${item.title}</div>
+            <div class="item-due">Due: ${item.dueDate}</div>
+        `;
+        
+        // Store item data
+        element.dataset.item = JSON.stringify({
+            title: item.title,
+            type: item.type,
+            duration: item.duration || 1,
+            data: item.data
+        });
+
+        // Initialize as FullCalendar external event
+        new FullCalendar.Draggable(element, {
+            revert: true,
+            helper: 'clone'
+        });
+
+        return element;
+    }
+
+    // Utility function to get event colors
+    function getEventColor(type) {
+        const colors = {
+            assignment: 'var(--assignment-color)',
+            study: 'var(--study-color)',
+            aspiration: 'var(--aspiration-color)',
+            custom: 'var(--task-color)'
+        };
+        return colors[type] || colors.custom;
     }
 
     function displayAssignments(assignments) {
@@ -65,119 +202,18 @@ document.addEventListener('DOMContentLoaded', function() {
         assignments.forEach(assignment => {
             if (assignment.category && 
                 (assignment.category.toLowerCase().includes('test') || 
-                assignment.category.toLowerCase().includes('assess'))) {
+                assignment.category.toLowerCase().includes('assess') || 
+                assignment.category.toLowerCase().includes('exam') || 
+                assignment.category.toLowerCase().includes('project') || 
+                assignment.category.toLowerCase().includes('quiz'))) {
                 const element = createDraggableItem({
                     type: 'study',
                     title: `Study: ${assignment.name}`,
-                    dueDate: assignment.due,
+                    dueDate: assignment.due_date,
                     data: assignment
                 });
                 container.appendChild(element);
             }
         });
-    }
-
-    function createDraggableItem(item) {
-        const element = document.createElement('div');
-        element.className = 'draggable-item';
-        element.draggable = true;
-        element.innerHTML = `
-            <div class="item-title">${item.title}</div>
-            <div class="item-due">Due: ${item.dueDate}</div>
-        `;
-
-        element.addEventListener('dragstart', (e) => {
-            draggedItem = item;
-            e.dataTransfer.setData('text/plain', '');
-            element.classList.add('dragging');
-        });
-
-        element.addEventListener('dragend', () => {
-            element.classList.remove('dragging');
-        });
-
-        return element;
-    }
-
-    function initializeCalendar() {
-        // Add drag and drop listeners to all time slots
-        const timeSlots = document.querySelectorAll('.time-slot');
-        
-        timeSlots.forEach(slot => {
-            slot.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                slot.classList.add('drag-over');
-            });
-
-            slot.addEventListener('dragleave', () => {
-                slot.classList.remove('drag-over');
-            });
-
-            slot.addEventListener('drop', (e) => handleDrop(e, slot));
-        });
-
-        updateWeekDisplay();
-    }
-
-    function handleDrop(e, slot) {
-        e.preventDefault();
-        slot.classList.remove('drag-over');
-
-        if (!draggedItem) return;
-
-        const taskElement = document.createElement('div');
-        taskElement.className = `scheduled-task ${draggedItem.type}`;
-        
-        // Calculate height based on duration (default 1 hour)
-        const duration = draggedItem.duration || 1;
-        taskElement.style.height = `${duration * 60}px`;
-        
-        taskElement.innerHTML = `
-            <div class="task-title">${draggedItem.title}</div>
-            <div class="task-time">${slot.dataset.hour}:00</div>
-        `;
-
-        // Add hover info for assignments
-        if (draggedItem.type === 'assignment') {
-            const hoverInfo = document.createElement('div');
-            hoverInfo.className = 'task-hover-info';
-            hoverInfo.innerHTML = `
-                <div>Avg Time: ${calculateAverage(draggedItem.data.time_spent)} hrs</div>
-                <div>Difficulty: ${calculateAverage(draggedItem.data.difficulty)}/5</div>
-                <div>Completion: ${calculateCompletion(draggedItem.data.completed)}%</div>
-            `;
-            taskElement.appendChild(hoverInfo);
-        }
-
-        slot.appendChild(taskElement);
-        draggedItem = null;
-    }
-
-    // Utility functions
-    function calculateAverage(data) {
-        if (!data || typeof data !== 'object') return 0;
-        const values = Object.values(data);
-        return (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1);
-    }
-
-    function calculateCompletion(data) {
-        if (!data || typeof data !== 'object') return 0;
-        const values = Object.values(data);
-        return ((values.filter(v => v).length / values.length) * 100).toFixed(0);
-    }
-
-    function navigateWeek(direction) {
-        currentDate.setDate(currentDate.getDate() + (direction * 7));
-        updateWeekDisplay();
-    }
-
-    function updateWeekDisplay() {
-        const weekStart = new Date(currentDate);
-        weekStart.setDate(currentDate.getDate() - currentDate.getDay() + 1);
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekStart.getDate() + 6);
-
-        document.getElementById('current-week').textContent = 
-            `${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}`;
     }
 }); 

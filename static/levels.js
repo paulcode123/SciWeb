@@ -130,6 +130,7 @@ document.addEventListener('DOMContentLoaded', function() {
     fetchClasses();
     setupEventListeners();
     initializePrompts();
+    loadMathJax();
     // Start with settings expanded
     document.getElementById('settings-content').classList.remove('collapsed');
 });
@@ -231,7 +232,10 @@ async function startEvaluation() {
 
     // Get custom settings
     const startingLevel = parseInt(document.getElementById('starting-level').value);
-    currentLevel = startingLevel;
+    // if currentLevel is undefined or less than startingLevel, set currentLevel to startingLevel
+    if (currentLevel == undefined || currentLevel < startingLevel) {
+        currentLevel = startingLevel;
+    }
     const customPointsNeeded = parseInt(document.getElementById('points-needed').value);
     points_needed = customPointsNeeded;
     document.getElementById('points').textContent = `Points: 0 / ${points_needed}`;
@@ -268,10 +272,10 @@ async function startEvaluation() {
 }
 
 function showQuestion(index) {
-    console.log("index", index)
+    console.log("index", index, "currentLevel", currentLevel, levels[currentLevel])
     document.getElementById('current-level').textContent = `Level: ${levels[currentLevel]}`;
     const currentQuestion = currentQuestions.questions[index];
-    document.getElementById('question').textContent = currentQuestion.question;
+    document.getElementById('question').innerHTML = currentQuestion.question;
     document.getElementById('question-difficulty').textContent = `Estimated Difficulty: ${currentQuestion.personalDifficulty}`;
     document.getElementById('answer').value = '';
     document.getElementById('feedback').style.display = 'none';
@@ -281,6 +285,10 @@ function showQuestion(index) {
     // Re-enable the next button when showing a new question
     const nextButton = document.getElementById('next-question');
     nextButton.disabled = false;
+
+    if (window.MathJax) {
+        MathJax.typesetPromise([document.getElementById('question')]);
+    }
 }
 
 function submitAnswer() {
@@ -333,10 +341,15 @@ function submitAnswer() {
 
 function showFeedback(score, feedback) {
     const feedbackElement = document.getElementById('feedback');
-    feedbackElement.textContent = `Score: ${score}/10. ${feedback}`;
+    feedbackElement.innerHTML = `Score: ${score}/10. ${feedback}`;
     feedbackElement.className = score >= 5 ? 'feedback-positive' : 'feedback-negative';
     feedbackElement.style.display = 'block';
     document.getElementById('next-question').style.display = 'block';
+
+    // Re-render MathJax for the feedback
+    if (window.MathJax) {
+        MathJax.typesetPromise([feedbackElement]);
+    }
 }
 
 function updatePoints(score) {
@@ -370,6 +383,7 @@ function showLevelComplete() {
 }
 
 function nextLevel() {
+    console.log("nextLevel", currentLevel)
     currentLevel++;
     points = 0;
     currentQuestionIndex = 0;
@@ -378,7 +392,7 @@ function nextLevel() {
         document.getElementById('level-complete').style.display = 'none';
         // change the level text
         document.getElementById('current-level').textContent = `Level: ${levels[currentLevel]}`;
-        console.log("C2")
+        console.log("C2", currentLevel, levels[currentLevel])
         startEvaluation();
     } else {
         showAllLevelsComplete();
@@ -491,4 +505,22 @@ function toggleSettings() {
     
     content.classList.toggle('collapsed');
     icon.classList.toggle('collapsed');
+}
+
+function loadMathJax() {
+    window.MathJax = {
+        tex: {
+            inlineMath: [['\\(', '\\)']],
+            displayMath: [['\\[', '\\]']],
+            processEscapes: true
+        },
+        options: {
+            skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+        }
+    };
+
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+    script.async = true;
+    document.head.appendChild(script);
 }

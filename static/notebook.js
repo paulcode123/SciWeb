@@ -351,16 +351,46 @@ function setupEventListeners() {
 
     toggleButton.addEventListener('click', (e) => {
         e.preventDefault();
-        sidebar.classList.toggle('collapsed');
-        content.classList.toggle('expanded');
-        
-        const icon = toggleButton.querySelector('i');
-        if (sidebar.classList.contains('collapsed')) {
-            icon.classList.remove('fa-bars');
-            icon.classList.add('fa-times');
-        } else {
-            icon.classList.remove('fa-times');
-            icon.classList.add('fa-bars');
-        }
+        toggleSidebar(sidebar, content, toggleButton);
     });
+
+    let touchStartX = 0;
+    let touchEndX = 0;
+    
+    document.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, false);
+
+    document.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe(sidebar, content, toggleButton);
+    }, false);
+
+    function handleSwipe(sidebar, content, toggleButton) {
+        const swipeThreshold = 50; // Minimum distance for swipe
+        const difference = touchEndX - touchStartX;
+        
+        // Swipe right to open
+        if (difference > swipeThreshold && sidebar.classList.contains('collapsed')) {
+            toggleSidebar(sidebar, content, toggleButton);
+        }
+        // Swipe left to close
+        else if (difference < -swipeThreshold && !sidebar.classList.contains('collapsed')) {
+            toggleSidebar(sidebar, content, toggleButton);
+        }
+    }
+}
+
+function toggleSidebar(sidebar, content, toggleButton) {
+    sidebar.classList.toggle('collapsed');
+    content.classList.toggle('expanded');
+    
+    const icon = toggleButton.querySelector('i');
+    if (sidebar.classList.contains('collapsed')) {
+        icon.classList.remove('fa-bars');
+        icon.classList.add('fa-times');
+    } else {
+        icon.classList.remove('fa-times');
+        icon.classList.add('fa-bars');
+    }
 }

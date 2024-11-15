@@ -7,6 +7,7 @@
 {% block css %}
 <link rel="stylesheet" href="/static/schedule.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
 {% endblock %}
 
 {% block content %}
@@ -38,46 +39,13 @@
         </div>
     </div>
 
-    <!-- Main calendar area -->
-    <div class="calendar-container">
-        <div class="calendar-header">
-            <button id="prev-week"><i class="fas fa-chevron-left"></i></button>
-            <h2 id="current-week"></h2>
-            <button id="next-week"><i class="fas fa-chevron-right"></i></button>
-        </div>
-        
-        <div class="calendar-grid">
-            <div class="time-labels">
-                {% for hour in range(8, 22) %}
-                <div class="time-label">{{ hour }}:00</div>
-                {% endfor %}
-            </div>
-            
-            <div class="calendar-content">
-                {% for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
-                <div class="day-column">
-                    <div class="day-header">{{ day }}</div>
-                    {% for hour in range(8, 22) %}
-                    <div class="time-slot" data-day="{{ loop.index0 }}" data-hour="{{ hour }}"></div>
-                    {% endfor %}
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
 
-    <!-- Task details popup -->
-    <div id="task-details" class="task-details hidden">
-        <div class="task-details-content">
-            <h3>Task Details</h3>
-            <div class="task-info"></div>
-            <div class="task-actions">
-                <button class="edit-task">Edit</button>
-                <button class="delete-task">Delete</button>
-            </div>
-        </div>
-    </div>
+<div class="calendar-container">
+    <div id="calendar"></div>
 </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+
 {% endblock %}
 
 {% block js %}

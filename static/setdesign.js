@@ -34,7 +34,7 @@ function set_color_EL(sheet, classData){
         var color = document.getElementById('color').value;
         color = make_color_opaque(color);
         // set the background color of body to the color
-        document.getElementById('head').style.backgroundColor = color;
+        document.getElementById('class-header').style.backgroundColor = color;
         document.getElementById('color').style.display = 'none';
         document.getElementById('savecolor').style.display = 'none';
         classData['color'] = color;
@@ -57,11 +57,13 @@ function make_color_opaque(hex){
 }
 
 async function set_class_img(img){
+    console.log("in set class img")
     // if img is "" or not a string, return
-    if (img == "" || typeof img !== 'string'){
+    if (img == ""){
+        console.log("img is not a string", img)
     return;
     }
-    let response = await fetchRequest('/get-file', {file: img});
+    let response = await fetchRequest('/get-file', {file: img.toString()});
     let b64 = response.file;
     if(b64.includes('pngbase64')){
     type = 'png';
@@ -74,7 +76,6 @@ async function set_class_img(img){
     }
     classimg = document.createElement('img')
     classimg.src = b64;
-    console.log(b64)
     document.getElementById('classimgcontainer').appendChild(classimg)
 }
 

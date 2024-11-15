@@ -5,7 +5,9 @@
    d. Grades displayed in a table
    e. Users can override grades uploaded from Jupiter Ed
    f. Users can share the grade as text which can be auto pasted into a text message or SM post
-   g. (in progress) Users can share grade with friends on the site, which sends them a notification
+   g. Users can share grade with friends on the site, which sends them a notification
+   h. Users are notified when a new grade is posted for a class they are in
+   i. Users are notified when a new member joins their class
 
 2. Grade Analysis
     a. 3 charts: Grades over Time, Score Distribution, and Change in grade bar graph per block of Time

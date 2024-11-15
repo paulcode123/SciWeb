@@ -248,6 +248,7 @@ def get_grades():
         if stored_prefix != user_prefix:
             print("Key prefix mismatch")
             return []
+        print("key prefix matches", stored_prefix, user_prefix)
         
         for i in range(1, num_elements):
             cell = line[str(i)]

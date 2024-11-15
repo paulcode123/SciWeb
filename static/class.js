@@ -46,14 +46,20 @@ function setupEventListeners() {
 // Assignment form handling
 function handleAssignmentSubmit(e) {
   e.preventDefault();
-  
+  // convert due date to mm/dd/yyyy format
+  const dueDate = new Date(document.getElementById('due').value);
+  const formattedDate = dueDate.toLocaleDateString('en-US', {
+    month: '2-digit',
+    day: '2-digit',
+    year: 'numeric'
+  });
   const assignmentObj = {
     name: document.getElementById('name').value,
     category: document.getElementById('assignmentType').value,
     points: document.getElementById('points').value,
-    due: document.getElementById('due').value,
+    due_date: formattedDate,
     id: Math.floor(Math.random() * 10000),
-    class: classData.id,
+    class: parseInt(classData.id),
     class_name: classData.name
   };
 
@@ -170,13 +176,8 @@ function createAssignmentCard(assignment) {
   card.className = 'assignment-card';
   
   // Format due date
-  const dueDate = new Date(assignment.due);
-  const formattedDate = dueDate.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  });
-
+  
+  
   // Create card content
   card.innerHTML = `
     <div class="assignment-header">
@@ -185,7 +186,7 @@ function createAssignmentCard(assignment) {
     </div>
     <div class="assignment-details">
       <span class="points">${assignment.points} points</span>
-      <span class="due-date">Due: ${formattedDate}</span>
+      <span class="due-date">Due: ${assignment.due_date}</span>
     </div>
   `;
 
@@ -232,7 +233,7 @@ function displayCategories(categories) {
 function isClassOwner(classData) {
   // You'll need to implement this based on your user authentication system
   // For example, comparing the current user's ID with the class owner's ID
-  return false; // Adjust this based on your data structure
+  return true; // Adjust this based on your data structure
 }
 
 // Setup editable fields
@@ -298,6 +299,26 @@ async function leaveClass(classData) {
   } catch (error) {
     console.error('Error leaving class:', error);
   }
+}
+
+// Assuming your date string is in format "mm/dd/yyyy"
+function formatDate(dateString) {
+    // First create a valid Date object from the string
+    const dueDate = new Date(dateString.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$1-$2'));
+    
+    // Check if the date is valid
+    if (isNaN(dueDate.getTime())) {
+        return 'No due date';
+    }
+
+    // Then format it
+    const formattedDate = dueDate.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+
+    return formattedDate;
 }
 
 // ... rest of your existing helper functions ...

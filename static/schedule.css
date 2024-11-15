@@ -72,90 +72,43 @@
 /* Calendar Styles */
 .calendar-container {
     flex: 1;
-    display: flex;
-    flex-direction: column;
     background-color: var(--background-light);
     border-radius: 10px;
     padding: 20px;
     overflow: hidden;
 }
 
-.calendar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.calendar-header button {
-    background: none;
-    border: none;
-    color: var(--primary-color);
-    font-size: 1.2em;
-    cursor: pointer;
-    padding: 5px 10px;
-    border-radius: 5px;
-    transition: background-color 0.3s ease;
-}
-
-.calendar-header button:hover {
-    background-color: var(--hover-color);
-}
-
-.time-labels {
-    display: grid;
-    grid-template-rows: repeat(14, 60px);
-    padding-right: 10px;
-    border-right: 1px solid var(--border-color);
-    position: sticky;
-    left: 0;
-    background: var(--background-light);
-    z-index: 2;
-}
-
-.time-label {
-    font-size: 0.8em;
+/* FullCalendar theme overrides */
+.fc {
+    background-color: var(--background-light);
     color: var(--text-color);
-    padding: 5px;
-    text-align: right;
-    height: 60px;
-    line-height: 0;
-    position: relative;
-    top: -8px;
 }
 
-.calendar-grid {
-    display: flex;
-    flex: 1;
-    overflow: auto;
+.fc-theme-standard td, 
+.fc-theme-standard th,
+.fc-theme-standard .fc-scrollgrid {
+    border-color: var(--border-color);
 }
 
-.calendar-content {
-    display: grid;
-    grid-template-columns: 50px repeat(7, 1fr);
-    min-width: 100%;
-    position: relative;
+.fc .fc-toolbar-title {
+    color: var(--text-color);
 }
 
-.day-column {
-    border-right: 1px solid var(--border-color);
-    min-width: 150px;
+.fc .fc-button {
+    background-color: var(--primary-color);
+    border-color: var(--border-color);
 }
 
-.day-header {
-    position: sticky;
-    top: 0;
-    background: var(--background-light);
-    padding: 10px;
-    text-align: center;
-    border-bottom: 1px solid var(--border-color);
-    z-index: 1;
+.fc .fc-button:hover {
+    background-color: var(--secondary-color);
 }
 
-.time-slot {
-    height: 60px;
-    border-bottom: 1px solid var(--border-color);
-    position: relative;
+.fc-day-today {
+    background-color: var(--hover-color) !important;
+}
+
+.fc-timegrid-slot {
+    height: 60px !important;
 }
 
 /* Scheduled items styling */

@@ -530,3 +530,77 @@ h2 {
 }
 
 /* Rest of your loading animation CSS remains the same */
+
+/* Add these new styles */
+.tab-container {
+  margin: 20px 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tab-button {
+  padding: 10px 20px;
+  background: #322f2f;
+  border: none;
+  color: white;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+.tab-button.active {
+  background: rgb(228, 76, 101);
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.collapsible {
+  margin: 10px 0;
+}
+
+.collapsible-button {
+  width: 100%;
+  padding: 15px;
+  background: #322f2f;
+  border: none;
+  color: white;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 5px;
+}
+
+.collapsible-button:hover {
+  background: rgba(228, 76, 101, 0.2);
+}
+
+.collapsible-content {
+  display: none;
+  padding: 15px;
+  background: #1b1c1c;
+  border-radius: 0 0 5px 5px;
+}
+
+.collapse-arrow {
+  transition: transform 0.3s;
+}
+
+.collapsible.active .collapse-arrow {
+  transform: rotate(180deg);
+}
+
+.collapsible.active .collapsible-content {
+  display: block;
+}

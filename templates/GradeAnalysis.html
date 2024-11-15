@@ -44,7 +44,14 @@
   <br>
 
 
-
+  <div class="tab-container">
+    <div class="tabs">
+      <button class="tab-button active" data-tab="grades">Grades over Time</button>
+      <button class="tab-button" data-tab="distribution">Score Distribution</button>
+      <button class="tab-button" data-tab="changes">Grade Changes</button>
+    </div>
+    
+    <div class="tab-content active" id="grades-tab">
   <span onclick="shareGraph('myGraph')">
     <img class="share-icon" src="/static/media/white_share_icon.png">
 </span>
@@ -59,6 +66,9 @@
       <label for="individual">Individual Grades</label>
     </span>
     <button id="addGoal">Add Goal</button><br>
+    </div>
+
+    <div class="tab-content" id="distribution-tab">
     <span onclick="shareGraph('myHisto')">
       <img class="share-icon" src="/static/media/white_share_icon.png">
   </span>
@@ -67,7 +77,9 @@
       <input type="checkbox" id="componentsHisto">
       <label for="componentsHisto">Components</label>
     </span>
+    </div>
     
+    <div class="tab-content" id="changes-tab">
     <span onclick="shareGraph('myChangeGraph')">
         <img class="share-icon" src="/static/media/white_share_icon.png">
       </span>
@@ -83,6 +95,9 @@
           <span id="timeframeValue">15</span>
         </span>
       </div>
+    </div>
+  </div>
+
     <br><br>
     <p id="error" style="color: red;"></p>
 
@@ -99,8 +114,13 @@
   <button type="submit" id="submit">Graph</button>
   <h1 id="error-message"></h1>
 </form>
+
     <br>
-    <div id="StatsContainer">
+    <div class="collapsible-sections">
+  <div class="collapsible">
+    <button class="collapsible-button">Statistics <span class="collapse-arrow">▼</span></button>
+    <div class="collapsible-content">
+      <div id="StatsContainer">
         <div class="number-box">
             <h2>GPA</h2>
             <span class="share-icon" onclick="shareStat('GPA', 's1')">
@@ -150,9 +170,15 @@
             <p class="caption">Non-cumulative grade over the past 30 days</p>
         </div>
     </div>
+    </div>
+    </div>
 
     <br>
-    <div id="goalTableContainer">
+
+    <div class="collapsible">
+    <button class="collapsible-button">Goals <span class="collapse-arrow">▼</span></button>
+    <div class="collapsible-content">
+      <div id="goalTableContainer">
       <h2>Goals</h2>
       <table id="goalTable">
           <thead>
@@ -171,6 +197,8 @@
           </tbody>
       </table>
   </div>
+    </div>
+    </div>
     
     <br>
 
@@ -179,7 +207,10 @@
 
     <!-- Add this after the change graph section, before the class-form -->
     
-    <div id="distributionsContainer">
+    <div class="collapsible">
+      <button class="collapsible-button">Class Distributions <span class="collapse-arrow">▼</span></button>
+      <div class="collapsible-content">
+        <div id="distributionsContainer">
       <h2>Grade Distributions</h2>
       <p>Search for assignments, then opt-in to anonymously report your score and see the distribution of scores</p>
       <div class="search-container">
@@ -187,7 +218,10 @@
       </div>
       <div id="searchResults"></div>
       <div id="distributionGraph"></div>
+        </div>
+      </div>
     </div>
+
 {% endblock %}
 
 <!-- js block -->
