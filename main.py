@@ -25,14 +25,23 @@ import openai
 from PyPDF2 import PdfReader
 
 
+from langchain_community.chat_models import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import PydanticOutputParser
+from langchain.memory import ConversationBufferMemory
+from langchain.chains import LLMChain, SequentialChain
+from langchain_core.callbacks import StreamingStdOutCallbackHandler
+from langchain_openai import ChatOpenAI
+
+
 
 
 # Get functions from other files
-from database import get_data, post_data, update_data, delete_data, download_file, upload_file, init_firebase, get_user_data, send_notification
+from database import get_data, post_data, update_data, delete_data, download_file, upload_file, init_firebase, get_user_data, send_notification, send_welcome_email
 from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, get_stats, update_leagues, get_compliments, get_grade_impact
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades, confirm_category_match, check_new_grades, notify_new_member
-from study import get_insights, get_insights_from_file, chat_with_function_calling, run_inspire
+from study import get_insights, get_insights_from_file, chat_with_function_calling, run_inspire, init_pydantic, process_pdf_content, process_image_content, generate_final_evaluation, generate_followup_question, generate_practice_questions
 
 #get api keys from static/api_keys.json file
 keys = json.load(open('api_keys.json'))  
@@ -66,17 +75,38 @@ def init():
   vars['client'] = OpenAI(api_key=vars['openAIAPI'])
   vars['google_credentials_path'] = 'cloudRunKey.json'
   
-  return vars
+  # Initialize LangChain components
+  vars['llm'] = ChatOpenAI(
+      api_key=vars['openAIAPI'],
+      temperature=0.7,
+      model_name="gpt-4-turbo-preview"
+  )
 
-vars = init()
+  vars['vision_llm'] = ChatOpenAI(
+      api_key=vars['openAIAPI'],
+      temperature=0.7,
+      model_name="gpt-4o"
+  )
+  
+  # Initialize memory for different conversation contexts
+  vars['eval_memory'] = ConversationBufferMemory(
+      memory_key="chat_history",
+      return_messages=True
+  )
+  init_pydantic()
+ 
+  
+
+  # App secret key for session management
+  app.config['SECRET_KEY'] = vars["AppSecretKey"]
+  generate_grade_insights = True
+  return vars
 
 app = Flask(__name__)
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_PERMANENT'] = True
 
-# App secret key for session management
-app.config['SECRET_KEY'] = vars["AppSecretKey"]
-generate_grade_insights = True
+
 
 #initialize the front end: all of the HTML/CCS/JS files
 @app.route('/')
@@ -172,6 +202,10 @@ def messages():
 @app.route('/Join')
 def join():
   return render_template('About/Join.html')
+
+@app.route('/Team')
+def team():
+  return render_template('About/Team.html')
 
 @app.route('/Schedule')
 def schedule():
@@ -542,9 +576,13 @@ def GA_setup():
 
   # if there are no grades, return an error
   # if grades is a dictionary with a key 'class' and the value is 'No grades entered', return an error
-  if ('class' in grades and grades['class'] == 'No grades entered') or grades==[]:
+  if 'class' in grades and grades['class'] == 'No grades entered':
     print("No grades found in GA_setup")
     return json.dumps({"error": "Enter your grades before analyzing them"})
+  
+  if grades == []:
+    print("Key prefix mismatch in GA_setup")
+    return json.dumps({"error": "Grade Access not authenticated. Try reloading the page, then repulling your grades."})
   #filter classes for the user's osis
   classes = [item for item in classes if str(session['user_data']['osis']) in str(item['OSIS'])]
   try:
@@ -634,54 +672,29 @@ def process_notebook_file():
     file_type = data['fileType']
     unit = data['unit']
     
-    
-    if file_type == 'application/pdf':
-         # Decode the base64 PDF content
-        pdf_bytes = base64.b64decode(file_content)
-        pdf_file = BytesIO(pdf_bytes)
-        pdf_reader = PdfReader(pdf_file)
+    try:
+        if file_type == 'application/pdf':
+            # Process PDF
+            pdf_bytes = base64.b64decode(file_content)
+            insights = process_pdf_content(vars['llm'], pdf_bytes)
+        else:
+            # Process image
+            insights = process_image_content(vars['vision_llm'], file_content, file_type)
+
+        # Convert Pydantic model to dict
+        insights_dict = insights.model_dump()
         
-        # Extract text from the PDF
-        text_content = ""
-        for page in pdf_reader.pages:
-            text_content += page.extract_text()
-        
-        prompts = [
-            {"role": "system", "content": "You are an expert at analyzing educational worksheets and creating study materials."},
-            {"role": "user", "content": f"Analyze this worksheet PDF content and provide the following information:\n1. The main topic of the worksheet\n2. A complete list of specific notes about the content of the worksheet\n3. 5 questions asked in the worksheet, or, if there are no questions, come up with 5 questions that test the user's understanding of the worksheet content\n\nPDF Content:\n{text_content[:4000]}"}  # Limit content to 4000 characters to avoid token limits
-        ]
-        
-        insights = get_insights(prompts, ResponseTypeNB)
-        
-        
-    else:
-        # Process image (existing code)
-        base64_img = file_content
-        
-        # Fix padding if necessary
-        padding = len(base64_img) % 4
-        if padding:
-            base64_img += '=' * (4 - padding)
-        
-        prompts = [
-            {"role": "system", "content": "You are an expert at analyzing educational worksheets and creating study materials."},
-            {"role": "user", "content": [
-                {"type": "text", "text": "Analyze this worksheet image and provide the following information:\n1. The main topic of the worksheet\n2. A complete list of specific notes about the content of the worksheet\n3. 5 questions asked in the worksheet, or, if there are no questions, come up with 5 questions that test the user's understanding of the worksheet content\nFormat your response as JSON with keys 'topic', 'notes', and 'practice_questions'."},
-                {"type": "image_url", "image_url": {"url": f"data:image/{file_type.split('/')[-1]};base64,{base64_img}"}}
-            ]}
-        ]
-        
-        insights = get_insights(prompts, ResponseTypeNB)
-    # if inights is a string, convert it to a dictionary
-    if isinstance(insights, str):
-        insights = json.loads(insights)
-    # generate a random 7 digit number
-    blob_id = ''.join([str(random.randint(0, 9)) for _ in range(7)])
-    # store the file in the cloud storage
-    upload_file("sciweb-files", file_content, blob_id)
-    # add to the Notebooks sheet
-    post_data("Notebooks", {"classID": data['classID'], "unit": unit, "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "image": blob_id, "topic": insights["topic"], "subtopics": insights["notes"], "practice_questions": insights["practice_questions"]})
-    return jsonify({"success": True, "message": "Worksheet processed and stored successfully"})  
+        # Generate blob ID and store file
+        blob_id = ''.join([str(random.randint(0, 9)) for _ in range(7)])
+        # store the file in the cloud storage
+        upload_file("sciweb-files", file_content, blob_id)
+        # add to the Notebooks sheet
+        post_data("Notebooks", {"classID": data['classID'], "unit": unit, "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "image": blob_id, "topic": insights_dict["topic"], "subtopics": insights_dict["notes"], "practice_questions": insights_dict["practice_questions"]})
+        return jsonify({"success": True, "message": "Worksheet processed and stored successfully"})  
+    except Exception as e:
+        print(f"Error processing worksheet: {str(e)}")
+        traceback.print_exc()
+        return jsonify({"error": "Failed to process worksheet"}), 500
   
 
 @app.route('/get-units', methods=['POST'])
@@ -695,39 +708,20 @@ def get_units():
     
     return jsonify({"units": units})
     
-class Feedback(BaseModel):
-    feedback: str
-    score: int
 
-class ResponseTypeQA(BaseModel):
-    feedback: list[Feedback]
-    weaknesses: list[str]
-    strengths: list[str]
-    test_score: int
-
-# set response format class. for mcq, the key is the question, and the value is the answer
-class MultipleChoiceQuestion(BaseModel):
-    question: str
-    answers: list[str]
-    correct_answer: str
-
-class response_format(BaseModel):
-    multiple_choice: list[MultipleChoiceQuestion]
-    short_response: list[str]
 
 @app.route('/generate-questions', methods=['POST'])
 def generate_questions():
     data = request.json
     class_id = data['classId']
     unit_name = data['unitName']
-    mcq_count = data.get('mcqCount', 2)  # Default to 2 if not specified
-    written_count = data.get('writtenCount', 3)  # Default to 3 if not specified
+    mcq_count = data.get('mcqCount', 2)
+    written_count = data.get('writtenCount', 3)
 
-    # Get the notebook content for the selected class and unit
+    # Get the notebook content
     classes = get_user_data("Classes")
     notebooks = get_user_data("Notebooks", {"Classes":classes})
     
-    # get one list of all of the subtopics and practice questions
     subtopics = []
     practice_questions = []
     for item in notebooks:
@@ -738,49 +732,52 @@ def generate_questions():
     if not subtopics or not practice_questions:
         return jsonify({"error": "Notebook content not found"}), 404
 
-    # Generate questions using AI with dynamic counts
-    prompt = [
-        {"role": "system", "content": "You are an AI designed to generate educational questions given a list of topics and examples."},
-        {"role": "user", "content": f"Generate {mcq_count} multiple-choice questions, each with 4 answer choices, and {written_count} short-response questions based on these topics: {subtopics} and examples: {practice_questions}. Ensure your response is in the correct JSON format."}
-    ]
+    try:
+        questions = generate_practice_questions(
+            vars['llm'], 
+            mcq_count, 
+            written_count, 
+            subtopics, 
+            practice_questions
+        )
+        return jsonify({"questions": questions.model_dump()})
+    except Exception as e:
+        print(f"Error generating questions: {str(e)}")
+        return jsonify({"error": "Failed to generate questions"}), 500
 
-    questions = get_insights(prompt, response_format)
-
-    return json.dumps({"questions": json.loads(questions)})
-
-
-
-@app.route('/score-answers', methods=['POST'])
-def score_answers():
+@app.route('/evaluate-final', methods=['POST'])
+def evaluate_final():
     data = request.json
-    questions = data['questions']
-    user_answers = data['answers']
-    scoring_prompt = data['scoringPrompt']
+    followup_history = data['followupHistory']
+    
+    # Generate final evaluation
+    final_evaluation = generate_final_evaluation(vars['llm'], followup_history)
+    final_eval_dict = final_evaluation.model_dump()
+    
+    return jsonify({"evaluation": final_eval_dict})
 
-    score = 0
-    mcq_count = len(questions['multiple_choice'])
-    points_per_mcq = 40 / mcq_count if mcq_count > 0 else 0
+@app.route('/generate-followup', methods=['POST'])
+def generate_followup():
+    data = request.json
+    followup = generate_followup_question(
+        vars['llm'],
+        data['question'],
+        data['answer'],
+        data.get('history', [])
+    )
+    return jsonify({"followup": followup})
 
-    for i in range(mcq_count):
-        if user_answers[i] == questions['multiple_choice'][i]['correct_answer']:
-            score += points_per_mcq
-        
-    prompt = [
-        {"role": "system", "content": scoring_prompt},
-        {"role": "user", "content": f"Questions: {questions['short_response']}\nStudent's Answers: {user_answers[mcq_count:]}"}
-    ]
+@app.route('/evaluate-understanding', methods=['POST'])
+def evaluate_understanding():
+    data = request.json
+    evaluation = generate_final_evaluation(
+        vars['llm'],
+        data['questionContext'],
+        data['history']
+    )
+    return jsonify({"evaluation": evaluation})
 
-    ai_score = get_insights(prompt, ResponseTypeQA)
-    ai_score = json.loads(ai_score)
 
-    return jsonify({"MCQscore": score, "SAQ_feedback": ai_score})
-
-class BloomQuestion(BaseModel):
-    question: str
-    personalDifficulty: int
-
-class ResponseTypeBloom(BaseModel):
-    questions: list[BloomQuestion]
 
 @app.route('/generate-bloom-questions', methods=['POST'])
 def generate_bloom_questions():
@@ -889,6 +886,11 @@ def postLogin():
   # If the user has not logged in before, add their data to the Users sheet
   session['user_data'] = data
   post_data("Users", data)
+  
+  # Send welcome email for new signups
+  if 'email' in data and data['email']:
+    send_welcome_email(data['email'], data['first_name'])
+  
   return json.dumps({"data": "success"})
 
 
@@ -978,8 +980,9 @@ def get_name(ip=None, update=False):
 def utility_function():
   pass
 
+vars = init()
 #uncomment to run locally, comment to deploy. Before deploying, change db to firebase, add new packages to requirements.txt
 
-# if __name__ == '__main__':
-#   app.run(host='localhost', port=8080)
+if __name__ == '__main__':
+  app.run(host='localhost', port=8080)
 

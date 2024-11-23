@@ -10,6 +10,9 @@ from google.oauth2 import service_account
 from firebase_admin import messaging
 import firebase_admin
 from firebase_admin import credentials
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 #get data from Google Sheets API
 def get_data_gsheet(sheet, row_name, row_val):
@@ -273,6 +276,8 @@ def get_user_data(sheet, prev_sheets=[]):
   # if the sheet is one of these exceptions that require special filtering
   if sheet=="FULLUsers":
     return get_data("Users")
+  if sheet=="Battles":
+    return get_data("Battles")
   if sheet=="Users":
     #only include the first 3 columns of the Users sheet, first_name, last_name, and osis
     data = get_data(sheet)
@@ -341,3 +346,51 @@ def send_notification(token, title, body, action):
     except Exception as e:
         print(f'Error sending notification: {e}')
         return False
+
+def send_email(email_address, message):
+    """
+    Sends an email to the specified address
+    
+    Args:
+        email_address (str): The recipient's email address
+        message (MIMEMultipart): The email message to send
+    """
+    try:
+        # Email configuration
+        sender_email = "sciwebbot@gmail.com"  # Replace with your actual no-reply email
+        sender_password = "pjntkprprccrcpss"  # Replace with your email password
+
+        # Create SMTP session
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(sender_email, sender_password)
+            server.send_message(message)
+
+        print(f"Email sent successfully to {email_address}")
+        return True
+
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        return False
+
+def send_welcome_email(user_email, first_name):
+    # Sends a welcome email to new users upon signup
+    
+    # Email body
+    body = f"""
+    Hi {first_name},
+
+    Welcome to SciWeb! We're excited to have you join our community.
+
+    You can now:
+    - Connect with other students
+    - Access your classes
+    - Track your assignments
+    - And much more!
+
+    If you have any questions, please don't hesitate to reach out to our support team.
+
+    Best regards,
+    The SciWeb Team
+    """
+
+    send_email(user_email, body)

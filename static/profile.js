@@ -22,6 +22,7 @@ function displayUserInfo(userData){
   document.getElementById("last-name-text").textContent = userData.last_name;
   document.getElementById("password-text").textContent = userData.password;
   document.getElementById("grade-text").textContent = userData.grade;
+  document.getElementById("email-text").textContent = userData.email;
 }
 function editField(fieldName) {
   const textElement = document.getElementById(`${fieldName}-text`);

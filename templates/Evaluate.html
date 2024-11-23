@@ -77,7 +77,26 @@
     </div>
     <div id="progress">Question <span id="current-question">1</span> of 5</div>
     <button id="next-question" class="button primary" style="display: none;">Next Question</button>
-    <div id="result" style="display: none;"></div>
+    <div id="result" style="display: none;">
+        <h3>Comprehensive Evaluation</h3>
+        <div class="question-evaluations">
+            <!-- Dynamically populated with per-question evaluations -->
+        </div>
+        <div class="final-analysis">
+            <!-- Overall understanding analysis -->
+        </div>
+    </div>
+    <div id="question-type" class="question-type-indicator"></div>
+
+    <div id="followup-container" style="display: none;">
+        <div class="conversation-history">
+            <!-- Dynamically populated with followup Q&A -->
+        </div>
+        <div class="followup-input">
+            <textarea id="followup-answer" rows="3" placeholder="Your response..."></textarea>
+            <button onclick="handleFollowupResponse()" class="button secondary">Submit Response</button>
+        </div>
+    </div>
 </section>
 
 <div id="loading" style="display: none;">

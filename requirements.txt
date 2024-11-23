@@ -11,3 +11,7 @@ beautifulsoup4
 openai
 PyPDF2
 pydantic
+langchain
+unstructured
+pdfminer
+

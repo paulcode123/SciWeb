@@ -344,5 +344,111 @@ select:disabled {
     flex: 1;
 }
 
+.question-type-indicator {
+    background-color: #363636;
+    padding: 8px 15px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 15px;
+    color: rgb(228, 76, 101);
+    font-weight: bold;
+}
+
+.conversation-history {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #363636;
+    border-radius: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.conversation-item {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.ai-question {
+    background-color: #2d2d2d;
+    border-left: 3px solid #2196F3;
+}
+
+.user-response {
+    background-color: #404040;
+    border-left: 3px solid rgb(228, 76, 101);
+    margin-left: 20px;
+}
+
+.followup-input {
+    margin-top: 20px;
+}
+
+.followup-input textarea {
+    width: 100%;
+    background-color: #363636;
+    border: 1px solid #444;
+    color: #e0e0e0;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+
+.question-evaluations {
+    margin: 20px 0;
+}
+
+.question-evaluation {
+    background-color: #363636;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+}
+
+.final-analysis {
+    background-color: #2d2d2d;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 30px;
+    border-left: 4px solid rgb(228, 76, 101);
+}
+
+.followup-progress {
+    text-align: right;
+    color: #888;
+    font-size: 0.9em;
+    margin: 10px 0;
+    padding: 5px;
+    border-top: 1px solid #444;
+}
+
+.conversation-history {
+    position: relative;
+    padding-bottom: 30px;
+}
+
+.user-response {
+    background-color: #404040;
+    border-left: 3px solid rgb(228, 76, 101);
+    margin-left: 20px;
+}
+
+.ai-question {
+    background-color: #2d2d2d;
+    border-left: 3px solid #2196F3;
+}
+
+.conversation-item {
+    margin-bottom: 15px;
+    padding: 15px;
+    border-radius: 4px;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 
 

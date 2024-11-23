@@ -1,0 +1,95 @@
+.team-section {
+    padding: 2em 0;
+}
+
+.team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2em;
+    margin: 2em 0;
+}
+
+.team-member {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 10px;
+    padding: 1.5em;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border: 1px solid rgba(144, 144, 144, 0.25);
+}
+
+.team-member:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(76, 92, 150, 0.2);
+}
+
+.profile-img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    margin-bottom: 1em;
+    object-fit: cover;
+}
+
+.member-name {
+    color: #3d4449;
+    margin: 0.5em 0;
+    font-size: 1.25em;
+    font-weight: 600;
+}
+
+.member-position {
+    color: #e44c65;
+    font-weight: 600;
+    margin-bottom: 1em;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.9em;
+}
+
+.member-email {
+    color: #4c5c96;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+    margin-bottom: 1em;
+    font-size: 0.9em;
+}
+
+.member-bio {
+    margin-bottom: 1em;
+    color: #777;
+    line-height: 1.6;
+}
+
+.member-contributions {
+    font-style: italic;
+    color: #666;
+    font-size: 0.9em;
+    line-height: 1.6;
+}
+
+.section-title {
+    text-align: center;
+    color: #3d4449;
+    margin-bottom: 1.5em;
+    position: relative;
+    padding-bottom: 0.5em;
+    font-size: 2em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.section-title:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 3px;
+    background: #e44c65;
+}
