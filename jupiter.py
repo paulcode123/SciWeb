@@ -421,7 +421,9 @@ def check_new_grades(grades, class_data, tokens_data):
             
         # Get all students in the class
         students = class_obj['OSIS']
-            
+        # if students is an int, put it in a list
+        if isinstance(students, int):
+            students = [students]
         # Get tokens for all students
         tokens = []
         for student in students:

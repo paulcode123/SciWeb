@@ -221,7 +221,9 @@ async function startEvaluation() {
 
     const notebooks = await fetchRequest('/data', {"data": "Classes, Notebooks"})
     // filter notebooks by classId and unitName
-    const filteredNotebooks = notebooks.Notebooks.filter(notebook => notebook.classID === classId && notebook.unit === unitName);
+    var filteredNotebooks = notebooks.Notebooks.filter(notebook => notebook.classID === classId && notebook.unit === unitName);
+    // take a random sample of 10 notebooks
+    filteredNotebooks = filteredNotebooks.sort(() => Math.random() - 0.5).slice(0, 10);
     let topics = []
     let questions = []
     filteredNotebooks.forEach(notebook => {
@@ -291,7 +293,7 @@ function showQuestion(index) {
     }
 }
 
-function submitAnswer() {
+async function submitAnswer() {
     const answer = document.getElementById('answer').value;
     if (!answer.trim()) {
         showNotification('Please enter an answer before submitting.', 'warning');
@@ -301,42 +303,59 @@ function submitAnswer() {
     document.getElementById('submit-answer').disabled = true;
     document.getElementById('loading').style.display = 'block';
 
-    fetch('/evaluate-answer', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            question: currentQuestions.questions[currentQuestionIndex].question,
-            answer: answer,
-            level: levels[currentLevel],
-            customPrompt: customPrompts.scoring
-        }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log("data", data)
+    try {
+        // First get the answer evaluation
+        const evalResponse = await fetch('/evaluate-answer', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                question: currentQuestions.questions[currentQuestionIndex].question,
+                answer: answer,
+                level: levels[currentLevel],
+                customPrompt: customPrompts.scoring
+            }),
+        });
+        const evalData = await evalResponse.json();
+        
+        // Then get the explanations
+        const explResponse = await fetch('/generate-explanations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                question: currentQuestions.questions[currentQuestionIndex].question,
+                correct_answer: evalData.correct_answer,
+                level: levels[currentLevel],
+                classId: document.getElementById('class-select').value
+            }),
+        });
+        const explData = await explResponse.json();
+
         document.getElementById('loading').style.display = 'none';
         document.getElementById('submit-answer').disabled = false;
-        showFeedback(data.score, data.feedback);
-        updatePoints(data.score);
+        
+        // Show feedback and explanations
+        showFeedback(evalData.score, evalData.feedback);
+        showExplanations(explData.explanations);
+        updatePoints(evalData.score);
 
         previousAnswers.push({
             question: currentQuestions.questions[currentQuestionIndex].question,
             answer: answer,
-            score: data.score
+            score: evalData.score
         });
 
         document.getElementById('submit-answer').style.display = 'none';
         document.getElementById('next-question').style.display = 'block';
-    
-    })
-    .catch(error => {
+    } catch (error) {
         console.error('Error:', error);
-        showNotification('Failed to evaluate answer. Please try again.', 'error');
+        showNotification('An error occurred. Please try again.', 'error');
         document.getElementById('loading').style.display = 'none';
         document.getElementById('submit-answer').disabled = false;
-    });
+    }
 }
 
 function showFeedback(score, feedback) {
@@ -523,4 +542,61 @@ function loadMathJax() {
     script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
     script.async = true;
     document.head.appendChild(script);
+}
+
+function showExplanations(explanations) {
+    const container = document.createElement('div');
+    container.className = 'explanations-container';
+    container.innerHTML = `
+        <h4>Rate these explanations to help improve future responses:</h4>
+        ${explanations.map((expl, index) => `
+            <div class="explanation-card">
+                <p><strong>Style:</strong> ${expl.style}</p>
+                <p>${expl.text}</p>
+                <div class="rating-container">
+                    <label>Rate this explanation (0-10):</label>
+                    <input type="number" min="0" max="10" class="explanation-rating" 
+                           data-index="${index}" value="5">
+                </div>
+            </div>
+        `).join('')}
+        <button class="submit-ratings-btn">Submit Ratings</button>
+    `;
+
+    document.getElementById('feedback').after(container);
+
+    container.querySelector('.submit-ratings-btn').addEventListener('click', () => {
+        const ratings = [...container.querySelectorAll('.explanation-rating')]
+            .map(input => ({
+                index: parseInt(input.dataset.index),
+                score: parseInt(input.value)
+            }));
+
+        submitExplanationRatings(explanations, ratings);
+        container.remove();
+    });
+}
+
+async function submitExplanationRatings(explanations, ratings) {
+    try {
+        await fetch('/save-explanation-ratings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                classId: document.getElementById('class-select').value,
+                question: currentQuestions.questions[currentQuestionIndex].question,
+                level: levels[currentLevel],
+                explanations: explanations.map((expl, index) => ({
+                    ...expl,
+                    score: ratings.find(r => r.index === index).score
+                }))
+            }),
+        });
+        showNotification('Thank you for rating the explanations!', 'success');
+    } catch (error) {
+        console.error('Error saving ratings:', error);
+        showNotification('Failed to save ratings', 'error');
+    }
 }

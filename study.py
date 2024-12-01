@@ -21,6 +21,11 @@ from langchain.chains import LLMChain
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain.memory import ConversationBufferMemory
+from datetime import datetime
+import random
+from typing import Union, List, Optional
+from pydantic import BaseModel, Field
+
 # Pydantic Models
 class MultipleChoiceQuestion(BaseModel):
     question: str
@@ -47,6 +52,7 @@ class FinalEvaluation(BaseModel):
     weaknesses: list[str]
     recommendations: list[str]
     composite_score: int
+    predicted_success: str
 
 class BloomQuestion(BaseModel):
     question: str
@@ -58,11 +64,64 @@ class ResponseTypeBloom(BaseModel):
 class ScoreBloom(BaseModel):
     score: int
     feedback: str
+    correct_answer: str
 
 class ResponseTypeNB(BaseModel):
     topic: str
     notes: list[str]
     practice_questions: list[str]
+
+class Explanation(BaseModel):
+    style: str
+    text: str
+    score: int = 0  # Default score of 0
+
+class ExplanationResponse(BaseModel):
+    explanations: List[Explanation]
+
+# Question Type Models
+class FillInBlankQuestion(BaseModel):
+    text: str
+    blanks: List[str]  # List of correct answers for each blank
+    blank_positions: List[int]  # Positions in text where blanks should appear
+    explanation: str
+
+class MatchingQuestion(BaseModel):
+    terms: List[str]
+    definitions: List[str]
+    correct_pairs: List[tuple[int, int]]  # Indices of matching pairs
+    explanation: str
+
+class OrderingQuestion(BaseModel):
+    items: List[str]
+    correct_order: List[int]  # Correct order as indices
+    explanation: str
+
+class MultipleChoiceQuestion(BaseModel):
+    question: str
+    options: List[str]
+    correct_index: int
+    explanation: str
+
+class EquationQuestion(BaseModel):
+    problem: str
+    steps: List[str]  # Step-by-step solution
+    final_answer: str
+    latex: bool = True
+    explanation: str
+
+# Combined question type
+class Question(BaseModel):
+    type: str
+    content: Union[FillInBlankQuestion, MatchingQuestion, OrderingQuestion, 
+                  MultipleChoiceQuestion, EquationQuestion]
+    context: str  # Information about how this relates to previous questions
+    difficulty: int
+
+class ThoughtProcess(BaseModel):
+    steps: List[str]
+    misconceptions: List[str]
+    comparison: Optional[List[tuple[str, str]]]  # Pairs of [user_thought, correct_thought]
 
 # Query the LLM API to get insights
 def get_insights(prompts, format=None):
@@ -318,7 +377,11 @@ def generate_practice_questions(llm, mcq_count, written_count, subtopics, practi
                      1. Each MCQ must have exactly 4 options
                      2. The 'answer' field must match one of the options exactly
                      3. Format must match the JSON schema exactly
-                     4. If it's an equation, make sure to write it in LaTeX format""")
+                     4. If it's an equation, make sure to write it in LaTeX format
+                    
+                     Guidelines:
+                     1. The questions should involve multiple steps and critical thinking
+                     2. They should be AP style questions""")
     ])
 
     # Create and run the chain with newer syntax
@@ -368,6 +431,7 @@ def generate_practice_questions(llm, mcq_count, written_count, subtopics, practi
 
 
 def generate_final_evaluation(llm, followup_history):
+    from database import post_data
     """Generate final evaluation using LangChain"""
     final_prompt = ChatPromptTemplate.from_messages([
         ("system", """
@@ -377,7 +441,8 @@ def generate_final_evaluation(llm, followup_history):
             Provide a detailed evaluation for each individual question, restating the question, the student's answer, and the correct answer, and why the student got it right or wrong.
             Recommend things to work on considering the student's overall performance.
             List the student's strengths and weaknesses in terms of their thinking process and knowledge, in terms of how they approached the question and how they solved it.
-            
+            For predicted success, write 4 sentences about how the student is likely to perform on a test of this material, such that this information can later be used to predict scores.   
+         
             Your response MUST be a valid JSON object with EXACTLY this structure:
             {{
                 "overall_understanding": "string",
@@ -385,6 +450,7 @@ def generate_final_evaluation(llm, followup_history):
                 "weaknesses": ["string"],
                 "recommendations": ["string"],
                 "composite_score": number,
+                "predicted_success": "string",
                 "question_evaluations": [
                     {{
                         "understanding_level": "string",
@@ -421,6 +487,8 @@ def generate_final_evaluation(llm, followup_history):
         # Try to parse as JSON first to catch any format issues
         parsed_json = json.loads(evaluation)
         print("evaluation: " + evaluation)
+        # post predicted success to the database
+        post_data("Evaluations", {"predicted_success": parsed_json['predicted_success'], "followup_history": followup_history, "OSIS": session['user_data']['osis'], "classID": session['current_class'], "unit": session['current_unit']})
         return FinalEvaluation.parse_obj(parsed_json)
     except json.JSONDecodeError as e:
         print(f"LLM returned invalid JSON: {evaluation}")
@@ -590,3 +658,441 @@ def process_image_content(llm, image_content: str, file_type: str) -> ResponseTy
                 notes=notes or ["No notes extracted"],
                 practice_questions=questions or ["No questions extracted"]
             )
+
+def _parse_json_response(result: str) -> dict:
+    """Helper function to parse JSON response from LLM"""
+    import json
+    import re
+    
+    # Remove markdown code blocks if present
+    result = re.sub(r'```json\s*|\s*```', '', result)
+    
+    # Extract JSON object
+    json_match = re.search(r'\{[\s\S]*\}', result)
+    if not json_match:
+        raise ValueError("No JSON object found in response")
+    
+    # Clean and parse JSON
+    json_str = (json_match.group()
+                .replace(r'\\', '@LATEX@')  # Temp replace LaTeX backslashes
+                .replace(r"\'", "'")        # Fix quotes
+                .replace(r'\"', '"')
+                .replace('@LATEX@', r'\\')) # Restore LaTeX backslashes
+    
+    return json.loads(json_str)
+
+def generate_bloom_questions(llm, level: str, previous_answers: list, notebook_content: str) -> ResponseTypeBloom:
+    """Generate Bloom's Taxonomy questions using LangChain"""
+    # Clean up the notebook content if it's too long
+    if len(notebook_content) > 4000:
+        notebook_content = notebook_content[:4000] + "..."
+
+    bloom_prompt = ChatPromptTemplate.from_messages([
+        ("system", "You are an expert at creating educational questions. Return only valid JSON without markdown."),
+        ("human", """Create 3 {level}-level questions based on this content:
+
+Content: {content}
+
+Previous questions to avoid: {previous}
+
+Return exactly this JSON structure:
+{{
+    "questions": [
+        {{
+            "question": "Question text here (use \\\\( \\\\) for LaTeX math)",
+            "personalDifficulty": 3
+        }}
+    ]
+}}
+
+Requirements:
+1. Questions must be at the {level} cognitive level
+2. Vary difficulty (1-5 scale)
+3. Use LaTeX for math: \\\\(x^2\\\\)
+4. Questions must be clear and specific""")
+    ])
+
+    try:
+        # Create and run the chain
+        chain = LLMChain(
+            llm=llm,
+            prompt=bloom_prompt,
+            verbose=True
+        )
+        
+        # Generate response
+        response = chain.invoke({
+            "level": level,
+            "content": notebook_content,
+            "previous": str(previous_answers)
+        })
+        
+        # Parse response
+        result = response.get('text', response)
+        json_data = _parse_json_response(result)
+        
+        return ResponseTypeBloom.parse_obj(json_data)
+            
+    except Exception as e:
+        print(f"Error in generate_bloom_questions: {str(e)}")
+        if 'response' in locals():
+            print(f"Response received: {response}")
+        raise Exception(f"Error generating Bloom's questions: {str(e)}")
+
+def evaluate_bloom_answer(llm, question, answer, level):
+    """Evaluate answer using LangChain"""
+    eval_prompt = ChatPromptTemplate.from_messages([
+        ("system", """You are an expert at evaluating student responses based on Bloom's Taxonomy.
+                     You must respond with ONLY a JSON object. Do not include markdown formatting."""),
+        ("human", """For this {level}-level question: {question}
+                     Evaluate this answer: {answer}
+                     
+                     Return this exact JSON structure:
+                     {{
+                         "score": number from 0-10,
+                         "feedback": "Detailed feedback explaining the score",
+                         "correct_answer": "The complete correct answer"
+                     }}
+                     
+                     Base the score on:
+                     1. Accuracy of the response
+                     2. Depth of understanding shown
+                     3. Appropriate use of {level}-level thinking""")
+    ])
+
+    try:
+        # Create and run the chain
+        eval_chain = LLMChain(
+            llm=llm,
+            prompt=eval_prompt,
+            verbose=True
+        )
+
+        response = eval_chain.invoke({
+            "level": level,
+            "question": question,
+            "answer": answer
+        })
+        
+        # Extract just the text from the response
+        result = response['text'] if isinstance(response, dict) else response
+        
+        # Clean the response to ensure it's valid JSON
+        result = result.strip()
+        if result.startswith("```json"):
+            result = result[7:]
+        if result.endswith("```"):
+            result = result[:-3]
+        result = result.strip()
+        
+        # Parse JSON
+        json_data = json.loads(result)
+        
+        # Validate JSON structure
+        if not all(key in json_data for key in ['score', 'feedback', 'correct_answer']):
+            raise ValueError("Response missing required keys")
+            
+        return ScoreBloom.parse_obj(json_data)
+            
+    except Exception as e:
+        print(f"Error evaluating answer: {str(e)}")
+        if 'response' in locals():
+            print(f"Raw response received: {response}")
+            print(f"Cleaned result: {result if 'result' in locals() else 'No result'}")
+        raise Exception(f"Failed to evaluate answer: {str(e)}")
+
+def generate_explanations(llm, question: str, correct_answer: str, level: str, class_id: str) -> List[Explanation]:
+    """Generate multiple explanations using different styles based on previous ratings"""
+    from database import get_data
+    
+    # Get sample of previous explanations
+    try:
+        # Get all explanations for this class
+        explanations_data = get_data("Explanations", "OSIS", session['user_data']['osis'])
+        # filter by classID
+        explanations_data = [d for d in explanations_data if d.get('classID') == class_id]
+        samples_text = "No previous explanations available."
+        all_explanations = explanations_data[0]['explanations']
+        print(len(all_explanations))
+        # Sample from all explanations if available
+        if all_explanations:
+            import random
+            sample_size = min(5, len(all_explanations))
+            samples = random.sample(all_explanations, sample_size)
+            
+            # Format samples as text
+            samples_text = "\n".join([
+                f"Style: {str(exp.get('style', 'Unknown'))}\n"
+                f"Explanation: {str(exp.get('text', 'No text'))}\n"
+                f"Rating: {str(exp.get('score', 0))}/10"
+                for exp in samples
+            ])
+    except Exception as e:
+        print(f"Error fetching previous explanations: {str(e)}")
+        samples_text = "Error fetching previous explanations."
+
+    # Rest of the function remains the same...
+    explanation_prompt = ChatPromptTemplate.from_messages([
+        ("system", """You are an expert at explaining concepts clearly. 
+        You must respond with ONLY a JSON object containing an 'explanations' array.
+        Do not include any additional text or formatting."""),
+        ("human", """Explain this {level}-level question in three different ways:
+
+Question: {question}
+Correct Answer: {answer}
+
+Previous successful explanations:
+{samples}
+
+Respond with this exact JSON structure:
+{{
+    "explanations": [
+        {{
+            "style": "Visual",
+            "text": "explanation using visual imagery..."
+        }},
+        {{
+            "style": "Analogy",
+            "text": "explanation using analogies..."
+        }},
+        {{
+            "style": "Step-by-step",
+            "text": "explanation using clear steps..."
+        }}
+    ]
+}}""")
+    ])
+
+    try:
+        chain = LLMChain(
+            llm=llm,
+            prompt=explanation_prompt,
+            verbose=True
+        )
+        
+        # Generate response
+        response = chain.invoke({
+            "question": question,
+            "answer": correct_answer,
+            "level": level,
+            "samples": samples_text
+        })
+        
+        # Extract just the text from the response
+        result = response['text'] if isinstance(response, dict) else response
+        
+        # Clean the response to ensure it's valid JSON
+        result = result.strip()
+        if result.startswith("```json"):
+            result = result[7:]
+        if result.endswith("```"):
+            result = result[:-3]
+        result = result.strip()
+        
+        # Parse JSON
+        json_data = json.loads(result)
+        
+        return ExplanationResponse.parse_obj(json_data).explanations
+            
+    except Exception as e:
+        print(f"Error generating explanations: {str(e)}")
+        if 'response' in locals():
+            print(f"Raw response received: {response}")
+            print(f"Cleaned result: {result if 'result' in locals() else 'No result'}")
+        raise Exception(f"Failed to generate explanations: {str(e)}")
+
+def save_explanations(class_id: str, osis: str, question: str, level: str, explanations: List[Explanation]):
+    """Save rated explanations to the database"""
+    from database import post_data, get_data, update_data
+    randid = random.randint(0, 1000000)
+    osis = session['user_data']['osis']
+    # Create explanation entry
+    explanation_entry = {
+        "question": question,
+        "level": level,
+        "explanations": explanations,
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    try:
+        # Try to get existing explanations for this class
+        existing_data = get_data("Explanations", "OSIS", osis)
+        # filter by classID
+        existing_data = [d for d in existing_data if d.get('classID') == class_id]
+        
+        if len(existing_data) > 0:
+            # Append new explanation to existing list
+            existing_data[0]['explanations'].append(explanation_entry)
+            
+            # Update the document
+            update_data(
+                existing_data[0]['id'],
+                "id",
+                existing_data[0],
+                "Explanations"
+            )
+        else:
+            # Create new document
+            post_data("Explanations", {
+                "classID": class_id,
+                "OSIS": osis,
+                "id": randid,
+                "explanations": [explanation_entry]
+            })
+            
+    except Exception as e:
+        raise Exception(f"Error saving explanations: {str(e)}")
+
+# Function to determine question type and generate appropriate question
+def generate_question(llm, notebook_content: str, previous_qa: List[dict]) -> Question:
+    """Generate a question using LangChain"""
+    
+    # First chain: Determine best question type
+    type_prompt = ChatPromptTemplate.from_messages([
+        ("system", """You are an expert at creating educational assessments.
+                     Analyze the content and previous answers to determine the most effective
+                     question type for testing understanding."""),
+        ("human", """Content: {content}
+                     Previous Q&A: {previous}
+                     
+                     Choose the most appropriate question type from:
+                     - fill_in_blank
+                     - matching
+                     - ordering
+                     - multiple_choice
+                     - equation
+                     
+                     Return only the type as a single word.""")
+    ])
+    
+    type_chain = LLMChain(
+        llm=llm,
+        prompt=type_prompt,
+        verbose=True
+    )
+    
+    # Get question type
+    question_type = type_chain.run({
+        "content": notebook_content,
+        "previous": str(previous_qa)
+    }).strip().lower()
+
+    # Question generation prompts for each type
+    question_prompts = {
+        "fill_in_blank": """Create a fill-in-the-blank question about: {content}
+            Format: {{"text": "sentence with ___ for blanks", "blanks": ["answer1", "answer2"], 
+            "blank_positions": [position1, position2], "explanation": "why this is correct"}}""",
+            
+        "matching": """Create a matching question about: {content}
+            Format: {{"terms": ["term1", "term2"], "definitions": ["def1", "def2"], 
+            "correct_pairs": [[0,1], [1,0]], "explanation": "explanation of matches"}}""",
+            
+        "ordering": """Create a sequence ordering question about: {content}
+            Format: {{"items": ["event1", "event2"], "correct_order": [0,1], 
+            "explanation": "why this order is correct"}}""",
+            
+        "multiple_choice": """Create a multiple choice question about: {content}
+            Format: {{"question": "question text", "options": ["A", "B", "C", "D"], 
+            "correct_index": 0, "explanation": "why this is correct"}}""",
+            
+        "equation": """Create a mathematical equation problem about: {content}
+            Format: {{"problem": "problem text", "steps": ["step1", "step2"], 
+            "final_answer": "answer", "latex": true, "explanation": "detailed explanation"}}"""
+    }
+    
+    # Create question generation chain
+    question_prompt = ChatPromptTemplate.from_messages([
+        ("system", "You are an expert at creating educational questions. Use LaTeX for equations."),
+        ("human", question_prompts[question_type])
+    ])
+    
+    question_chain = LLMChain(
+        llm=llm,
+        prompt=question_prompt,
+        verbose=True
+    )
+    
+    # Generate question content
+    question_content = question_chain.run({
+        "content": notebook_content,
+        "previous": str(previous_qa)
+    })
+    
+    # Parse the response into appropriate model
+    question_models = {
+        "fill_in_blank": FillInBlankQuestion,
+        "matching": MatchingQuestion,
+        "ordering": OrderingQuestion,
+        "multiple_choice": MultipleChoiceQuestion,
+        "equation": EquationQuestion
+    }
+    
+    parsed_content = json.loads(question_content)
+    question_model = question_models[question_type].parse_obj(parsed_content)
+    
+    # Generate context based on previous questions
+    context_chain = LLMChain(
+        llm=llm,
+        prompt=ChatPromptTemplate.from_messages([
+            ("system", "Generate context about how this question relates to previous ones."),
+            ("human", "Previous Q&A: {previous}\nNew question: {question}")
+        ])
+    )
+    
+    context = context_chain.run({
+        "previous": str(previous_qa),
+        "question": str(question_model)
+    })
+    
+    return Question(
+        type=question_type,
+        content=question_model,
+        context=context,
+        difficulty=calculate_difficulty(previous_qa)
+    )
+
+def analyze_thought_process(llm, question: Question, user_answer: str, 
+                          previous_qa: List[dict]) -> ThoughtProcess:
+    """Analyze user's thought process and identify misconceptions"""
+    
+    # Chain to reconstruct user's likely thought process
+    thought_chain = LLMChain(
+        llm=llm,
+        prompt=ChatPromptTemplate.from_messages([
+            ("system", """Analyze the user's answer to reconstruct their thought process.
+                         Identify any misconceptions and compare with correct reasoning."""),
+            ("human", """Question: {question}
+                        User's Answer: {answer}
+                        Previous Answers: {previous}
+                        
+                        Return JSON with:
+                        {{"steps": ["thought1", "thought2"],
+                          "misconceptions": ["misconception1"],
+                          "comparison": [["user_thought1", "correct_thought1"]]}}""")
+        ])
+    )
+    
+    analysis = thought_chain.run({
+        "question": str(question),
+        "answer": user_answer,
+        "previous": str(previous_qa)
+    })
+    
+    return ThoughtProcess.parse_raw(analysis)
+
+def calculate_difficulty(previous_qa: List[dict]) -> int:
+    """Calculate appropriate difficulty based on previous answers"""
+    if not previous_qa:
+        return 3  # Default medium difficulty
+    
+    # Calculate based on recent performance
+    recent_scores = [qa.get('score', 5) for qa in previous_qa[-3:]]
+    avg_score = sum(recent_scores) / len(recent_scores)
+    
+    # Adjust difficulty (1-5 scale)
+    if avg_score > 8:
+        return min(5, previous_qa[-1].get('difficulty', 3) + 1)
+    elif avg_score < 4:
+        return max(1, previous_qa[-1].get('difficulty', 3) - 1)
+    else:
+        return previous_qa[-1].get('difficulty', 3)

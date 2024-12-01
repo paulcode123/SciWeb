@@ -155,3 +155,24 @@ Sheet name: Distributions
     category(category of assignment)
     class_name(name of class)
     value(total points possible)
+
+Sheet name: Explanations
+
+    classID(id of the class)
+    OSIS(7 digit number of the student)
+    explanations(list of dictionaries containing:
+        {
+            "question": str,
+            "level": str,
+            "correct_answer": str,
+            "explanations": [
+                {
+                    "style": str,
+                    "text": str,
+                    "score": int (0-10)
+                },
+                // ... 3 explanations per answer
+            ],
+            "timestamp": datetime
+        }
+    )

@@ -12,6 +12,9 @@ openai
 PyPDF2
 pydantic
 langchain
+langchain-community
+langchain-core
+langchain-openai
 unstructured
 pdfminer
 

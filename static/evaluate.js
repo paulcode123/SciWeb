@@ -138,7 +138,7 @@ function handleAnswer(choice, correct) {
 
         // Compare the original LaTeX syntax for correctness
         const originalContent = btn.innerHTML;
-        const isCorrect = originalContent.includes(correct);
+        const isCorrect = originalContent === correct;
 
         if (isCorrect) {
             foundCorrect = true;

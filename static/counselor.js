@@ -3,18 +3,35 @@ export { typeOutText, await_enter, AI_response };
 const chatLog = document.getElementById('chat-log');
 console.log("in counselor.js")
 // function to type out text in a message div in chatLog
-async function typeOutText(text, speed, targetDiv = document.getElementById('chat-log')) {
+async function typeOutText(text, speed, targetDiv = document.getElementById('chatLog')) {
     console.log("typeOutText", text, speed, targetDiv)
-    // make a message div
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'ai-message';
-    targetDiv.appendChild(messageDiv);
-    // for each character in the text, add it to the message div
+    // Create message for counselor sidebar
+    const sidebarLog = document.getElementById('chat-log');
+    if (sidebarLog) {
+        const sidebarMessage = document.createElement('div');
+        sidebarMessage.className = 'ai-message';
+        sidebarLog.appendChild(sidebarMessage);
+        sidebarLog.scrollTop = sidebarLog.scrollHeight;
+    }
+    
+    // Create message for main chat
+    const mainMessage = document.createElement('div');
+    mainMessage.className = 'ai-message';
+    targetDiv.appendChild(mainMessage);
+    
+    // Type out text in both locations
     for (let i = 0; i < text.length; i++) {
-        messageDiv.textContent += text[i];
+        const char = text[i];
+        if (sidebarLog) {
+            const sidebarMessage = sidebarLog.lastElementChild;
+            sidebarMessage.textContent += char;
+        }
+        mainMessage.textContent += char;
         await new Promise(resolve => setTimeout(resolve, speed));
     }
-    // Scroll to the bottom of the target div
+    
+    // Scroll both chat areas
+    if (sidebarLog) sidebarLog.scrollTop = sidebarLog.scrollHeight;
     targetDiv.scrollTop = targetDiv.scrollHeight;
 }
 
@@ -48,21 +65,39 @@ function add_user_text(text){
     messageDiv.textContent = text;
 }
 
-async function await_enter(inputElement=document.getElementById('user-input')) {
+async function await_enter(inputElement=document.getElementById('userInput')) {
     return new Promise(resolve => {
         const handleKeyDown = (event) => {
-            if (event.key === 'Enter') {
+            if (event.key === 'Enter' && event.target === inputElement) {
                 var input = inputElement.value;
-                add_user_text(input);
-                inputElement.value = '';
-                resolve(input);
-                // Remove the event listener after capturing the input
-                document.removeEventListener('keydown', handleKeyDown);
+                if (input.trim()) {  // Only process non-empty messages
+                    add_user_text(input);
+                    // Also add to main chat log if it exists
+                    const mainChatLog = document.getElementById('chatLog');
+                    if (mainChatLog) {
+                        const mainMessageDiv = document.createElement('div');
+                        mainMessageDiv.className = 'user-message';
+                        mainMessageDiv.textContent = input;
+                        mainChatLog.appendChild(mainMessageDiv);
+                        mainChatLog.scrollTop = mainChatLog.scrollHeight;
+                    }
+                    inputElement.value = '';
+                    resolve(input);
+                }
             }
         };
 
-        // Add the event listener for keydown
-        document.addEventListener('keydown', handleKeyDown);
+        // Add the event listener for keydown to the input element specifically
+        inputElement.addEventListener('keydown', handleKeyDown);
+        
+        // Clean up function
+        const cleanup = () => {
+            inputElement.removeEventListener('keydown', handleKeyDown);
+        };
+        
+        // Remove the event listener after 30 seconds (timeout) or when resolved
+        setTimeout(cleanup, 30000);
+        return cleanup;
     });
 }
 

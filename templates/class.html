@@ -99,6 +99,17 @@
       <div id="assignmentList"></div>
     </div>
 
+    <div class="info-card video-conference">
+      <h3>Class Video Conference</h3>
+      <div id="meet-wrapper">
+        <div id="meet"></div>
+        <div class="meeting-controls">
+          <button id="startMeeting" class="action-button">Start/Join Meeting</button>
+          <span id="participantCount" class="participant-count"></span>
+        </div>
+      </div>
+    </div>
+
     <div class="info-card chat">
       <h3>Class Discussion</h3>
       <div id="chat-box">
@@ -119,6 +130,8 @@
 
 <!-- js block -->
 {% block js %}
+<script src='https://meet.jit.si/external_api.js'></script>
+<script src="/static/jitsi.js"></script>
 <script src="/static/class.js"></script>
 <script src="/static/setdesign.js"></script>
 {% endblock %}

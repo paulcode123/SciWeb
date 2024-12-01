@@ -1,4 +1,4 @@
-assignment = {};
+var assignment = {};
 const description = document.getElementById('description');
 const name = document.getElementById('name');
 const dueDate = document.getElementById('due');
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
             data = data.Assignments;
             console.log(data)
               // filter assignments data to match last 4 characters of url
-              let assignments = data.filter(assignment => assignment.id.endsWith(window.location.pathname.slice(-4)));
+              let assignments = data.filter(assignment => assignment.id.toString().endsWith(window.location.pathname.slice(-4)));
               assignment = assignments[0];
               console.log(assignment)
               // Assuming data contains the necessary fields

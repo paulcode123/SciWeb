@@ -358,8 +358,18 @@ def send_email(email_address, message):
     try:
         # Email configuration
         sender_email = "sciwebbot@gmail.com"  # Replace with your actual no-reply email
-        sender_password = "pjntkprprccrcpss"  # Replace with your email password
-
+        # get password from api_keys.json
+        with open('api_keys.json', 'r') as file:
+            api_keys = json.load(file)
+        sender_password = api_keys['email_password']
+        # If message is a string, create a MIMEMultipart object
+        if isinstance(message, str):
+            msg = MIMEMultipart()
+            msg['From'] = sender_email
+            msg['To'] = email_address
+            msg['Subject'] = "Message from SciWeb"
+            msg.attach(MIMEText(message, 'plain'))
+            message = msg
         # Create SMTP session
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(sender_email, sender_password)

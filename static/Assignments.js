@@ -44,7 +44,6 @@ function display_assignments(assignmentList, classList) {
         break;
       }
     }
-
     
     const assignmentItem = document.createElement('div');
     assignmentItem.classList.add('assignment-item');
@@ -134,7 +133,25 @@ document.getElementById('uploadButton').addEventListener('click', function() {
 });
 
 function processDate(dateString) {
-  // Assuming dateString is in the format 'yyyy-mm-dd'
-  const [year, month, day] = dateString.split('-');
-  return `${month}/${day}/${year}`; // Convert to 'mm/dd/yyyy' or any desired format
+  if (!dateString) return 'No due date';
+  
+  try {
+    // Create a Date object from the string
+    const date = new Date(dateString);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return 'Invalid date';
+    }
+    
+    // Get month and day with leading zeros if needed
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const year = date.getFullYear();
+    
+    return `${month}/${day}/${year}`;
+  } catch (error) {
+    console.error('Error processing date:', error);
+    return 'Invalid date';
+  }
 }

@@ -68,7 +68,8 @@ function get_location_name(location, classes, assignments, friends, users){
 
 //Create a fetch request to /data to get Chat, Classes, and Assignments data
 async function main(){
-  initializeChat(first_name);
+  // Remove initializeChat call from here since it's called in the load event
+  
   // Get dashboard position
   const dashboard = document.getElementById('dashboard');
   const dashboardTop = dashboard.offsetTop;
@@ -300,19 +301,9 @@ function updateNotificationUI(isEnabled, errorText) {
   errorElement.innerHTML = errorText;
 }
 
-function initializeFeatureBoxes() {
-  const featureBoxes = document.querySelectorAll('.feature-box');
-  featureBoxes.forEach(box => {
-      box.addEventListener('click', () => {
-          window.location.href = box.dataset.href;
-      });
-  });
-}
-
 // Call setupMessaging when the page loads
 window.addEventListener('load', () => {
   setupMessaging();
-  initializeFeatureBoxes();
 });
 
 function show_assignments_due_tmrw(assignments){
@@ -393,24 +384,152 @@ function show_recent_grades(grades){
   });
 }
 
-// Add this function to start the chat
-async function initializeChat(userName) {
-  console.log("initializing chat")
-    const chatLog = document.getElementById('chatLog');
-    const prompts = [
-        {"role": "system", "content": "You are the user's College Counselor. It's your responsibility to tell them their assignments, if they have any tests coming up, recent grades, their goals, etc. You can access any of their data at any time from the database with the get_data/get_grades function."}
-    ];
-    
-    const initialPrompt = `Hey there, ${userName}! How can I help you today?`;
-    prompts.push({"role": "assistant", "content": initialPrompt});
-    await typeOutText(initialPrompt, 50, chatLog);
+// Add path definitions
+const paths = [
+    {
+        name: "Lock in",
+        features: [
+            { name: "Scheduler", icon: "fa-calendar", href: "/Schedule", description: "Plan your day" },
+            { name: "Assignments", icon: "fa-tasks", href: "/Assignments", description: "Track your work" },
+            { name: "Levels", icon: "fa-trophy", href: "/Levels", description: "Track your progress" }
+        ]
+    },
+    {
+        name: "Chill out",
+        features: [
+            { name: "Messages", icon: "fa-comments", href: "/Messages", description: "Chat with friends" },
+            { name: "Battles", icon: "fa-gamepad", href: "/Battles", description: "Challenge others" },
+            { name: "Leagues", icon: "fa-users", href: "/Leagues", description: "Join communities" }
+        ]
+    },
+    {
+        name: "What a scholar",
+        features: [
+            { name: "Enter Grades", icon: "fa-plus-circle", href: "/EnterGrades", description: "Add new grades" },
+            { name: "Evaluate", icon: "fa-chart-line", href: "/Evaluate", description: "Track your performance" },
+            { name: "Goals", icon: "fa-bullseye", href: "/Goals", description: "Set & track goals" }
+        ]
+    },
+    {
+        name: "Teamwork makes the Dream Work",
+        features: [
+            { name: "Notebook", icon: "fa-book", href: "/Notebook", description: "Take & share notes" },
+            { name: "Classes", icon: "fa-chalkboard-teacher", href: "/Classes", description: "Manage your courses" },
+            { name: "Leagues", icon: "fa-users", href: "/Leagues", description: "Join study groups" }
+        ]
+    }
+];
 
-    // Start the chat loop
-    while (true) {
-        const userResponse = await await_enter(document.getElementById('userInput'));
-        prompts.push({"role": "user", "content": userResponse});
-        const aiResponse = await AI_response(prompts);
-        await typeOutText(aiResponse, 50, chatLog);
+// Initialize paths UI
+function initializePaths() {
+    const pathWrapper = document.querySelector('.path-wrapper');
+    let currentPath = 0;
+
+    // Create path sections
+    paths.forEach(path => {
+        const pathSection = document.createElement('div');
+        pathSection.className = 'path';
+        pathSection.innerHTML = `
+            <h2>${path.name}</h2>
+            ${path.features.map(feature => `
+                <div class="feature-box" data-href="${feature.href}">
+                    <i class="fas ${feature.icon}"></i>
+                    <h3>${feature.name}</h3>
+                    <p>${feature.description}</p>
+                </div>
+            `).join('')}
+        `;
+        pathWrapper.appendChild(pathSection);
+    });
+
+    // Add click handlers to feature boxes
+    const featureBoxes = document.querySelectorAll('.feature-box');
+    featureBoxes.forEach(box => {
+        box.addEventListener('click', () => {
+            const href = box.getAttribute('data-href');
+            if (href) {
+                window.location.href = href;
+            }
+        });
+    });
+
+    // Navigation handlers
+    document.querySelector('.nav-arrow.next').addEventListener('click', () => {
+        if (currentPath < paths.length - 1) {
+            currentPath++;
+            updatePathPosition();
+        }
+    });
+
+    document.querySelector('.nav-arrow.prev').addEventListener('click', () => {
+        if (currentPath > 0) {
+            currentPath--;
+            updatePathPosition();
+        }
+    });
+
+    function updatePathPosition() {
+        pathWrapper.style.transform = `translateX(-${currentPath * 100}%)`;
     }
 }
+
+// Update chat initialization
+async function initializeChat(userName) {
+    const greeting = document.getElementById('initial-greeting');
+    const initialPrompt = `Hey there, ${userName}!`;
+    
+    // Type out initial greeting
+    await typeOutText(initialPrompt, 50, greeting);
+
+    // Initialize the chat interface
+    const userInput = document.getElementById('userInput');
+    const chatLog = document.getElementById('chatLog');
+
+    // Handle chat input focus
+    userInput.addEventListener('focus', () => {
+        greeting.style.opacity = 0;
+        setTimeout(() => greeting.style.display = 'none', 500);
+    });
+
+    // Start the counselor chat
+    var prompts = [{
+        "role": "system", 
+        "content": "You are the user's College Counselor. It's your responsibility to tell them their assignments, if they have any tests coming up, recent grades, their goals, etc. You can access any of their data at any time from the database with the get_data/get_grades function."
+    }];
+    
+    const welcomeMessage = "Hello, I am your SciWeb Counselor. How can I help you today?";
+    prompts.push({"role": "assistant", "content": welcomeMessage});
+    await typeOutText(welcomeMessage, 50, chatLog);
+
+    // Add keydown event listener directly to the input field
+    userInput.addEventListener('keydown', async (event) => {
+        if (event.key === 'Enter') {
+            const userResponse = userInput.value.trim();
+            if (userResponse) {
+                // Clear input field
+                userInput.value = '';
+                
+                // Add user message to both chat areas
+                const mainMessageDiv = document.createElement('div');
+                mainMessageDiv.className = 'user-message';
+                mainMessageDiv.textContent = userResponse;
+                chatLog.appendChild(mainMessageDiv);
+                chatLog.scrollTop = chatLog.scrollHeight;
+
+                // Add to prompts and get AI response
+                prompts.push({"role": "user", "content": userResponse});
+                const aiResponse = await AI_response(prompts);
+                await typeOutText(aiResponse, 50, chatLog);
+            }
+        }
+    });
+}
+
+// Call on load - consolidate all initialization here
+window.addEventListener('load', async () => {
+    initializePaths();
+    setupMessaging();
+    await initializeChat(first_name);
+    await main();  // Move main() call here to ensure proper order
+});
 

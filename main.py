@@ -23,14 +23,11 @@ import random
 
 import openai
 from PyPDF2 import PdfReader
+import requests
 
 
 from langchain_community.chat_models import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import PydanticOutputParser
 from langchain.memory import ConversationBufferMemory
-from langchain.chains import LLMChain, SequentialChain
-from langchain_core.callbacks import StreamingStdOutCallbackHandler
 from langchain_openai import ChatOpenAI
 
 
@@ -41,7 +38,7 @@ from database import get_data, post_data, update_data, delete_data, download_fil
 from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, get_stats, update_leagues, get_compliments, get_grade_impact
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades, confirm_category_match, check_new_grades, notify_new_member
-from study import get_insights, get_insights_from_file, chat_with_function_calling, run_inspire, init_pydantic, process_pdf_content, process_image_content, generate_final_evaluation, generate_followup_question, generate_practice_questions
+from study import get_insights, get_insights_from_file, chat_with_function_calling, run_inspire, init_pydantic, process_pdf_content, process_image_content, generate_final_evaluation, generate_followup_question, generate_practice_questions, generate_bloom_questions, evaluate_bloom_answer, save_explanations, generate_explanations 
 
 #get api keys from static/api_keys.json file
 keys = json.load(open('api_keys.json'))  
@@ -321,6 +318,11 @@ def course_reviews(courseid):
 @app.route('/battle/<battleid>')
 def battle_page(battleid):
   return render_template('battle.html')
+
+@app.route('/Security')
+def security():
+    return render_template('Security.html')
+
 # This concludes initializing the front end
 
 #The following route functions post/get data to/from JS files
@@ -453,6 +455,39 @@ def send_notification_route():
   for token in tokens:
     send_notification(token['token'], data['title'], data['body'], data['url'])
   return json.dumps({"message": "success"})
+
+@app.route('/check-meeting/<room_name>', methods=['GET'])
+def check_meeting(room_name):
+    try:
+        print("room_name", room_name)
+        url = f'https://meet.jit.si/about/public-{room_name}'
+        response = requests.get(url)
+        print("response content", response.content)
+        if response.status_code == 200:
+            try:
+                print("response", response.json())
+                return jsonify(response.json())
+            except Exception as e:
+                print("error in check_meeting", e)
+                return jsonify({
+                    'participants': [],
+                    'room_exists': False
+                })
+        else:
+            print("error in check_meeting else")
+            return jsonify({
+                'participants': [],
+                'room_exists': False,
+                'error': f'Status code: {response.status_code}'
+            })
+            
+    except Exception as e:
+        print("error in check_meeting except")
+        return jsonify({
+            'participants': [],
+            'room_exists': False,
+            'error': str(e)
+        }), 500
 
 class text_and_time(BaseModel):
   text: str
@@ -717,7 +752,8 @@ def generate_questions():
     unit_name = data['unitName']
     mcq_count = data.get('mcqCount', 2)
     written_count = data.get('writtenCount', 3)
-
+    session['current_class'] = class_id
+    session['current_unit'] = unit_name
     # Get the notebook content
     classes = get_user_data("Classes")
     notebooks = get_user_data("Notebooks", {"Classes":classes})
@@ -756,6 +792,7 @@ def evaluate_final():
     
     return jsonify({"evaluation": final_eval_dict})
 
+#Evaluate AI routes
 @app.route('/generate-followup', methods=['POST'])
 def generate_followup():
     data = request.json
@@ -778,45 +815,80 @@ def evaluate_understanding():
     return jsonify({"evaluation": evaluation})
 
 
-
+# Levels routes
 @app.route('/generate-bloom-questions', methods=['POST'])
-def generate_bloom_questions():
+def generate_bloom_questions_route():
     data = request.json
-    level = data['level']
-    previous_answers = data['previousAnswers']
-    notebook_content = data['notebookContent']
-    custom_prompt = data['customPrompt']
-
-    # Generate questions using AI
-    prompt = [
-        {"role": "system", "content": custom_prompt.replace("{level}", level)},
-        {"role": "user", "content": "notebook content: " + str(notebook_content) + "\n previous answers: " + str(previous_answers)}
-    ]
-
-    questions = get_insights(prompt, ResponseTypeBloom)
-    return json.dumps({"questions": json.loads(questions)})
-
-class ScoreBloom(BaseModel):
-  score: int
-  feedback: str
+    try:
+        questions = generate_bloom_questions(
+            vars['llm'],
+            data['level'],
+            data['previousAnswers'],
+            data['notebookContent']
+        )
+        return jsonify({"questions": questions.model_dump()})
+    except Exception as e:
+        print(f"Error generating Bloom's questions: {str(e)}")
+        return jsonify({"error": "Failed to generate questions"}), 500
 
 @app.route('/evaluate-answer', methods=['POST'])
-def evaluate_answer():
+def evaluate_answer_route():
     data = request.json
-    question = data['question']
-    answer = data['answer']
-    level = data['level']
-    custom_prompt = data['customPrompt']
+    try:
+        evaluation = evaluate_bloom_answer(
+            vars['llm'],
+            data['question'],
+            data['answer'],
+            data['level']
+        )
+        return jsonify(evaluation.model_dump())
+    except Exception as e:
+        print(f"Error evaluating answer: {str(e)}")
+        return jsonify({"error": "Failed to evaluate answer"}), 500
 
-    
-    prompt = [
-        {"role": "system", "content": custom_prompt.replace("{level}", level)},
-        {"role": "user", "content": f"Question: {question}\nStudent's Answer: {answer}"}
-    ]
+@app.route('/generate-explanations', methods=['POST'])
+def generate_explanations_route():
+    data = request.json
+    try:
+        explanations = generate_explanations(
+            vars['llm'],
+            data['question'],
+            data['correct_answer'],
+            data['level'],
+            data['classId']
+        )
+        
+        # Convert Pydantic objects to dictionaries
+        explanations_dict = [
+            {
+                "style": exp.style,
+                "text": exp.text,
+                "score": exp.score
+            }
+            for exp in explanations
+        ]
+        
+        return jsonify({"explanations": explanations_dict})
+    except Exception as e:
+        print(f"Error generating explanations: {str(e)}")
+        return jsonify({"error": "Failed to generate explanations"}), 500
 
-    evaluation = get_insights(prompt, ScoreBloom)
-    evaluation = json.loads(evaluation)
-    return json.dumps({"score": evaluation['score'], "feedback": evaluation['feedback']})
+@app.route('/save-explanation-ratings', methods=['POST'])
+def save_explanation_ratings_route():
+    data = request.json
+    try:
+        save_explanations(
+            data['classId'],
+            session['user_data']['osis'],
+            data['question'],
+            data['level'],
+            data['explanations']
+        )
+        return jsonify({"success": True})
+    except Exception as e:
+        print(f"Error saving explanation ratings: {str(e)}")
+        return jsonify({"error": "Failed to save ratings"}), 500
+
 
 
 @app.route('/impact', methods=['POST'])

@@ -242,3 +242,66 @@
     margin-top: 5px;
     max-width: 200px;
 }
+
+/* Add rainbow text animation */
+.rainbow-text {
+    font-size: 2.5em;
+    text-align: center;
+    margin: 20px 0;
+    background: linear-gradient(
+        45deg,
+        #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff
+    );
+    background-size: 200% auto;
+    color: transparent;
+    background-clip: text;
+    -webkit-background-clip: text;
+    animation: rainbow 5s linear infinite;
+}
+
+@keyframes rainbow {
+    to { background-position: 200% center; }
+}
+
+/* Paths styling */
+.paths-container {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    margin: 40px 0;
+}
+
+.path-wrapper {
+    display: flex;
+    transition: transform 0.3s ease;
+}
+
+.path {
+    min-width: 100%;
+    padding: 20px;
+    display: flex;
+    justify-content: space-around;
+    gap: 20px;
+}
+
+.nav-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(228, 76, 101, 0.8);
+    border: none;
+    color: white;
+    padding: 15px;
+    cursor: pointer;
+    border-radius: 50%;
+    z-index: 2;
+}
+
+.nav-arrow.prev { left: 10px; }
+.nav-arrow.next { right: 10px; }
+
+/* Update feature box styling */
+.feature-box {
+    flex: 1;
+    max-width: 300px;
+}

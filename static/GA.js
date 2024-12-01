@@ -443,6 +443,20 @@ setTimeout(function(){
       animationGOTC(numTraces, finalTraces);
     }
   });
+
+  // Add event listener for the new "Class components" checkbox
+  document.getElementById('classComponents').addEventListener('change', function() {
+    console.log("classComponents checkbox clicked", this.checked)
+    if (this.checked) {
+      // Calculate and display class components
+      let classTraces = calculateClassComponents(spreads, weights, spread_names, w);
+      console.log("classTraces", classTraces)
+      animationGOTC(numTraces, classTraces);
+    } else {
+      // Combine the lines when unchecked
+      animationGOTC(numTraces, finalTraces);
+    }
+  });
 }, comp_time*500);
 }
 
@@ -1440,3 +1454,125 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
+
+function calculateClassComponents(spreads, weights, spread_names, w) {
+    console.log('Starting calculateClassComponents with:', {
+        'Number of spreads': spreads.length,
+        'Spread names': spread_names,
+        'Weights array': w
+    });
+    
+    let classComponents = {};
+    let classWeights = {};
+
+    // Aggregate spreads and weights by class
+    for (let i = 0; i < spreads.length; i++) {
+        console.log(`\nProcessing spread ${i}:`, {
+            'Spread name': spread_names[i],
+            'Weight': w[i],
+            'Sample of values': spreads[i].slice(0, 5)
+        });
+        
+        // Find matching class and category from weights dictionary
+        let className = null;
+        let category = null;
+        
+        // Iterate through weights to find matching class and category
+        for (const cls in weights) {
+            for (const cat in weights[cls]) {
+                if (spread_names[i] === `${cat} ${cls}`) {
+                    className = cls;
+                    category = cat;
+                    console.log('Found match:', {
+                        'Class': className,
+                        'Category': category,
+                        'Weight from dict': weights[cls][cat]
+                    });
+                    break;
+                }
+            }
+            if (className) break;
+        }
+        
+        if (!className) {
+            console.error(`Could not find matching class/category for ${spread_names[i]}`);
+            continue;
+        }
+
+        let weight = w[i];
+        
+        if (!classComponents[className]) {
+            console.log(`Initializing new class: ${className}`);
+            classComponents[className] = Array(spreads[i].length).fill(0);
+            classWeights[className] = 0;
+        }
+        
+        console.log(`Before adding spread ${i} to ${className}:`, {
+            'Current class weight': classWeights[className],
+            'Sample of current values': classComponents[className].slice(0, 5)
+        });
+        
+        for (let j = 0; j < spreads[i].length; j++) {
+            if (spreads[i][j] !== 99.993) {
+                let oldValue = classComponents[className][j];
+                let contribution = spreads[i][j] * weight;
+                classComponents[className][j] += contribution;
+                
+                if (j === 0) {  // Log detailed calculation for first timepoint
+                    console.log(`Sample calculation for timepoint 0:`, {
+                        'Original value': spreads[i][j],
+                        'Weight': weight,
+                        'Contribution': contribution,
+                        'Previous sum': oldValue,
+                        'New sum': classComponents[className][j]
+                    });
+                }
+                
+                if (j === 0) {
+                    classWeights[className] += weight;
+                }
+            }
+        }
+        
+        console.log(`After adding spread ${i} to ${className}:`, {
+            'Final class weight': classWeights[className],
+            'Sample of new values': classComponents[className].slice(0, 5)
+        });
+    }
+
+    console.log('\nFinal class weights:', classWeights);
+    
+    // Calculate weighted averages for each class
+    let classTraces = [];
+    for (let className in classComponents) {
+        console.log(`\nCalculating average for ${className}:`, {
+            'Total weight': classWeights[className],
+            'Sample of sums': classComponents[className].slice(0, 5)
+        });
+        
+        let weightedAverage = classComponents[className].map(sum => {
+            return classWeights[className] > 0 ? sum / classWeights[className] : 0;
+        });
+        
+        console.log(`Weighted average results for ${className}:`, {
+            'Sample of final averages': weightedAverage.slice(0, 5)
+        });
+        
+        let trace = {
+            x: times,
+            y: weightedAverage,
+            mode: 'lines',
+            name: className,
+            line: {
+                color: `#${Math.floor(Math.random()*16777215).toString(16)}`,
+                width: 2
+            },
+            hovertemplate: `${className}<br>Date: %{x}<br>Grade: %{y:.1f}%<extra></extra>`
+        };
+        classTraces.push(trace);
+    }
+
+    console.log('\nFinal number of traces:', classTraces.length);
+    return classTraces;
+}
+
