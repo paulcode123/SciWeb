@@ -391,58 +391,71 @@ def notify_new_classes(classes):
   
 
 def check_new_grades(grades, class_data, tokens_data):
-    from database import send_notification
     print("check_new_grades")
+    # put all the grades into a dictionary with the class name as the key
+    grades_by_class = {}
     for grade in grades:
+        # filter out non-assessment grades
+        if 'assessment' not in grade['category'].lower() and 'quiz' not in grade['category'].lower() and 'test' not in grade['category'].lower() and 'exam' not in grade['category'].lower() and 'project' not in grade['category'].lower():
+            continue
         class_name = grade['class']
+        if class_name not in grades_by_class:
+            grades_by_class[class_name] = []
+        grades_by_class[class_name].append(grade)
+    
+    for class_name, class_grades in grades_by_class.items():
         class_obj = next((item for item in class_data if item['name'] == class_name), None)
         class_id = class_obj['id']
         
-            
-        # Only check assessment grades
-        if 'assessment' not in grade['category'].lower() and 'quiz' not in grade['category'].lower() and 'test' not in grade['category'].lower() and 'exam' not in grade['category'].lower() and 'project' not in grade['category'].lower():
-            continue
-        # if grade wasn't in the past 3 days, continue
-        grade_date = datetime.datetime.strptime(grade['date'], '%m/%d/%Y')
-        if grade_date < datetime.datetime.now() - datetime.timedelta(days=6):
-            continue
-
-        # Initialize new_grades array if it doesn't exist
+        # check if new_grades doesn't exist
         if 'new_grades' not in class_obj:
-            class_obj['new_grades'] = []
-            
-        # If this is a new grade
-        if grade['name'] in class_obj['new_grades']:
-            continue
+            class_obj['new_grades'] = [grade['name'] for grade in class_grades]  # Store only names
+            # update the classes sheet
+            update_data(class_id, "id", class_obj, "Classes")
+            # notify for all grades in the past 3 days
+            for grade in class_grades:
+                grade_date = datetime.datetime.strptime(grade['date'], '%m/%d/%Y')
+                if grade_date < datetime.datetime.now() - datetime.timedelta(days=6):
+                    continue
+                notify_new_grade(grade, class_obj, tokens_data)
+        # else, if new_grades exists, notify for all grades not in new_grades
+        else:
+            new_grade_names = []
+            for grade in class_grades:
+                if grade['name'] in class_obj['new_grades']:
+                    continue
+                notify_new_grade(grade, class_obj, tokens_data)
+                new_grade_names.append(grade['name'])
+            if len(new_grade_names) > 0:
+                class_obj['new_grades'].extend(new_grade_names)  # Add only the names
+                # update the classes sheet
+                update_data(class_id, "id", class_obj, "Classes")
+        
+def notify_new_grade(grade, class_obj, tokens_data):  # Renamed parameter to tokens_data
+    from database import send_notification
+    # Get all students in the class
+    students = class_obj['OSIS']
+    # if students is an int, put it in a list
+    if isinstance(students, int):
+        students = [students]
+    # Get tokens for all students
+    student_tokens = []  # Renamed variable to avoid conflict
+    for student in students:
+        for token_obj in tokens_data:  # Use tokens_data instead of tokens
+            if str(token_obj['OSIS']) == str(student):
+                student_tokens.append(token_obj['token'])
+                # continue to next student
+                break
+    # remove duplicates
+    student_tokens = list(dict.fromkeys(student_tokens))
+    
+    # Send notification to all students
+    title = f"New grade posted in {class_obj['name']}: {grade['name']}"
+    body = "Click to pull your grades, see your score, the class distribution, and more!"
+    action = 'https://bxsciweb.org/EnterGrades'
+    for token in student_tokens:
+        send_notification(token, title, body, action)
 
-        print("new grade", grade['name'])
-        # Add to new_grades array
-        class_obj['new_grades'].append(grade['name'])
-            
-        # Get all students in the class
-        students = class_obj['OSIS']
-        # if students is an int, put it in a list
-        if isinstance(students, int):
-            students = [students]
-        # Get tokens for all students
-        tokens = []
-        for student in students:
-            for token_obj in tokens_data:
-                if str(token_obj['OSIS']) == str(student):
-                    tokens.append(token_obj['token'])
-        # remove duplicates
-        tokens = list(dict.fromkeys(tokens))
-        
-        # Send notification to all students
-        title = f"New grade posted in {class_obj['name']}: {grade['name']}"
-        body = "Click to pull your grades, see your score, the class distribution, and more!"
-        action = 'https://bxsciweb.org/EnterGrades'
-        for token in tokens:
-            send_notification(token, title, body, action)
-        
-        # Update the classes sheet
-        update_data(class_id, "id", class_obj, "Classes")
-                
 def notify_new_member(classes_added, tokens_data):
     from database import send_notification
     print("notify_new_member")

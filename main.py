@@ -38,7 +38,7 @@ from database import get_data, post_data, update_data, delete_data, download_fil
 from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, get_stats, update_leagues, get_compliments, get_grade_impact
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades, confirm_category_match, check_new_grades, notify_new_member
-from study import get_insights, get_insights_from_file, chat_with_function_calling, run_inspire, init_pydantic, process_pdf_content, process_image_content, generate_final_evaluation, generate_followup_question, generate_practice_questions, generate_bloom_questions, evaluate_bloom_answer, save_explanations, generate_explanations 
+from study import get_insights, get_insights_from_file, chat_with_function_calling, run_inspire, init_pydantic, process_pdf_content, process_image_content, generate_final_evaluation, generate_followup_question, generate_practice_questions, generate_bloom_questions, evaluate_bloom_answer, save_explanations, generate_explanations, answer_worksheet_question
 
 #get api keys from static/api_keys.json file
 keys = json.load(open('api_keys.json'))  
@@ -192,9 +192,17 @@ def assignments():
 def course_selection():
   return render_template('CourseSelection.html')
 
+@app.route('/Feedback')
+def feedback():
+  return render_template('Feedback.html')
+
 @app.route('/Messages')
 def messages():
   return render_template('messages.html')
+
+@app.route('/StudyFreeform')
+def study_freeform():
+  return render_template('study.html')
 
 @app.route('/Join')
 def join():
@@ -522,6 +530,22 @@ def get_AI_function_calling():
   response = chat_with_function_calling(request.json['data'])
   print("response", response)
   return json.dumps(response)
+
+@app.route('/ask-question', methods=['POST'])
+def ask_question():
+    data = request.json
+    # Get the file from the bucket
+    base64_content = download_file("sciweb-files", data['file'])
+    
+    # Process the question
+    answer = answer_worksheet_question(
+        vars['vision_llm'],  # Make sure this is available in your main.py scope
+        base64_content,
+        data['fileType'],
+        data['question']
+    )
+    
+    return json.dumps({"answer": answer})
 
 #function to generate insights and return them to the Grade Analysis page
 @app.route('/insights', methods=['POST'])

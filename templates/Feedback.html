@@ -1,0 +1,44 @@
+{% extends "darkThemeTemplate.html" %}
+
+{% block title %}
+<title>SciWeb Feature Requests</title>
+{% endblock %}
+
+<!-- css -->
+{% block css %}
+<link rel="stylesheet" href="/static/feedback.css">
+{% endblock %}
+
+{% block content %}
+<section>
+    <h2>Feature Requests</h2>
+    
+    <!-- Voting Section -->
+    <div class="voting-section">
+        <h3>Vote for Features</h3>
+        <p>Select your top 3 features in order of preference:</p>
+        <div id="feature-list" class="feature-list">
+            <!-- Features will be populated here -->
+        </div>
+    </div>
+
+    <!-- Leaderboard Section -->
+    <div class="leaderboard-section">
+        <h3>Current Rankings</h3>
+        <div id="feature-leaderboard" class="feature-leaderboard">
+            <!-- Leaderboard will be populated here -->
+        </div>
+    </div>
+
+    <!-- Suggest New Feature -->
+    <div class="suggest-section">
+        <h3>Suggest a New Feature</h3>
+        <textarea id="new-feature" placeholder="Describe your feature idea..."></textarea>
+        <button id="submit-feature" class="button primary">Submit Feature</button>
+    </div>
+</section>
+{% endblock %}
+
+{% block js %}
+<script src="/static/feedback.js"></script>
+{% endblock %} 

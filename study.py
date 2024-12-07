@@ -681,6 +681,37 @@ def _parse_json_response(result: str) -> dict:
     
     return json.loads(json_str)
 
+def answer_worksheet_question(llm, image_content: str, file_type: str, question: str) -> str:
+    """Process image content and answer a specific question about it"""
+    # Fix base64 padding
+    padding = len(image_content) % 4
+    if padding:
+        image_content += '=' * (4 - padding)
+
+    # Create the messages with the image and question
+    messages = [
+        SystemMessage(content="You are an expert tutor helping students understand educational content. Number your steps and use LaTeX for equations."),
+        HumanMessage(
+            content=[
+                {
+                    "type": "text",
+                    "text": f"Please answer this question about the worksheet: {question}"
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:{file_type};base64,{image_content}"
+                    }
+                }
+            ]
+        )
+    ]
+
+    # Get response from the vision model
+    response = llm.invoke(messages)
+    return response.content
+
+#Endpoints for Levels
 def generate_bloom_questions(llm, level: str, previous_answers: list, notebook_content: str) -> ResponseTypeBloom:
     """Generate Bloom's Taxonomy questions using LangChain"""
     # Clean up the notebook content if it's too long

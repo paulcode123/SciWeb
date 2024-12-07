@@ -5,20 +5,63 @@ let notebookData = {};
 document.addEventListener('DOMContentLoaded', function() {
     loadContext();
     setupEventListeners();
+    
+    // Initialize MathJax
+    window.MathJax = {
+        tex: {
+            inlineMath: [['\\(', '\\)']],
+            displayMath: [['\\[', '\\]']],
+            processEscapes: true
+        },
+        options: {
+            skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+        }
+    };
+
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+    script.async = true;
+    document.head.appendChild(script);
 });
 
-function loadContext() {
+async function loadContext() {
     startLoading();
+    
+    // Wait for login to complete if needed
+    if (!window.loginComplete) {
+        await new Promise(resolve => {
+            const checkLogin = setInterval(() => {
+                if (window.loginComplete) {
+                    clearInterval(checkLogin);
+                    resolve();
+                }
+            }, 100);
+        });
+    }
+    
     fetch('/data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: 'Classes, Notebooks' })
+        body: JSON.stringify({ data: 'Classes, Notebooks, Name' })
     })
     .then(response => response.json())
     .then(data => {
         notebookData = data;
         loadClasses();
-        if (currentClassId && currentUnitName) {
+        
+        // Check for upload parameters in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const classId = urlParams.get('class');
+        const encodedUnit = urlParams.get('unit');
+        
+        if (classId && encodedUnit) {
+            currentClassId = classId;
+            // Replace underscores with spaces
+            currentUnitName = encodedUnit.replace(/_/g, ' ');
+            loadUnitWorksheets(classId, currentUnitName);
+            // Trigger upload dialog
+            uploadWorksheet(classId, currentUnitName);
+        } else if (currentClassId && currentUnitName) {
             loadUnitWorksheets(currentClassId, currentUnitName);
         }
     });
@@ -152,9 +195,19 @@ function createWorksheetElement(worksheet) {
             <button class="view-worksheet" data-image="${worksheet.image}" title="View Worksheet">
                 <i class="fas fa-eye"></i>
             </button>
+            <button class="ask-question" data-image="${worksheet.image}" title="Ask Question">
+                <i class="fas fa-question"></i>
+            </button>
             <button class="delete-worksheet" data-image="${worksheet.image}" title="Delete Worksheet">
                 <i class="fas fa-trash"></i>
             </button>
+        </div>
+        <div class="question-answer-section" style="display: none;">
+            <div class="question-input">
+                <textarea placeholder="Ask a question about this worksheet..."></textarea>
+                <button class="submit-question">Ask</button>
+            </div>
+            <div class="answer-display"></div>
         </div>
     `;
 
@@ -175,6 +228,20 @@ function createWorksheetElement(worksheet) {
         console.log(e.currentTarget.dataset.image);
         deleteWorksheet(e.currentTarget.dataset.image, worksheetDiv);
     });
+
+    // Add event listener for the ask question button
+    worksheetDiv.querySelector('.ask-question').addEventListener('click', () => {
+        const qaSection = worksheetDiv.querySelector('.question-answer-section');
+        qaSection.style.display = qaSection.style.display === 'none' ? 'block' : 'none';
+    });
+
+    worksheetDiv.querySelector('.submit-question').addEventListener('click', async () => {
+        const question = worksheetDiv.querySelector('textarea').value.trim();
+        if (question) {
+            await askWorksheetQuestion(worksheet.image, question, worksheetDiv);
+        }
+    });
+
     return worksheetDiv;
 }
 
@@ -217,21 +284,74 @@ function createNewUnit(classId) {
 }
 
 function uploadWorksheet(classId, unitName) {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*,.pdf';
-    input.onchange = e => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64File = e.target.result.split(',')[1];
-                sendWorksheetToServer(classId, unitName, base64File, file.type);
-            };
-            reader.readAsDataURL(file);
-        }
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        // On mobile, directly open camera
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.capture = 'camera';
+        input.onchange = e => handleFileSelect(e, classId, unitName);
+        input.click();
+    } else {
+        // On desktop, show QR code dialog
+        showUploadDialog(classId, unitName);
     }
-    input.click();
+}
+
+function showUploadDialog(classId, unitName) {
+    const dialog = document.createElement('div');
+    dialog.className = 'upload-dialog';
+    
+    // Create login parameter with encrypted credentials
+    const loginParam = btoa(`${notebookData.Name.first_name}:${notebookData.Name.password}`);
+    // Replace spaces with underscores in unit name
+    const encodedUnit = unitName.replace(/ /g, '_');
+    const uploadUrl = `${window.location.origin}/Notebook?class=${classId}&unit=${encodedUnit}&login=${loginParam}`;
+    console.log(uploadUrl);
+    dialog.innerHTML = `
+        <div class="upload-options">
+            <h3>Upload Worksheet</h3>
+            <div class="qr-section">
+                <div id="qrcode"></div>
+                <p>Scan with your phone to upload a photo</p>
+            </div>
+            <div class="divider">OR</div>
+            <div class="pc-upload">
+                <button class="upload-pc-btn">Upload from Computer</button>
+            </div>
+            <button class="close-dialog">×</button>
+        </div>
+    `;
+    
+    document.body.appendChild(dialog);
+    
+    // Generate QR code
+    new QRCode(dialog.querySelector('#qrcode'), uploadUrl);
+    
+    // Add event listeners
+    dialog.querySelector('.upload-pc-btn').onclick = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*,.pdf';
+        input.onchange = e => handleFileSelect(e, classId, unitName);
+        input.click();
+    };
+    
+    dialog.querySelector('.close-dialog').onclick = () => {
+        dialog.remove();
+    };
+}
+
+function handleFileSelect(e, classId, unitName) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const base64File = e.target.result.split(',')[1];
+            sendWorksheetToServer(classId, unitName, base64File, file.type);
+        };
+        reader.readAsDataURL(file);
+    }
 }
 
 function sendWorksheetToServer(classId, unitName, base64File, fileType) {
@@ -344,6 +464,48 @@ async function addQuestionToWorksheet(worksheetId, worksheetDiv) {
     }
 }
 
+async function askWorksheetQuestion(imageReference, question, worksheetDiv) {
+    try {
+        startLoading();
+        const response = await fetch('/ask-question', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                file: imageReference,
+                question: question,
+                fileType: 'image/png'
+            })
+        });
+        
+        const data = await response.json();
+        
+        // Split the answer by steps (assuming steps are separated by numbers followed by dots/asterisks)
+        const steps = data.answer.split(/(\d+[\.*]\s*\*{0,2})/g);
+        
+        const formattedAnswer = steps
+            .map(step => step.trim())
+            .filter(step => step.length > 0)
+            .join('<br><br>');
+            
+        const answerDisplay = worksheetDiv.querySelector('.answer-display');
+        answerDisplay.innerHTML = `
+            <div class="answer-box">
+                <h4>Answer:</h4>
+                <p style="white-space: pre-line;">${formattedAnswer}</p>
+            </div>
+        `;
+
+        // Process LaTeX in the answer
+        if (window.MathJax) {
+            MathJax.typesetPromise([answerDisplay]);
+        }
+    } catch (error) {
+        console.error('Error asking question:', error);
+        alert('Failed to get answer. Please try again.');
+    }
+    endLoading();
+}
+
 function setupEventListeners() {
     const toggleButton = document.getElementById('notebook-toggle-sidebar');
     const sidebar = document.getElementById('sidebar');
@@ -394,3 +556,60 @@ function toggleSidebar(sidebar, content, toggleButton) {
         icon.classList.add('fa-bars');
     }
 }
+
+// Add CSS for the upload dialog
+const style = document.createElement('style');
+style.textContent = `
+    .upload-dialog {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+    
+    .upload-options {
+        background: #2d2d2d;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        position: relative;
+        max-width: 400px;
+        width: 90%;
+    }
+    
+    .qr-section {
+        margin: 20px 0;
+    }
+    
+    .divider {
+        margin: 20px 0;
+        color: #666;
+    }
+    
+    .close-dialog {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: none;
+        border: none;
+        color: #fff;
+        font-size: 24px;
+        cursor: pointer;
+    }
+    
+    .upload-pc-btn {
+        background: rgb(228, 76, 101);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+`;
+document.head.appendChild(style);
