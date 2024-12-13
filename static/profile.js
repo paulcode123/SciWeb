@@ -93,7 +93,7 @@ async function savePubProf(){
     "showClasses": document.getElementById('showClassesInput').checked,
     "showFriends": document.getElementById('showFriendsInput').checked
   }
-  await fetchRequest('/update-data', {"sheet": "Profiles", "data": data, "row_value": userData.osis, "row_name": "osis"});
+  await fetchRequest('/update_data', {"sheet": "Profiles", "data": data, "row_value": userData.osis, "row_name": "osis"});
   
 }
 

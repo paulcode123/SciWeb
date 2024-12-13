@@ -296,6 +296,10 @@ def get_user_data(sheet, prev_sheets=[]):
     #  send if the classID is the id for any of the rows in response['Classes']
     class_ids = [str(item['id']) for item in prev_sheets['Classes']]
     return get_data("Notebooks", row_name="classID", row_val=class_ids, operator="in")
+  if sheet=="NbS":
+    # send if the classID is the id for any of the rows in response['Classes']
+    class_ids = [int(item['id']) for item in prev_sheets['Classes']]
+    return get_data("NbS", row_name="classID", row_val=class_ids, operator="in")
   if sheet=="FClasses":
     #send all of the classes that the user's friends are in
     friend_request_data = prev_sheets['Friends']

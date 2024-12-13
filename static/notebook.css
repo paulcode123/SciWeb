@@ -412,3 +412,30 @@ textarea {
   }
 }
 
+.synthesize-button {
+    background-color: #6d28d9;  /* Purple color */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    transition: all 0.2s ease;
+}
+
+.synthesize-button:hover {
+    background-color: #5b21b6;
+    transform: translateY(-1px);
+}
+
+.synthesize-button i {
+    font-size: 16px;
+}
+
+.synthesize-button:active {
+    transform: translateY(1px);
+}
+

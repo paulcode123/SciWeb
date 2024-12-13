@@ -1,0 +1,125 @@
+{% extends "darkThemeTemplate.html" %}
+
+<!-- title block -->
+{% block title %}
+<title>SciWeb | Guide Builder</title>
+{% endblock %}
+
+<!-- css block -->
+{% block css %}
+<link rel="stylesheet" href="/static/guidebuilder.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+<!-- content block -->
+{% block content %}
+<div class="guide-builder-container">
+    <div class="header-section">
+        <h1><i class="fas fa-robot"></i> AI Study Guide Builder</h1>
+        <p class="subtitle">Your personal AI tutor that adapts to your understanding</p>
+    </div>
+
+    <!-- Instructions Panel -->
+    <div class="instructions-panel" id="instructions-panel">
+        <h2><i class="fas fa-info-circle"></i> How It Works</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <i class="fas fa-brain"></i>
+                <h3>Adaptive Learning</h3>
+                <p>Highlights help the AI understand what makes sense to you and what needs clarification</p>
+            </div>
+            <div class="feature-card">
+                <i class="fas fa-sync-alt"></i>
+                <h3>Multiple Perspectives</h3>
+                <p>Get three different explanations of the same concept to find what clicks for you</p>
+            </div>
+            <div class="feature-card">
+                <i class="fas fa-comments"></i>
+                <h3>Interactive Dialogue</h3>
+                <p>Ask questions, request different approaches, or dive deeper into specific topics</p>
+            </div>
+            <div class="feature-card">
+                <i class="fas fa-highlighter"></i>
+                <h3>Smart Highlighting</h3>
+                <p>Green for what makes sense, red for what needs clarification</p>
+            </div>
+        </div>
+
+        <div class="usage-steps">
+            <h3><i class="fas fa-list-ol"></i> Getting Started</h3>
+            <ol>
+                <li>Select your class and unit</li>
+                <li>Read the explanations provided</li>
+                <li>Highlight text in green (understood) or red (needs clarification)</li>
+                <li>Add your thoughts or questions in the text box</li>
+                <li>Submit to get refined explanations based on your feedback</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Selection Area -->
+    <div id="class-selection" class="selection-area">
+        <div class="select-wrapper">
+            <i class="fas fa-graduation-cap select-icon"></i>
+            <select id="class-select">
+                <option value="">Select a class</option>
+            </select>
+        </div>
+        <div class="select-wrapper">
+            <i class="fas fa-book select-icon"></i>
+            <select id="unit-select" disabled>
+                <option value="">Select a unit</option>
+            </select>
+        </div>
+        <button id="build-guide-btn" class="build-guide-btn">
+            <i class="fas fa-magic"></i> Build Guide
+        </button>
+    </div>
+
+    <!-- Cards Container -->
+    <div id="cards-container" class="cards-container">
+        <div class="explanation-card" id="card-1">
+            <div class="card-header">
+                <i class="fas fa-lightbulb"></i>
+                <span>Perspective 1</span>
+            </div>
+            <div class="mathjax-content">
+                <p></p>
+            </div>
+        </div>
+        <div class="explanation-card" id="card-2">
+            <div class="card-header">
+                <i class="fas fa-puzzle-piece"></i>
+                <span>Perspective 2</span>
+            </div>
+            <div class="mathjax-content">
+                <p></p>
+            </div>
+        </div>
+        <div class="explanation-card" id="card-3">
+            <div class="card-header">
+                <i class="fas fa-bullseye"></i>
+                <span>Perspective 3</span>
+            </div>
+            <div class="mathjax-content">
+                <p></p>
+            </div>
+        </div>
+        <div class="user-input-container">
+            <div class="input-header">
+                <i class="fas fa-comment-dots"></i>
+                <span>Your Thoughts</span>
+            </div>
+            <textarea id="user-input-txtrea" placeholder="Share your thoughts here... Ask for different explanations, request to go deeper on specific points, or suggest new topics to explore."></textarea>
+        </div>
+        <button id="submit-highlights" class="submit-highlights-btn">
+            <i class="fas fa-paper-plane"></i> Submit Feedback
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+<!-- js block -->
+{% block js %}
+<script src="/static/guidebuilder.js"></script>
+{% endblock %} 

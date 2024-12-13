@@ -136,14 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function fetchClasses() {
-    fetch('/data', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ data: 'Name, Classes' }),
-    })
-    .then(response => response.json())
+    fetchRequest('/data', { data: 'Name, Classes' })
     .then(data => {
         classes = data.Classes;
         populateClassSelect();

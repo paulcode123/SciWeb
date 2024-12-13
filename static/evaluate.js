@@ -24,12 +24,7 @@ const dom = {
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
     loadMathJax();
-    fetch('/data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: 'Name, Classes' })
-    })
-    .then(res => res.json())
+    fetchRequest('/data', { data: 'Name, Classes' })
     .then(data => {
         state.classes = data.Classes;
         const select = dom.get('class-select');
@@ -50,12 +45,7 @@ function loadUnits() {
     unitSelect.innerHTML = '<option value="">Select a unit</option>';
     unitSelect.disabled = true;
 
-    fetch('/get-units', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ classId: dom.get('class-select').value })
-    })
-    .then(res => res.json())
+    fetchRequest('/get-units', { classId: dom.get('class-select').value })
     .then(data => {
         if (data.units) {
             data.units.forEach(unit => unitSelect.appendChild(new Option(unit, unit)));
@@ -81,12 +71,7 @@ function startEvaluation() {
     ['class-selection', 'settings-panel'].forEach(id => dom.hide(id));
     dom.show('loading');
 
-    fetch('/generate-questions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings)
-    })
-    .then(res => res.json())
+    fetchRequest('/generate-questions', settings)
     .then(data => {
         console.log('Data received:', data);
         // rename data.questions.multiple_choice_questions to data.questions.multiple_choice    
@@ -166,16 +151,11 @@ function initiateFollowup(answer) {
     
     const questionContext = getCurrentQuestionContext();
     
-    fetch('/generate-followup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            question: questionContext,
-            answer: answer,
-            history: state.followupHistory
-        })
+    fetchRequest('/generate-followup', {
+        question: questionContext,
+        answer: answer,
+        history: state.followupHistory
     })
-    .then(res => res.json())
     .then(data => {
         dom.hide('loading');
         state.followupHistory.push({
@@ -213,15 +193,10 @@ function handleFollowupResponse() {
 }
 
 function generateQuestionEvaluation() {
-    fetch('/evaluate-understanding', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            questionContext: getCurrentQuestionContext(),
-            history: state.followupHistory
-        })
+    fetchRequest('/evaluate-understanding', {
+        questionContext: getCurrentQuestionContext(),
+        history: state.followupHistory
     })
-    .then(res => res.json())
     .then(data => {
         state.evaluationSummaries.push(data.evaluation);
         showNextOrSubmit();
@@ -426,16 +401,11 @@ function updateFollowupProgress() {
 
 // New function for final evaluation
 function generateFinalEvaluation() {
-    fetch('/evaluate-final', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            questions: state.currentQuestions,
-            answers: state.userAnswers,
-            followupHistory: state.followupHistory
-        })
+    fetchRequest('/evaluate-final', {
+        questions: state.currentQuestions,
+        answers: state.userAnswers,
+        followupHistory: state.followupHistory
     })
-    .then(res => res.json())
     .then(data => {
         console.log('Final evaluation data:', data); // Debug log
         showResult(data.evaluation);

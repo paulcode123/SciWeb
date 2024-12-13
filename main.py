@@ -18,6 +18,7 @@ import base64
 from io import BytesIO
 
 from pydantic import BaseModel, Field
+from typing import Optional
 from openai import OpenAI
 import random
 
@@ -38,7 +39,7 @@ from database import get_data, post_data, update_data, delete_data, download_fil
 from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, get_stats, update_leagues, get_compliments, get_grade_impact
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades, confirm_category_match, check_new_grades, notify_new_member
-from study import get_insights, get_insights_from_file, chat_with_function_calling, run_inspire, init_pydantic, process_pdf_content, process_image_content, generate_final_evaluation, generate_followup_question, generate_practice_questions, generate_bloom_questions, evaluate_bloom_answer, save_explanations, generate_explanations, answer_worksheet_question
+from study import get_insights, chat_with_function_calling, run_inspire, init_pydantic, process_pdf_content, process_image_content, generate_final_evaluation, generate_followup_question, generate_practice_questions, generate_bloom_questions, evaluate_bloom_answer, save_explanations, generate_explanations, answer_worksheet_question, make_explanation_cards, synthesize_unit
 
 #get api keys from static/api_keys.json file
 keys = json.load(open('api_keys.json'))  
@@ -155,6 +156,10 @@ def diagnostic():
 @app.route('/Evaluate')
 def evaluate():
   return render_template('Evaluate.html')
+
+@app.route('/GuideBuilder')
+def guide_builder():
+  return render_template('guidebuilder.html')
 
 @app.route('/Inspire')
 def inspire():
@@ -331,6 +336,10 @@ def battle_page(battleid):
 def security():
     return render_template('Security.html')
 
+@app.route('/BetaTester')
+def beta_tester():
+    return redirect('https://docs.google.com/forms/d/e/1FAIpQLScJG1bzeTOFa5dXEQUmCOJTAWMhtEWhSASPkQcRO4dwH2_o8Q/viewform?usp=dialog')
+
 # This concludes initializing the front end
 
 #The following route functions post/get data to/from JS files
@@ -419,14 +428,16 @@ def oauth2callback_handler():
 # It returns the data from the requested sheet
 @app.route('/data', methods=['POST'])
 def fetch_data():
-  sheets = request.json['data']
-  # Split the requested sheets into a list
-  sheets = sheets.split(", ")
-  response = {}
+    data = request.json
+    sheets = data['data']
+    response = data.get('prev_sheets', {})  # Get prev_sheets from request
+    
+    # Split the requested sheets into a list
+    sheets = sheets.split(", ")
 
-  for sheet in sheets:
-    response[sheet] = get_user_data(sheet, response)
-  return json.dumps(response)
+    for sheet in sheets:
+        response[sheet] = get_user_data(sheet, response)
+    return json.dumps(response)
 
 @app.route('/post_data', methods=['POST'])
 def post_data_route():
@@ -760,11 +771,18 @@ def process_notebook_file():
 def get_units():
     data = request.json
     class_id = data['classId']
-    classes = get_user_data("Classes")
-    notebooks = get_user_data("Notebooks", {"Classes":classes})
+    # allow frontend to pass in classes and notebook data
+    if 'classes' in data:
+        classes = data['classes']
+    else:
+        classes = get_user_data("Classes")
+    if 'notebooks' in data:
+        notebooks = data['notebooks']
+    else:
+        notebooks = get_user_data("NbS", {"Classes":classes})
     # Get unique units for the given class_id
-    units = list(set(notebook['unit'] for notebook in notebooks if notebook['classID'] == class_id))
-    
+    units = list(set(notebook['unit'] for notebook in notebooks if int(notebook['classID']) == int(class_id)))
+    print("units", units)
     return jsonify({"units": units})
     
 
@@ -870,49 +888,35 @@ def evaluate_answer_route():
         print(f"Error evaluating answer: {str(e)}")
         return jsonify({"error": "Failed to evaluate answer"}), 500
 
-@app.route('/generate-explanations', methods=['POST'])
-def generate_explanations_route():
-    data = request.json
-    try:
-        explanations = generate_explanations(
-            vars['llm'],
-            data['question'],
-            data['correct_answer'],
-            data['level'],
-            data['classId']
-        )
-        
-        # Convert Pydantic objects to dictionaries
-        explanations_dict = [
-            {
-                "style": exp.style,
-                "text": exp.text,
-                "score": exp.score
-            }
-            for exp in explanations
-        ]
-        
-        return jsonify({"explanations": explanations_dict})
-    except Exception as e:
-        print(f"Error generating explanations: {str(e)}")
-        return jsonify({"error": "Failed to generate explanations"}), 500
 
-@app.route('/save-explanation-ratings', methods=['POST'])
-def save_explanation_ratings_route():
-    data = request.json
-    try:
-        save_explanations(
-            data['classId'],
-            session['user_data']['osis'],
-            data['question'],
-            data['level'],
-            data['explanations']
-        )
-        return jsonify({"success": True})
-    except Exception as e:
-        print(f"Error saving explanation ratings: {str(e)}")
-        return jsonify({"error": "Failed to save ratings"}), 500
 
+
+@app.route('/make_explanation_cards', methods=['POST'])
+def make_explanation_cards_route():
+    data = request.json
+    print(data)
+    explanations = make_explanation_cards(
+        data['notebook'], 
+        vars['llm'], 
+        data['history'],
+        data.get('user_input', None)
+    )
+    return json.dumps({"explanations": explanations})
+
+
+@app.route('/synthesize_unit', methods=['POST'])
+def synthesize_unit_route():
+  data = request.json
+  synthesis = synthesize_unit(data['notebook'], vars['llm'])
+  row = {'synthesis': synthesis, 'classID': int(data['classID']), 'unit': data['unit'], 'id': random.randint(1000000, 9999999)}
+  # get data with classID and unit to check if it already exists, in which case, update it
+  existing_data = get_data("NbS", row_name="classID", row_val=int(data['classID']))
+  for item in existing_data:
+    if item['unit'] == data['unit']:
+      update_data(item['id'], 'id', row, "NbS")
+      return json.dumps({"message": "success"})
+  post_data("NbS", row)
+  return json.dumps({"message": "success"})
 
 
 @app.route('/impact', methods=['POST'])

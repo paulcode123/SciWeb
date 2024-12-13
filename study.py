@@ -25,6 +25,7 @@ from datetime import datetime
 import random
 from typing import Union, List, Optional
 from pydantic import BaseModel, Field
+from langchain.chat_models import ChatOpenAI
 
 # Pydantic Models
 class MultipleChoiceQuestion(BaseModel):
@@ -711,6 +712,39 @@ def answer_worksheet_question(llm, image_content: str, file_type: str, question:
     response = llm.invoke(messages)
     return response.content
 
+def synthesize_unit(notebook_data, llm):
+    """Synthesize a unit of study into a concise summary"""
+    
+    # Create prompt template
+    template = """You are a test writer making a list containing as diverse of a sample of problems as possible from the notebook data. Should be 10-15 problems, maximum 800 characters.
+    Plain list format, get at least 1 problem for each topic covered in the notebook.
+    
+    
+    Worksheet Data:
+    {notebook_data}
+    
+    Synthesis:"""
+    
+    prompt = ChatPromptTemplate.from_template(template)
+    
+    # Format notebook data for the prompt
+    formatted_data = []
+    for nb in notebook_data:
+        formatted_data.append(f"Topic: {nb['topic']}")
+        formatted_data.append("Notes:")
+        for note in nb['subtopics']:
+            formatted_data.append(f"- {note}")
+        formatted_data.append("Practice Questions:")
+        for q in nb['practice_questions']:
+            formatted_data.append(f"- {q}")
+        formatted_data.append("---")
+    
+    # Get response from LLM
+    chain = prompt | llm
+    response = chain.invoke({"notebook_data": "\n".join(formatted_data)})
+    
+    return response.content
+
 #Endpoints for Levels
 def generate_bloom_questions(llm, level: str, previous_answers: list, notebook_content: str) -> ResponseTypeBloom:
     """Generate Bloom's Taxonomy questions using LangChain"""
@@ -1127,3 +1161,189 @@ def calculate_difficulty(previous_qa: List[dict]) -> int:
         return max(1, previous_qa[-1].get('difficulty', 3) - 1)
     else:
         return previous_qa[-1].get('difficulty', 3)
+
+def make_explanation_cards(notebook_content, llm, history: List[dict] = None, user_input: str = None) -> List[dict]:
+    """Generate explanations based on notebook content and optional history"""
+    from langchain.prompts import ChatPromptTemplate
+    from langchain.chains import LLMChain
+    
+    if history:
+        # Collect all highlights across explanations
+        all_green_highlights = []
+        all_red_highlights = []
+        for prev_expl in history:
+            all_green_highlights.extend(prev_expl.get('greenHighlights', []))
+            all_red_highlights.extend(prev_expl.get('redHighlights', []))  
+        # Use modified prompt for iterative explanations
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", "You are an expert tutor trying to understand how the student perceives the material and explaining in ways that will make sense to them. Return only valid JSON without markdown."),
+            ("human", """explanations that resonate with the student (highlighted in green):
+            {green_highlights}
+            
+            explanations that the student found confusing (highlighted in red):
+            {red_highlights}
+            
+            Diverse sample of example problems from the unit:
+            {notebook_content}
+            
+            Student's request/feedback:
+            {user_input}
+            
+            Create three new explanations that:
+            1. Build on concepts they understood (green highlights)
+            2. Are explaining the same concept, but in different ways
+            3. Differ in style from the previous explanations and from each other, but slowly converge to the explanation that will make sense to the student
+            4. Use similar language/style from parts they understood
+            5. Try both technical and intuitive explanations
+            6. Cover all the material
+            7. Address the student's specific request/feedback
+            8. Use LaTeX for equations
+            
+            Return in JSON format:
+            {{"explanations": [
+                {{"text": "first explanation here", "target": "Clarify the concept by using visual analogies and real-world examples"}},
+                {{"text": "second explanation here", "target": "Build on the first explanation by connecting it to related concepts"}},
+                {{"text": "third explanation here", "target": "Demonstrate practical applications and problem-solving approaches"}}
+            ]}}""")
+        ])
+        
+        # Single LLM call with all highlights
+        try:
+            chain = LLMChain(llm=llm, prompt=prompt, verbose=True)
+            response = chain.invoke({
+                "green_highlights": all_green_highlights,
+                "red_highlights": all_red_highlights,
+                "notebook_content": notebook_content,
+                "user_input": user_input or "No specific request provided."
+            })
+            
+            # Process response with improved JSON cleaning
+            result = response
+            if isinstance(response, dict):
+                result = response.get('text', response)
+            
+            if isinstance(result, str):
+                # Double escape backslashes for LaTeX before JSON parsing
+                result = result.replace('\\', '\\\\')
+                # Remove any markdown formatting
+                result = result.replace('```json', '').replace('```', '')
+                # Fix duplicate braces issue (common in LLM responses)
+                result = result.replace('{{\n', '{').replace('}}', '}')
+                # Clean up any remaining whitespace
+                result = result.strip()
+            
+            explanation_data = json.loads(result)
+            return explanation_data['explanations']
+            
+        except json.JSONDecodeError as je:
+            print(f"JSON parsing error: {je}")
+            print(f"Raw response: {result}")
+            raise
+            
+    else:
+        # Initial explanation generation prompt
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", "You are an expert tutor trying to explain material in various ways that will reveal what sorts of explanations will make sense to the student. Return only valid JSON without markdown."),
+            ("human", """Diverse sample of example problems from the unit:
+            {notebook_content}
+            
+            Create three different explanations that:
+            1. Start with concepts towards the more challenging end of the material
+            2. Try both technical and intuitive explanations
+            3. Differ in style from each other, but are explaining the same concept
+            4. Use LaTeX for equations
+            
+            Return in JSON format:
+            {{"explanations": [
+                {{"text": "first explanation here", "target": "To explain momentum in terms of force and acceleration, use a car and a truck example"}},
+                {{"text": "second explanation here", "target": "To explain impulse in terms of momentum, using step-by-step reasoning"}},
+                {{"text": "third explanation here", "target": "To explain conservation of momentum in terms of collistions, use a car and a truck example"}}
+            ]}}""")
+        ])
+
+    try:
+        # Create the chain
+        chain = LLMChain(
+            llm=llm,
+            prompt=prompt,
+            verbose=True
+        )
+        
+        if history:
+            new_explanations = []
+            for prev_expl in history:
+                response = chain.invoke({
+                    "previous_explanation": prev_expl['explanation'],
+                    "green_highlights": prev_expl.get('greenHighlights', []),
+                    "red_highlights": prev_expl.get('redHighlights', []),
+                    "notebook_content": notebook_content
+                })
+                
+                # Clean and parse the response
+                try:
+                    result = response
+                    if isinstance(response, dict):
+                        result = response.get('text', response)
+                    
+                    # Double escape backslashes for LaTeX before JSON parsing
+                    if isinstance(result, str):
+                        result = result.replace('\\', '\\\\')
+                        # Remove any markdown formatting
+                        result = result.replace('```json', '').replace('```', '')
+                        # Fix duplicate braces issue (common in LLM responses)
+                        result = result.replace('{{\n', '{').replace('}}', '}')
+                        # Clean up any remaining whitespace
+                        result = result.strip()
+                    
+                    # Ensure it's valid JSON
+                    explanation_data = json.loads(result)
+                    new_explanations.append(explanation_data)
+                except json.JSONDecodeError as je:
+                    print(f"JSON parsing error: {je}")
+                    print(f"Raw response: {result}")
+                    raise
+                    
+            return new_explanations
+        else:
+            # Generate initial explanations
+            default_content = """
+                Newton's Laws of Motion:
+                1. First Law (Inertia)
+                2. Second Law (F = ma)
+                3. Third Law (Action-Reaction)
+                Including applications and examples.
+            """
+            
+            response = chain.invoke({
+                "notebook_content": notebook_content or default_content
+            })
+            
+            # Clean and parse the response
+            try:
+                result = response
+                if isinstance(response, dict):
+                    result = response.get('text', response)
+                
+                # Double escape backslashes for LaTeX before JSON parsing
+                if isinstance(result, str):
+                    result = result.replace('\\', '\\\\')
+                    # Remove any markdown formatting
+                    result = result.replace('```json', '').replace('```', '')
+                    # Fix duplicate braces issue (common in LLM responses)
+                    result = result.replace('{{\n', '{').replace('}}', '}')
+                    # Clean up any remaining whitespace
+                    result = result.strip()
+                
+                # Ensure it's valid JSON
+                explanation_data = json.loads(result)
+                return explanation_data['explanations']
+            except json.JSONDecodeError as je:
+                print(f"JSON parsing error: {je}")
+                print(f"Raw response: {result}")
+                raise
+            
+    except Exception as e:
+        print(f"Error generating explanations: {str(e)}")
+        if 'response' in locals():
+            print(f"Raw response received: {response}")
+        raise

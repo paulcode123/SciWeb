@@ -7,22 +7,97 @@ async function getBase64(file) {
     });
   }
 
-function fetchRequest(route, reqbody){
-    console.log(reqbody)
+  async function fetchRequest(route, reqbody) {
+    console.log(reqbody);
+    
+    // Clear cache when modifying data
+    if (route === '/post_data' || route === '/update_data' || route === '/delete_data') {
+        const sheetToInvalidate = reqbody.data.sheet;
+        if (sheetToInvalidate) {
+            console.log('Invalidating cache for:', sheetToInvalidate);
+            localStorage.removeItem(sheetToInvalidate);
+        }
+    }
+    
+    // Only apply caching for /data route
+    if (route === '/data') {
+        const requestedSheets = reqbody.data.split(', ');
+        let response = {};
+        let sheetsToFetch = [];
+        let cachedSheets = {};  // Store cached sheets to pass as prev_sheets
+        
+        // First, check cache for each sheet
+        for (const sheet of requestedSheets) {
+            // Skip caching for real-time data
+            if (sheet === 'Chat' || sheet === 'Battles') {
+                sheetsToFetch.push(sheet);
+                continue;
+            }
+            
+            // Check cache in localStorage
+            const cachedItem = localStorage.getItem(sheet);
+            if (cachedItem) {
+                const { data, timestamp } = JSON.parse(cachedItem);
+                
+                // Check if cache is still valid (less than 15 minutes old)
+                if (Date.now() - timestamp < 15 * 60 * 1000) {
+                    console.log('Using cached data for:', sheet);
+                    response[sheet] = data;
+                    cachedSheets[sheet] = data;  // Add to cachedSheets
+                    console.log('CachedSheets:', cachedSheets);
+                    continue;
+                } else {
+                    // Remove expired cache
+                    localStorage.removeItem(sheet);
+                }
+            }
+            
+            sheetsToFetch.push(sheet);
+        }
+        console.log("cachedSheets", cachedSheets);
+        
+        // Fetch any uncached sheets
+        if (sheetsToFetch.length > 0) {
+            console.log('Fetching sheets:', sheetsToFetch, "with prev_sheets", cachedSheets);
+            const freshData = await normalFetch(route, { 
+                ...reqbody, 
+                data: sheetsToFetch.join(', '),
+                prev_sheets: cachedSheets  // Pass cached sheets to backend
+            });
+            
+            // Cache the fresh data
+            for (const sheet of sheetsToFetch) {
+                if (sheet !== 'Chat' && sheet !== 'Battles') {
+                    localStorage.setItem(sheet, JSON.stringify({
+                        data: freshData[sheet],
+                        timestamp: Date.now()
+                    }));
+                    console.log('Caching data for:', sheet);
+                }
+                response[sheet] = freshData[sheet];
+            }
+        }
+        
+        return response;
+    }
+    
+    // For all other routes, just fetch normally
+    return await normalFetch(route, reqbody);
+}
+
+// Helper function for normal fetch
+async function normalFetch(route, reqbody) {
     return fetch(route, {
         method: 'POST',
         headers: {
-        'Content-Type': 'application/json'
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify(reqbody)
     })
     .then(response => response.json())
-    .then(data => {
-        // console.log(data);
-        return data;
-    })
     .catch(error => {
-        console.error('An error occurred in fetch :' +error);
+        console.error('An error occurred in fetch:', error);
+        throw error;
     });
 }
 

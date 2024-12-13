@@ -39,12 +39,7 @@ async function loadContext() {
         });
     }
     
-    fetch('/data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: 'Classes, Notebooks, Name' })
-    })
-    .then(response => response.json())
+    fetchRequest('/data', { data: 'Classes, Notebooks, Name' })
     .then(data => {
         notebookData = data;
         loadClasses();
@@ -154,11 +149,58 @@ function loadUnitWorksheets(classId, unitName) {
     }
     
     const contentArea = document.getElementById('content-area');
-    contentArea.innerHTML = `<h2>Worksheets for ${unitName}</h2>`;
+    contentArea.innerHTML = `
+        <h2>Worksheets for ${unitName}</h2>
+        <button id="synthesize-unit" class="synthesize-button">
+            <i class="fas fa-robot"></i> Synthesize Unit for StudyBot
+        </button>
+    `;
+    
+    // Add event listener for synthesis
+    document.getElementById('synthesize-unit').addEventListener('click', () => {
+        synthesizeUnit(classId, unitName);
+    });
+    
     worksheets.forEach(worksheet => {
         const worksheetElement = createWorksheetElement(worksheet);
         contentArea.appendChild(worksheetElement);
     });
+}
+
+async function synthesizeUnit(classId, unitName) {
+    try {
+        startLoading();
+        
+        // Get notebooks for this unit
+        const unitNotebooks = notebookData.Notebooks.filter(
+            notebook => notebook.classID === classId && notebook.unit === unitName
+        );
+        
+        const response = await fetch('/synthesize_unit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                notebook: unitNotebooks,
+                classID: classId,
+                unit: unitName
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.message === 'success') {
+            alert('Unit successfully synthesized for StudyBot!');
+            // clear NbS sheet from local storage
+            localStorage.removeItem('NbS');
+        } else {
+            throw new Error('Synthesis failed');
+        }
+        
+    } catch (error) {
+        console.error('Error synthesizing unit:', error);
+        alert('Failed to synthesize unit. Please try again.');
+    }
+    endLoading();
 }
 
 function createWorksheetElement(worksheet) {

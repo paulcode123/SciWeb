@@ -9,25 +9,15 @@ document.getElementById('createGame').addEventListener('click', function() {
 });
 
 // Function to fetch available classes from the server
-function fetchClasses() {
-    fetch('/data', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ data: 'Name, Classes' }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        const classSelect = document.getElementById('class-select');
-        data.Classes.forEach(classItem => {
-            const option = document.createElement('option');
-            option.value = classItem.id;
-            option.textContent = classItem.name;
-            classSelect.appendChild(option);
-        });
-    })
-    .catch(error => console.error('Error:', error));
+async function fetchClasses() {
+    const data = await fetchRequest('/data', { data: 'Name, Classes' });
+    const classSelect = document.getElementById('class-select');
+    data.Classes.forEach(classItem => {
+        const option = document.createElement('option');
+        option.value = classItem.id;
+        option.textContent = classItem.name;
+        classSelect.appendChild(option);
+    });
 }
 
 // Function to handle class selection and fetch corresponding units
@@ -39,27 +29,20 @@ document.getElementById('class-select').addEventListener('change', function() {
     const selectedClassId = this.value;
     if (!selectedClassId) return;
 
-    fetch('/get-units', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ classId: selectedClassId }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.units) {
-            data.units.forEach(unit => {
-                const option = document.createElement('option');
-                option.value = unit;
-                option.textContent = unit;
-                unitSelect.appendChild(option);
-            });
-            unitSelect.disabled = false;
-        }
-    })
-    .catch(error => console.error('Error:', error));
-});
+    fetchRequest('/get-units', { classId: selectedClassId })
+        .then(data => {
+            if (data.units) {
+                data.units.forEach(unit => {
+                    const option = document.createElement('option');
+                    option.value = unit;
+                    option.textContent = unit;
+                    unitSelect.appendChild(option);
+                });
+                unitSelect.disabled = false;
+            }
+        });
+})
+
 
 // Modify the confirm class selection event listener
 document.getElementById('confirmClass').addEventListener('click', function() {
