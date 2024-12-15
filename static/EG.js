@@ -22,17 +22,20 @@ Pullbutton.addEventListener('click', pullfromJupiter);
 
 async function pullfromJupiter(){
   startLoading();
-  start_loading(12);
-  console.log("pulling from Jupiter")
-  // make loading wheel visible
-  // document.getElementById('loadingWheel').style.visibility = "visible";
+  const addClasses = document.getElementById('addclasses').checked;
+  const loadingTime = addClasses ? 45 : 25;
+  start_loading(loadingTime);
+  
+  // Create status display element
+  const statusDiv = document.createElement('div');
+  statusDiv.id = 'status-updates';
+  document.body.appendChild(statusDiv);
+
   const osis = document.getElementById('osis').value;
   const password = document.getElementById('password').value;
-  const addClasses = document.getElementById('addclasses').checked;
   const encrypt = document.getElementById('encrypt').checked;
   const updateLeagues = document.getElementById('updateLeagues').checked;
-  console.log(encrypt)
-  // if encrypt is checked, generate a key and set it as a cookie
+  
   var key="none"
   if(encrypt == true){
     console.log("encrypting")
@@ -43,27 +46,74 @@ async function pullfromJupiter(){
     // Include keyPrefix in the request
     key = `${keyPrefix}:${key}`;
   }
-  //Send to python with fetch request
-  const data = await fetchRequest('/jupiter', {"osis": osis, "password": password, "addclasses": addClasses, "encrypt": key, "updateLeagues": updateLeagues});
-  // document.getElementById('loadingWheel').style.visibility = "hidden";
-  if(data['error']){
-    alert(data['error']);
-  }
-  else{
-  console.log("got response")
-  // document.getElementById('loadingWheel').style.visibility = "hidden";
-  // document.getElementById("loadingBar").style.visibility = "hidden";
-  // if data is a dict with error key, show error message
-  if(data['error']){
-    alert(data['error']);
-  }
-  else{
-  grades = data;
-  createGradesTable(grades);
-  endLoading();
+
+  // Build query string
+  const queryString = new URLSearchParams({
+    osis: osis,
+    password: password,
+    addclasses: addClasses,
+    encrypt: key,
+    updateLeagues: updateLeagues
+  }).toString();
+
+  // Setup SSE connection
+  const evtSource = new EventSource(`/jupiter?${queryString}`);
   
-  }
-}
+  evtSource.onmessage = function(event) {
+    try {
+        const data = JSON.parse(event.data);
+        
+        if(data.error) {
+            evtSource.close();
+            statusDiv.remove();
+            alert(data.error);
+            endLoading();
+            return;
+        }
+        
+        if(data.status === 'complete') {
+            evtSource.close();
+            statusDiv.remove();
+            
+            // Create completion animation
+            const checkDiv = document.createElement('div');
+            checkDiv.className = 'completion-check';
+            const checkIcon = document.createElement('div');
+            checkIcon.className = 'check-icon';
+            checkDiv.appendChild(checkIcon);
+            document.body.appendChild(checkDiv);
+            
+            // Remove animation and show grades after delay
+            setTimeout(() => {
+                checkDiv.classList.add('fade-out');
+                setTimeout(() => {
+                    checkDiv.remove();
+                    createGradesTable(data.grades);
+                }, 300);
+            }, 1200);
+            
+            // clear cache
+            clearCache("Grades");
+
+            endLoading();
+        } else {
+            statusDiv.innerHTML = `<p>${data.message}</p>`;
+        }
+    } catch (error) {
+        console.error('Error parsing SSE data:', error, 'Raw data:', event.data);
+        evtSource.close();
+        statusDiv.remove();
+        alert('Error processing server response');
+        endLoading();
+    }
+  };
+
+  evtSource.onerror = function(err) {
+    evtSource.close();
+    statusDiv.remove();
+    alert('Error occurred while fetching grades');
+    endLoading();
+  };
 }
 
 //When the user selects a class, update the category dropdown with the categories for that class
@@ -580,3 +630,23 @@ async function submitEdit(grade, modal) {
     alert('Failed to submit grade correction. Please try again.');
   }
 }
+
+// Add this at the end of your file for testing
+// document.addEventListener('DOMContentLoaded', () => {
+//   console.log("DOMContentLoaded");
+//     // Create completion animation
+//     const checkDiv = document.createElement('div');
+//     checkDiv.className = 'completion-check';
+//     const checkIcon = document.createElement('div');
+//     checkIcon.className = 'check-icon';
+//     checkDiv.appendChild(checkIcon);
+//     document.body.appendChild(checkDiv);
+    
+//     // Remove animation after delay
+//     setTimeout(() => {
+//         checkDiv.classList.add('fade-out');
+//         setTimeout(() => {
+//             checkDiv.remove();
+//         }, 300);
+//     }, 1200);
+// });

@@ -102,6 +102,7 @@ def jupapi_output_to_grades(data, encrypt):
   grades = [grade for grade in grades if grade['score'] != 'null' and grade['date'] != '']
 
   post_grades(grades, encrypt)
+  print("grades posted")
   return grades
 
 

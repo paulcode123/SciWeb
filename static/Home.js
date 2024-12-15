@@ -545,9 +545,13 @@ function initializePaths() {
 }
 
 // Update chat initialization
-async function initializeChat(userName) {
+async function initializeChat() {
     const greeting = document.getElementById('initial-greeting');
-    const initialPrompt = `Hey there, ${userName}!`;
+    // wait until first_name is defined
+    while (!first_name) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    const initialPrompt = `Hey there, ${first_name}!`;
     
     // Type out initial greeting
     await typeOutText(initialPrompt, 50, greeting);
@@ -600,7 +604,7 @@ async function initializeChat(userName) {
 window.addEventListener('load', async () => {
     initializePaths();
     setupMessaging();
-    await initializeChat(first_name);
+    await initializeChat();
     await main();  // Move main() call here to ensure proper order
 });
 

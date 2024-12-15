@@ -1,7 +1,7 @@
 # Import necessary libraries
 
 # Flask is a web framework for Python that allows backend-frontend communication
-from flask import Flask, render_template, request, session, redirect, url_for, send_from_directory, jsonify
+from flask import Flask, render_template, request, session, redirect, url_for, send_from_directory, jsonify, Response, stream_with_context
 # json is a library for parsing and creating JSON data
 import json
 
@@ -366,33 +366,63 @@ def get_home_ip():
   return json.dumps({'Name': get_name(str(session['ip_add']))})
 
 # /Jupiter route
-@app.route('/jupiter', methods=['POST'])
+@app.route('/jupiter')
 def Jupiter():
-    print("in jup py route")
-    data = request.json
-    classes = run_puppeteer_script(data['osis'], data['password'])
-    
-    if classes == "WrongPass":
-        return json.dumps({"error": "Incorrect credentials"})
+    # Capture request data before entering generator
+    osis = request.args.get('osis')
+    password = request.args.get('password')
+    addclasses = request.args.get('addclasses')
+    encrypt = request.args.get('encrypt')  # This is coming as 'true' or 'false' string
+    updateLeagues = request.args.get('updateLeagues')
 
-    class_data = get_data("Classes")
-    tokens_data = get_data("Tokens")
+    @stream_with_context
+    def generate():
+        try:
+            yield f"data: {json.dumps({'message': 'Connecting to Jupiter...'})}\n\n"
+            
+            # Get grades from Jupiter
+            yield f"data: {json.dumps({'message': 'Fetching grades from Jupiter...'})}\n\n"
+            classes = run_puppeteer_script(osis, password)
+            
+            if classes == "WrongPass":
+                yield f"data: {json.dumps({'error': 'Incorrect credentials'})}\n\n"
+                return
 
-    if str(data['addclasses'])=="True":
-        classes_added = jupapi_output_to_classes(classes, class_data)
-        notify_new_member(classes_added, tokens_data)
-    
-    session['user_data']['grades_key'] = str(data['encrypt'])
-    grades = jupapi_output_to_grades(classes, data['encrypt'])
-    
-    check_new_grades(grades, class_data, tokens_data)
-    
-    if confirm_category_match(grades, class_data):
-        jupapi_output_to_classes(classes, class_data)
+            # Get the classes and tokens data
+            yield f"data: {json.dumps({'message': 'Getting classes and tokens data...'})}\n\n"
+            class_data = get_data("Classes")
+            tokens_data = get_data("Tokens")
 
-    if str(data['updateLeagues'])=="True":
-        update_leagues(grades, classes)
-    return json.dumps(grades)
+            if str(addclasses).lower() == "true":
+                yield f"data: {json.dumps({'message': 'Adding you to your classes...'})}\n\n"
+                classes_added = jupapi_output_to_classes(classes, class_data)
+                notify_new_member(classes_added, tokens_data)
+            
+            yield f"data: {json.dumps({'message': 'Processing grades...'})}\n\n"
+            # We need to generate an encryption key if encrypt is true
+            session['user_data']['grades_key'] = str(encrypt)
+            session.modified = True
+            print("session", session['user_data'])
+            grades = jupapi_output_to_grades(classes, encrypt)
+            print("c1")
+            
+            yield f"data: {json.dumps({'message': 'Checking for new grades to notify classmates about...'})}\n\n"
+            check_new_grades(grades, class_data, tokens_data)
+            
+            if confirm_category_match(grades, class_data):
+                jupapi_output_to_classes(classes, class_data)
+
+            if str(updateLeagues).lower() == "true":
+                yield f"data: {json.dumps({'message': 'Updating leagues...'})}\n\n"
+                update_leagues(grades, classes)
+
+            # Send completion message with grades data
+            yield f"data: {json.dumps({'status': 'complete', 'grades': grades})}\n\n"
+            
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+    print("session", session['user_data'])
+    return Response(generate(), mimetype='text/event-stream')
 
 @app.route('/init_oauth', methods=['POST', 'GET'])
 def init_oauth_handler():
@@ -887,7 +917,6 @@ def evaluate_answer_route():
     except Exception as e:
         print(f"Error evaluating answer: {str(e)}")
         return jsonify({"error": "Failed to evaluate answer"}), 500
-
 
 
 

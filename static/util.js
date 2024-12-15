@@ -8,7 +8,7 @@ async function getBase64(file) {
   }
 
   async function fetchRequest(route, reqbody) {
-    console.log(reqbody);
+    // console.log(reqbody);
     
     // Clear cache when modifying data
     if (route === '/post_data' || route === '/update_data' || route === '/delete_data') {
@@ -99,6 +99,12 @@ async function normalFetch(route, reqbody) {
         console.error('An error occurred in fetch:', error);
         throw error;
     });
+}
+
+// function to clear the cache for a specific sheet
+function clearCache(sheet) {
+    console.log("Clearing cache for:", sheet);
+    localStorage.removeItem(sheet);
 }
 
 // process the date to make it more readable: today, tomorrow, Thursday, next Wednesday, etc.
