@@ -39,7 +39,7 @@ from database import get_data, post_data, update_data, delete_data, download_fil
 from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, get_stats, update_leagues, get_compliments, get_grade_impact
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades, confirm_category_match, check_new_grades, notify_new_member
-from study import get_insights, chat_with_function_calling, run_inspire, init_pydantic, process_pdf_content, process_image_content, generate_final_evaluation, generate_followup_question, generate_practice_questions, generate_bloom_questions, evaluate_bloom_answer, save_explanations, generate_explanations, answer_worksheet_question, make_explanation_cards, synthesize_unit
+from study import get_insights, chat_with_function_calling, run_inspire, init_pydantic, process_pdf_content, process_image_content, generate_final_evaluation, generate_followup_question, generate_practice_questions, generate_bloom_questions, evaluate_bloom_answer, save_explanations, generate_explanations, answer_worksheet_question, make_explanation_cards, synthesize_unit, generate_derive_questions, evaluate_derive_answer
 
 #get api keys from static/api_keys.json file
 keys = json.load(open('api_keys.json'))  
@@ -149,6 +149,10 @@ def study():
 def study_levels():
   return render_template('Levels.html')
 
+@app.route('/StudyLevels2')
+def study_levels2():
+  return render_template('Levels2.html')
+
 @app.route('/Diagnostic')
 def diagnostic():
   return render_template('Diagnostic.html')
@@ -220,6 +224,16 @@ def team():
 @app.route('/Schedule')
 def schedule():
   return render_template('schedule.html')
+
+@app.route('/StudyHub')
+def study_hub():
+    return render_template('StudyHub.html')
+
+@app.route('/DeriveGuide')
+def derive_guide():
+    return render_template('DeriveGuide.html')
+
+
 
 # @app.route('/Features/AI')
 # def ai_features():
@@ -659,7 +673,7 @@ def upload_assignments():
   # add the assignments to the Assignments sheet with post_data
   for assignment in response['assignments']:
     rand_id = ''.join([str(random.randint(0, 9)) for _ in range(4)])
-    post_data("Assignments", {"class": str(assignment['classID']), "name": assignment['assignment_name'], "due_date": assignment['assignment_date'], "class_name": assignment['class_name'], "id": rand_id})
+    post_data("Assignments", {"class": int(assignment['classID']), "name": assignment['assignment_name'], "due_date": assignment['assignment_date'], "class_name": assignment['class_name'], "id": rand_id})
   return json.dumps({"data": "success"})
 
 @app.route('/GAsetup', methods=['POST'])
@@ -948,6 +962,84 @@ def synthesize_unit_route():
   return json.dumps({"message": "success"})
 
 
+@app.route('/update-guide', methods=['POST'])
+def update_guide():
+    data = request.json
+    try:
+        updated_guide = update_study_guide(
+            vars['llm'],
+            data['guide_content'],
+            data['qa_history']
+        )
+        return jsonify({"success": True, "updated_guide": updated_guide})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/modify-guide-section', methods=['POST'])
+def modify_guide_section_route():
+    data = request.json
+    try:
+        updated_guide = modify_guide_section(
+            vars['llm'],
+            data['guide_content'],
+            data['selected_text'],
+            data['modification_request']
+        )
+        return jsonify({"success": True, "updated_guide": updated_guide})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/save-guide', methods=['POST'])
+def save_guide():
+    data = request.json
+    try:
+        post_data("Guides", {
+            "classId": data['class_id'],
+            "userId": session['user_data']['osis'],
+            "content": data['guide_content'],
+            "timestamp": datetime.now().isoformat()
+        })
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/generate-derive-questions', methods=['POST'])
+def generate_derive_questions_route():
+    data = request.json
+    try:
+        # Get notebook synthesis for the selected class/unit
+        synthesis_data = data['notebooks']
+        synthesis = next((item['synthesis'] for item in synthesis_data 
+                         if item['unit'] == data['unit']), None)
+        
+        if not synthesis:
+            return jsonify({"error": "No synthesis found for this unit"}), 404
+            
+        questions = generate_derive_questions(vars['llm'], synthesis)
+        return jsonify(questions.model_dump())
+        
+    except Exception as e:
+        print(f"Error generating derive questions: {str(e)}")
+        return jsonify({"error": "Failed to generate questions"}), 500
+
+@app.route('/evaluate-derive-answer', methods=['POST'])
+def evaluate_derive_answer_route():
+    data = request.json
+    try:
+        evaluation = evaluate_derive_answer(
+            vars['llm'],
+            data['question'],
+            data['expected_answer'],
+            data['user_answer']
+        )
+        return jsonify(evaluation.model_dump())
+        
+    except Exception as e:
+        print(f"Error evaluating answer: {str(e)}")
+        return jsonify({"error": "Failed to evaluate answer"}), 500
+
+
+
 @app.route('/impact', methods=['POST'])
 def get_impact():
   data = request.json
@@ -1114,4 +1206,6 @@ vars = init()
 
 if __name__ == '__main__':
   app.run(host='localhost', port=8080)
+
+
 

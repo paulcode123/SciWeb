@@ -1,0 +1,165 @@
+/* Import existing levels.css */
+@import 'levels.css';
+
+/* Split screen layout */
+.split-container {
+    display: flex;
+    gap: 20px;
+    height: calc(100vh - 100px);
+    margin: 20px;
+}
+
+.left-panel {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 20px;
+}
+
+.right-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #2d2d2d;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+/* Guide styling */
+.guide-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.guide-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.guide-button {
+    padding: 8px 15px;
+    font-size: 14px;
+    width: auto;
+}
+
+.guide-content {
+    flex: 1;
+    background-color: #363636;
+    border-radius: 4px;
+    padding: 20px;
+    overflow-y: auto;
+    color: #e0e0e0;
+    line-height: 1.6;
+}
+
+/* Text selection popup */
+.text-selection-popup {
+    position: fixed;
+    background-color: #2d2d2d;
+    padding: 15px;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+
+.text-selection-popup textarea {
+    width: 300px;
+    height: 100px;
+    margin-bottom: 10px;
+}
+
+/* Changes highlighting */
+.addition {
+    background-color: rgba(76, 175, 80, 0.2);
+    border-bottom: 2px solid #4CAF50;
+}
+
+.removal {
+    background-color: rgba(244, 67, 54, 0.2);
+    text-decoration: line-through;
+    color: #F44336;
+}
+
+/* Changes panel */
+.changes-panel {
+    background-color: #363636;
+    border-radius: 4px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.changes-controls {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+/* Add GuideBuilder selection styles */
+.selection-area {
+    background-color: #2d2d2d;
+    padding: 25px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    transition: opacity 0.5s ease;
+}
+
+.select-wrapper {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+.select-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #888;
+    z-index: 1;
+}
+
+.select-wrapper select {
+    width: 100%;
+    padding: 12px 12px 12px 40px;
+    background-color: #363636;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #e0e0e0;
+    font-size: 16px;
+    appearance: none;
+}
+
+.select-wrapper select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.start-evaluation-button {
+    width: 100%;
+    padding: 15px;
+    background-color: rgb(228, 76, 101);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+    opacity: 0.6;
+}
+
+.start-evaluation-button.active {
+    opacity: 1;
+}
+
+.start-evaluation-button:hover {
+    background-color: rgb(208, 56, 81);
+}
+
+.fade-out {
+    opacity: 0;
+}

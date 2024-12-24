@@ -3,7 +3,7 @@ import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/fireb
 import { typeOutText, await_enter, AI_response } from './counselor.js';
 
 
-
+var notificationsEnabled = false;
 
 
 // Create function show_recent_messages to display the number and location of messages that were sent in the last 24 hours in classes and assignments that the user is in
@@ -263,7 +263,7 @@ async function saveTokenToServer(token) {
   const userTokens = currentTokens['Tokens'].filter(t => t.OSIS === osis);
   const timeStamp = Date.now();
   
-  if (!userTokens.some(t => t.token === token)) {
+  if (!userTokens.some(t => t.token === token) && !notificationsEnabled) {
     await fetchRequest('/post_data', {
       data: {
         "token": token,
@@ -275,9 +275,11 @@ async function saveTokenToServer(token) {
     });
     console.log("New token added for device:", deviceName);
     updateNotificationUI(true, "Notifications are enabled for this device.");
+    notificationsEnabled = true;
   } else {
     console.log("Token already exists for this user and device.");
     updateNotificationUI(true, "Notifications are already enabled for this device.");
+    notificationsEnabled = true;
   }
 }
 
@@ -557,8 +559,8 @@ async function initializeChat() {
     await typeOutText(initialPrompt, 50, greeting);
 
     // Initialize the chat interface
-    const userInput = document.getElementById('userInput');
-    const chatLog = document.getElementById('chatLog');
+    const userInput = document.getElementById('user-input');
+    const chatLog = document.getElementById('chat-log');
 
     // Handle chat input focus
     userInput.addEventListener('focus', () => {

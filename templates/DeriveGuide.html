@@ -1,0 +1,109 @@
+{% extends "darkThemeTemplate.html" %}
+
+{% block title %}
+<title>SciWeb | Derive Guide</title>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="/static/derive.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="page-intro">
+    <h2><i class="fas fa-brain"></i> AI Study Guide Generator</h2>
+    <p>This tool helps you build a comprehensive study guide through an interactive question-and-answer process. As you answer questions, the AI adapts and helps you discover key concepts.</p>
+    
+    <div class="feature-list">
+        <div class="feature-item">
+            <i class="fas fa-robot"></i>
+            <div>
+                <h4>AI-Powered Learning</h4>
+                <p>Adaptive questions that help you understand core concepts</p>
+            </div>
+        </div>
+        <div class="feature-item">
+            <i class="fas fa-puzzle-piece"></i>
+            <div>
+                <h4>Interactive Building</h4>
+                <p>Build your guide piece by piece through active learning</p>
+            </div>
+        </div>
+        <div class="feature-item">
+            <i class="fas fa-arrows-alt"></i>
+            <div>
+                <h4>Customizable</h4>
+                <p>Drag and drop to organize your guide exactly how you want</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="class-selection">
+    <div class="select-wrapper">
+        <i class="fas fa-graduation-cap"></i>
+        <select id="class-select">
+            <option value="">Select a class</option>
+        </select>
+    </div>
+    <div class="select-wrapper">
+        <i class="fas fa-book"></i>
+        <select id="unit-select" disabled>
+            <option value="">Select a unit</option>
+        </select>
+    </div>
+    <button id="start-derive" class="start-derive-button">
+        <i class="fas fa-play"></i> Start Deriving
+    </button>
+</div>
+
+<div id="loading" style="display: none;">
+    <div class="loading-spinner"></div>
+    <p>Analyzing your course content...</p>
+    <small>This may take a few moments</small>
+</div>
+
+<div id="derive-container" style="display: none;">
+    <div class="split-container">
+        <!-- Left side: Questions and answers -->
+        <div class="question-section">
+            <div class="question-header">
+                <i class="fas fa-lightbulb"></i>
+                <h3>Section: <span id="current-section"></span></h3>
+            </div>
+            <h3>Question <span id="question-number">1</span></h3>
+            <p id="current-question"></p>
+            <textarea id="answer" rows="4" cols="50" placeholder="Type your answer here..."></textarea>
+            <button id="submit-answer" class="action-button">Submit Answer</button>
+            <div id="feedback" style="display: none;"></div>
+            <button id="next-question" class="action-button" style="display: none;">Next Question</button>
+        </div>
+
+        <!-- Right side: Study guide being built -->
+        <div class="guide-section">
+            <div class="guide-header">
+                <h3>Your Study Guide</h3>
+                <button id="interim-save" class="action-button save-button" style="display: none;">
+                    <i class="fas fa-save"></i> Save Progress
+                </button>
+            </div>
+            <div id="guide-content" class="guide-content">
+                <div class="section">
+                    <h4>A. General</h4>
+                    <ol id="guide-points" class="guide-points"></ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="completion" style="display: none;">
+    <h3>Guide Complete!</h3>
+    <p>You've successfully derived your study guide.</p>
+    <button id="save-guide">Save Guide</button>
+</div>
+{% endblock %}
+
+{% block js %}
+<script src="/static/derive.js"></script>
+{% endblock %} 

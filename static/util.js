@@ -11,13 +11,14 @@ async function getBase64(file) {
     // console.log(reqbody);
     
     // Clear cache when modifying data
-    if (route === '/post_data' || route === '/update_data' || route === '/delete_data') {
-        const sheetToInvalidate = reqbody.data.sheet;
+    if (route == '/post_data' || route == '/update_data' || route == '/delete_data') {
+        const sheetToInvalidate = reqbody.sheet;
         if (sheetToInvalidate) {
             console.log('Invalidating cache for:', sheetToInvalidate);
             localStorage.removeItem(sheetToInvalidate);
         }
     }
+    console.log('route', route, route == '/post_data', route === '/post_data');
     
     // Only apply caching for /data route
     if (route === '/data') {

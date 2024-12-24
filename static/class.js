@@ -135,7 +135,7 @@ function setupPage(classData, data) {
 
 // Data posting functions
 async function post_assignment(data) {
-
+console.log('posting assignment with /post_data route')
   await fetchRequest('/post_data', {data: data, sheet: "Assignments"})
 
   // add assignment to div

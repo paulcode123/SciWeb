@@ -1,9 +1,11 @@
 export { typeOutText, await_enter, AI_response };
 
+// if url is / (index.html), then we are in the main page, set isMainPage to true
+const isMainPage = window.location.pathname === '/';
 const chatLog = document.getElementById('chat-log');
 console.log("in counselor.js")
 // function to type out text in a message div in chatLog
-async function typeOutText(text, speed, targetDiv = document.getElementById('chatLog')) {
+async function typeOutText(text, speed, targetDiv = document.getElementById('chat-log')) {
     console.log("typeOutText", text, speed, targetDiv)
     // Create message for counselor sidebar
     const sidebarLog = document.getElementById('chat-log');
@@ -26,7 +28,9 @@ async function typeOutText(text, speed, targetDiv = document.getElementById('cha
             const sidebarMessage = sidebarLog.lastElementChild;
             sidebarMessage.textContent += char;
         }
-        mainMessage.textContent += char;
+        if (isMainPage) {
+            mainMessage.textContent += char;
+        }
         await new Promise(resolve => setTimeout(resolve, speed));
     }
     
@@ -65,7 +69,7 @@ function add_user_text(text){
     messageDiv.textContent = text;
 }
 
-async function await_enter(inputElement=document.getElementById('userInput')) {
+async function await_enter(inputElement=document.getElementById('user-input')) {
     return new Promise(resolve => {
         const handleKeyDown = (event) => {
             if (event.key === 'Enter' && event.target === inputElement) {

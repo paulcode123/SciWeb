@@ -61,9 +61,11 @@ async function pullfromJupiter(){
   
   evtSource.onmessage = function(event) {
     try {
+        console.log("Received SSE message:", event.data);
         const data = JSON.parse(event.data);
         
         if(data.error) {
+            console.error("SSE error:", data.error);
             evtSource.close();
             statusDiv.remove();
             alert(data.error);
@@ -97,6 +99,7 @@ async function pullfromJupiter(){
 
             endLoading();
         } else {
+            console.log("Updating status:", data.message);
             statusDiv.innerHTML = `<p>${data.message}</p>`;
         }
     } catch (error) {
@@ -108,7 +111,12 @@ async function pullfromJupiter(){
     }
   };
 
+  evtSource.onopen = function() {
+    console.log("SSE connection opened");
+  };
+
   evtSource.onerror = function(err) {
+    console.error("SSE error:", err);
     evtSource.close();
     statusDiv.remove();
     alert('Error occurred while fetching grades');

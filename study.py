@@ -124,6 +124,19 @@ class ThoughtProcess(BaseModel):
     misconceptions: List[str]
     comparison: Optional[List[tuple[str, str]]]  # Pairs of [user_thought, correct_thought]
 
+class DeriveQuestion(BaseModel):
+    question: str
+    expected_answer: str
+    category: str
+
+class DeriveQuestions(BaseModel):
+    questions: List[DeriveQuestion]
+
+class DeriveResponse(BaseModel):
+    status: str
+    newLine: Optional[str] = None
+    simplifiedQuestion: Optional[str] = None
+
 # Query the LLM API to get insights
 def get_insights(prompts, format=None):
   from main import init
@@ -1346,4 +1359,134 @@ def make_explanation_cards(notebook_content, llm, history: List[dict] = None, us
         print(f"Error generating explanations: {str(e)}")
         if 'response' in locals():
             print(f"Raw response received: {response}")
+        raise
+
+def generate_derive_questions(llm, notebook_synthesis: str) -> DeriveQuestions:
+    """Generate a sequence of questions that help students derive study guide content"""
+    
+    derive_prompt = ChatPromptTemplate.from_messages([
+        ("system", """You are an expert at creating Socratic questions that help students discover concepts.
+                     Create questions that build upon each other to help students derive key concepts."""),
+        ("human", """Given this maximally diverse sample of problems from this unit:
+                     {synthesis}
+                     
+                     Create a sequence of 30 questions where each answer should naturally lead to 
+                     discovering an important concept. Each question's expected answer should be a clear, 
+                     concise statement that could be added to a study guide. Questions should lead to deriving key formulas, theorems, etc.
+                     
+                     Do not ask sample questions, but instead ask questions that will help students 
+                     derive the concepts.
+         
+                     All questions should fall into the same 6-8 categories, which signify the question type, spelled identically between questions in the same category. (e.g. "General", "solving for the limit given a function", "solving for the derivative of a function given the integral", etc.)
+                     
+                     Return in this exact format:
+                     {{"questions": [
+                         {{"question": "question text", 
+                           "expected_answer": "expected response",
+                           "category": "category of the question"}}
+                     ]}}
+                     
+                     Example:
+                     {{"questions": [
+                         {{"question": "What is a derivative?", 
+                           "expected_answer": "Rate of change of a function",
+                           "category": "General"}},
+                         {{"question": "What happens when we divide by zero?", 
+                           "expected_answer": "We get an undefined result",
+                           "category": "L'Hopital's Rule"}}
+                     ]}}""")
+    ])
+
+    try:
+        # Create runnable sequence
+        chain = derive_prompt | llm
+        response = chain.invoke({"synthesis": notebook_synthesis})
+        
+        # Get text content
+        result = response.content if hasattr(response, 'content') else str(response)
+        
+        # Clean the response
+        if isinstance(result, str):
+            # Remove markdown formatting
+            result = result.replace('```json', '').replace('```', '')
+            # Double escape backslashes for LaTeX
+            result = result.replace('\\', '\\\\')
+            # Fix duplicate braces issue
+            result = result.replace('{{{', '{').replace('}}}', '}')
+            result = result.replace('{{', '{').replace('}}', '}')
+            # Clean up whitespace
+            result = result.strip()
+        
+        try:
+            # Parse JSON
+            parsed_json = json.loads(result)
+            
+            # If we got a list instead of a dict, wrap it in the expected structure
+            if isinstance(parsed_json, list):
+                parsed_json = {"questions": parsed_json}
+                
+            return DeriveQuestions.parse_obj(parsed_json)
+        except json.JSONDecodeError as je:
+            print(f"JSON parsing error: {je}")
+            print(f"Raw response: {result}")
+            raise
+            
+    except Exception as e:
+        print(f"Error generating derive questions: {str(e)}")
+        raise
+
+def evaluate_derive_answer(llm, question: str, expected_answer: str, user_answer: str) -> DeriveResponse:
+    """Evaluate user's answer and either accept it or provide a simpler question"""
+    
+    eval_prompt = ChatPromptTemplate.from_messages([
+        ("system", """You are an expert at evaluating student responses and guiding them toward understanding.
+                     If their answer shows understanding, accept it as a study guide point.
+                     If not, provide a simpler question to guide them to the concept."""),
+        ("human", """Question: {question}
+                     Expected Answer: {expected}
+                     Student's Answer: {answer}
+                     
+                     If the answer demonstrates understanding (even if worded differently), return:
+                     {{"status": "correct",
+                        "newLine": "concise study guide point (under 10 words)"}}
+                     
+                     If not, return:
+                     {{"status": "incorrect",
+                        "simplifiedQuestion": "simpler follow-up question"}}""")
+    ])
+
+    try:
+        # Create runnable sequence
+        chain = eval_prompt | llm
+        response = chain.invoke({
+            "question": question,
+            "expected": expected_answer,
+            "answer": user_answer
+        })
+        
+        # Get text content
+        result = response.content if hasattr(response, 'content') else str(response)
+        
+        # Clean the response
+        if isinstance(result, str):
+            # Remove markdown formatting
+            result = result.replace('```json', '').replace('```', '')
+            # Double escape backslashes for LaTeX
+            result = result.replace('\\', '\\\\')
+            # Fix duplicate braces issue
+            result = result.replace('{{\n', '{').replace('}}', '}')
+            # Clean up whitespace
+            result = result.strip()
+        
+        try:
+            # Parse JSON
+            parsed_json = json.loads(result)
+            return DeriveResponse.parse_obj(parsed_json)
+        except json.JSONDecodeError as je:
+            print(f"JSON parsing error: {je}")
+            print(f"Raw response: {result}")
+            raise
+            
+    except Exception as e:
+        print(f"Error evaluating derive answer: {str(e)}")
         raise

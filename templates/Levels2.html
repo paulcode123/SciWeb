@@ -1,0 +1,108 @@
+{% extends "darkThemeTemplate.html" %}
+
+{% block title %}
+<title>SciWeb | Interactive Study Guide</title>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="/static/levels2.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="split-container">
+    <!-- Left side - Levels content -->
+    <div class="left-panel">
+        <h2>AI Study Tools - Bloom's Taxonomy</h2>
+        
+        <!-- Existing levels content -->
+        <div id="class-selection" class="selection-area">
+            <div class="select-wrapper">
+                <i class="fas fa-graduation-cap select-icon"></i>
+                <select id="class-select">
+                    <option value="">Select a class</option>
+                </select>
+            </div>
+            <div class="select-wrapper">
+                <i class="fas fa-book select-icon"></i>
+                <select id="unit-select" disabled>
+                    <option value="">Select a unit</option>
+                </select>
+            </div>
+            <button id="start-evaluation" class="start-evaluation-button">
+                <i class="fas fa-magic"></i> Start Evaluation
+            </button>
+        </div>
+
+        <div id="settings-panel" class="settings-panel">
+            <!-- Same as Levels.html -->
+            [Previous settings-panel content]
+        </div>
+
+        <div id="loading" style="display: none;">
+            <p>Loading questions...</p>
+        </div>
+
+        <div id="evaluation" style="display: none;">
+            <!-- Same as Levels.html -->
+            [Previous evaluation content]
+        </div>
+
+        <div id="level-complete" style="display: none;">
+            <!-- Same as Levels.html -->
+            [Previous level-complete content]
+        </div>
+
+        <div id="all-levels-complete" style="display: none;">
+            <!-- Same as Levels.html -->
+            [Previous all-levels-complete content]
+        </div>
+    </div>
+
+    <!-- Right side - Study Guide -->
+    <div class="right-panel">
+        <div class="guide-header">
+            <h3>Personal Study Guide</h3>
+            <div class="guide-controls">
+                <button id="update-guide" class="guide-button">
+                    <i class="fas fa-sync"></i> Update Guide
+                </button>
+                <button id="save-guide" class="guide-button">
+                    <i class="fas fa-save"></i> Save Guide
+                </button>
+                <button id="load-guide" class="guide-button">
+                    <i class="fas fa-folder-open"></i> Load Guide
+                </button>
+            </div>
+        </div>
+        
+        <div id="guide-content" class="guide-content" contenteditable="true">
+            <!-- Study guide content will go here -->
+        </div>
+
+        <!-- Changes approval panel -->
+        <div id="changes-panel" class="changes-panel" style="display: none;">
+            <h4>Proposed Changes</h4>
+            <div id="changes-content"></div>
+            <div class="changes-controls">
+                <button id="approve-changes" class="guide-button">
+                    <i class="fas fa-check"></i> Approve
+                </button>
+                <button id="reject-changes" class="guide-button">
+                    <i class="fas fa-times"></i> Reject
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Text selection popup -->
+<div id="text-selection-popup" class="text-selection-popup" style="display: none;">
+    <textarea placeholder="How would you like to modify this section?"></textarea>
+    <button class="submit-modification">Submit</button>
+</div>
+{% endblock %}
+
+{% block js %}
+<script src="/static/levels2.js" type="module"></script>
+{% endblock %}
