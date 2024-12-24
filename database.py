@@ -259,7 +259,6 @@ def delete_data(row_val, row_name, collection):
 
 def get_user_data(sheet, prev_sheets=[]):
   from main import get_name
-  from jupiter import get_grades
   print("sheet", sheet)
   # if trying to get just the user's data, call the get_name function
   if sheet=="Name":
@@ -271,7 +270,8 @@ def get_user_data(sheet, prev_sheets=[]):
   
   # special case for the Grades, since it's not a normal sheet: it must be processed differently
   if sheet=="Grades":
-    return get_grades()
+    print("error: Grades are stored in the cache, not the database")
+    return None;
   
   # if the sheet is one of these exceptions that require special filtering
   if sheet=="FULLUsers":

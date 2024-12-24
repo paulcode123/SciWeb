@@ -33,35 +33,31 @@ async function pullfromJupiter(){
 
   const osis = document.getElementById('osis').value;
   const password = document.getElementById('password').value;
-  const encrypt = document.getElementById('encrypt').checked;
+  const addclasses = document.getElementById('addclasses').checked;
   const updateLeagues = document.getElementById('updateLeagues').checked;
   
-  var key="none"
-  if(encrypt == true){
-    console.log("encrypting")
-    key = Math.floor(Math.random() * 10000000000000000);
-    // Store first 3 digits of key
-    const keyPrefix = Math.floor(key / 10000000000000);
-    document.cookie = "gradeKey="+key;
-    // Include keyPrefix in the request
-    key = `${keyPrefix}:${key}`;
+
+  // First make POST request with credentials
+  const response = await fetchRequest('/jupiter_auth', {
+      "osis": osis,
+      "password": password,
+      "addclasses": addclasses,
+      "updateLeagues": updateLeagues
+    });
+  
+
+  if (!response.status) {
+    alert('Authentication failed');
+    endLoading();
+    return;
   }
 
-  // Build query string
-  const queryString = new URLSearchParams({
-    osis: osis,
-    password: password,
-    addclasses: addClasses,
-    encrypt: key,
-    updateLeagues: updateLeagues
-  }).toString();
-
-  // Setup SSE connection
-  const evtSource = new EventSource(`/jupiter?${queryString}`);
+  // Then create EventSource for streaming
+  const evtSource = new EventSource('/jupiter');
   
   evtSource.onmessage = function(event) {
     try {
-        console.log("Received SSE message:", event.data);
+        console.log("Received SSE message:", event.data.substring(0, 30));
         const data = JSON.parse(event.data);
         
         if(data.error) {
@@ -94,8 +90,12 @@ async function pullfromJupiter(){
                 }, 300);
             }, 1200);
             
-            // clear cache
-            clearCache("Grades");
+            // set Grades in cache
+            localStorage.setItem('Grades', JSON.stringify({
+              data: data.grades,
+              timestamp: Date.now()
+            }));
+            console.log("Grades set in cache", localStorage.getItem('Grades').substring(0, 30));
 
             endLoading();
         } else {

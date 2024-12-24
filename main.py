@@ -38,8 +38,8 @@ from langchain_openai import ChatOpenAI
 from database import get_data, post_data, update_data, delete_data, download_file, upload_file, init_firebase, get_user_data, send_notification, send_welcome_email
 from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, get_stats, update_leagues, get_compliments, get_grade_impact
-from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades, confirm_category_match, check_new_grades, notify_new_member
-from study import get_insights, chat_with_function_calling, run_inspire, init_pydantic, process_pdf_content, process_image_content, generate_final_evaluation, generate_followup_question, generate_practice_questions, generate_bloom_questions, evaluate_bloom_answer, save_explanations, generate_explanations, answer_worksheet_question, make_explanation_cards, synthesize_unit, generate_derive_questions, evaluate_derive_answer
+from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, confirm_category_match, check_new_grades, notify_new_member
+from study import get_insights, chat_with_function_calling, run_inspire, init_pydantic, process_pdf_content, process_image_content, generate_final_evaluation, generate_followup_question, generate_practice_questions, generate_bloom_questions, evaluate_bloom_answer, answer_worksheet_question, make_explanation_cards, synthesize_unit, generate_derive_questions, evaluate_derive_answer
 
 #get api keys from static/api_keys.json file
 keys = json.load(open('api_keys.json'))  
@@ -379,24 +379,33 @@ def get_home_ip():
   # return the user's data given their IP address
   return json.dumps({'Name': get_name(str(session['ip_add']))})
 
-# /Jupiter route
+# Split into auth and stream endpoints
+@app.route('/jupiter_auth', methods=['POST'])
+def jupiter_auth():
+    data = request.get_json()
+    # Store the credentials in session
+    session['jupiter_creds'] = {
+        'osis': data.get('osis'),
+        'password': data.get('password'),
+        'addclasses': data.get('addclasses'),
+        'updateLeagues': data.get('updateLeagues')
+    }
+    print("jupiter_creds", session['jupiter_creds'])
+    return jsonify({'status': 'ok'})
+
 @app.route('/jupiter')
-def Jupiter():
-    # Capture request data before entering generator
-    osis = request.args.get('osis')
-    password = request.args.get('password')
-    addclasses = request.args.get('addclasses')
-    encrypt = request.args.get('encrypt')  # This is coming as 'true' or 'false' string
-    updateLeagues = request.args.get('updateLeagues')
+def jupiter_stream():
+    # Get credentials from session
+    creds = session.get('jupiter_creds', {})
+    if not creds:
+        return jsonify({'error': 'Not authenticated'}), 401
 
     @stream_with_context
     def generate():
         try:
             yield f"data: {json.dumps({'message': 'Connecting to Jupiter...'})}\n\n"
             
-            # Get grades from Jupiter
-            yield f"data: {json.dumps({'message': 'Fetching grades from Jupiter...'})}\n\n"
-            classes = run_puppeteer_script(osis, password)
+            classes = run_puppeteer_script(creds['osis'], creds['password'])
             
             if classes == "WrongPass":
                 yield f"data: {json.dumps({'error': 'Incorrect credentials'})}\n\n"
@@ -407,17 +416,14 @@ def Jupiter():
             class_data = get_data("Classes")
             tokens_data = get_data("Tokens")
 
-            if str(addclasses).lower() == "true":
+            if str(creds['addclasses']).lower() == "true":
                 yield f"data: {json.dumps({'message': 'Adding you to your classes...'})}\n\n"
                 classes_added = jupapi_output_to_classes(classes, class_data)
                 notify_new_member(classes_added, tokens_data)
             
             yield f"data: {json.dumps({'message': 'Processing grades...'})}\n\n"
-            # We need to generate an encryption key if encrypt is true
-            session['user_data']['grades_key'] = str(encrypt)
-            session.modified = True
-            print("session", session['user_data'])
-            grades = jupapi_output_to_grades(classes, encrypt)
+              
+            grades = jupapi_output_to_grades(classes)
             print("c1")
             
             yield f"data: {json.dumps({'message': 'Checking for new grades to notify classmates about...'})}\n\n"
@@ -426,7 +432,7 @@ def Jupiter():
             if confirm_category_match(grades, class_data):
                 jupapi_output_to_classes(classes, class_data)
 
-            if str(updateLeagues).lower() == "true":
+            if str(creds['updateLeagues']).lower() == "true":
                 yield f"data: {json.dumps({'message': 'Updating leagues...'})}\n\n"
                 update_leagues(grades, classes)
 
@@ -678,13 +684,14 @@ def upload_assignments():
 
 @app.route('/GAsetup', methods=['POST'])
 def GA_setup():
+  data = request.json
   # get the user's grades and classes
-  classes = get_user_data("Classes")
+  classes = data['Classes']
   weights = get_weights(classes, session['user_data']['osis'])
-  grades = get_grades()
+  grades = data['Grades']
   user_data = get_name()
-  goals = get_user_data("Goals")
-  distributions = get_user_data("Distributions", {"Classes": classes})
+  goals = data['Goals']
+  distributions = data['Distributions']
   # filter goals for the user's osis
   goals = [item for item in goals if str(session['user_data']['osis']) in str(item['OSIS'])]
 

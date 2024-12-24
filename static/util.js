@@ -41,7 +41,7 @@ async function getBase64(file) {
                 const { data, timestamp } = JSON.parse(cachedItem);
                 
                 // Check if cache is still valid (less than 15 minutes old)
-                if (Date.now() - timestamp < 15 * 60 * 1000) {
+                if (Date.now() - timestamp < 15 * 60 * 1000 || sheet === 'Grades') {
                     console.log('Using cached data for:', sheet);
                     response[sheet] = data;
                     cachedSheets[sheet] = data;  // Add to cachedSheets
@@ -56,7 +56,11 @@ async function getBase64(file) {
             sheetsToFetch.push(sheet);
         }
         console.log("cachedSheets", cachedSheets);
-        
+        // if Grades is in sheetsToFetch, remove it and set response['Grades'] to a blank array
+        if (sheetsToFetch.includes('Grades')) {
+            sheetsToFetch = sheetsToFetch.filter(sheet => sheet !== 'Grades');
+            response['Grades'] = [{'name': 'Please pull grades from Jupiter'}];
+        }
         // Fetch any uncached sheets
         if (sheetsToFetch.length > 0) {
             console.log('Fetching sheets:', sheetsToFetch, "with prev_sheets", cachedSheets);

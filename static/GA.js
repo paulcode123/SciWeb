@@ -18,7 +18,9 @@ var combinedy;
 
 async function main(){
   startLoading();
-  const data = await fetchRequest('/GAsetup', { data: '' });
+  // get all the data
+  const sheets = await fetchRequest('/data', { data: 'Classes, Goals, Distributions, Grades' });
+  const data = await fetchRequest('/GAsetup', sheets);
 
     if(data['error']){
       const errorMessage = document.getElementById("error");

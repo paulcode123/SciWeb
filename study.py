@@ -4,7 +4,6 @@ import requests
 import openai
 import time
 from database import get_user_data
-from jupiter import get_grades
 from langchain.prompts import ChatPromptTemplate
 from langchain.chains import LLMChain, SequentialChain
 from pydantic import BaseModel
