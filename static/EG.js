@@ -331,7 +331,8 @@ async function update_grades(id, grades){
 // add event listener
 document.getElementById('DeleteGrades').addEventListener('click', DeleteGrades);
 async function DeleteGrades(){
-  const result = await fetchRequest('/delete_data', {"sheet": "Grades", "row_value": osis, "row_name": "osis"});
+  // clear grades from cache
+  localStorage.removeItem('Grades');
   
     // hide button
     document.getElementById('DeleteGrades').style.visibility = "hidden";
@@ -474,6 +475,11 @@ function createGradesTable(grades) {
 
     cells.forEach(cell => row.appendChild(cell));
     tableBody.appendChild(row);
+  }
+  
+  // Reset search bar
+  if (document.getElementById('gradeSearch')) {
+    document.getElementById('gradeSearch').value = '';
   }
 }
 
@@ -658,3 +664,29 @@ async function submitEdit(grade, modal) {
 //         }, 300);
 //     }, 1200);
 // });
+
+// Add this after your other document.ready event listeners
+document.getElementById('gradeSearch').addEventListener('input', filterGrades);
+
+function filterGrades() {
+  const searchTerm = document.getElementById('gradeSearch').value.toLowerCase();
+  const rows = document.getElementById('gradesBody').getElementsByTagName('tr');
+
+  for (let row of rows) {
+    const cells = row.getElementsByTagName('td');
+    let shouldShow = false;
+    
+    // Check cells 1 (score), 3 (class), 4 (category), and 5 (name)
+    // Skip cell 0 (date), cell 2 (value), and last cells (buttons)
+    const cellsToSearch = [1, 3, 4, 5];
+    
+    for (let i of cellsToSearch) {
+      if (cells[i] && cells[i].textContent.toLowerCase().includes(searchTerm)) {
+        shouldShow = true;
+        break;
+      }
+    }
+    
+    row.style.display = shouldShow || searchTerm === '' ? '' : 'none';
+  }
+}

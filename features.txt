@@ -1,6 +1,6 @@
 1. Enter Grades
    a. Users can pull grades from Jupiter Ed or enter them manually
-   b. Grades can be encrypted in the database, classes can be joined based on grade information, and leagues can be updated with new stats
+   b. Classes can be joined based on grade information, and leagues can be updated with new stats
    c. Grades can be downloaded as a CSV file
    d. Grades displayed in a table
    e. Users can override grades uploaded from Jupiter Ed
@@ -30,33 +30,45 @@
     b. Users can see previously created units within those classes or create new ones
     c. Within those units, users can upload images or pdfs of notes, the file is stored, and the AI writes notes and extracts questions from the file content
     d. Users can view the image or delete the notes
+    e. Users can chat with the AI to ask questions about the notes, and the AI will answer them
+    f. Users can add new notes or practice questions to the worksheet extract.
+    g. When a user tries to upload a file from PC, a qr code is generated, which can be scanned by the phone to take a picture of the file and upload it.
+    h. A button to synthesize the unit, which will generate a maximally diverse sample of questions from the unit.
 
 6. Evaluate
     a. Users can select a class and unit, a number of multiple choice and short response questions, and a grading style
-    b. The AI will generate questions based on the notebook data, score the user's answers, and give them a predicted test grade and strengths and weaknesses based on the test(not rigorously tested yet)
+    b. The AI will generate questions based on the notebook data, and ask the user one at at a time
+    c. The AI will generate 3 follow up questions per question to understand the user's thought process
+    c. The AI will score the user's answers, and give them a predicted test grade and strengths and weaknesses based on the test
 
 7. Levels
     a. The user can select a class and unit, starting level(of Bloom's Taxonomy), # of points to advance to next level, and specify a custom prompt(or browse a selection of prompts) for question generation and scoring
     b. The AI will generate questions based on the notebook data, score the user's answers in real time, and update the level
+    c. The AI will update the existing study guide for the unit, which can be viewed in a panel on the page
 
+8. Derive
+    a. Users can select a class and unit, and the AI will generate 20-40 theorems/statements about the unit, and a question that should lead to the user deriving the theorem/statement
+    b. It will ask the questions one at a time, and if it's close enough to the statement, it will rephrase the expected answer to be more condusive to the user's answer
+    c. If not, it will ask a simpler question to help the user arrive at the statement
+   
 8. Battle(in progress)
     a. Users can select a class and unit, and a game mode, and a join code will be generated, or enter a join code to join a battle
     b. Users are redirected to the game page, where they play the game involving answering questions related to the unit
 
 9. Classes
     a. Users can select the class from the list, be redirected to the class page
-    b. Here, they can see the class info, chat with the class, and create assignments
+    b. Here, they can see the class info, chat with the class, create assignments, and join class meetings
     c. Classes can also be joined manually by searching for them
 
 10. Assignments
     a. Users can see assignments, their class and due date
-    b. on an assignment's assignment page, users can chat with each other about the assignment
+    b. on an assignment's assignment page, users can chat with each other about the assignment, edit the details, and join a class meeting about the assignment
 
 11. Calendar
     a. Users can drag and drop assignments, study blocks, and aspiration steps into the calendar(UI in progress)
 
 12. Messages
-    a. Classes, friends, and leagues appear in the sidebar, and can be selected to chat
+    a. Classes, friends, and leagues appear in the sidebar, and can be selected to chat and add files
 
 13. Leagues(currently unfunctional)
     a. Users can create leagues, select members, and select shared metrics

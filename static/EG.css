@@ -371,3 +371,41 @@ input[type="text"] {
     0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
     100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
 }
+
+/* Add these styles */
+.search-container {
+  margin: 20px 0;
+  position: relative;
+  max-width: 500px;
+}
+
+.search-container input {
+  width: 100%;
+  padding: 12px 45px 12px 20px;
+  border: 2px solid #4a90e2;
+  border-radius: 25px;
+  background-color: #333;
+  color: white;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.search-container input:focus {
+  outline: none;
+  border-color: #64a6ed;
+  box-shadow: 0 0 10px rgba(74, 144, 226, 0.3);
+}
+
+.search-container::after {
+  content: '🔍';
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  pointer-events: none;
+}
+
+.search-container input::placeholder {
+  color: #888;
+}

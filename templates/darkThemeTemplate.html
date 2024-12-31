@@ -20,6 +20,7 @@
     {% endblock %}
     <link rel="stylesheet" href="/static/PitchFiles/assets/css/main.css" />
     <!-- Collapsible Sidebar for AI Counselor -->
+    {% if request.path != '/' %}
     <div id="ai-counselor-sidebar" class="ai-sidebar">
       <img id="toggle-sidebar" class="toggle-logo" src="/static/media/favicon.png"/>
       <div id="chat-area" class="chat-area" style="display: none;">
@@ -27,6 +28,7 @@
           <input type="text" id="user-input" placeholder="Type your message..." />
       </div>
     </div>
+    {% endif %}
     <!-- Loading animation -->
     <div class="loading-container">
       <img src="/static/media/loading1.png" class="loading-image">
@@ -57,10 +59,7 @@
                         <a>Study</a>
                         <ul>
                           <li><a href="/Notebook">Notebook</a></li>
-                          <li><a href="/Evaluate">Evaluate</a></li>
-                          <li><a href="/StudyLevels">Levels</a></li>
-                          <li><a href="/GuideBuilder">Guide Builder</a></li>
-                          
+                          <li><a href="/StudyHub">StudyHub</a></li>
                         </ul>
                       </li>
                       <li>

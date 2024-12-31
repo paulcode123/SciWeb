@@ -48,14 +48,31 @@ async function loadContext() {
         const urlParams = new URLSearchParams(window.location.search);
         const classId = urlParams.get('class');
         const encodedUnit = urlParams.get('unit');
+        const shouldUpload = urlParams.get('upload') !== 'false';
         
         if (classId && encodedUnit) {
             currentClassId = classId;
             // Replace underscores with spaces
             currentUnitName = encodedUnit.replace(/_/g, ' ');
+            
+            // Open the class's units container in sidebar
+            const classElement = document.querySelector(`.class-item[data-id="${classId}"]`);
+            const unitsContainer = classElement.querySelector('.units-container');
+            unitsContainer.style.display = 'block';
+            
+            // Check if unit exists
+            const units = getUniqueUnits(classId);
+            if (!units.includes(currentUnitName)) {
+                // Create the unit if it doesn't exist
+                const unitElement = createUnitElement(classId, currentUnitName);
+                unitsContainer.appendChild(unitElement);
+            }
+            
             loadUnitWorksheets(classId, currentUnitName);
-            // Trigger upload dialog
-            uploadWorksheet(classId, currentUnitName);
+            // Only trigger upload if shouldUpload is true
+            if (shouldUpload) {
+                uploadWorksheet(classId, currentUnitName);
+            }
         } else if (currentClassId && currentUnitName) {
             loadUnitWorksheets(currentClassId, currentUnitName);
         }
@@ -150,11 +167,27 @@ function loadUnitWorksheets(classId, unitName) {
     
     const contentArea = document.getElementById('content-area');
     contentArea.innerHTML = `
-        <h2>Worksheets for ${unitName}</h2>
-        <button id="synthesize-unit" class="synthesize-button">
-            <i class="fas fa-robot"></i> Synthesize Unit for StudyBot
-        </button>
+        <div class="unit-header">
+            <h2>Worksheets for ${unitName}</h2>
+            <div class="unit-actions">
+                <button id="refresh-unit" class="refresh-button" title="Refresh Unit">
+                    <i class="fas fa-mobile-alt"></i><i class="fas fa-sync"></i>
+                </button>
+                <button id="synthesize-unit" class="synthesize-button" title="Synthesize Unit for StudyBot">
+                    <i class="fas fa-robot"></i>
+                </button>
+            </div>
+        </div>
     `;
+    
+    // Add event listener for refresh
+    document.getElementById('refresh-unit').addEventListener('click', () => {
+        // Clear the Notebooks cache
+        localStorage.removeItem('Notebooks');
+        // Redirect to the same unit with URL parameters
+        const encodedUnit = unitName.replace(/ /g, '_');
+        window.location.href = `?class=${classId}&unit=${encodedUnit}&upload=false`;
+    });
     
     // Add event listener for synthesis
     document.getElementById('synthesize-unit').addEventListener('click', () => {
@@ -219,7 +252,9 @@ function createWorksheetElement(worksheet) {
                     </li>`
                 ).join('')}
             </ul>
-            <button class="add-note"><i class="fas fa-plus"></i> Add Note</button>
+            <div class="add-button-container" data-tooltip="Add Note">
+                <button class="add-note"><i class="fas fa-plus"></i></button>
+            </div>
         </div>
         <div class="practice-section">
             <h4><i class="fas fa-tasks"></i> Practice Questions:</h4>
@@ -231,7 +266,9 @@ function createWorksheetElement(worksheet) {
                     </li>`
                 ).join('')}
             </ol>
-            <button class="add-question"><i class="fas fa-plus"></i> Add Question</button>
+            <div class="add-button-container" data-tooltip="Add Practice Question">
+                <button class="add-question"><i class="fas fa-plus"></i></button>
+            </div>
         </div>
         <div class="worksheet-actions">
             <button class="view-worksheet" data-image="${worksheet.image}" title="View Worksheet">
@@ -253,7 +290,17 @@ function createWorksheetElement(worksheet) {
         </div>
     `;
 
-    // Add event listeners for the new buttons
+    // Process LaTeX in notes and questions
+    const processLatex = () => {
+        if (window.MathJax) {
+            const elements = worksheetDiv.querySelectorAll('.note-text, .question-text');
+            MathJax.typesetPromise(Array.from(elements));
+        }
+    };
+    
+    processLatex();
+
+    // Add event listeners for the buttons
     worksheetDiv.querySelector('.add-note').addEventListener('click', () => {
         addNoteToWorksheet(worksheet.image, worksheetDiv);
     });
@@ -263,15 +310,13 @@ function createWorksheetElement(worksheet) {
     });
 
     worksheetDiv.querySelector('.view-worksheet').addEventListener('click', (e) => {
-        console.log(e.currentTarget.dataset.image);
         viewWorksheet(e.currentTarget.dataset.image, worksheetDiv);
     });
+
     worksheetDiv.querySelector('.delete-worksheet').addEventListener('click', (e) => {
-        console.log(e.currentTarget.dataset.image);
         deleteWorksheet(e.currentTarget.dataset.image, worksheetDiv);
     });
 
-    // Add event listener for the ask question button
     worksheetDiv.querySelector('.ask-question').addEventListener('click', () => {
         const qaSection = worksheetDiv.querySelector('.question-answer-section');
         qaSection.style.display = qaSection.style.display === 'none' ? 'block' : 'none';
@@ -454,7 +499,7 @@ async function viewWorksheet(imageReference, worksheetDiv) {
 }
 
 async function addNoteToWorksheet(worksheetId, worksheetDiv) {
-    const note = prompt("Enter your note:");
+    const note = prompt("Enter your note (LaTeX supported using \\( ... \\) for inline and \\[ ... \\] for display):");
     if (note) {
         worksheet = notebookData.Notebooks.find(worksheet => worksheet.image === worksheetId);
         worksheet.subtopics.push(note);
@@ -464,7 +509,7 @@ async function addNoteToWorksheet(worksheetId, worksheetDiv) {
             row_name: 'image',
             row_value: worksheetId,
             data: worksheet
-        })
+        });
         
         const notesList = worksheetDiv.querySelector('.notes-list');
         const li = document.createElement('li');
@@ -473,37 +518,42 @@ async function addNoteToWorksheet(worksheetId, worksheetDiv) {
             <span class="note-text">${note}</span>
         `;
         notesList.appendChild(li);
+        
+        // Process LaTeX in the new note
+        if (window.MathJax) {
+            MathJax.typesetPromise([li.querySelector('.note-text')]);
+        }
     }
-    
     endLoading();
-    
 }
 
 async function addQuestionToWorksheet(worksheetId, worksheetDiv) {
-    const question = prompt("Enter your practice question:");
+    const question = prompt("Enter your practice question (LaTeX supported using \\( ... \\) for inline and \\[ ... \\] for display):");
     if (question) {
+        worksheet = notebookData.Notebooks.find(worksheet => worksheet.image === worksheetId);
+        worksheet.practice_questions.push(question);
         startLoading();
         await fetchRequest('/update_data', {
             sheet: 'Notebooks',
             row_name: 'image',
             row_value: worksheetId,
-            data: {practice_questions: [...worksheet.practice_questions, question]}
-        })
+            data: worksheet
+        });
         
-        if (data.success) {
-            const questionsList = worksheetDiv.querySelector('.practice-list');
-            const li = document.createElement('li');
-            li.innerHTML = `
-                <i class="fas fa-question-circle"></i>
-                <span class="question-text">${question}</span>
-            `;
-            questionsList.appendChild(li);
-        } else {
-            alert('Failed to add question. Please try again.');
+        const questionsList = worksheetDiv.querySelector('.practice-list');
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <i class="fas fa-question-circle"></i>
+            <span class="question-text">${question}</span>
+        `;
+        questionsList.appendChild(li);
+        
+        // Process LaTeX in the new question
+        if (window.MathJax) {
+            MathJax.typesetPromise([li.querySelector('.question-text')]);
         }
-        
-        endLoading();
     }
+    endLoading();
 }
 
 async function askWorksheetQuestion(imageReference, question, worksheetDiv) {

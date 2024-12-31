@@ -59,21 +59,15 @@ Sheet name: Friends:
 Sheet name: Goals
 
     OSIS(7 digit number)
-    categories(i.e. ["Chem", "Assessments", "Homework"])
-    date(M/D/YYYY)
+    categories(array: [class_name, category])
+    date(M/D/YYYY - goal target date)
+    date_set(M/D/YYYY - when goal was set)
     id(5 digit number)
-    name(name of the goal)
-    date(when the goal ends)
-    date_set(when the goal was set)
-    grade(grade of the goal)
-
-Sheet name: GradeData
-
-    OSIS(7 digit number)
-    encryted(True/False)
-    1(A list of the first group of 50 grades, each with OSIS, category, class, date, id, name, score, value)(Processed before use when calling get_data(Grades))
-    2(second group of 50 grades)
-    ...
+    grade(float: target grade percentage)
+    type(string: 'grade', 'improvement', or 'rank')
+    notes(string: optional notes about the goal)
+    class(string: class name)
+    category(string: category name)
 
 Leagues
 
@@ -92,12 +86,6 @@ Sheet name: Notebooks
     subtopics(list of notes on the worksheet)
     practice_questions(list of practice questions on the worksheet)
 
-Sheet name: Notifications
-
-    id(4 digit number)
-    target(OSIS of the user)
-    text(text of the notification)
-    type(type of the notification)
 
 Sheet name: Profiles
 
@@ -176,3 +164,24 @@ Sheet name: Explanations
             "timestamp": datetime
         }
     )
+
+Sheet name: Guides
+
+    OSIS(7 digit number)
+    classId(4 digit id of class)
+    id(5 digit id)
+    last_edit(YYYY-MM-DDTHH:MM:SS.sssZ)
+    sections(array of objects containing:
+        {
+            title: str,  // e.g. 'General', 'Continuity', 'Limits', etc.
+            points: array of objects
+                 {
+                    text: str,
+                    correct: [mm/dd/yyyy, mm/dd/yyyy, ...] // dates of the correct answers
+                    incorrect: [mm/dd/yyyy, mm/dd/yyyy, ...] // dates of the incorrect answers
+                    points: [] //array of objects like this one
+                 }
+        }
+    )
+    unit(name of the unit)
+

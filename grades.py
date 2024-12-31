@@ -263,13 +263,12 @@ def decode_category_groups(category_groups):
 def get_stats(grades, classes):
   print("in get_stats")
   # get current GPA(avg of rounded class grades), raw average
-  grades = filter_grades(grades, session['user_data'], ["all", "All"])
   weights = get_weights(classes, session['user_data']['osis'])
   current_date = datetime.datetime.now().date()
   raw_avg, current_grades = calculate_grade(grades, weights, current_date, return_class_grades=True)
   raw_avg = round(raw_avg, 2)
-  # get the GPA by taking the average of the rounded class grades
-  gpa = round(sum([round(grade) for grade in current_grades.values()])/len(current_grades), 2)
+  # get the GPA as shown on report cards by taking the average of the rounded class grades, except for phys ed
+  gpa = round(sum([round(grade) for name, grade in current_grades.items() if name.lower() != "phys ed"])/len(current_grades)-1, 2)
 
   # calculate the grade from 30 days ago
   thirty_days_ago = current_date - datetime.timedelta(days=30)
@@ -281,7 +280,7 @@ def get_stats(grades, classes):
     # Calculate the change in grades for each class
     grade_changes = {}
     for class_name, grade in current_grades.items():
-      if class_name in t30_grades:
+      if class_name in t30_grades and class_name.lower() != "phys ed":
         grade_changes[class_name] = round(grade - t30_grades[class_name], 3)
 
     # Find the most improved class and most worsened class
@@ -299,7 +298,7 @@ def get_stats(grades, classes):
 
   # filter grades for only those from the past 30 days
   grades_past_30_days = [grade for grade in grades if datetime.datetime.strptime(grade['date'], '%m/%d/%Y').date() >= thirty_days_ago]
-  past30_avg = calculate_grade(grades_past_30_days, weights, thirty_days_ago)
+  past30_avg = calculate_grade(grades_past_30_days, weights, current_date)
   past30_avg = round(past30_avg, 2)
 
   return {"gpa": gpa, "raw_avg": raw_avg, "avg_change": avg_change, "most_improved_class": most_improved_class, "most_worsened_class": most_worsened_class, "past30_avg": past30_avg, "t30_avg": t30_avg, "grade_changes": grade_changes}

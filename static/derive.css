@@ -121,6 +121,7 @@ select:hover {
     grid-template-columns: 1fr 1fr;
     gap: 2rem;
     margin: 2rem 0;
+    height: calc(100vh - 300px);
 }
 
 .question-section, .guide-section {
@@ -363,4 +364,45 @@ select:hover {
 
 .save-button i {
     font-size: 1rem;
+}
+
+/* Guide Section Enhancement */
+.guide-section {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    box-shadow: var(--shadow-soft);
+    transition: var(--transition-smooth);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.guide-header {
+    position: sticky;
+    top: 0;
+    background: inherit;
+    z-index: 10;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.guide-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-color) transparent;
+}
+
+/* Custom scrollbar for WebKit browsers */
+.guide-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.guide-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.guide-content::-webkit-scrollbar-thumb {
+    background-color: var(--primary-color);
+    border-radius: 4px;
 }

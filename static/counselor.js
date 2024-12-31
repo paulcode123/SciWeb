@@ -2,89 +2,69 @@ export { typeOutText, await_enter, AI_response };
 
 // if url is / (index.html), then we are in the main page, set isMainPage to true
 const isMainPage = window.location.pathname === '/';
-const chatLog = document.getElementById('chat-log');
 console.log("in counselor.js")
+
 // function to type out text in a message div in chatLog
 async function typeOutText(text, speed, targetDiv = document.getElementById('chat-log')) {
-    console.log("typeOutText", text, speed, targetDiv)
-    // Create message for counselor sidebar
-    const sidebarLog = document.getElementById('chat-log');
-    if (sidebarLog) {
-        const sidebarMessage = document.createElement('div');
-        sidebarMessage.className = 'ai-message';
-        sidebarLog.appendChild(sidebarMessage);
-        sidebarLog.scrollTop = sidebarLog.scrollHeight;
-    }
+    console.log("typeOutText", text, speed, targetDiv);
     
-    // Create message for main chat
-    const mainMessage = document.createElement('div');
-    mainMessage.className = 'ai-message';
-    targetDiv.appendChild(mainMessage);
+    // Create message div
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'ai-message';
+    targetDiv.appendChild(messageDiv);
     
-    // Type out text in both locations
+    // Type out text
     for (let i = 0; i < text.length; i++) {
-        const char = text[i];
-        if (sidebarLog) {
-            const sidebarMessage = sidebarLog.lastElementChild;
-            sidebarMessage.textContent += char;
-        }
-        if (isMainPage) {
-            mainMessage.textContent += char;
-        }
+        messageDiv.textContent += text[i];
         await new Promise(resolve => setTimeout(resolve, speed));
     }
     
-    // Scroll both chat areas
-    if (sidebarLog) sidebarLog.scrollTop = sidebarLog.scrollHeight;
+    // Scroll chat area
     targetDiv.scrollTop = targetDiv.scrollHeight;
 }
 
-// Toggle sidebar visibility
-document.getElementById('toggle-sidebar').addEventListener('click', function() {
-    const chatArea = document.getElementById('chat-area');
-    chatArea.style.display = chatArea.style.display === 'none' ? 'block' : 'none';
-    // if the chat Log is empty, call main
-    if (chatLog.children.length === 0) {
-        main_counselor();
-    }
-});
+// Toggle sidebar visibility - only add event listener if sidebar exists
+const toggleButton = document.getElementById('toggle-sidebar');
+if (toggleButton) {
+    toggleButton.addEventListener('click', function() {
+        const chatArea = document.getElementById('chat-area');
+        chatArea.style.display = chatArea.style.display === 'none' ? 'block' : 'none';
+        // if the chat Log is empty, call main
+        const chatLog = document.getElementById('chat-log');
+        if (chatLog && chatLog.children.length === 0) {
+            main_counselor();
+        }
+    });
+}
 
 async function main_counselor(){
+    const chatLog = document.getElementById('chat-log');
     var prompts = [{"role": "system", "content": "You are the user's College Counselor. It's your responsibility to tell them their assignments, if they have any tests coming up, recent grades, their goals, etc. You can access any of their data at any time from the database with the get_data/get_grades function."}]
     var prompt = "Hello, I am your SciWeb Counselor. How can I help you today?"
     prompts.push({"role": "assistant", "content": prompt});
-    typeOutText(prompt, 50);
+    typeOutText(prompt, 50, chatLog);
     while (true){
-        var user_response = await await_enter();
+        var user_response = await await_enter(document.getElementById('user-input'), chatLog);
         prompts.push({"role": "user", "content": user_response});
         var ai_response = await AI_response(prompts);
-        typeOutText(ai_response, 50);
+        typeOutText(ai_response, 50, chatLog);
     }
 }
 
-function add_user_text(text){
+function add_user_text(text, chatLog){
     const messageDiv = document.createElement('div');
     messageDiv.className = 'user-message';
     chatLog.appendChild(messageDiv);
     messageDiv.textContent = text;
 }
 
-async function await_enter(inputElement=document.getElementById('user-input')) {
+async function await_enter(inputElement=document.getElementById('user-input'), chatLog=document.getElementById('chat-log')) {
     return new Promise(resolve => {
         const handleKeyDown = (event) => {
             if (event.key === 'Enter' && event.target === inputElement) {
                 var input = inputElement.value;
                 if (input.trim()) {  // Only process non-empty messages
-                    add_user_text(input);
-                    // Also add to main chat log if it exists
-                    const mainChatLog = document.getElementById('chatLog');
-                    if (mainChatLog) {
-                        const mainMessageDiv = document.createElement('div');
-                        mainMessageDiv.className = 'user-message';
-                        mainMessageDiv.textContent = input;
-                        mainChatLog.appendChild(mainMessageDiv);
-                        mainChatLog.scrollTop = mainChatLog.scrollHeight;
-                    }
+                    add_user_text(input, chatLog);
                     inputElement.value = '';
                     resolve(input);
                 }

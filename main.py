@@ -927,12 +927,14 @@ def generate_bloom_questions_route():
 @app.route('/evaluate-answer', methods=['POST'])
 def evaluate_answer_route():
     data = request.json
+    print("data", data)
     try:
         evaluation = evaluate_bloom_answer(
             vars['llm'],
             data['question'],
             data['answer'],
-            data['level']
+            data['level'],
+            data['guide']
         )
         return jsonify(evaluation.model_dump())
     except Exception as e:

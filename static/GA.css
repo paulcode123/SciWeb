@@ -604,3 +604,290 @@ h2 {
 .collapsible.active .collapsible-content {
   display: block;
 }
+
+/* Goal Modal Styles */
+.goal-modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.goal-modal-content {
+  background-color: #3c3d3d;
+  margin: 10% auto;
+  padding: 20px;
+  border: 2px solid rgb(228, 76, 101);
+  border-radius: 8px;
+  width: 80%;
+  max-width: 600px;
+  position: relative;
+  color: white;
+}
+
+.goal-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.goal-modal-close {
+  color: white;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.goal-modal-close:hover {
+  color: rgb(228, 76, 101);
+}
+
+.goal-form-group {
+  margin-bottom: 15px;
+}
+
+.goal-form-group label {
+  display: block;
+  margin-bottom: 5px;
+  color: white;
+}
+
+.goal-form-group input,
+.goal-form-group select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background-color: #1b1c1c;
+  color: white;
+}
+
+.goal-form-group input[type="date"] {
+  color-scheme: dark;
+}
+
+.goal-type-selector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.goal-type-button {
+  padding: 10px 20px;
+  border: 2px solid rgb(228, 76, 101);
+  border-radius: 4px;
+  background: none;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.goal-type-button.active {
+  background: rgb(228, 76, 101);
+}
+
+.goal-submit-btn {
+  background-color: rgb(228, 76, 101);
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 15px;
+}
+
+.goal-submit-btn:hover {
+  background-color: #c43c54;
+}
+
+/* Enhanced Goal Table Styles */
+#goalTableContainer {
+  margin: 20px 0;
+  padding: 20px;
+  background-color: #322f2f;
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+#goalTable {
+  width: 100%;
+  border-collapse: collapse;
+  color: white;
+}
+
+#goalTable th, #goalTable td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid rgb(228, 76, 101);
+}
+
+#goalTable th {
+  background-color: rgb(228, 76, 101);
+  color: black;
+}
+
+#goalTable tr:hover {
+  background-color: rgba(228, 76, 101, 0.1);
+}
+
+.goal-progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #1b1c1c;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.goal-progress-fill {
+  height: 100%;
+  background-color: rgb(228, 76, 101);
+  transition: width 0.3s ease;
+}
+
+.goal-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.goal-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: white;
+  font-size: 1.2em;
+  padding: 4px;
+  transition: color 0.3s ease;
+}
+
+.goal-action-btn:hover {
+  color: rgb(228, 76, 101);
+}
+
+.goal-status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.9em;
+  font-weight: bold;
+}
+
+.goal-status.on-track {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.goal-status.at-risk {
+  background-color: #FFC107;
+  color: black;
+}
+
+.goal-status.behind {
+  background-color: #f44336;
+  color: white;
+}
+
+/* Goal Chart Indicator */
+.goal-indicator {
+  position: fixed;
+  width: 30px;
+  height: 30px;
+  background-color: rgba(228, 76, 101, 0.2);
+  border: 2px solid rgb(228, 76, 101);
+  border-radius: 50%;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  z-index: 1000;
+  display: none;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+}
+
+.goal-actions-container {
+  display: flex;
+  gap: 10px;
+}
+
+#clickToAddGoal {
+  transition: background-color 0.3s ease;
+}
+
+.goal-progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #1b1c1c;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 5px 0;
+}
+
+.goal-progress-fill {
+  height: 100%;
+  background-color: rgb(228, 76, 101);
+  transition: width 0.5s ease-in-out;
+}
+
+.trend-sparkline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 0.9em;
+}
+
+.goal-status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.9em;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.goal-status.on-track {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.goal-status.at-risk {
+  background-color: #FFC107;
+  color: black;
+}
+
+.goal-status.behind {
+  background-color: #f44336;
+  color: white;
+}
+
+#goalTable tr {
+  transition: background-color 0.3s ease;
+}
+
+.goal-action-btn {
+  opacity: 0.7;
+  transition: opacity 0.3s ease, transform 0.2s ease;
+}
+
+.goal-action-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}

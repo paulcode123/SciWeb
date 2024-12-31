@@ -20,6 +20,16 @@ async function main(){
   startLoading();
   // get all the data
   const sheets = await fetchRequest('/data', { data: 'Classes, Goals, Distributions, Grades' });
+  // if no grades(len grades < 2, show error)
+  if(sheets['Grades'].length < 2){
+    const errorMessage = document.getElementById("error");
+    errorMessage.textContent = "No grades found";
+    // hide loading wheel
+    endLoading();
+    // stop any further execution
+    window.stop();
+    return;
+  }
   const data = await fetchRequest('/GAsetup', sheets);
 
     if(data['error']){
@@ -54,6 +64,9 @@ async function main(){
     draw_graphs(grade_spreads, times, weights, grades, ['All', 'all'], val_sums, 5, goals);
     setGoalTable(goals)
     displayGrades(allgrades);
+
+    // Initialize modal after data is loaded
+    initializeGoalModal();
     endLoading();
 }
 
@@ -407,7 +420,10 @@ combinedy = final;
 let finalTraces = [];
 let numTraces = [];
 for (let i = 0; i < spreads.length; i++) {
-  finalTraces.push({y: final});
+  finalTraces.push({
+    y: final,
+    hovertemplate: 'Combined<br>Date: %{x}<br>Grade: %{y:.1f}%<extra></extra>'
+  });
   numTraces.push(i+1);
 }
 
@@ -437,9 +453,13 @@ setTimeout(function(){
   document.getElementById('components').addEventListener('change', function() {
     if(this.checked) {
       // Split the lines when checked
-      console.log(spreads)
-      traces = spreads.map(spread => {return {y: spread}});
-      animationGOTC(numTraces, traces);
+      let componentTraces = spreads.map((spread, index) => {
+        return {
+          y: spread,
+          hovertemplate: `${spread_names[index]}<br>Date: %{x}<br>Grade: %{y:.1f}%<extra>${spread_names[index]}</extra>`
+        };
+      });
+      animationGOTC(numTraces, componentTraces);
     } else {
       // Combine the lines when unchecked
       animationGOTC(numTraces, finalTraces);
@@ -448,11 +468,14 @@ setTimeout(function(){
 
   // Add event listener for the new "Class components" checkbox
   document.getElementById('classComponents').addEventListener('change', function() {
-    console.log("classComponents checkbox clicked", this.checked)
     if (this.checked) {
       // Calculate and display class components
       let classTraces = calculateClassComponents(spreads, weights, spread_names, w);
-      console.log("classTraces", classTraces)
+      // Add proper hover templates to class traces
+      classTraces = classTraces.map(trace => ({
+        ...trace,
+        hovertemplate: `${trace.name}<br>Date: %{x}<br>Grade: %{y:.1f}%<extra>${trace.name}</extra>`
+      }));
       animationGOTC(numTraces, classTraces);
     } else {
       // Combine the lines when unchecked
@@ -752,7 +775,12 @@ var layout = {
 // Store the combined KDE
 var data = grades.map(grade => grade['score']/grade['value']*100);
 var kde = kernelDensityEstimation(data, epanechnikovKernel, bandwidth);
-let combinedTrace = {x: kde.x, y: kde.y};
+let combinedTrace = {
+  x: kde.x,
+  y: kde.y,
+  name: 'Combined',
+  hovertemplate: 'Combined<br>Grade: %{x:.1f}%<br>Density: %{y:.3f}<extra></extra>'
+};
 
 // Define tracenums
 let tracenums = Array.from({length: traces.length}, (_, i) => i);
@@ -1028,9 +1056,16 @@ async function shareGraph(id) {
 
 function setGoalTable(goals) {
   const tableBody = document.getElementById('goalTableBody');
-  tableBody.innerHTML = ''; // Clear existing rows
+  tableBody.innerHTML = '';
 
-  goals.forEach((goal, index) => {
+  if (!goals || !goals.length) {
+    const emptyRow = document.createElement('tr');
+    emptyRow.innerHTML = '<td colspan="7" style="text-align: center;">No goals set yet. Click "Add Goal Manually" or use "Click Graph to Add Goal" to get started.</td>';
+    tableBody.appendChild(emptyRow);
+    return;
+  }
+
+  goals.forEach(goal => {
     const row = document.createElement('tr');
     
     const dateSet = new Date(goal.date_set);
@@ -1039,41 +1074,96 @@ function setGoalTable(goals) {
     const daysLeft = Math.ceil((goalDate - today) / (1000 * 60 * 60 * 24));
     
     const totalDays = Math.ceil((goalDate - dateSet) / (1000 * 60 * 60 * 24));
-    const daysPassed = totalDays - daysLeft;
+    const daysPassed = Math.max(0, totalDays - daysLeft);
     const percentTimeComplete = Math.round((daysPassed / totalDays) * 100);
 
-    // Interpolate the grade when set
-    const gradeWhenSet = interpolate(dateToSerial(goal.date_set), combinedx, combinedy);
-    const currentGrade = interpolate(dateToSerial(today.toLocaleDateString()), combinedx, combinedy);
+    // Get current grade and calculate progress with error handling
+    let currentGrade = 0;
+    let gradeWhenSet = 0;
+    try {
+      currentGrade = interpolate(dateToSerial(today.toLocaleDateString()), combinedx, combinedy) || 0;
+      gradeWhenSet = interpolate(dateToSerial(goal.date_set), combinedx, combinedy) || 0;
+    } catch (e) {
+      console.error('Error calculating grades:', e);
+    }
 
     const totalGradeChange = goal.grade - gradeWhenSet;
     const currentGradeChange = currentGrade - gradeWhenSet;
-    const percentGradeComplete = Math.round((currentGradeChange / totalGradeChange) * 100);
+    const percentGradeComplete = Math.round((currentGradeChange / totalGradeChange) * 100) || 0;
 
+    // Calculate if on track with error handling
     const expectedGrade = gradeWhenSet + (totalGradeChange * (daysPassed / totalDays));
-    const percentAboveBelow = Math.round((currentGrade - expectedGrade) * 100) / 100;
+    const percentAboveBelow = Math.round(((currentGrade - expectedGrade) || 0) * 100) / 100;
+    
+    let status = '';
+    if (percentAboveBelow >= 0) {
+      status = '<span class="goal-status on-track">On Track</span>';
+    } else if (percentAboveBelow >= -5) {
+      status = '<span class="goal-status at-risk">At Risk</span>';
+    } else {
+      status = '<span class="goal-status behind">Behind</span>';
+    }
+
+    // Create progress bar with error handling
+    const progressBar = `
+      <div class="goal-progress-bar">
+        <div class="goal-progress-fill" style="width: ${Math.max(0, Math.min(100, percentGradeComplete || 0))}%"></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 0.8em;">
+        <span>${(currentGrade || 0).toFixed(1)}%</span>
+        <span>${goal.grade.toFixed(1)}%</span>
+      </div>
+    `;
+
+    // Create trend indicator with error handling
+    const trend = `
+      <div class="trend-sparkline">
+        ${percentAboveBelow >= 0 ? '↗️' : '↘️'} ${Math.abs(percentAboveBelow || 0).toFixed(1)}%
+      </div>
+    `;
 
     row.innerHTML = `
-      <td>${daysLeft}</td>
-      <td>${percentTimeComplete}%</td>
-      <td>${percentGradeComplete}%</td>
-      <td>${percentAboveBelow > 0 ? '+' : ''}${percentAboveBelow}%</td>
-      <td>${goal.grade.toFixed(2)}%</td>
-      <td>${goal.categories.join(', ')}</td>
-      <td><span class="delete-goal" data-id="${goal.id}">🗑️</span></td>
+      <td>${status}</td>
+      <td>${goal.class}/${goal.category}</td>
+      <td>${progressBar}</td>
+      <td>${goal.grade.toFixed(1)}%</td>
+      <td>${formatDueDate(goal.date)} (${daysLeft} days)</td>
+      <td>${trend}</td>
+      <td>
+        <div class="goal-actions">
+          <button class="goal-action-btn edit-goal" title="Edit Goal" data-id="${goal.id}">✏️</button>
+          <button class="goal-action-btn delete-goal" title="Delete Goal" data-id="${goal.id}">🗑️</button>
+          ${goal.notes ? '<button class="goal-action-btn view-notes" title="View Notes" data-notes="' + goal.notes + '">📝</button>' : ''}
+        </div>
+      </td>
     `;
 
     tableBody.appendChild(row);
   });
 
-  // Add event listeners for delete buttons
+  // Add event listeners for actions
   document.querySelectorAll('.delete-goal').forEach(button => {
-    button.addEventListener('click', async function() {
-      const goalId = this.getAttribute('data-id');
-      goals = await deleteGoal(goalId);
-      // Refresh the graph and table
-      draw_graphs(grade_spreads, times, weights, grades, currentCategories, val_sums, 5, goals);
-      setGoalTable(goals);
+    button.addEventListener('click', async () => {
+      const goalId = button.dataset.id;
+      if (confirm('Are you sure you want to delete this goal?')) {
+        goals = await deleteGoal(goalId);
+        draw_graphs(grade_spreads, times, weights, grades, currentCategories, val_sums, 5, goals);
+        setGoalTable(goals);
+      }
+    });
+  });
+
+  document.querySelectorAll('.edit-goal').forEach(button => {
+    button.addEventListener('click', () => {
+      const goalId = button.dataset.id;
+      const goal = goals.find(g => g.id === parseInt(goalId));
+      openEditGoalModal(goal);
+    });
+  });
+
+  document.querySelectorAll('.view-notes').forEach(button => {
+    button.addEventListener('click', () => {
+      alert(button.dataset.notes);
     });
   });
 }
@@ -1458,108 +1548,59 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function calculateClassComponents(spreads, weights, spread_names, w) {
-    console.log('Starting calculateClassComponents with:', {
-        'Number of spreads': spreads.length,
-        'Spread names': spread_names,
-        'Weights array': w
-    });
-    
     let classComponents = {};
     let classWeights = {};
 
-    // Aggregate spreads and weights by class
+    // First pass: Group by class name and accumulate weighted values
     for (let i = 0; i < spreads.length; i++) {
-        console.log(`\nProcessing spread ${i}:`, {
-            'Spread name': spread_names[i],
-            'Weight': w[i],
-            'Sample of values': spreads[i].slice(0, 5)
-        });
-        
-        // Find matching class and category from weights dictionary
+        // Get category and class name by finding the first occurrence of a class name from weights
+        let fullName = spread_names[i];
         let className = null;
-        let category = null;
         
-        // Iterate through weights to find matching class and category
-        for (const cls in weights) {
-            for (const cat in weights[cls]) {
-                if (spread_names[i] === `${cat} ${cls}`) {
-                    className = cls;
-                    category = cat;
-                    console.log('Found match:', {
-                        'Class': className,
-                        'Category': category,
-                        'Weight from dict': weights[cls][cat]
-                    });
-                    break;
-                }
+        // Find which class this spread belongs to by checking weights keys
+        for (let possibleClass in weights) {
+            if (fullName.includes(possibleClass)) {
+                className = possibleClass;
+                break;
             }
-            if (className) break;
         }
         
-        if (!className) {
-            console.error(`Could not find matching class/category for ${spread_names[i]}`);
-            continue;
-        }
-
+        // Skip if we couldn't find a matching class
+        if (!className) continue;
+        
         let weight = w[i];
         
         if (!classComponents[className]) {
-            console.log(`Initializing new class: ${className}`);
             classComponents[className] = Array(spreads[i].length).fill(0);
-            classWeights[className] = 0;
+            classWeights[className] = {};
         }
         
-        console.log(`Before adding spread ${i} to ${className}:`, {
-            'Current class weight': classWeights[className],
-            'Sample of current values': classComponents[className].slice(0, 5)
-        });
-        
+        // Add values without weights initially
         for (let j = 0; j < spreads[i].length; j++) {
             if (spreads[i][j] !== 99.993) {
-                let oldValue = classComponents[className][j];
-                let contribution = spreads[i][j] * weight;
-                classComponents[className][j] += contribution;
-                
-                if (j === 0) {  // Log detailed calculation for first timepoint
-                    console.log(`Sample calculation for timepoint 0:`, {
-                        'Original value': spreads[i][j],
-                        'Weight': weight,
-                        'Contribution': contribution,
-                        'Previous sum': oldValue,
-                        'New sum': classComponents[className][j]
-                    });
+                if (!classComponents[className][j]) {
+                    classComponents[className][j] = {
+                        sum: 0,
+                        weightSum: 0
+                    };
                 }
-                
-                if (j === 0) {
-                    classWeights[className] += weight;
-                }
+                classComponents[className][j].sum += spreads[i][j] * weight;
+                classComponents[className][j].weightSum += weight;
             }
         }
-        
-        console.log(`After adding spread ${i} to ${className}:`, {
-            'Final class weight': classWeights[className],
-            'Sample of new values': classComponents[className].slice(0, 5)
-        });
     }
 
-    console.log('\nFinal class weights:', classWeights);
-    
-    // Calculate weighted averages for each class
+    // Create traces with properly weighted averages
     let classTraces = [];
     for (let className in classComponents) {
-        console.log(`\nCalculating average for ${className}:`, {
-            'Total weight': classWeights[className],
-            'Sample of sums': classComponents[className].slice(0, 5)
-        });
+        // Calculate weighted average at each time point
+        let weightedAverage = classComponents[className].map(point => 
+            point && point.weightSum > 0 ? point.sum / point.weightSum : null
+        );
         
-        let weightedAverage = classComponents[className].map(sum => {
-            return classWeights[className] > 0 ? sum / classWeights[className] : 0;
-        });
-        
-        console.log(`Weighted average results for ${className}:`, {
-            'Sample of final averages': weightedAverage.slice(0, 5)
-        });
-        
+        // Filter out null values
+        weightedAverage = weightedAverage.map(val => val === null ? 100 : val);
+
         let trace = {
             x: times,
             y: weightedAverage,
@@ -1569,12 +1610,57 @@ function calculateClassComponents(spreads, weights, spread_names, w) {
                 color: `#${Math.floor(Math.random()*16777215).toString(16)}`,
                 width: 2
             },
-            hovertemplate: `${className}<br>Date: %{x}<br>Grade: %{y:.1f}%<extra></extra>`
+            hovertemplate: `${className}<br>Date: %{x}<br>Grade: %{y:.1f}%<extra>${className}</extra>`
         };
         classTraces.push(trace);
     }
 
-    console.log('\nFinal number of traces:', classTraces.length);
     return classTraces;
+}
+
+// Goal Management Functions
+let isClickToAddActive = false;
+let clickIndicator = null;
+
+function initializeGoalModal() {
+  // Get all the necessary elements
+  const modal = document.getElementById('goalModal');
+  const closeBtn = document.querySelector('.goal-modal-close');
+  const addGoalBtn = document.getElementById('addGoal');
+  const clickToAddBtn = document.getElementById('clickToAddGoal');
+  const goalForm = document.getElementById('goalForm');
+
+  // Add click handler for manual goal entry
+  addGoalBtn.addEventListener('click', () => {
+    // Reset form and show modal
+    goalForm.reset();
+    
+    // Set minimum date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('goalDate').min = today;
+    
+    // Reset goal type buttons
+    document.querySelectorAll('.goal-type-button').forEach(btn => {
+      btn.classList.remove('active');
+      btn.style.backgroundColor = 'transparent';
+    });
+    document.querySelector('[data-type="grade"]').classList.add('active');
+    document.querySelector('[data-type="grade"]').style.backgroundColor = 'rgb(228, 76, 101)';
+    
+    // Show modal
+    modal.style.display = 'block';
+  });
+
+  // Rest of the initialization code remains the same...
+}
+
+function formatDueDate(dateString) {
+    const date = new Date(dateString);
+    const options = { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric'
+    };
+    return date.toLocaleDateString('en-US', options);
 }
 

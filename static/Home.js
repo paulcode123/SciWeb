@@ -586,16 +586,17 @@ async function initializeChat() {
                 // Clear input field
                 userInput.value = '';
                 
-                // Add user message to both chat areas
-                const mainMessageDiv = document.createElement('div');
-                mainMessageDiv.className = 'user-message';
-                mainMessageDiv.textContent = userResponse;
-                chatLog.appendChild(mainMessageDiv);
+                // Add user message to chat log
+                const userMessageDiv = document.createElement('div');
+                userMessageDiv.className = 'user-message';
+                userMessageDiv.textContent = userResponse;
+                chatLog.appendChild(userMessageDiv);
                 chatLog.scrollTop = chatLog.scrollHeight;
 
                 // Add to prompts and get AI response
                 prompts.push({"role": "user", "content": userResponse});
                 const aiResponse = await AI_response(prompts);
+                prompts.push({"role": "assistant", "content": aiResponse});
                 await typeOutText(aiResponse, 50, chatLog);
             }
         }
