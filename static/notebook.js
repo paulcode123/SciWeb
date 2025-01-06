@@ -457,6 +457,8 @@ function sendWorksheetToServer(classId, unitName, base64File, fileType) {
     .then(data => {
         if (data.success) {
             alert('Worksheet uploaded successfully!');
+            // clear Notebooks from local storage
+            localStorage.removeItem('Notebooks');
             loadContext(); // Reload the entire context
         } else {
             alert('Error uploading worksheet. Please try again.');

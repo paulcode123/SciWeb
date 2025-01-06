@@ -277,6 +277,12 @@ async function startEvaluation() {
         return;
     }
 
+    // Close settings panel
+    const settingsContent = document.getElementById('settings-content');
+    const settingsIcon = document.querySelector('.settings-toggle-icon');
+    settingsContent.classList.add('collapsed');
+    settingsIcon.classList.add('collapsed');
+
     document.getElementById('class-selection').style.display = 'none';
     document.getElementById('loading').style.display = 'block';
 
@@ -333,11 +339,17 @@ async function startEvaluation() {
 }
 
 function showQuestion(index) {
-    console.log("index", index, "currentLevel", currentLevel, levels[currentLevel])
+    console.log("index", index, "currentLevel", currentLevel, levels[currentLevel]);
     document.getElementById('current-level').textContent = `Level: ${levels[currentLevel]}`;
     const currentQuestion = currentQuestions.questions[index];
-    document.getElementById('question').innerHTML = currentQuestion.question;
-    document.getElementById('question-difficulty').textContent = `Estimated Difficulty: ${currentQuestion.personalDifficulty}`;
+    
+    // Format the question with LaTeX
+    const formattedQuestion = formatWithLaTeX(currentQuestion.question);
+    const questionElement = document.getElementById('question');
+    questionElement.innerHTML = `<div class="math-content">${formattedQuestion}</div>`;
+    
+    document.getElementById('question-difficulty').textContent = 
+        `Estimated Difficulty: ${currentQuestion.personalDifficulty}`;
     document.getElementById('answer').value = '';
     document.getElementById('feedback').style.display = 'none';
     document.getElementById('submit-answer').style.display = 'block';
@@ -352,9 +364,35 @@ function showQuestion(index) {
     const nextButton = document.getElementById('next-question');
     nextButton.disabled = false;
 
+    // Render LaTeX
     if (window.MathJax) {
-        MathJax.typesetPromise([document.getElementById('question')]);
+        MathJax.typesetPromise([questionElement]).catch(err => {
+            console.error('MathJax error:', err);
+        });
     }
+}
+
+function formatWithLaTeX(text) {
+    if (!text) return '';
+    
+    // First, escape any existing LaTeX delimiters
+    text = text.replace(/\\\(/g, '\\\\(').replace(/\\\)/g, '\\\\)');
+    text = text.replace(/\\\[/g, '\\\\[').replace(/\\\]/g, '\\\\]');
+    
+    // Replace inline math delimiters
+    text = text.replace(/\$([^\$]+)\$/g, (match, p1) => {
+        // Escape special characters in the math content
+        const escaped = p1.replace(/[&<>]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c]));
+        return `\\(${escaped}\\)`;
+    });
+    
+    // Replace display math delimiters
+    text = text.replace(/\$\$([^\$]+)\$\$/g, (match, p1) => {
+        const escaped = p1.replace(/[&<>]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c]));
+        return `\\[${escaped}\\]`;
+    });
+    
+    return text;
 }
 
 async function submitAnswer() {
@@ -366,13 +404,14 @@ async function submitAnswer() {
 
     document.getElementById('submit-answer').disabled = true;
     document.getElementById('loading').style.display = 'block';
-    console.log("guide", guide)
+    
     try {
+        const processedGuide = preprocessGuide(guide);
         const response = await fetchRequest('/evaluate-answer', {
             question: currentQuestions.questions[currentQuestionIndex].question,
             answer: answer,
             level: levels[currentLevel],
-            guide: guide
+            guide: processedGuide
         });
         
         document.getElementById('loading').style.display = 'none';
@@ -383,13 +422,14 @@ async function submitAnswer() {
         document.querySelector('.question-section').style.gridColumn = 'span 1';
         
         // Show feedback with all evaluation data
-        showFeedback(response.score, response.feedback, response);
-        updatePoints(response.score);
+        console.log("response", response)
+        const score = showFeedback(0, response.feedback, response);
+        updatePoints(score);
         
         previousAnswers.push({
             question: currentQuestions.questions[currentQuestionIndex].question,
             answer: answer,
-            score: response.score
+            score: score
         });
 
         document.getElementById('submit-answer').style.display = 'none';
@@ -402,63 +442,139 @@ async function submitAnswer() {
     }
 }
 
+function updateStudyGuideWithFeedback(evalData) {
+    if (!evalData.correct && evalData.error_step !== "n/a" && evalData.new_step !== "n/a") {
+        const studyGuideContent = document.getElementById('study-guide-content');
+        const allSteps = studyGuideContent.querySelectorAll('li');
+        
+        // Find the step that matches the error_step identifier (e.g., "1A" or "2.1")
+        let targetStep = null;
+        allSteps.forEach(step => {
+            const stepText = step.textContent.trim();
+            if (stepText.startsWith(evalData.error_step)) {
+                targetStep = step;
+            }
+        });
+        
+        if (targetStep) {
+            // Create change suggestion element with animation
+            const changeSuggestion = document.createElement('div');
+            changeSuggestion.className = 'change-suggestion';
+            changeSuggestion.style.opacity = '0';
+            changeSuggestion.style.transform = 'translateY(20px)';
+            
+            // Create the change text with subpoints if they exist
+            let subpointsHtml = '';
+            if (evalData.subpoints && evalData.subpoints.length > 0) {
+                subpointsHtml = `
+                    <ul class="subpoints">
+                        ${evalData.subpoints.map(point => `
+                            <li>
+                                <i class="fas fa-lightbulb" style="margin-right: 8px;"></i>
+                                ${point}
+                            </li>
+                        `).join('')}
+                    </ul>
+                `;
+            }
+            
+            // Add mistake information if available
+            let mistakeHtml = '';
+            if (evalData.mistake && evalData.mistake !== "n/a") {
+                mistakeHtml = `
+                    <div class="mistake-info">
+                        <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>
+                        Common mistake: ${evalData.mistake}
+                    </div>
+                `;
+            }
+            
+            changeSuggestion.innerHTML = `
+                <div class="change-text">
+                    <div class="deletion">
+                        <i class="fas fa-minus-circle" style="margin-right: 8px; color: #e74c3c;"></i>
+                        ${targetStep.textContent}
+                    </div>
+                    <div class="addition">
+                        <i class="fas fa-plus-circle" style="margin-right: 8px; color: #2ecc71;"></i>
+                        ${evalData.new_step}
+                    </div>
+                    ${subpointsHtml}
+                    ${mistakeHtml}
+                </div>
+                <div class="change-actions">
+                    <button class="accept-change" title="Accept change">
+                        <i class="fas fa-check"></i>
+                    </button>
+                    <button class="reject-change" title="Reject change">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            // Insert the suggestion before the target step
+            targetStep.parentNode.insertBefore(changeSuggestion, targetStep);
+            targetStep.style.display = 'none'; // Hide the original step
+            
+            // Animate the suggestion appearing
+            requestAnimationFrame(() => {
+                changeSuggestion.style.transition = 'all 0.5s ease-out';
+                changeSuggestion.style.opacity = '1';
+                changeSuggestion.style.transform = 'translateY(0)';
+            });
+            
+            // Set up event handlers for the new change suggestion
+            setupChangeSuggestions();
+        }
+    }
+}
+
 function showFeedback(score, feedback, evalData) {
     const feedbackElement = document.getElementById('feedback');
     
-    // Create feedback HTML with all evaluation data
-    let feedbackHtml = `
-        <div class="feedback-section">
-            <div class="score-section">
-                <h4>Score: ${score}/10</h4>
-                <p>${feedback}</p>
-            </div>
-            
-            <div class="correct-answer-section">
-                <h4>Correct Answer:</h4>
-                <p>${evalData.correct_answer}</p>
-            </div>
-            
-            ${evalData.error_step ? `
-                <div class="error-analysis-section">
-                    <h4>Error Analysis:</h4>
-                    <p><strong>Error in step:</strong> ${evalData.error_step}</p>
-                    <p><strong>Mistake made:</strong> ${evalData.mistake}</p>
-                    
-                    <div class="guide-suggestion">
-                        <h4>Suggested Guide Update:</h4>
-                        <div class="change-suggestion">
-                            <div class="change-text">
-                                <span class="deletion">${evalData.error_step}</span>
-                                <span class="addition">${evalData.new_step}</span>
-                                ${evalData.subpoints && evalData.subpoints.length > 0 ? `
-                                    <ul class="subpoints">
-                                        ${evalData.subpoints.map(point => `<li>${point}</li>`).join('')}
-                                    </ul>
-                                ` : ''}
-                            </div>
-                            <div class="change-actions">
-                                <button class="accept-change" title="Accept change">✓</button>
-                                <button class="reject-change" title="Reject change">✗</button>
-                            </div>
-                        </div>
-                    </div>
+    // Format feedback with LaTeX
+    const formattedFeedback = formatWithLaTeX(feedback);
+    
+    let feedbackHtml = '';
+    if (evalData.correct) {
+        feedbackHtml = `
+            <div class="feedback-section">
+                <div class="correct-animation">
+                    <i class="fas fa-check-circle"></i>
                 </div>
-            ` : ''}
-        </div>
-    `;
+                <p>${formattedFeedback}</p>
+            </div>
+        `;
+        // Add 10 points for correct answers
+        score = 10;
+    } else {
+        feedbackHtml = `
+            <div class="feedback-section">
+                <p>${formattedFeedback}</p>
+                <div class="correct-answer-section">
+                    <h4>Correct Answer:</h4>
+                    <div class="math-content">${formatWithLaTeX(evalData.correct_answer)}</div>
+                </div>
+            </div>
+        `;
+        // Add 0 points for incorrect answers
+        score = 0;
+    }
     
     feedbackElement.innerHTML = feedbackHtml;
-    feedbackElement.className = score >= 5 ? 'feedback-positive' : 'feedback-negative';
+    feedbackElement.className = evalData.correct ? 'feedback-positive' : 'feedback-negative';
     feedbackElement.style.display = 'block';
     document.getElementById('next-question').style.display = 'block';
 
-    // Set up the change suggestion handlers
-    setupChangeSuggestions();
+    // Update study guide with feedback
+    updateStudyGuideWithFeedback(evalData);
 
-    // Re-render MathJax for the feedback
+    // Re-render LaTeX in the feedback
     if (window.MathJax) {
         MathJax.typesetPromise([feedbackElement]);
     }
+    
+    return score;
 }
 
 function updatePoints(score) {
@@ -567,44 +683,54 @@ function initializePrompts() {
 
 function showPromptLibrary(type) {
     const library = type === 'question' ? QUESTION_PROMPT_LIBRARY : SCORING_PROMPT_LIBRARY;
-    const modalContent = createPromptLibraryModal(library, type);
     
-    // Create and show modal
-    const modal = document.createElement('div');
+    // Create modal dialog
+    const modal = document.createElement('dialog');
     modal.className = 'prompt-library-modal';
+    
+    const modalContent = `
+        <div class="prompt-library-header">
+            <h3>${type === 'question' ? 'Question' : 'Scoring'} Prompt Library</h3>
+            <button class="prompt-close-btn">&times;</button>
+        </div>
+        <div class="prompt-grid">
+            ${library.map(item => `
+                <div class="prompt-item" data-prompt="${item.prompt}">
+                    <i class="${item.icon}"></i>
+                    <h4>${item.focus}</h4>
+                    <p>${item.prompt}</p>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
     modal.innerHTML = modalContent;
     document.body.appendChild(modal);
     
-    // Add event listeners for prompt selection
+    // Show modal using the dialog API
+    modal.showModal();
+    
+    // Add event listeners
+    modal.querySelector('.prompt-close-btn').addEventListener('click', () => {
+        modal.close();
+        modal.remove();
+    });
+    
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.close();
+            modal.remove();
+        }
+    });
+    
     modal.querySelectorAll('.prompt-item').forEach(item => {
         item.addEventListener('click', () => {
             const prompt = item.getAttribute('data-prompt');
             document.getElementById(`${type}-prompt`).value = prompt;
+            modal.close();
             modal.remove();
         });
     });
-    
-    // Close modal when clicking outside
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.remove();
-    });
-}
-
-function createPromptLibraryModal(library, type) {
-    return `
-        <div class="prompt-library-content">
-            <h3>${type === 'question' ? 'Question' : 'Scoring'} Prompt Library</h3>
-            <div class="prompt-grid">
-                ${library.map(item => `
-                    <div class="prompt-item" data-prompt="${item.prompt}">
-                        <i class="${item.icon}"></i>
-                        <h4>${item.focus}</h4>
-                        <p>${item.prompt}</p>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-    `;
 }
 
 // Add new function to toggle settings
@@ -621,7 +747,11 @@ function loadMathJax() {
         tex: {
             inlineMath: [['\\(', '\\)']],
             displayMath: [['\\[', '\\]']],
-            processEscapes: true
+            processEscapes: true,
+            processEnvironments: true
+        },
+        svg: {
+            fontCache: 'global'
         },
         options: {
             skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
@@ -629,7 +759,7 @@ function loadMathJax() {
     };
 
     const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+    script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js';
     script.async = true;
     document.head.appendChild(script);
 }
@@ -697,31 +827,53 @@ function setupChangeSuggestions() {
         const rejectBtn = suggestion.querySelector('.reject-change');
         
         acceptBtn.addEventListener('click', () => {
-            const addition = suggestion.querySelector('.addition');
-            if (addition.querySelector('ul')) {
-                // For additions with subpoints
-                const li = document.createElement('li');
-                li.appendChild(addition.cloneNode(true));
-                suggestion.replaceWith(li);
-            } else {
-                // For replacements
-                const li = document.createElement('li');
-                li.textContent = addition.textContent;
-                suggestion.replaceWith(li);
-            }
+            suggestion.style.transition = 'all 0.5s ease-out';
+            suggestion.style.transform = 'translateX(100%)';
+            suggestion.style.opacity = '0';
+            
+            setTimeout(() => {
+                const addition = suggestion.querySelector('.addition');
+                const subpoints = suggestion.querySelector('.subpoints');
+                
+                // Create new content with accepted changes
+                const newContent = document.createElement('div');
+                newContent.className = 'study-guide-item';
+                newContent.style.opacity = '0';
+                newContent.style.transform = 'translateX(-20px)';
+                
+                if (addition) {
+                    const contentHtml = `
+                        <div class="accepted-change">
+                            <i class="fas fa-check-circle" style="margin-right: 8px; color: #2ecc71;"></i>
+                            ${addition.textContent.trim()}
+                        </div>
+                    `;
+                    newContent.innerHTML = contentHtml;
+                }
+                
+                if (subpoints) {
+                    newContent.appendChild(subpoints.cloneNode(true));
+                }
+                
+                suggestion.replaceWith(newContent);
+                
+                // Animate the new content appearing
+                requestAnimationFrame(() => {
+                    newContent.style.transition = 'all 0.5s ease-out';
+                    newContent.style.opacity = '1';
+                    newContent.style.transform = 'translateX(0)';
+                });
+            }, 500);
         });
         
         rejectBtn.addEventListener('click', () => {
-            const deletion = suggestion.querySelector('.deletion');
-            if (deletion) {
-                // For replacements
-                const li = document.createElement('li');
-                li.textContent = deletion.textContent;
-                suggestion.replaceWith(li);
-            } else {
-                // For pure additions
+            suggestion.style.transition = 'all 0.5s ease-out';
+            suggestion.style.transform = 'translateX(-100%)';
+            suggestion.style.opacity = '0';
+            
+            setTimeout(() => {
                 suggestion.remove();
-            }
+            }, 500);
         });
     });
 }
@@ -806,3 +958,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ... rest of your existing DOMContentLoaded code ...
 });
+
+// Add this function to preprocess the guide into ordered list format
+function preprocessGuide(guide) {
+    if (!guide || !guide.sections) return '';
+    
+    let orderedList = [];
+    let mainIndex = 1;
+    
+    guide.sections.forEach(section => {
+        if (!section.points) return;
+        
+        const processPoints = (points, prefix = '') => {
+            points.forEach((point, idx) => {
+                if (typeof point === 'object') {
+                    orderedList.push(`${prefix}${idx + 1}. ${point.text}`);
+                    if (point.points) {
+                        processPoints(point.points, `${prefix}${idx + 1}`);
+                    }
+                } else {
+                    orderedList.push(`${prefix}${idx + 1}. ${point}`);
+                }
+            });
+        };
+        
+        processPoints(section.points, `${mainIndex}`);
+        mainIndex++;
+    });
+    
+    return orderedList.join('\n');
+}

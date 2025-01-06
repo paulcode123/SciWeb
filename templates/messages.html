@@ -8,6 +8,7 @@
 <!-- css block -->
 {% block css %}
 <link rel="stylesheet" href="/static/messages.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 {% endblock %}
 
 <!-- content block -->
@@ -16,26 +17,37 @@
 <div class="messages-container">
     <div class="sidebar">
         <div class="sidebar-section">
-            <h3 class="sidebar-title" onclick="toggleSection('friends')">Friends</h3>
-            <div id="friends-list" class="sidebar-list"></div> <!-- Changed from <ul> to <div> -->
+            <h3 class="sidebar-title" onclick="toggleSection('friends')">
+                <i class="fas fa-user-friends"></i> Friends
+            </h3>
+            <div id="friends-list" class="sidebar-list"></div>
         </div>
         <div class="sidebar-section">
-            <h3 class="sidebar-title" onclick="toggleSection('classes')">Classes</h3>
-            <div id="classes-list" class="sidebar-list"></div> <!-- Changed from <ul> to <div> -->
+            <h3 class="sidebar-title" onclick="toggleSection('classes')">
+                <i class="fas fa-graduation-cap"></i> Classes
+            </h3>
+            <div id="classes-list" class="sidebar-list"></div>
         </div>
         <div class="sidebar-section">
-            <h3 class="sidebar-title" onclick="toggleSection('leagues')">Leagues</h3>
-            <div id="leagues-list" class="sidebar-list"></div> <!-- Changed from <ul> to <div> -->
+            <h3 class="sidebar-title" onclick="toggleSection('leagues')">
+                <i class="fas fa-trophy"></i> Leagues
+            </h3>
+            <div id="leagues-list" class="sidebar-list"></div>
         </div>
     </div>
     <div class="chat-area">
-        <ul id="message-list"></ul> <!-- List to display messages -->
-        <div id="image-container"></div> <!-- Container for uploaded images -->
-        <input type="text" id="message-input" placeholder="Type your message here..." />
-        <input type="file" id="upload" accept="image/*,application/pdf" />
-        <button id="send-button">Send</button>
-        <button id="clear">Clear</button>
-        <button id="refresh-chat">Refresh Chat</button>
+        <ul id="message-list"></ul>
+        <div id="image-container"></div>
+        <div class="input-group">
+            <input type="text" id="message-input" placeholder="Type something fun..." />
+            <label for="upload" class="upload-label">
+                <i class="fas fa-paperclip"></i>
+                <input type="file" id="upload" accept="image/*,application/pdf" hidden />
+            </label>
+            <button id="send-button"><i class="fas fa-paper-plane"></i> Send</button>
+            <button id="clear"><i class="fas fa-eraser"></i> Clear</button>
+            <button id="refresh-chat"><i class="fas fa-sync-alt"></i> Refresh</button>
+        </div>
     </div>
 </div>
 {% endblock %}

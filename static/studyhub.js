@@ -7,9 +7,10 @@ async function initStudyHub() {
     
     // Concurrently initialize all components of the page
     await Promise.all([
+        setupToolCards(),
         displayUpcomingAssessments(data),
-        displayPastAssessments(data),
-        setupToolCards()
+        displayPastAssessments(data)
+        
     ]);
 }
 

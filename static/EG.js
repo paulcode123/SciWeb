@@ -597,22 +597,56 @@ function createEditButton(grade) {
 
 // Function to show the edit modal
 function showEditModal(grade) {
-  console.log(grade)
   const modal = document.createElement('div');
   modal.classList.add('edit-modal');
   modal.innerHTML = `
     <div class="edit-modal-content">
       <h3>Edit Grade</h3>
-      <p>Assignment: ${grade.name}</p>
-      <p>Class: ${grade.class}</p>
-      <input type="number" id="editScore" placeholder="New Score" value="${grade.score}">
-      <input type="number" id="editValue" placeholder="New Value" value="${grade.value}">
-      <input type="number" id="editWeight" placeholder="Weight" value="1">
-      <button id="submitEdit">Submit</button>
-      <button id="cancelEdit">Cancel</button>
+      <div class="edit-field">
+        <label for="editName">Assignment Name:</label>
+        <input type="text" id="editName" value="${grade.name}">
+      </div>
+      <div class="edit-field">
+        <label for="editDate">Date:</label>
+        <input type="date" id="editDate" value="${grade.date}">
+      </div>
+      <div class="edit-field">
+        <label for="editScore">Score:</label>
+        <input type="number" id="editScore" step="0.01" value="${grade.score}">
+      </div>
+      <div class="edit-field">
+        <label for="editValue">Total Value:</label>
+        <input type="number" id="editValue" step="0.01" value="${grade.value}">
+      </div>
+      <div class="edit-field">
+        <label for="editWeight">Weight (scales score and value):</label>
+        <input type="number" id="editWeight" step="0.01" value="${grade.value}">
+      </div>
+      <div class="edit-buttons">
+        <button id="submitEdit" class="primary-button">Apply Override</button>
+        <button id="cancelEdit" class="secondary-button">Cancel</button>
+      </div>
     </div>
   `;
   document.body.appendChild(modal);
+
+  // Add event listener for weight changes
+  const weightInput = document.getElementById('editWeight');
+  const valueInput = document.getElementById('editValue');
+  const scoreInput = document.getElementById('editScore');
+  
+  weightInput.addEventListener('input', () => {
+    const weight = parseFloat(weightInput.value) || grade.value;
+    const value = parseFloat(valueInput.value) || grade.value;
+    const score = parseFloat(scoreInput.value) || grade.score;
+    
+    if (weight !== value) {
+      // Scale the score and value based on the weight
+      const scaleFactor = weight / value;
+      valueInput.value = weight;
+      scoreInput.value = (score * scaleFactor).toFixed(2);
+    }
+  });
 
   document.getElementById('submitEdit').addEventListener('click', () => submitEdit(grade, modal));
   document.getElementById('cancelEdit').addEventListener('click', () => document.body.removeChild(modal));
@@ -620,25 +654,25 @@ function showEditModal(grade) {
 
 // Function to submit the edit
 async function submitEdit(grade, modal) {
+  const newName = document.getElementById('editName').value;
+  const newDate = document.getElementById('editDate').value;
   const newScore = document.getElementById('editScore').value;
   const newValue = document.getElementById('editValue').value;
-  const weight = document.getElementById('editWeight').value;
-
-  let score = newScore*weight/newValue;
 
   const correction = {
     assignment: grade.name,
     class: grade.class,
-    score: score,
-    value: parseInt(weight),
+    score: parseFloat(newScore),
+    value: parseFloat(newValue),
+    date: newDate,
+    new_name: newName,
     OSIS: osis
   };
 
   try {
     await fetchRequest('/post_data', { sheet: "GradeCorrections", data: correction });
-    alert('Grade corrected successfully! Repull from Jupiter to apply it.');
+    alert('Grade correction saved! Repull from Jupiter to apply it.');
     document.body.removeChild(modal);
-    // Optionally, refresh the grades table here
   } catch (error) {
     console.error('Error submitting grade correction:', error);
     alert('Failed to submit grade correction. Please try again.');

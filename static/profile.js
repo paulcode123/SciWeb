@@ -60,7 +60,7 @@ document.getElementById(`${fieldName}_submit`).style.visibility = "visible";
 
 
 async function update_data(data){
-  result = await fetchRequest('/update-data', data);
+  result = await fetchRequest('/update_data', {"sheet": "Users", "data": data, "row_value": parseInt(userData.osis), "row_name": "osis"});
 }
 
 

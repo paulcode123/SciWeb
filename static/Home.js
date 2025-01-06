@@ -78,7 +78,7 @@ async function main(){
   const dashboardTop = dashboard.offsetTop;
   
   // Start loading animation above the dashboard
-  startLoading(dashboardTop + 180); // 50px above dashboard
+  // startLoading(dashboardTop + 180); // 50px above dashboard
   
   console.log("fetching data")
   const data = await fetchRequest('/data', { data: "Name, Chat, Classes, Assignments, Aspirations, Friends, Grades, Users" });
@@ -99,7 +99,7 @@ async function main(){
   show_pending_friend_requests(friends, users);
   show_recent_grades(grades);
   console.log("done")
-  endLoading();
+  // endLoading();
   return true;
 }
 

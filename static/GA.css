@@ -1,15 +1,37 @@
 #class-form {
-  max-width: 400px;
-  margin: 0 auto;
-  box-shadow: 0 5px 7px rgba(0, 0, 0, 0.1);
-  background-color:#3c3d3d;
-  padding: 20px;
+  max-width: 800px;
+  margin: 1rem auto;
+  padding: 1rem;
+  background: linear-gradient(135deg, #2c3e50, #34495e);
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .checkbox-group {
   display: flex;
-  flex-direction: row;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.class-checkbox, .category-checkbox {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  flex: 0 1 auto;
+}
+
+.class-checkbox:hover, .category-checkbox:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateX(2px);
 }
 
 /* button {
@@ -121,34 +143,75 @@ button:hover {
 
 #StatsContainer {
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* Ensures two columns */
-  box-sizing: border-box; /* Ensures padding does not affect width calculation */
-  width: 100%; /* Ensures the grid takes up the full width of the container */
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  padding: 1.5rem;
+  margin: 1rem 0;
 }
-
 
 .number-box {
-  background: #322f2f; /* Light grey background for visibility */
-  /* text-align: center; */
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Adds subtle shadow for depth */
-  width: 100%; /* Ensures the box takes up the full width of the column */
+  background: linear-gradient(135deg, #2c3e50, #34495e);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   position: relative;
-  /* 2 px pink solid border */
-  border: 2px solid rgb(228, 76, 101);
+  overflow: visible;
 }
-/* if the width of the viewport is more than 500px, have a 40 px space between boxes in the same row and have a set width */
-@media (min-width: 500px) {
-  .number-box {
-    margin-right: 40px;
-    width: 200px;
-    padding: 20px;
-    /* width: 40%; */
-  }
-  #StatsContainer {
-    gap: 20px; /* Space between columns and rows */
-    padding: 20px; /* Padding around the entire grid */
-  }
+
+.number-box:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
+
+.number-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(135deg, #00bcd4, #2196f3);
+}
+
+.number {
+  font-size: 2.5rem;
+  font-weight: bold;
+  background: linear-gradient(135deg, #00bcd4, #2196f3);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin: 0.5rem 0;
+  line-height: 1.2;
+}
+
+.caption {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  line-height: 1.5;
+}
+
+/* Class Selection Styling */
+.class-checkbox, .category-checkbox {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.class-checkbox:hover, .category-checkbox:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateX(3px);
+}
+
+/* Keep the rest of your existing styles */
 
 #perfana{
   /* styling for performance analysis button */

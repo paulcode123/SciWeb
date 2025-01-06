@@ -39,8 +39,8 @@ from database import get_data, post_data, update_data, delete_data, download_fil
 from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, get_stats, update_leagues, get_compliments, get_grade_impact
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, confirm_category_match, check_new_grades, notify_new_member
-from study import get_insights, chat_with_function_calling, run_inspire, init_pydantic, process_pdf_content, process_image_content, generate_final_evaluation, generate_followup_question, generate_practice_questions, generate_bloom_questions, evaluate_bloom_answer, answer_worksheet_question, make_explanation_cards, synthesize_unit, generate_derive_questions, evaluate_derive_answer
-
+from study import get_insights, chat_with_function_calling, run_inspire, init_pydantic, process_pdf_content, process_image_content, generate_final_evaluation, generate_followup_question, generate_practice_questions, generate_bloom_questions, evaluate_bloom_answer, answer_worksheet_question, make_explanation_cards, synthesize_unit, generate_derive_questions, evaluate_derive_answer, create_llm_chain
+from prompts import DERIVE_HELP_PROMPT
 #get api keys from static/api_keys.json file
 keys = json.load(open('api_keys.json'))  
 
@@ -77,7 +77,7 @@ def init():
   vars['llm'] = ChatOpenAI(
       api_key=vars['openAIAPI'],
       temperature=0.7,
-      model_name="gpt-4-turbo-preview"
+      model_name="gpt-4o-mini"
   )
 
   vars['vision_llm'] = ChatOpenAI(
@@ -261,20 +261,39 @@ def page_not_found(e):
     return render_template('ComingSoon.html'), 404
 
 # The following routes are pages for specific classes and assignments
-@app.route('/class/<classurl>')
-def class_page(classurl):
-  # Pass the class name and class data to the class page
-  id = classurl[-4:]
-  class_name = classurl.replace(id, "").strip()
-  classes = get_user_data("Classes")
-  print(classes)
-  class_data = next((row for row in classes if str(row['id']) == str(id)), None)
-  print(classes[4]['id'], str(id), str(classes[4]['id']) == str(id))
-  print(class_data)
-  # class_img = ""
-  # if 'img' in class_data and class_data['img'] != "":
-  #   class_img = download_file("sciweb-files", class_data['img'])
-  return render_template('class.html',
+@app.route('/class/<classid>')
+def class_page(classid):
+    # Get class data using just the ID
+    classes = get_user_data("Classes")
+    # get the last 4 characters of the classid
+    classid = classid[-4:]
+    # Print debug information
+    print(f"Looking for class ID: {classid}")
+    print(f"Available classes: {[{str(c['id']): c['name']} for c in classes]}")
+    
+    # Convert both IDs to strings and strip any whitespace for comparison
+    class_data = next((row for row in classes if str(row['id']).strip() == str(classid).strip()), None)
+    
+    if not class_data:
+        print(f"Class not found for ID: {classid}")
+        return redirect('/dashboard')
+    
+    print(f"Found class: {class_data['name']}")
+    
+    # Get class name from the data
+    class_name = class_data.get('name', '')
+    
+    # Handle class image
+    if 'img' in class_data and class_data['img']:
+        try:
+            # Convert image ID to string and ensure it's clean
+            img_id = str(class_data['img']).strip()
+            # class_data['img'] = download_file("sciweb-files", img_id)
+        except Exception as e:
+            print(f"Error loading class image: {e}")
+            class_data['img'] = None
+    
+    return render_template('class.html',
                          class_name=class_name,
                          class_data=class_data)
 
@@ -1048,6 +1067,31 @@ def evaluate_derive_answer_route():
         return jsonify({"error": "Failed to evaluate answer"}), 500
 
 
+@app.route('/derive-conversation', methods=['POST'])
+def derive_conversation():
+    data = request.json
+    
+    # Format conversation history
+    conversation_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in data['conversation_history']])
+    
+    # Create LangChain chain with the help prompt
+    chain = create_llm_chain(vars['llm'], DERIVE_HELP_PROMPT)
+    
+    try:
+        # Extract the content from the response
+        response = chain.invoke({
+            "question": data['question'],
+            "expected_answer": data['expected_answer'],
+            "conversation_history": conversation_history,
+            "student_message": data.get('student_message', '')
+        })
+        
+        # The response is a string since we're using ChatPromptTemplate
+        return jsonify({"message": response})
+    except Exception as e:
+        print(f"Error in derive conversation: {str(e)}")
+        return jsonify({"error": "Failed to generate response"}), 500
+
 
 @app.route('/impact', methods=['POST'])
 def get_impact():
@@ -1070,19 +1114,55 @@ def get_impact():
 
 @app.route('/get-file', methods=['POST'])
 def get_file():
-  data = request.json
-  print(data)
-  # Get the file from the bucket
-  base64 = download_file("sciweb-files", data['file'])
-  return json.dumps({"file": str(base64)})
+    try:
+        data = request.json
+        if not data or 'file' not in data:
+            return json.dumps({"error": "Missing file ID"}), 400
+            
+        # Get the file from the bucket
+        file_data = download_file("sciweb-files", data['file'])
+        if not file_data:
+            return json.dumps({"error": "File not found"}), 404
+            
+        # Extract type from metadata if present
+        file_type = 'application/octet-stream'
+        if file_data.startswith('data'):
+            type_end = file_data.find('base64')
+            if type_end > 4:  # 'data' length is 4
+                file_type = file_data[4:type_end]
+                file_data = file_data[type_end + 6:]  # Skip 'base64' part
+                
+        return json.dumps({
+            "file": file_data,
+            "type": file_type
+        })
+    except Exception as e:
+        print(f"Error retrieving file: {str(e)}")
+        return json.dumps({"error": str(e)}), 500
 
 @app.route('/upload-file', methods=['POST'])
 def upload_file_route():
-  data = request.json
-  print(data['file'][:100])
-  # Upload the file to the bucket
-  upload_file("sciweb-files", data['file'], data['name'])
-  return json.dumps({"message": "success"})
+    try:
+        data = request.json
+        if not data or 'file' not in data or 'name' not in data:
+            return json.dumps({"error": "Missing file or name"}), 400
+            
+        base64_data = data['file']
+        file_name = data['name']
+        file_type = data.get('type', 'application/octet-stream')
+        
+        # Ensure proper base64 padding
+        padding = 4 - (len(base64_data) % 4)
+        if padding != 4:
+            base64_data += '=' * padding
+            
+        # Upload the file to the bucket with type information
+        metadata = f"data{file_type}base64"
+        upload_file("sciweb-files", base64_data, file_name, metadata)
+        return json.dumps({"message": "success"})
+    except Exception as e:
+        print(f"Error uploading file: {str(e)}")
+        return json.dumps({"error": str(e)}), 500
 
 
 

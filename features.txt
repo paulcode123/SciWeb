@@ -57,8 +57,50 @@
 
 9. Classes
     a. Users can select the class from the list, be redirected to the class page
-    b. Here, they can see the class info, chat with the class, create assignments, and join class meetings
-    c. Classes can also be joined manually by searching for them
+    b. Class page features a modern, community-focused design with intuitive navigation
+    c. Activity Feed
+        - View and filter class activities (assignments, discussions, collaborations)
+        - Like and comment on activities
+        - Real-time updates for new activities
+        - Activity statistics and engagement metrics
+    d. Study Groups
+        - Create and join study groups
+        - Schedule recurring or one-time study sessions
+        - Share resources within study groups
+        - Group chat and collaboration tools
+        - Track group attendance and participation
+    e. Resource Sharing
+        - Share notes, practice problems, study guides, and external links
+        - Tag and categorize resources
+        - Like and comment on shared resources
+        - Control resource visibility (class-only or public)
+        - Character limits and content moderation
+    f. Enhanced Chat Features
+        - Multiple chat channels (General, Questions, Resources)
+        - Emoji reactions and polls
+        - File sharing and attachments
+        - Message threading and replies
+        - Online status indicators
+    g. Class Statistics
+        - Track class engagement metrics
+        - View assignment completion rates
+        - Monitor resource usage and popularity
+        - Study group participation stats
+    h. Community Tools
+        - Member directory with online status
+        - Collaborative study sessions
+        - Peer support system
+        - Achievement tracking
+    i. Class Management
+        - Assignment creation and tracking
+        - Category management with weights
+        - Resource organization
+        - Member management
+    j. Video Conferencing
+        - Integrated study rooms
+        - Screen sharing capabilities
+        - Whiteboard collaboration
+        - Session recording options
 
 10. Assignments
     a. Users can see assignments, their class and due date

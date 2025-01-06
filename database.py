@@ -293,6 +293,9 @@ def get_user_data(sheet, prev_sheets=[]):
     class_ids = [int(item['id']) for item in prev_sheets['Classes']]
     print("class_ids assignments", class_ids)
     return get_data("Assignments", row_name="class", row_val=class_ids, operator="in")
+  if sheet=="StudyGroups":
+    class_ids = [str(item['id']) for item in prev_sheets['Classes']]
+    return get_data("StudyGroups", row_name="class_id", row_val=class_ids, operator="in")
   if sheet=="Notebooks":
     #  send if the classID is the id for any of the rows in response['Classes']
     class_ids = [str(item['id']) for item in prev_sheets['Classes']]

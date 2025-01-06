@@ -185,3 +185,93 @@ Sheet name: Guides
     )
     unit(name of the unit)
 
+Sheet name: GradeCorrections
+
+    OSIS(7 digit number)
+    assignment(str: name of the assignment being corrected)
+    class(str: name of the class)
+    score(float: corrected score)
+    value(float: corrected total value)
+    date(str, optional: YYYY-MM-DD format, overrides the original date)
+    new_name(str, optional: new name for the assignment)
+
+Sheet name: StudyGroups
+
+    id(4 digit number)
+    name(name of the study group)
+    description(description of the group)
+    class_id(id of the class this group belongs to)
+    members(list of OSIS numbers)
+    created_at(ISO timestamp)
+    nextSession(ISO timestamp)
+    schedule(optional recurring schedule)
+    resources(list of resource IDs shared in the group)
+    chat_history(list of chat message IDs)
+
+Sheet name: Resources
+
+    id(4 digit number)
+    title(name of the resource)
+    type(notes/practice/guide/link)
+    content(text content or URL)
+    class_id(id of the class)
+    shared_by(OSIS of user who shared)
+    created_at(ISO timestamp)
+    likes(number of likes)
+    comments(array of objects containing:
+        {
+            user: OSIS,
+            text: string,
+            timestamp: ISO timestamp
+        }
+    )
+    tags(array of relevant tags)
+    visibility(public/class/group)
+    group_id(optional, if shared in a study group)
+
+Sheet name: ActivityFeed
+
+    id(5 digit number)
+    type(assignment/discussion/collaboration/resource)
+    class_id(id of the class)
+    user(OSIS of the user who generated the activity)
+    content(text description of the activity)
+    related_id(id of the related item - assignment/resource/etc)
+    timestamp(ISO timestamp)
+    likes(array of OSIS numbers who liked)
+    comments(array of objects containing:
+        {
+            user: OSIS,
+            text: string,
+            timestamp: ISO timestamp
+        }
+    )
+
+Sheet name: ClassStats
+
+    class_id(id of the class)
+    active_users(array of currently online OSIS numbers)
+    last_active(object mapping OSIS to last active timestamp)
+    participation_score(object mapping OSIS to participation metrics:
+        {
+            messages: number,
+            resources_shared: number,
+            study_sessions: number,
+            last_updated: ISO timestamp
+        }
+    )
+    study_time(object mapping OSIS to total study time in minutes)
+    resource_engagement(object mapping resource_id to engagement metrics:
+        {
+            views: number,
+            downloads: number,
+            avg_rating: number
+        }
+    )
+
+Sheet name: Modules
+
+    id(4 digit number)
+    name(name of the module)
+    description(description of the module)
+    sysPrompt(system prompt for the module)

@@ -191,13 +191,7 @@ def run_inspire(user_input, inspire_format):
     return youtube_video
 
 def generate_practice_questions(llm, mcq_count, written_count, subtopics, practice_questions):
-    question_prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are an expert educational assessment designer."),
-        ("human", """Generate {mcq_count} multiple-choice and {written_count} short-response questions 
-                     based on these topics: {topics} and examples: {examples}.""")
-    ])
-
-    chain = create_llm_chain(llm, question_prompt)
+    chain = create_llm_chain(llm, EVALUATE_PROMPT)
     response = chain.invoke({
         "mcq_count": mcq_count,
         "written_count": written_count,
@@ -208,12 +202,7 @@ def generate_practice_questions(llm, mcq_count, written_count, subtopics, practi
     return parse_json_response(response, ResponseFormat)
 
 def generate_final_evaluation(llm, followup_history):
-    final_prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are a JSON-only response generator analyzing student understanding."),
-        ("human", "Analyze this conversation history: {history}")
-    ])
-
-    chain = create_llm_chain(llm, final_prompt)
+    chain = create_llm_chain(llm, EVALUATE_EVAL_PROMPT)
     evaluation = chain.run({"history": json.dumps(followup_history)})
     
     parsed_eval = parse_json_response(evaluation, FinalEvaluation)
@@ -234,12 +223,7 @@ def generate_followup_question(llm, question, answer, history):
             {"input": str(history[entry+1]['answer'])}
         )
 
-    followup_prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are an educational AI conducting a Socratic dialogue."),
-        ("human", "Original question and answer: {qa_pair}\nGenerate a single follow-up question.")
-    ])
-
-    chain = create_llm_chain(llm, followup_prompt, memory=memory)
+    chain = create_llm_chain(llm, EVALUATE_FOLLOWUP_PROMPT, memory=memory)
     return chain.run({"qa_pair": f"Question: {question}\nAnswer: {answer}"})
 
 def process_pdf_content(llm, pdf_content: bytes) -> ResponseTypeNB:
@@ -269,20 +253,13 @@ def process_image_content(llm, image_content: str, file_type: str) -> ResponseTy
     if padding:
         image_content += '=' * (4 - padding)
 
-    messages = [
-        {"role": "system", "content": "You are an expert at analyzing educational worksheets."},
-        {"role": "user", "content": [
-            {"type": "text", "text": "Analyze this worksheet image"},
-            {"type": "image_url", "image_url": {"url": f"data:{file_type};base64,{image_content}"}}
-        ]}
-    ]
-
-    response = llm.invoke(messages)
+    response = IMAGE_ANALYSIS_PROMPT.invoke({"image_content": image_content, "file_type": file_type})
     return parse_json_response(response, ResponseTypeNB)
 
 def generate_derive_questions(llm, notebook_synthesis: str) -> DeriveQuestions:
     chain = create_llm_chain(llm, DERIVE_PROMPT)
     response = chain.invoke({"synthesis": notebook_synthesis})
+    print("derive questions: " + str(response))
     return parse_json_response(response, DeriveQuestions)
 
 def evaluate_derive_answer(llm, question: str, expected_answer: str, user_answer: str) -> DeriveResponse:
@@ -322,32 +299,7 @@ def generate_bloom_questions(llm, level: str, previous_answers: list, notebook_c
     if len(notebook_content) > 4000:
         notebook_content = notebook_content[:4000] + "..."
 
-    bloom_prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are an expert at creating educational questions. Return only valid JSON without markdown."),
-        ("human", """Create 3 {level}-level questions based on this maximally diverse sample of questions from the unit:
-
-Questions: {content}
-
-Previous questions to avoid: {previous}
-
-Return exactly this JSON structure:
-{{
-    "questions": [
-        {{
-            "question": "Question text here (use \\\\( \\\\) for LaTeX math)",
-            "personalDifficulty": 3
-        }}
-    ]
-}}
-
-Requirements:
-1. Questions must be at the {level} cognitive level
-2. Vary difficulty (1-5 scale)
-3. Use LaTeX for math: \\\\(x^2\\\\)
-4. Questions must be clear and specific""")
-    ])
-
-    chain = create_llm_chain(llm, bloom_prompt)
+    chain = create_llm_chain(llm, LEVELS_GENERATE_PROMPT)
     response = chain.invoke({
         "level": level,
         "content": notebook_content,
@@ -358,32 +310,15 @@ Requirements:
 
 def evaluate_bloom_answer(llm, question, answer, level, guide=None):
     """Evaluate answer using LangChain"""
-    eval_prompt = ChatPromptTemplate.from_messages([
-        ("system", """You are an expert at evaluating student responses based on Bloom's Taxonomy.
-                     You must respond with ONLY a JSON object. Do not include markdown formatting."""),
-        ("human", """For this {level}-level question: {question}
-                     Evaluate this answer: {answer}. 
-                     Study guide: {guide}
-                     
-                     Return this exact JSON structure:
-                     {{
-                         "score": number from 0-10,
-                         "feedback": "Detailed feedback explaining the score",
-                         "correct_answer": "The complete correct answer",
-                         "error_step": "The text of the step that the student made an error on",
-                         "new_step": "The rewritten step text",
-                         "subpoints": ["How-to style subpoint 1", "How-to style subpoint 2", "..."],
-                         "mistake": "The mistake the student made on that step"
-                     }}""")
-    ])
 
-    chain = create_llm_chain(llm, eval_prompt)
+    chain = create_llm_chain(llm, LEVELS_EVAL_PROMPT)
     response = chain.invoke({
         "level": level,
         "question": question,
         "answer": answer,
         "guide": guide
     })
+    print("bloom eval response: " + str(response))
     
     return parse_json_response(response, ScoreBloom)
 
@@ -392,29 +327,11 @@ def answer_worksheet_question(llm, image_content: str, file_type: str, question:
     padding = len(image_content) % 4
     if padding:
         image_content += '=' * (4 - padding)
-
-    messages = [
-        {"role": "system", "content": "You are an expert tutor helping students understand educational content. Number your steps and use LaTeX for equations."},
-        {"role": "user", "content": [
-            {"type": "text", "text": f"Please answer this question about the worksheet: {question}"},
-            {"type": "image_url", "image_url": {"url": f"data:{file_type};base64,{image_content}"}}
-        ]}
-    ]
-
-    response = llm.invoke(messages)
+    response = WORKSHEET_ANSWER_PROMPT.invoke({"image_content": image_content, "file_type": file_type, "question": question})
     return response.content
 
 def synthesize_unit(notebook_data, llm):
     """Synthesize a unit of study into a concise summary"""
-    template = """You are a test writer making a list containing as diverse of a sample of problems as possible from the notebook data. Should be 10-15 problems, maximum 800 characters.
-    Plain list format, get at least 1 problem for each topic covered in the notebook.
-    
-    Worksheet Data:
-    {notebook_data}
-    
-    Synthesis:"""
-    
-    prompt = ChatPromptTemplate.from_template(template)
     
     formatted_data = []
     for nb in notebook_data:
@@ -427,7 +344,7 @@ def synthesize_unit(notebook_data, llm):
             formatted_data.append(f"- {q}")
         formatted_data.append("---")
     
-    chain = prompt | llm
+    chain = SYNTHESIZE_UNIT_PROMPT | llm
     response = chain.invoke({"notebook_data": "\n".join(formatted_data)})
     
     return response.content

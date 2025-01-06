@@ -13,71 +13,107 @@
 
 <!-- content block -->
 {% block content %}
-<h2>Study Hub</h2>
-<p class="description">Your central location for managing study guides and upcoming assessments.</p>
+<div class="studyhub-container">
+    <h1 class="main-title">Study Hub</h1>
+    <p class="main-description">Your intelligent learning companion for nailing your STEM tests</p>
 
-<!-- Upcoming Assessments Section -->
-<section class="assessments-section">
-    <h3>Upcoming Assessments</h3>
-    <div class="table-container">
-        <table id="assessments-table">
-            <thead>
-                <tr>
-                    <th>Class & Unit</th>
-                    <th>Assessment Date</th>
-                    <th>Notebooks</th>
-                    <th>Study Score</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="assessments-body">
-                <!-- Populated by JavaScript -->
-            </tbody>
-        </table>
-    </div>
-</section>
+    <div class="study-grid">
+        <!-- Derive Section -->
+        <section class="study-section derive-section">
+            <div class="section-header">
+                <i class="fas fa-lightbulb"></i>
+                <h2>Derive</h2>
+            </div>
+            <p class="section-description">Use inductive reasoning to draw general conclusions and build understanding from specific examples</p>
+            <div class="tool-buttons">
+                <a href="/DeriveGuide" class="tool-button">
+                    <i class="fas fa-diagram-project"></i>
+                    <span>Concept Map</span>
+                </a>
+                <a href="/GuideBuilder" class="tool-button">
+                    <i class="fas fa-book-open"></i>
+                    <span>Guide Builder</span>
+                </a>
+            </div>
+        </section>
 
-<!-- Study Tools Section -->
-<section class="study-tools">
-    <h3>Study Tools</h3>
-    <div class="tools-container">
-        <div class="tool-card" id="evaluate-tool" data-tool="Evaluate">
-            <i class="fas fa-chart-line"></i>
-            <h4>Evaluate</h4>
-            <p>Test your understanding and get instant feedback</p>
-        </div>
-        <div class="tool-card" id="levels-tool" data-tool="StudyLevels">
-            <i class="fas fa-layer-group"></i>
-            <h4>Levels</h4>
-            <p>Practice with progressive difficulty</p>
-        </div>
-        <div class="tool-card" id="derive-tool" data-tool="DeriveGuide">
-            <i class="fas fa-calculator"></i>
-            <h4>Derive</h4>
-            <p>Analyze and derive key concepts</p>
-        </div>
-    </div>
-</section>
+        <!-- Practice Section -->
+        <section class="study-section practice-section">
+            <div class="section-header">
+                <i class="fas fa-dumbbell"></i>
+                <h2>Practice</h2>
+            </div>
+            <p class="section-description">Use deductive reasoning to apply formulas and concepts to solve practice problems</p>
+            <div class="tool-buttons">
+                <a href="/StudyLevels2" class="tool-button">
+                    <i class="fas fa-layer-group"></i>
+                    <span>Progressive Practice</span>
+                </a>
+            </div>
+        </section>
 
-<!-- Past Assessments Section -->
-<section class="past-assessments">
-    <h3>Past Assessments</h3>
-    <div class="table-container">
-        <table id="past-assessments-table">
-            <thead>
-                <tr>
-                    <th>Class & Unit</th>
-                    <th>Date</th>
-                    <th>Grade</th>
-                    <th>Link Grade</th>
-                </tr>
-            </thead>
-            <tbody id="past-assessments-body">
-                <!-- Populated by JavaScript -->
-            </tbody>
-        </table>
+        <!-- Evaluate Section -->
+        <section class="study-section evaluate-section">
+            <div class="section-header">
+                <i class="fas fa-chart-line"></i>
+                <h2>Evaluate</h2>
+            </div>
+            <p class="section-description">Take practice quizzes to gauge your understanding and track your progress</p>
+            <div class="tool-buttons">
+                <a href="/Evaluate" class="tool-button">
+                    <i class="fas fa-tasks"></i>
+                    <span>Practice Quiz</span>
+                </a>
+            </div>
+        </section>
+
+        <!-- Link Guides Section -->
+        <section class="study-section guides-section">
+            <div class="section-header">
+                <i class="fas fa-link"></i>
+                <h2>Study Guides</h2>
+            </div>
+            <p class="section-description">Track your upcoming assessments and manage your study guides</p>
+            
+            <!-- Upcoming Assessments Table -->
+            <div class="table-container">
+                <h3><i class="fas fa-calendar"></i> Upcoming Assessments</h3>
+                <table id="assessments-table">
+                    <thead>
+                        <tr>
+                            <th>Class & Unit</th>
+                            <th>Assessment Date</th>
+                            <th>Notebooks</th>
+                            <th>Study Score</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="assessments-body">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Past Assessments Table -->
+            <div class="table-container">
+                <h3><i class="fas fa-history"></i> Past Assessments</h3>
+                <table id="past-assessments-table">
+                    <thead>
+                        <tr>
+                            <th>Class & Unit</th>
+                            <th>Date</th>
+                            <th>Grade</th>
+                            <th>Link Grade</th>
+                        </tr>
+                    </thead>
+                    <tbody id="past-assessments-body">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
-</section>
+</div>
 {% endblock %}
 
 <!-- js block -->

@@ -36,9 +36,13 @@ class ResponseTypeBloom(BaseModel):
     questions: list[BloomQuestion]
 
 class ScoreBloom(BaseModel):
-    score: int
+    correct: bool
     feedback: str
-    correct_answer: str
+    correct_answer: str = "n/a"  # Default value for when answer is correct
+    error_step: str = "n/a"      # The step in guide where error occurred
+    new_step: str = "n/a"        # The rewritten step
+    subpoints: list[str] = []    # How-to style subpoints
+    mistake: str = "n/a"         # The mistake made on that step
 
 class ResponseTypeNB(BaseModel):
     topic: str

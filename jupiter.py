@@ -78,14 +78,16 @@ def jupapi_output_to_grades(data):
       
       if correction:
         print("correction applied to ", a['name'], "in class", c['name'])
-        # Apply the correction
+        # Apply all possible corrections
         score = float(correction['score'])
         value = float(correction['value'])
         
-        # If weight is provided, adjust the score
-        if 'weight' in correction:
-          weight = float(correction['weight'])
-          score = score * weight / value
+        # Apply optional corrections if present
+        if 'date' in correction:
+          date = correction['date']
+          
+        if 'new_name' in correction:
+          a['name'] = correction['new_name']
       
       grades.append({
         "name": a["name"],

@@ -8,6 +8,20 @@
 {% block css %}
 <link rel="stylesheet" href="/static/class.css">
 
+<style>
+  .class-cover {
+    width: 100%;
+    height: 200px;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: none; /* Hidden by default, shown when image is loaded */
+  }
+</style>
+
 {% endblock %}
 
 <!-- content block -->
@@ -15,6 +29,9 @@
 <!-- Class Section -->
 
 <section id="class-section">
+
+  <!-- Add cover image container -->
+  <div id="class-cover-image" class="class-cover"></div>
 
   <div class="class-header" id="class-header">
     <div id="classimgcontainer">
@@ -71,55 +88,118 @@
   </div>
 
   <div class="grid-layout">
-    <div class="info-card class-details">
-      <h3>Class Information</h3>
-      <div id="description"></div>
-      <div class="editable-field">
-        <span>Teacher: </span>
-        <span id="teacher" contenteditable="true"></span>
+    <!-- Class Activity Feed -->
+    <div class="info-card activity-feed">
+      <h3>Class Activity</h3>
+      <div id="activityFeed">
+        <div class="activity-filters">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="assignments">Assignments</button>
+          <button class="filter-btn" data-filter="discussions">Discussions</button>
+          <button class="filter-btn" data-filter="collaborations">Collaborations</button>
+        </div>
+        <div id="activityList"></div>
       </div>
-      <div class="editable-field">
-        <span>Period: </span>
-        <span id="period" contenteditable="true"></span>
+    </div>
+
+    <!-- Study Groups -->
+    <div class="info-card study-groups">
+      <h3>Study Groups</h3>
+      <div class="study-groups-container">
+        <div class="create-group">
+          <button id="createGroupBtn" class="action-button">Create Study Group</button>
+        </div>
+        <div id="studyGroupsList"></div>
       </div>
     </div>
 
-    <div class="info-card grading-categories">
-      <h3>Grading Categories</h3>
-      <div id="categoriesContainer"></div>
+    <!-- Class Resources -->
+    <div class="info-card resources">
+      <h3>Shared Resources</h3>
+      <div class="resources-container">
+        <div class="resource-categories">
+          <span class="resource-tag active">Notes</span>
+          <span class="resource-tag">Practice Problems</span>
+          <span class="resource-tag">Study Guides</span>
+          <span class="resource-tag">External Links</span>
+        </div>
+        <div id="resourcesList"></div>
+        <button id="shareResourceBtn" class="action-button">Share Resource</button>
+      </div>
     </div>
 
-    <div class="info-card class-members">
-      <h3>Class Members</h3>
-      <div id="user-list"></div>
-    </div>
-
+    <!-- Assignments with Progress -->
     <div class="info-card assignments">
       <h3>Assignments</h3>
+      <div class="assignment-stats">
+        <div class="stat-item">
+          <span class="stat-label">Class Average</span>
+          <span class="stat-value" id="classAverage">--</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Your Progress</span>
+          <span class="stat-value" id="yourProgress">--</span>
+        </div>
+      </div>
       <div id="assignmentList"></div>
     </div>
 
-    <div class="info-card video-conference">
-      <h3>Class Video Conference</h3>
-      <div id="meet-wrapper">
-        <div id="meet"></div>
-        <div class="meeting-controls">
-          <button id="startMeeting" class="action-button">Start/Join Meeting</button>
-          <span id="participantCount" class="participant-count"></span>
-        </div>
+    <!-- Class Members with Status -->
+    <div class="info-card class-members">
+      <h3>Class Members</h3>
+      <div class="member-stats">
+        <span class="online-count">0 Online</span>
+        <span class="total-count">0 Total</span>
       </div>
+      <div class="member-filters">
+        <button class="member-filter active">All</button>
+        <button class="member-filter">Online</button>
+        <button class="member-filter">Study Groups</button>
+      </div>
+      <div id="user-list"></div>
     </div>
 
+    <!-- Enhanced Chat -->
     <div class="info-card chat">
       <h3>Class Discussion</h3>
+      <div class="chat-tabs">
+        <button class="chat-tab active" data-tab="general">General</button>
+        <button class="chat-tab" data-tab="questions">Questions</button>
+        <button class="chat-tab" data-tab="resources">Resources</button>
+      </div>
       <div id="chat-box">
         <div id="message-list"></div>
         <div id="input-container">
           <input type="text" id="message-input" placeholder="Type your message...">
           <button id="send-button" class="action-button">Send</button>
           <button id="clear" class="action-button">Clear</button>
-          <label for="upload" class="action-button">📎</label>
+          <div class="message-actions">
+            <label for="upload" class="action-button">📎</label>
+            <button class="action-button emoji-trigger">😊</button>
+            <button class="action-button" id="pollBtn">📊</button>
+          </div>
           <input type="file" id="upload" hidden>
+        </div>
+      </div>
+    </div>
+
+    <!-- Video Conference with Enhanced Features -->
+    <div class="info-card video-conference">
+      <h3>Study Room</h3>
+      <div id="meet-wrapper">
+        <div class="room-status">
+          <span class="status-indicator"></span>
+          <span class="status-text">No active session</span>
+        </div>
+        <div id="meet"></div>
+        <div class="meeting-controls">
+          <button id="startMeeting" class="action-button">Start/Join Study Room</button>
+          <span id="participantCount" class="participant-count"></span>
+          <div class="room-features">
+            <button class="feature-btn" title="Share Screen">🖥️</button>
+            <button class="feature-btn" title="Whiteboard">✏️</button>
+            <button class="feature-btn" title="Record Session">⏺️</button>
+          </div>
         </div>
       </div>
     </div>

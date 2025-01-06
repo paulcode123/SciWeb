@@ -4,6 +4,8 @@ let currentQuestions = [];
 let currentQuestionIndex = 0;
 let guidePoints = {};
 let lastSavedState = {};
+let wrongAttempts = 0;
+let conversationActive = false;
 
 document.addEventListener('DOMContentLoaded', function() {
     fetchClasses();
@@ -37,6 +39,15 @@ function setupEventListeners() {
     document.getElementById('next-question').addEventListener('click', nextQuestion);
     document.getElementById('save-guide').addEventListener('click', saveGuide);
     document.getElementById('interim-save').addEventListener('click', saveGuide);
+    document.getElementById('help-button').addEventListener('click', startHelpConversation);
+    document.getElementById('close-conversation').addEventListener('click', endConversation);
+    document.getElementById('send-message').addEventListener('click', sendMessage);
+    document.getElementById('conversation-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
 }
 
 function handleClassSelect() {
@@ -202,7 +213,10 @@ function showFeedback(evaluation) {
             </div>`;
         document.getElementById('submit-answer').style.display = 'none';
         document.getElementById('next-question').style.display = 'block';
+        document.getElementById('help-button').style.display = 'none';
+        wrongAttempts = 0;
     } else {
+        wrongAttempts++;
         feedbackElement.innerHTML = `
             <div class="feedback-bubble incorrect">
                 <i class="fas fa-info-circle"></i>
@@ -214,6 +228,11 @@ function showFeedback(evaluation) {
         document.getElementById('answer').value = '';
         document.getElementById('submit-answer').style.display = 'block';
         document.getElementById('next-question').style.display = 'none';
+        
+        // Show help button after two wrong attempts
+        if (wrongAttempts >= 2) {
+            document.getElementById('help-button').style.display = 'block';
+        }
     }
     feedbackElement.style.display = 'block';
 }
@@ -347,5 +366,92 @@ function saveGuide(isFinal = false) {
     .catch(error => {
         console.error('Error:', error);
         alert('Failed to save guide. Please try again.');
+    });
+}
+
+function startHelpConversation() {
+    conversationActive = true;
+    const currentQuestion = currentQuestions[currentQuestionIndex];
+    
+    document.getElementById('conversation-container').style.display = 'block';
+    document.getElementById('help-button').style.display = 'none';
+    
+    // Start the conversation with the AI
+    fetchRequest('/derive-conversation', {
+        question: currentQuestion.question,
+        expected_answer: currentQuestion.expected_answer,
+        student_message: "You're starting the conversation",  // Empty for initial prompt
+        conversation_history: []
+    })
+    .then(response => {
+        console.log(response.message);
+        if (response.message) {
+            addMessage({
+                role: 'tutor',
+                content: response.message.text
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        addMessage({
+            role: 'tutor',
+            content: "I apologize, but I'm having trouble starting our conversation. Please try again."
+        });
+    });
+}
+
+function endConversation() {
+    conversationActive = false;
+    document.getElementById('conversation-container').style.display = 'none';
+    document.getElementById('help-button').style.display = 'block';
+}
+
+function addMessage(message) {
+    const messagesContainer = document.getElementById('conversation-messages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${message.role}`;
+    messageDiv.textContent = message.content;
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function sendMessage() {
+    const input = document.getElementById('conversation-input');
+    const message = input.value.trim();
+    if (!message) return;
+    
+    // Add student message
+    addMessage({
+        role: 'student',
+        content: message
+    });
+    
+    input.value = '';
+    
+    // Get AI response
+    const currentQuestion = currentQuestions[currentQuestionIndex];
+    fetchRequest('/derive-conversation', {
+        question: currentQuestion.question,
+        expected_answer: currentQuestion.expected_answer,
+        student_message: message,
+        conversation_history: Array.from(document.querySelectorAll('.message')).map(m => ({
+            role: m.classList.contains('tutor') ? 'tutor' : 'student',
+            content: m.textContent
+        }))
+    })
+    .then(response => {
+        console.log(response.message);
+        addMessage({
+            role: 'tutor',
+            content: response.message.text
+        });
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        addMessage({
+            role: 'tutor',
+            content: "I apologize, but I'm having trouble responding. Please try again."
+        });
     });
 } 
