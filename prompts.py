@@ -22,7 +22,7 @@ DERIVE_PROMPT = ChatPromptTemplate.from_messages([
                        "category": "category of the question"}}
                  ]}}""")
 ])
-# print("Hello")
+
 
 DERIVE_EVAL_PROMPT = ChatPromptTemplate.from_messages([
     ("system", """You are an expert at evaluating student responses and guiding them toward understanding.
