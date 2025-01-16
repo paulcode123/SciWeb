@@ -12,75 +12,88 @@
 
 <!-- content block -->
 {% block content %}
-<header class="major">
-    <h1>Welcome To SciWeb</h1>
+<div class="logo-background"></div>
+
+<div class="hero-section">
+    <div class="logo-container">
+        <div class="logo-circle">
+            <img src="/static/media/favicon2.png" alt="SciWeb Logo" class="main-logo">
+        </div>
+    </div>
+    <header class="major">
+        <h1 class="glowing-text">Welcome To SciWeb</h1>
         <h5>A Data-Driven Approach to Academics, built for BxSci</h5>
-</header>
-
-
-<div class="feature-grid">
-<div class="feature-box" data-href="/Classes">
-    <i class="fas fa-chalkboard-teacher"></i>
-    <h3>Classes</h3>
-    <p>Collaborate with SciWebbers in your classes. Chat, add assignments, and more!</p>
-</div>
-<div class="feature-box" data-href="/Assignments">
-    <i class="fas fa-tasks"></i>
-    <h3>Assignments</h3>
-    <p>Track your assignments and due dates. See estimated completion time. Make a plan to get it done, and let your classmates hold you accountable!</p>
-</div>
-<div class="feature-box" data-href="/Messages">
-    <i class="fas fa-comments"></i>
-    <h3>Messages</h3>
-    <p>Chat with Friends, Classes, leagues, and study groups. Send messages, share files, and more!</p>
-</div>
-<div class="feature-box" data-href="/EnterGrades">
-    <i class="fas fa-edit"></i>
-    <h3>Enter Grades</h3>
-    <p>Pull your grades from Jupiter. Keep a record of your academic progress.</p>
-</div>
-<div class="feature-box" data-href="/GradeAnalysis">
-    <i class="fas fa-chart-line"></i>
-    <h3>Analyze Grades</h3>
-    <p>Visualize and analyze your performance. Identify areas for improvement to target for next test.</p>
-</div>
-<div class="feature-box" data-href="/Pitch">
-    <i class="fas fa-info-circle"></i>
-    <h3>About Us</h3>
-    <p>Learn more about SciWeb and our mission to enhance your academic experience!</p>
-</div>
-<div class="feature-box" data-href="/Notebook">
-    <i class="fas fa-book"></i>
-    <h3>Notebook</h3>
-    <p>Snap a pic or screenshot of any class material to add it to your notebook. See summaries, questions, and more!</p>
-</div>
-<div class="feature-box" data-href="/Evaluate">
-    <i class="fas fa-clipboard-check"></i>
-    <h3>Evaluate</h3>
-    <p>Access targeted questions and quizzes to get a snapshot of your understanding of a unit, and areas you may need to focus on.</p>
+    </header>
+    
+    <div id="notificationsIcon">
+        <span id="notificationsEnabled" style="display: none;">
+            <i class="fas fa-bell" style="color: #4caf50; font-size: 24px;"></i>
+        </span>
+        <span id="notificationsDisabled" style="display: none;">
+            <i class="fas fa-bell-slash" style="color: #e44c65; font-size: 24px;"></i>
+        </span>
+        <div id="errorText" style="display: none;"></div>
+        <button id="retryButton" 
+                style="display: none;"
+                onclick="setupMessaging()">
+            Retry
+        </button>
+    </div>
 </div>
 
-<div class="feature-box" data-href="/Profile">
-    <i class="fas fa-user-plus"></i>
-    <h3>Friend Requests</h3>
-    <p>Find friends to share stats, progress, and more!</p>
-</div>
+<div class="content-wrapper">
+    <div class="ai-section">
+        <div id="initial-greeting" class="rainbow-text">
+            <!-- Greeting will be typed here -->
+        </div>
+        <div id="chat-interface">
+            <div id="chat-log"></div>
+            <div class="input-container">
+                <input type="text" id="user-input" placeholder="Ask your AI counselor anything...">
+            </div>
+        </div>
+    </div>
 
+    <div class="features-section">
+        <div class="paths-container">
+            <div class="path-wrapper">
+                <!-- Path sections will be populated by JS -->
+            </div>
+            <button class="nav-arrow prev" aria-label="Previous path">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="nav-arrow next" aria-label="Next path">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="dashboard-section" id="dashboard">
+        <h2>Your Dashboard</h2>
+        <div class="dashboard-grid">
+            <div class="dashboard-card">
+                <h3><i class="fas fa-comment-dots"></i> Recent Messages</h3>
+                <div id="recent_messages" class="card-content"></div>
+            </div>
+            <div class="dashboard-card">
+                <h3><i class="fas fa-tasks"></i> Due Tomorrow</h3>
+                <div id="assignments_due_tmrw" class="card-content"></div>
+            </div>
+            <div class="dashboard-card">
+                <h3><i class="fas fa-star"></i> Today's Aspirations</h3>
+                <div id="aspirations_due_today" class="card-content"></div>
+            </div>
+            <div class="dashboard-card">
+                <h3><i class="fas fa-user-friends"></i> Friend Requests</h3>
+                <div id="pending_friend_requests" class="card-content"></div>
+            </div>
+            <div class="dashboard-card">
+                <h3><i class="fas fa-chart-line"></i> Recent Grades</h3>
+                <div id="recent_grades" class="card-content"></div>
+            </div>
+        </div>
+    </div>
 </div>
-<br><br><br><br>
-<section id="dashboard">
-    <h2>Dashboard</h2>
-    <h3>Recent Messages</h3>
-    <div id="recent_messages"></div>
-    <h3>Assignments Due Tomorrow</h3>
-    <div id="assignments_due_tmrw"></div>
-    <h3>Aspirations Due Today</h3>
-    <div id="aspirations_due_today"></div>
-    <h3>Pending Friend Requests</h3>
-    <div id="pending_friend_requests"></div>
-    <h3>Recent Grades</h3>
-    <div id="recent_grades"></div>
-</section>
 
 {% endblock %}
 

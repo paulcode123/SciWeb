@@ -46,9 +46,22 @@
 <div id="average-difficulty"></div>
 <div id="average-time-spent"></div>
 <div id="percent-completed"></div>
+<div class="info-card video-conference">
+    <h3>SciMeet</h3>
+    <div id="meet-wrapper">
+        <div id="meet"></div>
+        <div class="meeting-controls">
+            <button id="startMeeting" class="action-button">Start/Join SciMeet</button>
+            <span id="participantCount" class="participant-count"></span>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 <!-- js block -->
 {% block js %}
+<script src='https://meet.jit.si/external_api.js'></script>
+<script src="/static/jitsi.js"></script>
 <script src="/static/assignment.js"></script>
 {% endblock %}

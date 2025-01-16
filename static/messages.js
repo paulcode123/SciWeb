@@ -214,29 +214,65 @@ function cleanText(text) {
     return true;
 }
 
+function getBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+            // Don't strip the data URL prefix as we need it for proper file type detection
+            let encoded = reader.result;
+            resolve(encoded);
+        };
+        reader.onerror = error => reject(error);
+    });
+}
+
+async function uploadFile(base64String, id) {
+    try {
+        // Split the base64 string into metadata and data
+        const [header, data] = base64String.split(',');
+        
+        // Send only the base64 data, not the metadata prefix
+        const response = await fetchRequest('/upload-file', {
+            file: data,
+            name: id.toString(),
+            type: header.split(';')[0].split(':')[1] // Extract mime type
+        });
+        return true;
+    } catch (error) {
+        console.error('Error uploading file:', error);
+        return false;
+    }
+}
+
 function sendMessage() {
     console.log('Sending message...');
     var message = '';
     if (document.getElementById('upload').files.length > 0) {
-        let image = document.getElementById('upload').files[0];
-        getBase64(image).then(base64 => {
+        let file = document.getElementById('upload').files[0];
+        getBase64(file).then(base64 => {
             let id = Math.floor(Math.random() * 9000000) + 1000000;
             message = "file: " + id;
-            uploadFile(base64, id);
-
-            document.getElementById('upload').value = '';
-            let chat = {
-                text: message,
-                location: classId,
-                sender: osis,
-                OSIS: current_class.OSIS,
-                id: Math.floor(Math.random() * 10000),
-                timestamp: Date.now()
-            }
-            post_message(chat);
-            document.getElementById('image-container').innerHTML = '';
+            uploadFile(base64, id).then(success => {
+                if (success) {
+                    document.getElementById('upload').value = '';
+                    let chat = {
+                        text: message,
+                        location: current_location,
+                        sender: osis,
+                        OSIS: current_recipients,
+                        id: Math.floor(Math.random() * 10000),
+                        timestamp: Date.now()
+                    }
+                    post_message(chat);
+                    document.getElementById('image-container').innerHTML = '';
+                } else {
+                    alert('Failed to upload file. Please try again.');
+                }
+            });
         }).catch(error => {
-            console.error(error);
+            console.error('Error processing file:', error);
+            alert('Error processing file. Please try again.');
         });
         return;
     }
@@ -288,42 +324,41 @@ function renderImage(image) {
 }
 
 async function getFile(fileId) {
-    var response = await fetchRequest('/get-file', {file: fileId});
-    let file = response.file;
-    let type;
-    if(file.includes('pngbase64')){
-        type = 'png';
-        file = file.replace('dataimage/pngbase64', 'data:image/png;base64,');
-        file = file.slice(0, -1);
-    } else if(file.includes('jpegbase64')){
-        type = 'jpeg';
-        file = file.replace('dataimage/jpegbase64', 'data:image/jpeg;base64,');
-    } else if(file.includes('pdfbase64')){
-        type = 'pdf';
-        file = file.replace('dataapplication/pdfbase64', 'data:application/pdf;base64,');
-    } else {
-        console.log('Error: File type not supported', file);
+    try {
+        var response = await fetchRequest('/get-file', {file: fileId});
+        let file = response.file;
+        let type = response.type || 'application/octet-stream';
+        
+        // Reconstruct proper data URL
+        return [`data:${type};base64,${file}`, type.split('/')[0]];
+    } catch (error) {
+        console.error('Error getting file:', error);
+        return [null, null];
     }
-    return [file, type];
-}
-
-async function uploadFile(xfile, id) {
-    var data = await fetchRequest('/upload-file', {file: xfile, name: id});
-    return data;
 }
 
 function base64ToBlob(base64, type = 'application/octet-stream') {
-    base64 = base64.split('base64,')[1];
-    while (base64.length % 4 !== 0) {
-        base64 += '=';
+    try {
+        const [, data] = base64.split(',');
+        const byteCharacters = atob(data);
+        const byteArrays = [];
+        
+        for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+            const slice = byteCharacters.slice(offset, offset + 512);
+            const byteNumbers = new Array(slice.length);
+            
+            for (let i = 0; i < slice.length; i++) {
+                byteNumbers[i] = slice.charCodeAt(i);
+            }
+            
+            byteArrays.push(new Uint8Array(byteNumbers));
+        }
+        
+        return new Blob(byteArrays, { type });
+    } catch (error) {
+        console.error('Error converting base64 to blob:', error);
+        return null;
     }
-    const binaryString = window.atob(base64);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-    }
-    return new Blob([bytes], {type});
 }
 
 

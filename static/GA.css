@@ -1,15 +1,37 @@
 #class-form {
-  max-width: 400px;
-  margin: 0 auto;
-  box-shadow: 0 5px 7px rgba(0, 0, 0, 0.1);
-  background-color:#3c3d3d;
-  padding: 20px;
+  max-width: 800px;
+  margin: 1rem auto;
+  padding: 1rem;
+  background: linear-gradient(135deg, #2c3e50, #34495e);
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .checkbox-group {
   display: flex;
-  flex-direction: row;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.class-checkbox, .category-checkbox {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  flex: 0 1 auto;
+}
+
+.class-checkbox:hover, .category-checkbox:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateX(2px);
 }
 
 /* button {
@@ -121,34 +143,75 @@ button:hover {
 
 #StatsContainer {
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* Ensures two columns */
-  box-sizing: border-box; /* Ensures padding does not affect width calculation */
-  width: 100%; /* Ensures the grid takes up the full width of the container */
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  padding: 1.5rem;
+  margin: 1rem 0;
 }
-
 
 .number-box {
-  background: #322f2f; /* Light grey background for visibility */
-  /* text-align: center; */
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Adds subtle shadow for depth */
-  width: 100%; /* Ensures the box takes up the full width of the column */
+  background: linear-gradient(135deg, #2c3e50, #34495e);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   position: relative;
-  /* 2 px pink solid border */
-  border: 2px solid rgb(228, 76, 101);
+  overflow: visible;
 }
-/* if the width of the viewport is more than 500px, have a 40 px space between boxes in the same row and have a set width */
-@media (min-width: 500px) {
-  .number-box {
-    margin-right: 40px;
-    width: 200px;
-    padding: 20px;
-    /* width: 40%; */
-  }
-  #StatsContainer {
-    gap: 20px; /* Space between columns and rows */
-    padding: 20px; /* Padding around the entire grid */
-  }
+
+.number-box:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
+
+.number-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(135deg, #00bcd4, #2196f3);
+}
+
+.number {
+  font-size: 2.5rem;
+  font-weight: bold;
+  background: linear-gradient(135deg, #00bcd4, #2196f3);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin: 0.5rem 0;
+  line-height: 1.2;
+}
+
+.caption {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  line-height: 1.5;
+}
+
+/* Class Selection Styling */
+.class-checkbox, .category-checkbox {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.class-checkbox:hover, .category-checkbox:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateX(3px);
+}
+
+/* Keep the rest of your existing styles */
 
 #perfana{
   /* styling for performance analysis button */
@@ -399,4 +462,495 @@ h2 {
 #timeframeValue {
   min-width: 30px;
   text-align: center;
+}
+
+/* Add these styles */
+#distributionsContainer {
+  margin: 20px 0;
+  padding: 20px;
+  background-color: #322f2f;
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.search-container {
+  margin-bottom: 20px;
+}
+
+#gradeSearch {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background: #1b1c1c;
+  color: white;
+}
+
+#searchResults {
+  margin-top: 10px;
+}
+
+.result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  margin: 5px 0;
+  background: #1b1c1c;
+  border-radius: 5px;
+}
+
+.opt-in-btn {
+  background-color: rgb(228, 76, 101);
+  color: black;
+  border: none;
+  padding: 5px 15px;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.opt-in-btn:hover {
+  background-color: black;
+  color: white;
+}
+
+#distributionGraph {
+  border-radius: 6px;
+  border: 20px solid rgb(228, 76, 101);
+  width: 100%;
+  height: calc(50vw - 10px);
+  margin: 10px 0;
+}
+
+/* Modify the graph containers */
+#myGraph, #myHisto, #myChangeGraph, #distributionGraph {
+  border-radius: 6px;
+  border: 20px solid rgb(228, 76, 101);
+  width: 100%;
+  margin: 10px 0;
+  
+  /* Default height for desktop */
+  height: calc(50vw - 10px);
+}
+
+/* Media query for mobile devices */
+@media screen and (max-width: 768px) {
+  #myGraph, #myHisto, #myChangeGraph, #distributionGraph {
+    /* Taller height for mobile */
+    height: 80vh;
+    /* Thinner border for mobile */
+    border-width: 10px;
+    /* Remove horizontal margin */
+    margin: 10px 0;
+  }
+
+  /* Adjust StatsContainer for mobile */
+  #StatsContainer {
+    grid-template-columns: 1fr; /* Single column on mobile */
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .number-box {
+    width: 100%;
+    margin-right: 0;
+    padding: 15px;
+  }
+
+  /* Make numbers smaller on mobile */
+  .number {
+    font-size: 36px;
+  }
+
+  /* Adjust search results spacing */
+  .result-item {
+    padding: 8px;
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+
+  .opt-in-btn {
+    width: 100%;
+    padding: 8px;
+  }
+}
+
+.loading-container {
+    position: fixed; /* Default position */
+    left: 50%;
+    z-index: 10000;
+    display: none;
+}
+
+.loading-image {
+    position: absolute;
+    left: 50%;
+    width: 100px;
+    height: 100px;
+    display: none;
+}
+
+/* Rest of your loading animation CSS remains the same */
+
+/* Add these new styles */
+.tab-container {
+  margin: 20px 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tab-button {
+  padding: 10px 20px;
+  background: #322f2f;
+  border: none;
+  color: white;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+.tab-button.active {
+  background: rgb(228, 76, 101);
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.collapsible {
+  margin: 10px 0;
+}
+
+.collapsible-button {
+  width: 100%;
+  padding: 15px;
+  background: #322f2f;
+  border: none;
+  color: white;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 5px;
+}
+
+.collapsible-button:hover {
+  background: rgba(228, 76, 101, 0.2);
+}
+
+.collapsible-content {
+  display: none;
+  padding: 15px;
+  background: #1b1c1c;
+  border-radius: 0 0 5px 5px;
+}
+
+.collapse-arrow {
+  transition: transform 0.3s;
+}
+
+.collapsible.active .collapse-arrow {
+  transform: rotate(180deg);
+}
+
+.collapsible.active .collapsible-content {
+  display: block;
+}
+
+/* Goal Modal Styles */
+.goal-modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.goal-modal-content {
+  background-color: #3c3d3d;
+  margin: 10% auto;
+  padding: 20px;
+  border: 2px solid rgb(228, 76, 101);
+  border-radius: 8px;
+  width: 80%;
+  max-width: 600px;
+  position: relative;
+  color: white;
+}
+
+.goal-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.goal-modal-close {
+  color: white;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.goal-modal-close:hover {
+  color: rgb(228, 76, 101);
+}
+
+.goal-form-group {
+  margin-bottom: 15px;
+}
+
+.goal-form-group label {
+  display: block;
+  margin-bottom: 5px;
+  color: white;
+}
+
+.goal-form-group input,
+.goal-form-group select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background-color: #1b1c1c;
+  color: white;
+}
+
+.goal-form-group input[type="date"] {
+  color-scheme: dark;
+}
+
+.goal-type-selector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.goal-type-button {
+  padding: 10px 20px;
+  border: 2px solid rgb(228, 76, 101);
+  border-radius: 4px;
+  background: none;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.goal-type-button.active {
+  background: rgb(228, 76, 101);
+}
+
+.goal-submit-btn {
+  background-color: rgb(228, 76, 101);
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 15px;
+}
+
+.goal-submit-btn:hover {
+  background-color: #c43c54;
+}
+
+/* Enhanced Goal Table Styles */
+#goalTableContainer {
+  margin: 20px 0;
+  padding: 20px;
+  background-color: #322f2f;
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+#goalTable {
+  width: 100%;
+  border-collapse: collapse;
+  color: white;
+}
+
+#goalTable th, #goalTable td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid rgb(228, 76, 101);
+}
+
+#goalTable th {
+  background-color: rgb(228, 76, 101);
+  color: black;
+}
+
+#goalTable tr:hover {
+  background-color: rgba(228, 76, 101, 0.1);
+}
+
+.goal-progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #1b1c1c;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.goal-progress-fill {
+  height: 100%;
+  background-color: rgb(228, 76, 101);
+  transition: width 0.3s ease;
+}
+
+.goal-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.goal-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: white;
+  font-size: 1.2em;
+  padding: 4px;
+  transition: color 0.3s ease;
+}
+
+.goal-action-btn:hover {
+  color: rgb(228, 76, 101);
+}
+
+.goal-status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.9em;
+  font-weight: bold;
+}
+
+.goal-status.on-track {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.goal-status.at-risk {
+  background-color: #FFC107;
+  color: black;
+}
+
+.goal-status.behind {
+  background-color: #f44336;
+  color: white;
+}
+
+/* Goal Chart Indicator */
+.goal-indicator {
+  position: fixed;
+  width: 30px;
+  height: 30px;
+  background-color: rgba(228, 76, 101, 0.2);
+  border: 2px solid rgb(228, 76, 101);
+  border-radius: 50%;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  z-index: 1000;
+  display: none;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+}
+
+.goal-actions-container {
+  display: flex;
+  gap: 10px;
+}
+
+#clickToAddGoal {
+  transition: background-color 0.3s ease;
+}
+
+.goal-progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #1b1c1c;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 5px 0;
+}
+
+.goal-progress-fill {
+  height: 100%;
+  background-color: rgb(228, 76, 101);
+  transition: width 0.5s ease-in-out;
+}
+
+.trend-sparkline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 0.9em;
+}
+
+.goal-status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.9em;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.goal-status.on-track {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.goal-status.at-risk {
+  background-color: #FFC107;
+  color: black;
+}
+
+.goal-status.behind {
+  background-color: #f44336;
+  color: white;
+}
+
+#goalTable tr {
+  transition: background-color 0.3s ease;
+}
+
+.goal-action-btn {
+  opacity: 0.7;
+  transition: opacity 0.3s ease, transform 0.2s ease;
+}
+
+.goal-action-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
 }

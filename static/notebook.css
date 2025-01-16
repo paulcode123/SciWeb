@@ -68,17 +68,32 @@ body {
 }
 
 .worksheet-item {
-  background-color: #2d2d2d;
-  padding: 20px;
-  margin-bottom: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #2d2d2d 0%, #363636 100%);
+  padding: 25px;
+  margin-bottom: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.worksheet-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, rgba(228, 76, 101, 0.05) 0%, transparent 100%);
+  pointer-events: none;
 }
 
 .worksheet-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+  border-color: rgba(228, 76, 101, 0.2);
 }
 
 .worksheet-item h3 {
@@ -99,10 +114,19 @@ body {
 }
 
 .notes-section, .practice-section {
-  background-color: #363636;
-  padding: 15px;
-  border-radius: 6px;
-  margin: 15px 0;
+  background: rgba(54, 54, 54, 0.6);
+  padding: 20px;
+  border-radius: 10px;
+  margin: 20px 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.notes-section:hover, .practice-section:hover {
+  background: rgba(54, 54, 54, 0.8);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateX(4px);
 }
 
 .notes-section h4, .practice-section h4 {
@@ -121,33 +145,44 @@ body {
   list-style: none;
   padding: 0;
   margin: 0;
+  margin-bottom: 5px;
 }
 
 .notes-list li, .practice-list li {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 8px 0;
-  transition: transform 0.2s ease;
+  padding: 12px;
+  transition: all 0.3s ease;
+  background: rgba(45, 45, 45, 0.4);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .notes-list li:hover, .practice-list li:hover {
   transform: translateX(5px);
+  background: rgba(45, 45, 45, 0.6);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .notes-list i {
   color: #4CAF50;
   margin-top: 4px;
+  font-size: 1.1em;
 }
 
 .practice-list i {
   color: #2196F3;
   margin-top: 4px;
+  font-size: 1.1em;
 }
 
 .note-text, .question-text {
   flex: 1;
-  line-height: 1.4;
+  line-height: 1.6;
+  font-size: 0.95em;
+  color: #e0e0e0;
 }
 
 .worksheet-actions {
@@ -289,4 +324,345 @@ textarea {
 
 .create-unit:hover {
   background-color: #45a049;
+}
+
+.add-note, .add-question {
+  position: relative;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin-left: auto;
+  margin-top: 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+  backdrop-filter: blur(5px);
+}
+
+.add-note {
+  background-color: #4CAF50;
+}
+
+.add-question {
+  background-color: #2196F3;
+}
+
+.add-note:hover, .add-question:hover {
+  transform: translateY(-2px) scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.add-note:active, .add-question:active {
+  transform: translateY(1px) scale(0.95);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.add-note i, .add-question i {
+  font-size: 20px;
+  transition: transform 0.3s ease;
+}
+
+.add-note:hover i, .add-question:hover i {
+  transform: rotate(180deg);
+}
+
+.add-button-container {
+  display: flex;
+  justify-content: flex-end;
+  position: relative;
+}
+
+.add-button-container::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.add-button-container:hover::before {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* LaTeX formatting styles */
+.note-text .katex, .question-text .katex {
+  font-size: 1.1em;
+  color: #e0e0e0;
+}
+
+.note-text .katex-display, .question-text .katex-display {
+  margin: 0.5em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.note-text p, .question-text p {
+  margin: 0.5em 0;
+}
+
+.question-answer-section {
+  background: rgba(54, 54, 54, 0.6);
+  padding: 20px;
+  border-radius: 10px;
+  margin-top: 25px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.question-answer-section:hover {
+  background: rgba(54, 54, 54, 0.8);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.question-input {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.question-input textarea {
+    flex: 1;
+    min-height: 60px;
+    padding: 10px;
+    border-radius: 4px;
+    background-color: #2d2d2d;
+    color: #e0e0e0;
+    border: 1px solid #444;
+}
+
+.submit-question {
+    padding: 8px 15px;
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    align-self: flex-start;
+}
+
+.answer-box {
+  background: rgba(45, 45, 45, 0.8);
+  padding: 20px;
+  border-radius: 8px;
+  margin-top: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.answer-box:hover {
+  background: rgba(45, 45, 45, 0.9);
+  border-color: rgba(255, 255, 255, 0.08);
+  transform: translateX(4px);
+}
+
+.answer-box h4 {
+    color: #2196F3;
+    margin-bottom: 10px;
+}
+
+
+.ask-question {
+    background-color: #2196F3;
+    color: white;
+}
+
+.ask-question:hover {
+    background-color: #1976D2;
+}
+
+.answer-box p {
+  white-space: pre-line;
+  line-height: 1.5;
+  margin: 1em 0;
+}
+
+/* Add media query for mobile adjustments */
+@media screen and (max-width: 768px) {
+  #notebook-toggle-sidebar {
+    top: 70px; /* Move toggle button below navbar */
+  }
+
+  #sidebar {
+    padding-top: 120px; /* Increase top padding to account for navbar */
+  }
+
+  #content {
+    margin-top: 60px; /* Add top margin to content area */
+  }
+}
+
+.synthesize-button {
+  background: #6d28d9;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(109, 40, 217, 0.3);
+}
+
+.synthesize-button:hover {
+  background: #5b21b6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(109, 40, 217, 0.4);
+}
+
+.synthesize-button i {
+  font-size: 16px;
+}
+
+.synthesize-button:active {
+  transform: translateY(1px);
+}
+
+
+.unit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  background: linear-gradient(135deg, #2d2d2d 0%, #363636 100%);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.unit-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, rgba(228, 76, 101, 0.1) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.unit-header h2 {
+  font-size: 1.8em;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  margin: 0;
+  position: relative;
+}
+
+.unit-actions {
+  display: flex;
+  gap: 15px;
+}
+
+.unit-actions button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.unit-actions button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease;
+}
+
+.unit-actions button:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.refresh-button {
+  background: rgb(228, 76, 101);
+  color: white;
+  box-shadow: 0 2px 4px rgba(228, 76, 101, 0.3);
+}
+
+.refresh-button:hover {
+  background: rgb(208, 56, 81);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(228, 76, 101, 0.4);
+}
+
+.synthesize-button {
+  background: #6d28d9;
+  color: white;
+  box-shadow: 0 2px 4px rgba(109, 40, 217, 0.3);
+}
+
+.synthesize-button:hover {
+  background: #5b21b6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(109, 40, 217, 0.4);
+}
+
+.worksheet-actions button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.worksheet-actions button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease;
+}
+
+.worksheet-actions button:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.worksheet-actions button:hover {
+  transform: translateY(-2px);
 }

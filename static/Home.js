@@ -1,13 +1,17 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging.js"
+import { typeOutText, await_enter, AI_response } from './counselor.js';
 
 
-
+var notificationsEnabled = false;
 
 
 // Create function show_recent_messages to display the number and location of messages that were sent in the last 24 hours in classes and assignments that the user is in
 function show_recent_messages(messages, classes, assignments, friends, users){
   const recent_messages_container = document.getElementById('recent_messages');
+  // Clear container first
+  recent_messages_container.innerHTML = '';
+  
   const recent_messages = messages.filter(message => is_recent(message.timestamp));
   // show the number of recent messages in large lettering
   const num_messages_div = document.createElement('div');
@@ -15,8 +19,8 @@ function show_recent_messages(messages, classes, assignments, friends, users){
   num_messages_div.style.fontWeight = 'bold';
   num_messages_div.innerHTML = `${recent_messages.length}`;
   recent_messages_container.appendChild(num_messages_div);
-  // for each location of recent messages, display the number of messages, the location, and the link to the message page
-  // get unique locations
+
+  // Remove duplicates when getting unique locations
   const unique_locations = [...new Set(recent_messages.map(message => message.location))];
   unique_locations.forEach(location => {
     const message_div = document.createElement('div');
@@ -67,9 +71,17 @@ function get_location_name(location, classes, assignments, friends, users){
 
 //Create a fetch request to /data to get Chat, Classes, and Assignments data
 async function main(){
-  startLoading();
-console.log("fetching data")
-const data = await fetchRequest('/data', { data: "Name, Chat, Classes, Assignments, Aspirations, Friends, Grades, Users" });
+  // Remove initializeChat call from here since it's called in the load event
+  
+  // Get dashboard position
+  const dashboard = document.getElementById('dashboard');
+  const dashboardTop = dashboard.offsetTop;
+  
+  // Start loading animation above the dashboard
+  // startLoading(dashboardTop + 180); // 50px above dashboard
+  
+  console.log("fetching data")
+  const data = await fetchRequest('/data', { data: "Name, Chat, Classes, Assignments, Aspirations, Friends, Grades, Users" });
 
   console.log("got data")
   //Store the data in variables
@@ -87,7 +99,7 @@ const data = await fetchRequest('/data', { data: "Name, Chat, Classes, Assignmen
   show_pending_friend_requests(friends, users);
   show_recent_grades(grades);
   console.log("done")
-  endLoading();
+  // endLoading();
   return true;
 }
 
@@ -106,49 +118,88 @@ function playFullScreenVideo() {
   videoContainer.style.zIndex = '9999';
 
   const video = document.createElement('video');
-  video.src = '/static/media/SignUpVid.mp4'; // Adjust the path as needed
+  video.src = '/static/media/SignUpVid.mp4';
   video.style.width = '100%';
   video.style.height = '100%';
   video.style.objectFit = 'contain';
   video.autoplay = true;
-  video.muted = true; // Mute the video initially
-  video.playsInline = true; // For iOS support
+  video.muted = true;
+  video.playsInline = true;
 
+  // Create button container
+  const buttonContainer = document.createElement('div');
+  buttonContainer.style.position = 'absolute';
+  buttonContainer.style.bottom = '20px';
+  buttonContainer.style.left = '0';
+  buttonContainer.style.right = '0';
+  buttonContainer.style.display = 'flex';
+  buttonContainer.style.justifyContent = 'center';
+  buttonContainer.style.gap = '20px';
+
+  // Updated unmute button styling
   const unmuteButton = document.createElement('button');
-  unmuteButton.textContent = 'Unmute';
-  unmuteButton.style.position = 'absolute';
-  unmuteButton.style.bottom = '20px';
-  unmuteButton.style.left = '50%';
-  unmuteButton.style.transform = 'translateX(-50%)';
-  unmuteButton.style.padding = '10px 20px';
-  unmuteButton.style.fontSize = '16px';
-  unmuteButton.style.cursor = 'pointer';
+  unmuteButton.textContent = '🔊 Unmute';
+  unmuteButton.className = 'video-control-btn';
+
+  // New skip button
+  const skipButton = document.createElement('button');
+  skipButton.textContent = '⏭️ Skip Intro';
+  skipButton.className = 'video-control-btn';
+
+  // Add button styles
+  const buttonStyle = `
+    background: rgba(228, 76, 101, 0.9);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  `;
+
+  unmuteButton.style.cssText = buttonStyle;
+  skipButton.style.cssText = buttonStyle;
+
+  // Add hover effects
+  [unmuteButton, skipButton].forEach(btn => {
+    btn.addEventListener('mouseover', () => {
+      btn.style.transform = 'scale(1.05)';
+      btn.style.background = 'rgba(228, 76, 101, 1)';
+    });
+    btn.addEventListener('mouseout', () => {
+      btn.style.transform = 'scale(1)';
+      btn.style.background = 'rgba(228, 76, 101, 0.9)';
+    });
+  });
 
   unmuteButton.onclick = () => {
     video.muted = false;
     unmuteButton.style.display = 'none';
   };
 
+  skipButton.onclick = () => {
+    document.body.removeChild(videoContainer);
+  };
+
   video.onended = () => {
     document.body.removeChild(videoContainer);
   };
 
+  buttonContainer.appendChild(unmuteButton);
+  buttonContainer.appendChild(skipButton);
   videoContainer.appendChild(video);
-  videoContainer.appendChild(unmuteButton);
+  videoContainer.appendChild(buttonContainer);
   document.body.appendChild(videoContainer);
-  
 
-  // Attempt to play the video
   const playPromise = video.play();
-
   if (playPromise !== undefined) {
-    playPromise.then(_ => {
-      // Autoplay started successfully
-      console.log("Video started playing automatically");
-    }).catch(error => {
-      // Autoplay was prevented
-      console.log("Autoplay was prevented. Please interact with the page to play the video.");
-      // You could add a play button here if needed
+    playPromise.catch(error => {
+      console.log("Autoplay was prevented:", error);
     });
   }
 }
@@ -212,7 +263,7 @@ async function saveTokenToServer(token) {
   const userTokens = currentTokens['Tokens'].filter(t => t.OSIS === osis);
   const timeStamp = Date.now();
   
-  if (!userTokens.some(t => t.token === token)) {
+  if (!userTokens.some(t => t.token === token) && !notificationsEnabled) {
     await fetchRequest('/post_data', {
       data: {
         "token": token,
@@ -224,9 +275,11 @@ async function saveTokenToServer(token) {
     });
     console.log("New token added for device:", deviceName);
     updateNotificationUI(true, "Notifications are enabled for this device.");
+    notificationsEnabled = true;
   } else {
     console.log("Token already exists for this user and device.");
     updateNotificationUI(true, "Notifications are already enabled for this device.");
+    notificationsEnabled = true;
   }
 }
 
@@ -292,37 +345,34 @@ function updateNotificationUI(isEnabled, errorText) {
   errorElement.innerHTML = errorText;
 }
 
-function initializeFeatureBoxes() {
-  const featureBoxes = document.querySelectorAll('.feature-box');
-  featureBoxes.forEach(box => {
-      box.addEventListener('click', () => {
-          window.location.href = box.dataset.href;
-      });
-  });
-}
-
 // Call setupMessaging when the page loads
 window.addEventListener('load', () => {
   setupMessaging();
-  initializeFeatureBoxes();
 });
 
 function show_assignments_due_tmrw(assignments){
   const assignments_container = document.getElementById('assignments_due_tmrw');
-  // get tomorrow's date
+  // Clear container first
+  assignments_container.innerHTML = '';
+  
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  // filter assignment due date for tomorrow
-  const assignments_due_tmrw = assignments.filter(assignment => assignment.due_date === tomorrow.toISOString().split('T')[0]);
   
-  // display the number of assignments due tomorrow in large lettering
+  // Filter and remove duplicates
+  const assignments_due_tmrw = assignments
+    .filter(assignment => assignment.due_date === tomorrow.toISOString().split('T')[0])
+    .filter((assignment, index, self) => 
+      index === self.findIndex(a => 
+        a.id === assignment.id
+      )
+    );
+  
   const num_assignments_div = document.createElement('div');
   num_assignments_div.style.fontSize = '48px';
   num_assignments_div.style.fontWeight = 'bold';
   num_assignments_div.innerHTML = `${assignments_due_tmrw.length}`;
   assignments_container.appendChild(num_assignments_div);
 
-  // display the assignments due tomorrow with class/name and link to assignment page
   assignments_due_tmrw.forEach(assignment => {
     const assignment_div = document.createElement('div');
     const assignment_link = document.createElement('a');
@@ -339,25 +389,32 @@ function show_aspirations_due_today(aspirations){
 
 function show_pending_friend_requests(friends, users){
   const pending_friend_requests_container = document.getElementById('pending_friend_requests');
-  // filter for requests where request.status is pending
-  const pending_friend_requests = friends.filter(friend => friend.status === 'pending');
-  // display the number of pending friend requests in large lettering
+  // Clear container first
+  pending_friend_requests_container.innerHTML = '';
+  
+  // Filter and remove duplicates
+  const pending_friend_requests = friends
+    .filter(friend => friend.status === 'pending')
+    .filter((friend, index, self) => 
+      index === self.findIndex(f => 
+        f.OSIS === friend.OSIS && f.targetOSIS === friend.targetOSIS
+      )
+    );
+
   const num_pending_friend_requests_div = document.createElement('div');
   num_pending_friend_requests_div.style.fontSize = '48px';
   num_pending_friend_requests_div.style.fontWeight = 'bold';
   num_pending_friend_requests_div.innerHTML = `${pending_friend_requests.length}`;
   pending_friend_requests_container.appendChild(num_pending_friend_requests_div);
-  // display the pending friend requests with name and link to profile page
+
   pending_friend_requests.forEach(friend => {
-    // get other user's osis: there is OSIS and targetOSIS, pick the one that is not osis
     const other_user_osis = friend.OSIS === osis ? friend.targetOSIS : friend.OSIS;
-    // get other user's name
     const other_user_name = users.filter(user => user.osis == other_user_osis)[0].first_name;
     const friend_div = document.createElement('div');
     friend_div.innerHTML = other_user_name;
     pending_friend_requests_container.appendChild(friend_div);
   });
-  // add a link to the friend requests page
+
   const friend_requests_link = document.createElement('a');
   friend_requests_link.href = '/Profile';
   friend_requests_link.innerHTML = 'View All';
@@ -366,17 +423,32 @@ function show_pending_friend_requests(friends, users){
 
 function show_recent_grades(grades){
   const recent_grades_container = document.getElementById('recent_grades');
+  // Clear the container first to prevent duplicates
+  recent_grades_container.innerHTML = '';
+  
   // get the date 4 days ago
   const four_days_ago = new Date();
   four_days_ago.setDate(four_days_ago.getDate() - 4);
-  // filter grades for date 4 days ago
-  const recent_grades = grades.filter(grade => new Date(grade.date) > four_days_ago);
+  
+  // filter grades for date 4 days ago and remove duplicates
+  const recent_grades = grades
+    .filter(grade => new Date(grade.date) > four_days_ago)
+    // Remove duplicates based on class, name, and score
+    .filter((grade, index, self) => 
+      index === self.findIndex(g => 
+        g.class === grade.class && 
+        g.name === grade.name && 
+        g.score === grade.score
+      )
+    );
+  
   // display the number of recent grades in large lettering
   const num_grades_div = document.createElement('div');
   num_grades_div.style.fontSize = '48px';
   num_grades_div.style.fontWeight = 'bold';
   num_grades_div.innerHTML = `${recent_grades.length}`;
   recent_grades_container.appendChild(num_grades_div);
+  
   // display the recent grades with class name and grade
   recent_grades.forEach(grade => {
     const grade_div = document.createElement('div');
@@ -384,4 +456,158 @@ function show_recent_grades(grades){
     recent_grades_container.appendChild(grade_div);
   });
 }
+
+// Add path definitions
+const paths = [
+    {
+        name: "Lock in",
+        features: [
+            { name: "Scheduler", icon: "fa-calendar", href: "/Schedule", description: "Plan your day" },
+            { name: "Assignments", icon: "fa-tasks", href: "/Assignments", description: "Track your work" },
+            { name: "Levels", icon: "fa-trophy", href: "/Levels", description: "Track your progress" }
+        ]
+    },
+    {
+        name: "Chill out",
+        features: [
+            { name: "Messages", icon: "fa-comments", href: "/Messages", description: "Chat with friends" },
+            { name: "Battles", icon: "fa-gamepad", href: "/Battles", description: "Challenge others" },
+            { name: "Leagues", icon: "fa-users", href: "/Leagues", description: "Join communities" }
+        ]
+    },
+    {
+        name: "What a scholar",
+        features: [
+            { name: "Enter Grades", icon: "fa-plus-circle", href: "/EnterGrades", description: "Add new grades" },
+            { name: "Evaluate", icon: "fa-chart-line", href: "/Evaluate", description: "Track your performance" },
+            { name: "Goals", icon: "fa-bullseye", href: "/Goals", description: "Set & track goals" }
+        ]
+    },
+    {
+        name: "Teamwork makes the Dream Work",
+        features: [
+            { name: "Notebook", icon: "fa-book", href: "/Notebook", description: "Take & share notes" },
+            { name: "Classes", icon: "fa-chalkboard-teacher", href: "/Classes", description: "Manage your courses" },
+            { name: "Leagues", icon: "fa-users", href: "/Leagues", description: "Join study groups" }
+        ]
+    }
+];
+
+// Initialize paths UI
+function initializePaths() {
+    const pathWrapper = document.querySelector('.path-wrapper');
+    let currentPath = 0;
+
+    // Create path sections
+    paths.forEach(path => {
+        const pathSection = document.createElement('div');
+        pathSection.className = 'path';
+        pathSection.innerHTML = `
+            <h2>${path.name}</h2>
+            ${path.features.map(feature => `
+                <div class="feature-box" data-href="${feature.href}">
+                    <i class="fas ${feature.icon}"></i>
+                    <h3>${feature.name}</h3>
+                    <p>${feature.description}</p>
+                </div>
+            `).join('')}
+        `;
+        pathWrapper.appendChild(pathSection);
+    });
+
+    // Add click handlers to feature boxes
+    const featureBoxes = document.querySelectorAll('.feature-box');
+    featureBoxes.forEach(box => {
+        box.addEventListener('click', () => {
+            const href = box.getAttribute('data-href');
+            if (href) {
+                window.location.href = href;
+            }
+        });
+    });
+
+    // Navigation handlers
+    document.querySelector('.nav-arrow.next').addEventListener('click', () => {
+        if (currentPath < paths.length - 1) {
+            currentPath++;
+            updatePathPosition();
+        }
+    });
+
+    document.querySelector('.nav-arrow.prev').addEventListener('click', () => {
+        if (currentPath > 0) {
+            currentPath--;
+            updatePathPosition();
+        }
+    });
+
+    function updatePathPosition() {
+        pathWrapper.style.transform = `translateX(-${currentPath * 100}%)`;
+    }
+}
+
+// Update chat initialization
+async function initializeChat() {
+    const greeting = document.getElementById('initial-greeting');
+    // wait until first_name is defined
+    while (!first_name) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    const initialPrompt = `Hey there, ${first_name}!`;
+    
+    // Type out initial greeting
+    await typeOutText(initialPrompt, 50, greeting);
+
+    // Initialize the chat interface
+    const userInput = document.getElementById('user-input');
+    const chatLog = document.getElementById('chat-log');
+
+    // Handle chat input focus
+    userInput.addEventListener('focus', () => {
+        greeting.style.opacity = 0;
+        setTimeout(() => greeting.style.display = 'none', 500);
+    });
+
+    // Start the counselor chat
+    var prompts = [{
+        "role": "system", 
+        "content": "You are the user's College Counselor. It's your responsibility to tell them their assignments, if they have any tests coming up, recent grades, their goals, etc. You can access any of their data at any time from the database with the get_data/get_grades function."
+    }];
+    
+    const welcomeMessage = "Hello, I am your SciWeb Counselor. How can I help you today?";
+    prompts.push({"role": "assistant", "content": welcomeMessage});
+    await typeOutText(welcomeMessage, 50, chatLog);
+
+    // Add keydown event listener directly to the input field
+    userInput.addEventListener('keydown', async (event) => {
+        if (event.key === 'Enter') {
+            const userResponse = userInput.value.trim();
+            if (userResponse) {
+                // Clear input field
+                userInput.value = '';
+                
+                // Add user message to chat log
+                const userMessageDiv = document.createElement('div');
+                userMessageDiv.className = 'user-message';
+                userMessageDiv.textContent = userResponse;
+                chatLog.appendChild(userMessageDiv);
+                chatLog.scrollTop = chatLog.scrollHeight;
+
+                // Add to prompts and get AI response
+                prompts.push({"role": "user", "content": userResponse});
+                const aiResponse = await AI_response(prompts);
+                prompts.push({"role": "assistant", "content": aiResponse});
+                await typeOutText(aiResponse, 50, chatLog);
+            }
+        }
+    });
+}
+
+// Call on load - consolidate all initialization here
+window.addEventListener('load', async () => {
+    initializePaths();
+    setupMessaging();
+    await initializeChat();
+    await main();  // Move main() call here to ensure proper order
+});
 

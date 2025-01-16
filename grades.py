@@ -124,9 +124,13 @@ def process_grades(grades, class_name, category, times):
 def get_category_grade(grades):
   if len(grades) == 0:
     return False
-  # get the weighted average of the grades
-  grade = sum([float(grade['score']) for grade in grades])/sum([float(grade['value']) for grade in grades])*100
-  return grade
+  try:
+    # get the weighted average of the grades
+    grade = sum([float(grade['score']) for grade in grades])/sum([float(grade['value']) for grade in grades])*100
+    return grade
+  except (ValueError, TypeError, KeyError):
+    print(f"Error processing grades: {grades}")
+    return False
 
 # make a calculate_grade function that takes in grades, weights, and time and returns the user's grade for the given time
 def calculate_grade(grades, weights, time, return_class_grades=False):
@@ -143,19 +147,25 @@ def calculate_grade(grades, weights, time, return_class_grades=False):
     if grade['category'] not in class_category_groups[grade['class']]:
       class_category_groups[grade['class']][grade['category']] = []
     class_category_groups[grade['class']][grade['category']].append(grade)
+  
   # loop through each class/category group and get the grade for the given time
   for class_name, category_groups in class_category_groups.items():
     weight_sum = 0
+    class_total = 0
     for category, grades in category_groups.items():
       grade = get_category_grade(grades)
       if grade:
-        weight_sum += weights[class_name.lower()][category.lower()]
-        class_category_groups[class_name][category] = grade*weights[class_name.lower()][category.lower()]
+        weight = weights[class_name.lower()][category.lower()]
+        weight_sum += weight
+        class_total += grade * weight
+    
     # get the grade for the class
-    class_grade = sum(category_groups.values())/weight_sum
-    class_grades[class_name] = class_grade
+    if weight_sum > 0:
+      class_grades[class_name] = class_total/weight_sum
+  
   if len(class_grades) == 0:
-    return 100
+    return (100, {}) if return_class_grades else 100
+  
   total_grade = sum(class_grades.values())/len(class_grades)
   if return_class_grades:
     return total_grade, class_grades
@@ -253,13 +263,12 @@ def decode_category_groups(category_groups):
 def get_stats(grades, classes):
   print("in get_stats")
   # get current GPA(avg of rounded class grades), raw average
-  grades = filter_grades(grades, session['user_data'], ["all", "All"])
   weights = get_weights(classes, session['user_data']['osis'])
   current_date = datetime.datetime.now().date()
   raw_avg, current_grades = calculate_grade(grades, weights, current_date, return_class_grades=True)
   raw_avg = round(raw_avg, 2)
-  # get the GPA by taking the average of the rounded class grades
-  gpa = round(sum([round(grade) for grade in current_grades.values()])/len(current_grades), 2)
+  # get the GPA as shown on report cards by taking the average of the rounded class grades, except for phys ed
+  gpa = round(sum([round(grade) for name, grade in current_grades.items() if name.lower() != "phys ed"])/len(current_grades)-1, 2)
 
   # calculate the grade from 30 days ago
   thirty_days_ago = current_date - datetime.timedelta(days=30)
@@ -271,7 +280,7 @@ def get_stats(grades, classes):
     # Calculate the change in grades for each class
     grade_changes = {}
     for class_name, grade in current_grades.items():
-      if class_name in t30_grades:
+      if class_name in t30_grades and class_name.lower() != "phys ed":
         grade_changes[class_name] = round(grade - t30_grades[class_name], 3)
 
     # Find the most improved class and most worsened class
@@ -289,7 +298,7 @@ def get_stats(grades, classes):
 
   # filter grades for only those from the past 30 days
   grades_past_30_days = [grade for grade in grades if datetime.datetime.strptime(grade['date'], '%m/%d/%Y').date() >= thirty_days_ago]
-  past30_avg = calculate_grade(grades_past_30_days, weights, thirty_days_ago)
+  past30_avg = calculate_grade(grades_past_30_days, weights, current_date)
   past30_avg = round(past30_avg, 2)
 
   return {"gpa": gpa, "raw_avg": raw_avg, "avg_change": avg_change, "most_improved_class": most_improved_class, "most_worsened_class": most_worsened_class, "past30_avg": past30_avg, "t30_avg": t30_avg, "grade_changes": grade_changes}

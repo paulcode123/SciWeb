@@ -12,14 +12,15 @@
 		{% endblock %}
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-		<link rel="stylesheet" href="/static/PitchFiles/assets/css/main.css" />
+		
         <link rel="stylesheet" href="/static/counselor.css">
         <link rel="icon" href="/static/media/favicon.png" sizes="48x48" type="image/x-icon">
 		<noscript><link rel="stylesheet" href="/static/PitchFiles/assets/css/noscript.css" /></noscript>
     {% block css %}
     {% endblock %}
-
+    <link rel="stylesheet" href="/static/PitchFiles/assets/css/main.css" />
     <!-- Collapsible Sidebar for AI Counselor -->
+    {% if request.path != '/' %}
     <div id="ai-counselor-sidebar" class="ai-sidebar">
       <img id="toggle-sidebar" class="toggle-logo" src="/static/media/favicon.png"/>
       <div id="chat-area" class="chat-area" style="display: none;">
@@ -27,6 +28,7 @@
           <input type="text" id="user-input" placeholder="Type your message..." />
       </div>
     </div>
+    {% endif %}
     <!-- Loading animation -->
     <div class="loading-container">
       <img src="/static/media/loading1.png" class="loading-image">
@@ -48,6 +50,7 @@
                         <ul>
                           <li><a href="/EnterGrades">Enter</a></li>
                           <li><a href="/GradeAnalysis">Analyze</a></li>
+                          <li><a href="/Schedule">Schedule</a></li>
                           <li><a href="/Goals">Goals</a></li>
                           <li><a href="/Inspire">Inspire</a></li>
                         </ul>
@@ -56,10 +59,7 @@
                         <a>Study</a>
                         <ul>
                           <li><a href="/Notebook">Notebook</a></li>
-                          <li><a href="/Evaluate">Evaluate</a></li>
-                          <li><a href="/StudyLevels">Levels</a></li>
-                          <li><a href="/Battle">Battle</a></li>
-                          
+                          <li><a href="/StudyHub">StudyHub</a></li>
                         </ul>
                       </li>
                       <li>
@@ -76,6 +76,7 @@
                         <ul>
                           <li><a href="/Pitch">Pitch</a></li>
                           <li><a href="/GetStart">Getting Started</a></li>
+                          <li><a href="/Feedback">Feature Requests</a></li>
                         </ul>
                       </li>
                       <li><a href="/Login" class="button primary" id="profile">Login</a></li>
@@ -93,7 +94,7 @@
 <!-- Scripts -->
 <script src="/static/util.js"></script>
 <script src="/static/user_data.js"></script>
-<script src="/static/counselor.js"></script>
+<script src="/static/counselor.js" type="module"></script>
 
 <script src="/static/PitchFiles/assets/js/jquery.min.js"></script>
 <script src="/static/PitchFiles/assets/js/jquery.scrolly.min.js"></script>

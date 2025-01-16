@@ -3,15 +3,14 @@
 # hi
 
 # Flask is a web framework for Python that allows backend-frontend communication
-from flask import Flask, render_template, request, session, redirect, url_for, send_from_directory, jsonify
+from flask import Flask, render_template, request, session, redirect, url_for, send_from_directory, jsonify, Response, stream_with_context
 # json is a library for parsing and creating JSON data
 import json
-# requests is a library for getting info from the web
-import requests
+
+# hashlib is a library for hashing passwords
+import hashlib
 # datetime is a library for working with dates and times
 import datetime
-# re is a library for working with regular expressions
-import re
 # googleapiclient is a library for working with Google APIs(Getting data from Google Sheets in this case)
 from googleapiclient.discovery import build
 import traceback
@@ -21,22 +20,29 @@ import base64
 from io import BytesIO
 
 from pydantic import BaseModel, Field
+from typing import Optional
 from openai import OpenAI
 import random
 
 import openai
 from PyPDF2 import PdfReader
+import requests
+
+
+from langchain_community.chat_models import ChatOpenAI
+from langchain.memory import ConversationBufferMemory
+from langchain_openai import ChatOpenAI
 
 
 
 
 # Get functions from other files
-from database import get_data, post_data, update_data, delete_data, download_file, upload_file, init_firebase, get_user_data
+from database import get_data, post_data, update_data, delete_data, download_file, upload_file, init_firebase, get_user_data, send_notification, send_welcome_email
 from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, get_stats, update_leagues, get_compliments, get_grade_impact
-from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, get_grades, post_grades, confirm_category_match
-from study import get_insights, get_insights_from_file, chat_with_function_calling, run_inspire
-
+from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, confirm_category_match, check_new_grades, notify_new_member
+from study import get_insights, chat_with_function_calling, run_inspire, init_pydantic, process_pdf_content, process_image_content, generate_final_evaluation, generate_followup_question, generate_practice_questions, generate_bloom_questions, evaluate_bloom_answer, answer_worksheet_question, make_explanation_cards, synthesize_unit, generate_derive_questions, evaluate_derive_answer, create_llm_chain
+from prompts import DERIVE_HELP_PROMPT
 #get api keys from static/api_keys.json file
 keys = json.load(open('api_keys.json'))  
 
@@ -69,17 +75,38 @@ def init():
   vars['client'] = OpenAI(api_key=vars['openAIAPI'])
   vars['google_credentials_path'] = 'cloudRunKey.json'
   
-  return vars
+  # Initialize LangChain components
+  vars['llm'] = ChatOpenAI(
+      api_key=vars['openAIAPI'],
+      temperature=0.7,
+      model_name="gpt-4o-mini"
+  )
 
-vars = init()
+  vars['vision_llm'] = ChatOpenAI(
+      api_key=vars['openAIAPI'],
+      temperature=0.7,
+      model_name="gpt-4o"
+  )
+  
+  # Initialize memory for different conversation contexts
+  vars['eval_memory'] = ConversationBufferMemory(
+      memory_key="chat_history",
+      return_messages=True
+  )
+  init_pydantic()
+ 
+  
+
+  # App secret key for session management
+  app.config['SECRET_KEY'] = vars["AppSecretKey"]
+  generate_grade_insights = True
+  return vars
 
 app = Flask(__name__)
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_PERMANENT'] = True
 
-# App secret key for session management
-app.config['SECRET_KEY'] = vars["AppSecretKey"]
-generate_grade_insights = True
+
 
 #initialize the front end: all of the HTML/CCS/JS files
 @app.route('/')
@@ -124,6 +151,10 @@ def study():
 def study_levels():
   return render_template('Levels.html')
 
+@app.route('/StudyLevels2')
+def study_levels2():
+  return render_template('Levels2.html')
+
 @app.route('/Diagnostic')
 def diagnostic():
   return render_template('Diagnostic.html')
@@ -131,6 +162,10 @@ def diagnostic():
 @app.route('/Evaluate')
 def evaluate():
   return render_template('Evaluate.html')
+
+@app.route('/GuideBuilder')
+def guide_builder():
+  return render_template('guidebuilder.html')
 
 @app.route('/Inspire')
 def inspire():
@@ -168,25 +203,51 @@ def assignments():
 def course_selection():
   return render_template('CourseSelection.html')
 
+@app.route('/Feedback')
+def feedback():
+  return render_template('Feedback.html')
+
 @app.route('/Messages')
 def messages():
   return render_template('messages.html')
+
+@app.route('/StudyFreeform')
+def study_freeform():
+  return render_template('study.html')
 
 @app.route('/Join')
 def join():
   return render_template('About/Join.html')
 
-@app.route('/Features/AI')
-def ai_features():
-  return render_template('About/AI.html')
+@app.route('/Team')
+def team():
+  return render_template('About/Team.html')
 
-@app.route('/Features/Social')
-def social_features():
-  return render_template('About/Social.html')
+@app.route('/Schedule')
+def schedule():
+  return render_template('schedule.html')
 
-@app.route('/Features/Analytic')
-def analytic_features():
-  return render_template('About/Analytic.html')
+@app.route('/StudyHub')
+def study_hub():
+    return render_template('StudyHub.html')
+
+@app.route('/DeriveGuide')
+def derive_guide():
+    return render_template('DeriveGuide.html')
+
+
+
+# @app.route('/Features/AI')
+# def ai_features():
+#   return render_template('About/AI.html')
+
+# @app.route('/Features/Social')
+# def social_features():
+#   return render_template('About/Social.html')
+
+# @app.route('/Features/Analytic')
+# def analytic_features():
+#   return render_template('About/Analytic.html')
   
 @app.route('/ComingSoon')
 def coming_soon():
@@ -202,20 +263,39 @@ def page_not_found(e):
     return render_template('ComingSoon.html'), 404
 
 # The following routes are pages for specific classes and assignments
-@app.route('/class/<classurl>')
-def class_page(classurl):
-  # Pass the class name and class data to the class page
-  id = classurl[-4:]
-  class_name = classurl.replace(id, "").strip()
-  classes = get_user_data("Classes")
-  print(classes)
-  class_data = next((row for row in classes if str(row['id']) == str(id)), None)
-  print(classes[4]['id'], str(id), str(classes[4]['id']) == str(id))
-  print(class_data)
-  # class_img = ""
-  # if 'img' in class_data and class_data['img'] != "":
-  #   class_img = download_file("sciweb-files", class_data['img'])
-  return render_template('class.html',
+@app.route('/class/<classid>')
+def class_page(classid):
+    # Get class data using just the ID
+    classes = get_user_data("Classes")
+    # get the last 4 characters of the classid
+    classid = classid[-4:]
+    # Print debug information
+    print(f"Looking for class ID: {classid}")
+    print(f"Available classes: {[{str(c['id']): c['name']} for c in classes]}")
+    
+    # Convert both IDs to strings and strip any whitespace for comparison
+    class_data = next((row for row in classes if str(row['id']).strip() == str(classid).strip()), None)
+    
+    if not class_data:
+        print(f"Class not found for ID: {classid}")
+        return redirect('/dashboard')
+    
+    print(f"Found class: {class_data['name']}")
+    
+    # Get class name from the data
+    class_name = class_data.get('name', '')
+    
+    # Handle class image
+    if 'img' in class_data and class_data['img']:
+        try:
+            # Convert image ID to string and ensure it's clean
+            img_id = str(class_data['img']).strip()
+            # class_data['img'] = download_file("sciweb-files", img_id)
+        except Exception as e:
+            print(f"Error loading class image: {e}")
+            class_data['img'] = None
+    
+    return render_template('class.html',
                          class_name=class_name,
                          class_data=class_data)
 
@@ -286,6 +366,15 @@ def course_reviews(courseid):
 @app.route('/battle/<battleid>')
 def battle_page(battleid):
   return render_template('battle.html')
+
+@app.route('/Security')
+def security():
+    return render_template('Security.html')
+
+@app.route('/BetaTester')
+def beta_tester():
+    return redirect('https://docs.google.com/forms/d/e/1FAIpQLScJG1bzeTOFa5dXEQUmCOJTAWMhtEWhSASPkQcRO4dwH2_o8Q/viewform?usp=dialog')
+
 # This concludes initializing the front end
 
 #The following route functions post/get data to/from JS files
@@ -311,31 +400,70 @@ def get_home_ip():
   # return the user's data given their IP address
   return json.dumps({'Name': get_name(str(session['ip_add']))})
 
-# /Jupiter route
-@app.route('/jupiter', methods=['POST'])
-def Jupiter():
-  print("in jup py route")
-  # get_gclassroom_api_data()
-  data = request.json
-  classes= run_puppeteer_script(data['osis'], data['password'])
-  
-  if classes == "WrongPass":
-    return json.dumps({"error": "Incorrect credentials"})
+# Split into auth and stream endpoints
+@app.route('/jupiter_auth', methods=['POST'])
+def jupiter_auth():
+    data = request.get_json()
+    # Store the credentials in session
+    session['jupiter_creds'] = {
+        'osis': data.get('osis'),
+        'password': data.get('password'),
+        'addclasses': data.get('addclasses'),
+        'updateLeagues': data.get('updateLeagues')
+    }
+    print("jupiter_creds", session['jupiter_creds'])
+    return jsonify({'status': 'ok'})
 
-  class_data = get_user_data("Classes")
+@app.route('/jupiter')
+def jupiter_stream():
+    # Get credentials from session
+    creds = session.get('jupiter_creds', {})
+    if not creds:
+        return jsonify({'error': 'Not authenticated'}), 401
 
-  if str(data['addclasses'])=="True":
-    jupapi_output_to_classes(classes, class_data)
-  
-  session['user_data']['grades_key'] = str(data['encrypt'])
-  grades = jupapi_output_to_grades(classes, data['encrypt'])
-  # if the categories in the grades do not match the categories in the classes, rerun the function
-  if confirm_category_match(grades, class_data):
-     jupapi_output_to_classes(classes, class_data)
+    @stream_with_context
+    def generate():
+        try:
+            yield f"data: {json.dumps({'message': 'Connecting to Jupiter...'})}\n\n"
+            
+            classes = run_puppeteer_script(creds['osis'], creds['password'])
+            
+            if classes == "WrongPass":
+                yield f"data: {json.dumps({'error': 'Incorrect credentials'})}\n\n"
+                return
 
-  if str(data['updateLeagues'])=="True":
-    update_leagues(grades, classes)
-  return json.dumps(grades)
+            # Get the classes and tokens data
+            yield f"data: {json.dumps({'message': 'Getting classes and tokens data...'})}\n\n"
+            class_data = get_data("Classes")
+            tokens_data = get_data("Tokens")
+
+            if str(creds['addclasses']).lower() == "true":
+                yield f"data: {json.dumps({'message': 'Adding you to your classes...'})}\n\n"
+                classes_added = jupapi_output_to_classes(classes, class_data)
+                notify_new_member(classes_added, tokens_data)
+            
+            yield f"data: {json.dumps({'message': 'Processing grades...'})}\n\n"
+              
+            grades = jupapi_output_to_grades(classes)
+            print("c1")
+            
+            yield f"data: {json.dumps({'message': 'Checking for new grades to notify classmates about...'})}\n\n"
+            check_new_grades(grades, class_data, tokens_data)
+            
+            if confirm_category_match(grades, class_data):
+                jupapi_output_to_classes(classes, class_data)
+
+            if str(creds['updateLeagues']).lower() == "true":
+                yield f"data: {json.dumps({'message': 'Updating leagues...'})}\n\n"
+                update_leagues(grades, classes)
+
+            # Send completion message with grades data
+            yield f"data: {json.dumps({'status': 'complete', 'grades': grades})}\n\n"
+            
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+    print("session", session['user_data'])
+    return Response(generate(), mimetype='text/event-stream')
 
 @app.route('/init_oauth', methods=['POST', 'GET'])
 def init_oauth_handler():
@@ -371,14 +499,16 @@ def oauth2callback_handler():
 # It returns the data from the requested sheet
 @app.route('/data', methods=['POST'])
 def fetch_data():
-  sheets = request.json['data']
-  # Split the requested sheets into a list
-  sheets = sheets.split(", ")
-  response = {}
+    data = request.json
+    sheets = data['data']
+    response = data.get('prev_sheets', {})  # Get prev_sheets from request
+    
+    # Split the requested sheets into a list
+    sheets = sheets.split(", ")
 
-  for sheet in sheets:
-    response[sheet] = get_user_data(sheet, response)
-  return json.dumps(response)
+    for sheet in sheets:
+        response[sheet] = get_user_data(sheet, response)
+    return json.dumps(response)
 
 @app.route('/post_data', methods=['POST'])
 def post_data_route():
@@ -404,6 +534,50 @@ def delete_data_route():
 @app.route('/AI', methods=['POST'])
 def get_AI():
   return json.dumps(get_insights(request.json['data']))
+
+# /send_notification route
+@app.route('/send_notification', methods=['POST'])
+def send_notification_route():
+  data = request.json
+  
+  # convert list of OSIS to their tokens
+  tokens = get_data("Tokens", row_name="OSIS", row_val=data['OSIS'], operator="in")
+  for token in tokens:
+    send_notification(token['token'], data['title'], data['body'], data['url'])
+  return json.dumps({"message": "success"})
+
+@app.route('/check-meeting/<room_name>', methods=['GET'])
+def check_meeting(room_name):
+    try:
+        print("room_name", room_name)
+        url = f'https://meet.jit.si/about/public-{room_name}'
+        response = requests.get(url)
+        print("response content", response.content)
+        if response.status_code == 200:
+            try:
+                print("response", response.json())
+                return jsonify(response.json())
+            except Exception as e:
+                print("error in check_meeting", e)
+                return jsonify({
+                    'participants': [],
+                    'room_exists': False
+                })
+        else:
+            print("error in check_meeting else")
+            return jsonify({
+                'participants': [],
+                'room_exists': False,
+                'error': f'Status code: {response.status_code}'
+            })
+            
+    except Exception as e:
+        print("error in check_meeting except")
+        return jsonify({
+            'participants': [],
+            'room_exists': False,
+            'error': str(e)
+        }), 500
 
 class text_and_time(BaseModel):
   text: str
@@ -438,6 +612,22 @@ def get_AI_function_calling():
   response = chat_with_function_calling(request.json['data'])
   print("response", response)
   return json.dumps(response)
+
+@app.route('/ask-question', methods=['POST'])
+def ask_question():
+    data = request.json
+    # Get the file from the bucket
+    base64_content = download_file("sciweb-files", data['file'])
+    
+    # Process the question
+    answer = answer_worksheet_question(
+        vars['vision_llm'],  # Make sure this is available in your main.py scope
+        base64_content,
+        data['fileType'],
+        data['question']
+    )
+    
+    return json.dumps({"answer": answer})
 
 #function to generate insights and return them to the Grade Analysis page
 @app.route('/insights', methods=['POST'])
@@ -510,17 +700,19 @@ def upload_assignments():
   # add the assignments to the Assignments sheet with post_data
   for assignment in response['assignments']:
     rand_id = ''.join([str(random.randint(0, 9)) for _ in range(4)])
-    post_data("Assignments", {"class": str(assignment['classID']), "name": assignment['assignment_name'], "due_date": assignment['assignment_date'], "class_name": assignment['class_name'], "id": rand_id})
+    post_data("Assignments", {"class": int(assignment['classID']), "name": assignment['assignment_name'], "due_date": assignment['assignment_date'], "class_name": assignment['class_name'], "id": rand_id})
   return json.dumps({"data": "success"})
 
 @app.route('/GAsetup', methods=['POST'])
 def GA_setup():
+  data = request.json
   # get the user's grades and classes
-  classes = get_user_data("Classes")
+  classes = data['Classes']
   weights = get_weights(classes, session['user_data']['osis'])
-  grades = get_grades()
+  grades = data['Grades']
   user_data = get_name()
-  goals = get_user_data("Goals")
+  goals = data['Goals']
+  distributions = data['Distributions']
   # filter goals for the user's osis
   goals = [item for item in goals if str(session['user_data']['osis']) in str(item['OSIS'])]
 
@@ -529,6 +721,10 @@ def GA_setup():
   if 'class' in grades and grades['class'] == 'No grades entered':
     print("No grades found in GA_setup")
     return json.dumps({"error": "Enter your grades before analyzing them"})
+  
+  if grades == []:
+    print("Key prefix mismatch in GA_setup")
+    return json.dumps({"error": "Grade Access not authenticated. Try reloading the page, then repulling your grades."})
   #filter classes for the user's osis
   classes = [item for item in classes if str(session['user_data']['osis']) in str(item['OSIS'])]
   try:
@@ -591,7 +787,8 @@ def GA_setup():
     "stats": stats,
     "compliments": compliments,
     "cat_value_sums": cat_value_sums,
-    "goals": goals
+    "goals": goals,
+    "distributions": distributions
   }
 
 
@@ -617,76 +814,64 @@ def process_notebook_file():
     file_type = data['fileType']
     unit = data['unit']
     
-    
-    if file_type == 'application/pdf':
-         # Decode the base64 PDF content
-        pdf_bytes = base64.b64decode(file_content)
-        pdf_file = BytesIO(pdf_bytes)
-        pdf_reader = PdfReader(pdf_file)
-        
-        # Extract text from the PDF
-        text_content = ""
-        for page in pdf_reader.pages:
-            text_content += page.extract_text()
-        
-        prompts = [
-            {"role": "system", "content": "You are an expert at analyzing educational worksheets and creating study materials."},
-            {"role": "user", "content": f"Analyze this worksheet PDF content and provide the following information:\n1. The main topic of the worksheet\n2. A list of specific notes about the content of the worksheet\n3. Several practice questions related to the worksheet content\n\nPDF Content:\n{text_content[:4000]}"}  # Limit content to 4000 characters to avoid token limits
-        ]
-        
-        insights = get_insights(prompts, ResponseTypeNB)
-        
-        
-    else:
-        # Process image (existing code)
-        base64_img = file_content
-        
-        # Fix padding if necessary
-        padding = len(base64_img) % 4
-        if padding:
-            base64_img += '=' * (4 - padding)
-        
-        prompts = [
-            {"role": "system", "content": "You are an expert at analyzing educational worksheets and creating study materials."},
-            {"role": "user", "content": [
-                {"type": "text", "text": "Analyze this worksheet image and provide the following information:\n1. The main topic of the worksheet\n2. A list of specific subtopics or concepts the user needs to know\n3. Several practice questions related to the worksheet content\nFormat your response as JSON with keys 'topic', 'subtopics', and 'practice_questions'."},
-                {"type": "image_url", "image_url": {"url": f"data:image/{file_type.split('/')[-1]};base64,{base64_img}"}}
-            ]}
-        ]
-        
-        insights = get_insights(prompts, ResponseTypeNB)
-    
-    # generate a random 7 digit number
-    blob_id = ''.join([str(random.randint(0, 9)) for _ in range(7)])
-    # store the file in the cloud storage
-    upload_file("sciweb-files", file_content, blob_id)
-    # add to the Notebooks sheet
-    post_data("Notebooks", {"classID": data['classID'], "unit": unit, "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "image": blob_id, "topic": insights.topic, "subtopics": insights.notes, "practice_questions": insights.practice_questions})
-    return jsonify({"success": True, "message": "Worksheet processed and stored successfully"})  
-  
-# set response format class. for mcq, the key is the question, and the value is the answer
-class MultipleChoiceQuestion(BaseModel):
-    question: str
-    answers: list[str]
-    correct_answer: str
+    try:
+        if file_type == 'application/pdf':
+            # Process PDF
+            pdf_bytes = base64.b64decode(file_content)
+            insights = process_pdf_content(vars['llm'], pdf_bytes)
+        else:
+            # Process image
+            insights = process_image_content(vars['vision_llm'], file_content, file_type)
 
-class response_format(BaseModel):
-    multiple_choice: list[MultipleChoiceQuestion]
-    short_response: list[str]
+        # Convert Pydantic model to dict
+        insights_dict = insights.model_dump()
+        
+        # Generate blob ID and store file
+        blob_id = ''.join([str(random.randint(0, 9)) for _ in range(7)])
+        # store the file in the cloud storage
+        upload_file("sciweb-files", file_content, blob_id)
+        # add to the Notebooks sheet
+        post_data("Notebooks", {"classID": data['classID'], "unit": unit, "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "image": blob_id, "topic": insights_dict["topic"], "subtopics": insights_dict["notes"], "practice_questions": insights_dict["practice_questions"]})
+        return jsonify({"success": True, "message": "Worksheet processed and stored successfully"})  
+    except Exception as e:
+        print(f"Error processing worksheet: {str(e)}")
+        traceback.print_exc()
+        return jsonify({"error": "Failed to process worksheet"}), 500
+  
+
+@app.route('/get-units', methods=['POST'])
+def get_units():
+    data = request.json
+    class_id = data['classId']
+    # allow frontend to pass in classes and notebook data
+    if 'classes' in data:
+        classes = data['classes']
+    else:
+        classes = get_user_data("Classes")
+    if 'notebooks' in data:
+        notebooks = data['notebooks']
+    else:
+        notebooks = get_user_data("NbS", {"Classes":classes})
+    # Get unique units for the given class_id
+    units = list(set(notebook['unit'] for notebook in notebooks if int(notebook['classID']) == int(class_id)))
+    print("units", units)
+    return jsonify({"units": units})
+    
+
 
 @app.route('/generate-questions', methods=['POST'])
 def generate_questions():
     data = request.json
     class_id = data['classId']
     unit_name = data['unitName']
-    mcq_count = data.get('mcqCount', 2)  # Default to 2 if not specified
-    written_count = data.get('writtenCount', 3)  # Default to 3 if not specified
-
-    # Get the notebook content for the selected class and unit
+    mcq_count = data.get('mcqCount', 2)
+    written_count = data.get('writtenCount', 3)
+    session['current_class'] = class_id
+    session['current_unit'] = unit_name
+    # Get the notebook content
     classes = get_user_data("Classes")
     notebooks = get_user_data("Notebooks", {"Classes":classes})
     
-    # get one list of all of the subtopics and practice questions
     subtopics = []
     practice_questions = []
     for item in notebooks:
@@ -697,108 +882,217 @@ def generate_questions():
     if not subtopics or not practice_questions:
         return jsonify({"error": "Notebook content not found"}), 404
 
-    # Generate questions using AI with dynamic counts
-    prompt = [
-        {"role": "system", "content": "You are an AI designed to generate educational questions given a list of topics and examples."},
-        {"role": "user", "content": f"Generate {mcq_count} multiple-choice questions, each with 4 answer choices, and {written_count} short-response questions based on these topics: {subtopics} and examples: {practice_questions}. Ensure your response is in the correct JSON format."}
-    ]
+    try:
+        questions = generate_practice_questions(
+            vars['llm'], 
+            mcq_count, 
+            written_count, 
+            subtopics, 
+            practice_questions
+        )
+        return jsonify({"questions": questions.model_dump()})
+    except Exception as e:
+        print(f"Error generating questions: {str(e)}")
+        return jsonify({"error": "Failed to generate questions"}), 500
 
-    questions = get_insights(prompt, response_format)
-
-    return json.dumps({"questions": json.loads(questions)})
-
-
-@app.route('/get-units', methods=['POST'])
-def get_units():
+@app.route('/evaluate-final', methods=['POST'])
+def evaluate_final():
     data = request.json
-    class_id = data['classId']
-    classes = get_user_data("Classes")
-    notebooks = get_user_data("Notebooks", {"Classes":classes})
-    # Get unique units for the given class_id
-    units = list(set(notebook['unit'] for notebook in notebooks if notebook['classID'] == class_id))
+    followup_history = data['followupHistory']
     
-    return jsonify({"units": units})
+    # Generate final evaluation
+    final_evaluation = generate_final_evaluation(vars['llm'], followup_history)
+    final_eval_dict = final_evaluation.model_dump()
     
-class Feedback(BaseModel):
-    feedback: str
-    score: int
+    return jsonify({"evaluation": final_eval_dict})
 
-class ResponseTypeQA(BaseModel):
-    feedback: list[Feedback]
-    weaknesses: list[str]
-    strengths: list[str]
-    test_score: int
-
-@app.route('/score-answers', methods=['POST'])
-def score_answers():
+#Evaluate AI routes
+@app.route('/generate-followup', methods=['POST'])
+def generate_followup():
     data = request.json
-    questions = data['questions']
-    user_answers = data['answers']
-    scoring_prompt = data['scoringPrompt']
+    followup = generate_followup_question(
+        vars['llm'],
+        data['question'],
+        data['answer'],
+        data.get('history', [])
+    )
+    return jsonify({"followup": followup})
 
-    score = 0
-    mcq_count = len(questions['multiple_choice'])
-    points_per_mcq = 40 / mcq_count if mcq_count > 0 else 0
+@app.route('/evaluate-understanding', methods=['POST'])
+def evaluate_understanding():
+    data = request.json
+    evaluation = generate_final_evaluation(
+        vars['llm'],
+        data['questionContext'],
+        data['history']
+    )
+    return jsonify({"evaluation": evaluation})
 
-    for i in range(mcq_count):
-        if user_answers[i] == questions['multiple_choice'][i]['correct_answer']:
-            score += points_per_mcq
-        
-    prompt = [
-        {"role": "system", "content": scoring_prompt},
-        {"role": "user", "content": f"Questions: {questions['short_response']}\nStudent's Answers: {user_answers[mcq_count:]}"}
-    ]
 
-    ai_score = get_insights(prompt, ResponseTypeQA)
-    ai_score = json.loads(ai_score)
-
-    return jsonify({"MCQscore": score, "SAQ_feedback": ai_score})
-
-class BloomQuestion(BaseModel):
-    question: str
-    personalDifficulty: int
-
-class ResponseTypeBloom(BaseModel):
-    questions: list[BloomQuestion]
-
+# Levels routes
 @app.route('/generate-bloom-questions', methods=['POST'])
-def generate_bloom_questions():
+def generate_bloom_questions_route():
     data = request.json
-    level = data['level']
-    previous_answers = data['previousAnswers']
-    notebook_content = data['notebookContent']
-    custom_prompt = data['customPrompt']
-
-    # Generate questions using AI
-    prompt = [
-        {"role": "system", "content": custom_prompt.replace("{level}", level)},
-        {"role": "user", "content": "notebook content: " + str(notebook_content) + "\n previous answers: " + str(previous_answers)}
-    ]
-
-    questions = get_insights(prompt, ResponseTypeBloom)
-    return json.dumps({"questions": json.loads(questions)})
-
-class ScoreBloom(BaseModel):
-  score: int
-  feedback: str
+    try:
+        questions = generate_bloom_questions(
+            vars['llm'],
+            data['level'],
+            data['previousAnswers'],
+            data['notebookContent']
+        )
+        return jsonify({"questions": questions.model_dump()})
+    except Exception as e:
+        print(f"Error generating Bloom's questions: {str(e)}")
+        return jsonify({"error": "Failed to generate questions"}), 500
 
 @app.route('/evaluate-answer', methods=['POST'])
-def evaluate_answer():
+def evaluate_answer_route():
     data = request.json
-    question = data['question']
-    answer = data['answer']
-    level = data['level']
-    custom_prompt = data['customPrompt']
+    print("data", data)
+    try:
+        evaluation = evaluate_bloom_answer(
+            vars['llm'],
+            data['question'],
+            data['answer'],
+            data['level'],
+            data['guide']
+        )
+        return jsonify(evaluation.model_dump())
+    except Exception as e:
+        print(f"Error evaluating answer: {str(e)}")
+        return jsonify({"error": "Failed to evaluate answer"}), 500
 
+
+
+@app.route('/make_explanation_cards', methods=['POST'])
+def make_explanation_cards_route():
+    data = request.json
+    print(data)
+    explanations = make_explanation_cards(
+        data['notebook'], 
+        vars['llm'], 
+        data['history'],
+        data.get('user_input', None)
+    )
+    return json.dumps({"explanations": explanations})
+
+
+@app.route('/synthesize_unit', methods=['POST'])
+def synthesize_unit_route():
+  data = request.json
+  synthesis = synthesize_unit(data['notebook'], vars['llm'])
+  row = {'synthesis': synthesis, 'classID': int(data['classID']), 'unit': data['unit'], 'id': random.randint(1000000, 9999999)}
+  # get data with classID and unit to check if it already exists, in which case, update it
+  existing_data = get_data("NbS", row_name="classID", row_val=int(data['classID']))
+  for item in existing_data:
+    if item['unit'] == data['unit']:
+      update_data(item['id'], 'id', row, "NbS")
+      return json.dumps({"message": "success"})
+  post_data("NbS", row)
+  return json.dumps({"message": "success"})
+
+
+@app.route('/update-guide', methods=['POST'])
+def update_guide():
+    data = request.json
+    try:
+        updated_guide = update_study_guide(
+            vars['llm'],
+            data['guide_content'],
+            data['qa_history']
+        )
+        return jsonify({"success": True, "updated_guide": updated_guide})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/modify-guide-section', methods=['POST'])
+def modify_guide_section_route():
+    data = request.json
+    try:
+        updated_guide = modify_guide_section(
+            vars['llm'],
+            data['guide_content'],
+            data['selected_text'],
+            data['modification_request']
+        )
+        return jsonify({"success": True, "updated_guide": updated_guide})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/save-guide', methods=['POST'])
+def save_guide():
+    data = request.json
+    try:
+        post_data("Guides", {
+            "classId": data['class_id'],
+            "userId": session['user_data']['osis'],
+            "content": data['guide_content'],
+            "timestamp": datetime.now().isoformat()
+        })
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/generate-derive-questions', methods=['POST'])
+def generate_derive_questions_route():
+    data = request.json
+    try:
+        # Get notebook synthesis for the selected class/unit
+        synthesis_data = data['notebooks']
+        synthesis = next((item['synthesis'] for item in synthesis_data 
+                         if item['unit'] == data['unit']), None)
+        
+        if not synthesis:
+            return jsonify({"error": "No synthesis found for this unit"}), 404
+            
+        questions = generate_derive_questions(vars['llm'], synthesis)
+        return jsonify(questions.model_dump())
+        
+    except Exception as e:
+        print(f"Error generating derive questions: {str(e)}")
+        return jsonify({"error": "Failed to generate questions"}), 500
+
+@app.route('/evaluate-derive-answer', methods=['POST'])
+def evaluate_derive_answer_route():
+    data = request.json
+    try:
+        evaluation = evaluate_derive_answer(
+            vars['llm'],
+            data['question'],
+            data['expected_answer'],
+            data['user_answer']
+        )
+        return jsonify(evaluation.model_dump())
+        
+    except Exception as e:
+        print(f"Error evaluating answer: {str(e)}")
+        return jsonify({"error": "Failed to evaluate answer"}), 500
+
+
+@app.route('/derive-conversation', methods=['POST'])
+def derive_conversation():
+    data = request.json
     
-    prompt = [
-        {"role": "system", "content": custom_prompt.replace("{level}", level)},
-        {"role": "user", "content": f"Question: {question}\nStudent's Answer: {answer}"}
-    ]
-
-    evaluation = get_insights(prompt, ScoreBloom)
-    evaluation = json.loads(evaluation)
-    return json.dumps({"score": evaluation['score'], "feedback": evaluation['feedback']})
+    # Format conversation history
+    conversation_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in data['conversation_history']])
+    
+    # Create LangChain chain with the help prompt
+    chain = create_llm_chain(vars['llm'], DERIVE_HELP_PROMPT)
+    
+    try:
+        # Extract the content from the response
+        response = chain.invoke({
+            "question": data['question'],
+            "expected_answer": data['expected_answer'],
+            "conversation_history": conversation_history,
+            "student_message": data.get('student_message', '')
+        })
+        
+        # The response is a string since we're using ChatPromptTemplate
+        return jsonify({"message": response})
+    except Exception as e:
+        print(f"Error in derive conversation: {str(e)}")
+        return jsonify({"error": "Failed to generate response"}), 500
 
 
 @app.route('/impact', methods=['POST'])
@@ -822,19 +1116,55 @@ def get_impact():
 
 @app.route('/get-file', methods=['POST'])
 def get_file():
-  data = request.json
-  print(data)
-  # Get the file from the bucket
-  base64 = download_file("sciweb-files", data['file'])
-  return json.dumps({"file": str(base64)})
+    try:
+        data = request.json
+        if not data or 'file' not in data:
+            return json.dumps({"error": "Missing file ID"}), 400
+            
+        # Get the file from the bucket
+        file_data = download_file("sciweb-files", data['file'])
+        if not file_data:
+            return json.dumps({"error": "File not found"}), 404
+            
+        # Extract type from metadata if present
+        file_type = 'application/octet-stream'
+        if file_data.startswith('data'):
+            type_end = file_data.find('base64')
+            if type_end > 4:  # 'data' length is 4
+                file_type = file_data[4:type_end]
+                file_data = file_data[type_end + 6:]  # Skip 'base64' part
+                
+        return json.dumps({
+            "file": file_data,
+            "type": file_type
+        })
+    except Exception as e:
+        print(f"Error retrieving file: {str(e)}")
+        return json.dumps({"error": str(e)}), 500
 
 @app.route('/upload-file', methods=['POST'])
 def upload_file_route():
-  data = request.json
-  print(data['file'][:100])
-  # Upload the file to the bucket
-  upload_file("sciweb-files", data['file'], data['name'])
-  return json.dumps({"message": "success"})
+    try:
+        data = request.json
+        if not data or 'file' not in data or 'name' not in data:
+            return json.dumps({"error": "Missing file or name"}), 400
+            
+        base64_data = data['file']
+        file_name = data['name']
+        file_type = data.get('type', 'application/octet-stream')
+        
+        # Ensure proper base64 padding
+        padding = 4 - (len(base64_data) % 4)
+        if padding != 4:
+            base64_data += '=' * padding
+            
+        # Upload the file to the bucket with type information
+        metadata = f"data{file_type}base64"
+        upload_file("sciweb-files", base64_data, file_name, metadata)
+        return json.dumps({"message": "success"})
+    except Exception as e:
+        print(f"Error uploading file: {str(e)}")
+        return json.dumps({"error": str(e)}), 500
 
 
 
@@ -846,15 +1176,9 @@ def postLogin():
   mode = raw_data['mode']
   session['ip_add'] = data['IP']
   logins = get_data("Users")
-  #remove the user's ip addresses from all other accounts
-  # for row in logins:
-  #   if session['ip_add'] in row['IP']:
-  #     row['IP'] = row['IP'].replace(session['ip_add'], "")
-  #     #if the ip address is the only one in the list(no numbers in row['IP']), remove the row
-  #     if not any(char.isdigit() for char in row['IP']):
-  #       delete_data("Users", row['osis'], "osis")
-  #     else:
-  #       update_data(row['osis'], 'osis', row, "Users")
+  # hashed password
+  unhashed_password = data['password']
+  data['password'] = hashlib.sha256(unhashed_password.encode()).hexdigest()
       
   # if the user has logged in before, update their IP address
   if mode == "Login":    
@@ -862,7 +1186,7 @@ def postLogin():
       # If the user's osis is already in the Users sheet...
       if not 'password' in row:
         print("no password in row", row)
-      if row['password'] == data['password'] and row['first_name'] == data['first_name']:
+      if (row['password'] == data['password'] or row['password'] == unhashed_password) and row['first_name'] == data['first_name']:
         # Add their new IP address to the list of IP addresses
         row['IP'] = f"{session['ip_add']}, {row['IP']}"
         
@@ -874,6 +1198,11 @@ def postLogin():
   # If the user has not logged in before, add their data to the Users sheet
   session['user_data'] = data
   post_data("Users", data)
+  
+  # Send welcome email for new signups
+  if 'email' in data and data['email']:
+    send_welcome_email(data['email'], data['first_name'])
+  
   return json.dumps({"data": "success"})
 
 
@@ -929,6 +1258,7 @@ def get_name(ip=None, update=False):
     print("ip", ip)
     session['ip_add'] = ip
     
+  utility_function()
   # If the user's data is already stored in the session, return it
   if 'user_data' in session and not update:
     print("user_data already defined in get_name()")
@@ -959,10 +1289,14 @@ def get_name(ip=None, update=False):
   return "Login", 404
 
 
+def utility_function():
+  pass
 
-
+vars = init()
 #uncomment to run locally, comment to deploy. Before deploying, change db to firebase, add new packages to requirements.txt
 
 if __name__ == '__main__':
   app.run(host='localhost', port=8080)
+
+
 

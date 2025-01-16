@@ -8,6 +8,7 @@ import re
 from flask import session
 
 
+
 def run_puppeteer_script(osis, password):
   print("runnnning puppeteer script")
   try:
@@ -51,7 +52,7 @@ def run_puppeteer_script(osis, password):
     return None
 
 
-def jupapi_output_to_grades(data, encrypt):
+def jupapi_output_to_grades(data):
   print("jupapi_output_to_grades")
   grades = []
   classes = data["courses"]
@@ -77,14 +78,16 @@ def jupapi_output_to_grades(data, encrypt):
       
       if correction:
         print("correction applied to ", a['name'], "in class", c['name'])
-        # Apply the correction
+        # Apply all possible corrections
         score = float(correction['score'])
         value = float(correction['value'])
         
-        # If weight is provided, adjust the score
-        if 'weight' in correction:
-          weight = float(correction['weight'])
-          score = score * weight / value
+        # Apply optional corrections if present
+        if 'date' in correction:
+          date = correction['date']
+          
+        if 'new_name' in correction:
+          a['name'] = correction['new_name']
       
       grades.append({
         "name": a["name"],
@@ -99,48 +102,17 @@ def jupapi_output_to_grades(data, encrypt):
   
   # filter out grades where grade["score"] = 'null' or grade["date"] = ''
   grades = [grade for grade in grades if grade['score'] != 'null' and grade['date'] != '']
-
-  post_grades(grades, encrypt)
   return grades
 
 
-def post_grades(grades, encrypt):
-    print("len grades posted", len(grades))
-    grades_split = [grades[i:i + 100] for i in range(0, len(grades), 100)]
 
-    grades_obj = {"OSIS": str(session['user_data']['osis']), "encrypted": "False"}
-
-    if encrypt != "none":
-        print("encrypting")
-        # Split the key into prefix and full key
-        key_prefix, full_key = encrypt.split(':')
-        # Store the prefix in the grades object
-        grades_obj["key_prefix"] = key_prefix
-        
-        for i in range(0, len(grades_split)):
-            grade_fragment = grades_split[i]
-            grade_fragment = encrypt_grades(str(grade_fragment), int(full_key))
-            grades_obj["encrypted"] = "True"
-            grades_obj[str(i+1)] = grade_fragment
-    else:
-        for i in range(0, len(grades_split)):
-            grades_obj[str(i+1)] = grades_split[i]
-
-    grades_data = get_user_data("GradeData")
-    osis_list = [str(grade['OSIS']) for grade in grades_data]
-    
-    if str(session['user_data']['osis']) in osis_list:
-        update_data(str(session['user_data']['osis']), "OSIS", grades_obj, "GradeData")
-    else:
-        post_data("GradeData", grades_obj)
-    
-    return
 
 
 def jupapi_output_to_classes(data, class_data):
     print("jupapi_output_to_classes")
     # get the user's classes from the jupiter data
     classes = data["courses"]
+    classes_added = []
     
     for c in classes:
         class_exists = False
@@ -154,10 +126,12 @@ def jupapi_output_to_classes(data, class_data):
         categories = []
         for cat in raw_cat:
             categories.extend([cat["name"], cat["weight"]*100])
-        
+        # print(class_data, class_name, teacher)
         for class_info in class_data:
             # check if the class exists in the db
-            if "name" in class_info and class_info["name"] == class_name and class_info["teacher"] == teacher and class_info["schedule"] == schedule:
+            if class_info["teacher"] == teacher:
+                print(class_info, class_name, teacher, schedule)
+            if "name" in class_info and class_info["name"] == class_name and class_info["teacher"] == teacher:
                 class_exists = True
                 need_update = False
                 
@@ -166,6 +140,10 @@ def jupapi_output_to_classes(data, class_data):
                     need_update = True
                     class_info["categories"] = categories
                 
+                # if OSIS is an int, convert to string
+                if isinstance(class_info["OSIS"], int):
+                    class_info["OSIS"] = str(class_info["OSIS"])
+
                 # Ensure OSIS is a list
                 if isinstance(class_info["OSIS"], str):
                     class_info["OSIS"] = class_info["OSIS"].split(", ")
@@ -174,6 +152,7 @@ def jupapi_output_to_classes(data, class_data):
                 if str(session['user_data']['osis']) not in class_info["OSIS"]:
                     class_info["OSIS"].append(str(session['user_data']['osis']))
                     need_update = True
+                    classes_added.append(class_info)
 
                 if need_update:
                     # Update the class in the database
@@ -188,7 +167,7 @@ def jupapi_output_to_classes(data, class_data):
                 "period": "",
                 "teacher": teacher,
                 "name": class_name,
-                "OSIS": session['user_data']['osis'],
+                "OSIS": [str(session['user_data']['osis'])],
                 "assignments": "",
                 "description": "",
                 "id": str(id),
@@ -198,100 +177,10 @@ def jupapi_output_to_classes(data, class_data):
             post_data("Classes", class_info)
             
 
-    return class_data  # Return the updated class data
+    return classes_added  # Return the updated class data
 
   
     
-  
-
-def get_grades():
-    data = get_data("GradeData", row_name="OSIS", row_val=str(session['user_data']['osis']))
-    #filter for osis
-    has_grades = False
-    for grade in data:
-        
-        if str(grade['OSIS']) == str(session['user_data']['osis']):
-            line = grade
-            has_grades = True
-    
-    if not has_grades:
-        return {"date": "1/1/2021", "score": 0, "value": 0, "class": "No grades entered", "category": "No grades entered", "name": "None"}
-    
-    grades = []
-    gline = {key: line[key] for key in line if key != "OSIS" and key != "encrypted" and key != "docid" and key != "key_prefix"}
-    
-    if len(gline) == 0:
-        return {"date": "1/1/2021", "score": 0, "value": 0, "class": "No grades entered", "category": "No grades entered", "name": "None"}
-    
-    num_elements = max([int(key) for key in gline.keys()])+1
-    encrypted = line['encrypted'] == "True"
-    
-    if encrypted:
-        if 'grades_key' not in session['user_data'] or session['user_data']['grades_key'] == "none":
-            print("No grades key")
-            return []
-        
-        # Verify key prefix matches
-        stored_prefix = line.get('key_prefix')
-        user_key = int(session['user_data']['grades_key'])
-        user_prefix = str(user_key // 10000000000000)
-        
-        if stored_prefix != user_prefix:
-            print("Key prefix mismatch")
-            return []
-        
-        for i in range(1, num_elements):
-            cell = line[str(i)]
-            cell = decrypt_grades(cell, user_key)
-            # convert single quotes to double quotes
-            cell = cell.replace("{'", '{"')
-            cell = cell.replace("':", '":')
-            cell = cell.replace(", '", ', "')
-            cell = cell.replace("'}", '"}')
-            cell = cell.replace(": '", ': "')
-            cell = cell.replace("',", '",')
-            
-            cell = json.loads(cell)
-            for grade in cell:
-                if grade['score'] == 'null':
-                    grade['score'] = None
-            grades.extend(cell)
-    else:
-        for i in range(1, num_elements):
-            cell = line[str(i)]
-            if type(cell) == str:
-                cell = json.loads(cell)
-            grades.extend(cell)
-    
-    #convert date of each grade from format m/dd to mm/dd/yyyy
-    
-    dated_grades = []
-    for grade in grades:
-        try:
-            grade['score'] = float(grade['score'])
-            grade['value'] = float(grade['value'])
-        except:
-            print("Error converting score or value to float", grade)
-            continue
-        # if category is NoneType, print
-        if type(grade['category']) == type(None) or type(grade['score']) == type('m') or type(grade['score']) == type(None):
-            print("Skipping", grade)
-            continue
-        
-        #convert date to datetime object
-        date = str(grade['date'])
-        
-        #If date="None" or score is of type Nonetype
-        if date == "None" or date=="":
-            print("skipping", grade)
-            continue
-        
-        date = convert_date(date)
-        
-        grade['date'] = date
-        dated_grades.append(grade)
-    # print(len(dated_grades), len(grades))
-    return dated_grades
 
 
 def convert_date(date_str):
@@ -320,34 +209,6 @@ def convert_date(date_str):
     return f"{input_date_with_current_year.month}/{input_date_with_current_year.day}/{input_date_with_current_year.year}"
 
 
-def encrypt_grades(plain_text, number):
-    # Convert the number to bytes
-    key_bytes = number.to_bytes((number.bit_length() + 7) // 8, byteorder='big')
-    
-    # Convert the plain text to bytes
-    plain_bytes = plain_text.encode()
-    
-    # XOR each byte of the plain text with the key
-    encrypted_bytes = bytearray()
-    for i in range(len(plain_bytes)):
-        encrypted_bytes.append(plain_bytes[i] ^ key_bytes[i % len(key_bytes)])
-    
-    return encrypted_bytes.hex()
-
-def decrypt_grades(cipher_text, number):
-    # Convert the number to bytes
-    key_bytes = number.to_bytes((number.bit_length() + 7) // 8, byteorder='big')
-    
-    # Convert the hexadecimal string back to bytes
-    encrypted_bytes = bytearray.fromhex(cipher_text)
-    
-    # XOR each byte of the cipher text with the key
-    decrypted_bytes = bytearray()
-    for i in range(len(encrypted_bytes)):
-        decrypted_bytes.append(encrypted_bytes[i] ^ key_bytes[i % len(key_bytes)])
-    
-    decrypted_bytes = decrypted_bytes.decode()
-    return decrypted_bytes
 
 
 def confirm_category_match(grades, classes):
@@ -379,3 +240,92 @@ def notify_new_classes(classes):
     # This function is left empty as per the original code
     pass
   
+
+def check_new_grades(grades, class_data, tokens_data):
+    print("check_new_grades")
+    # put all the grades into a dictionary with the class name as the key
+    grades_by_class = {}
+    for grade in grades:
+        # filter out non-assessment grades
+        if 'assessment' not in grade['category'].lower() and 'quiz' not in grade['category'].lower() and 'test' not in grade['category'].lower() and 'exam' not in grade['category'].lower() and 'project' not in grade['category'].lower():
+            continue
+        class_name = grade['class']
+        if class_name not in grades_by_class:
+            grades_by_class[class_name] = []
+        grades_by_class[class_name].append(grade)
+    
+    for class_name, class_grades in grades_by_class.items():
+        class_obj = next((item for item in class_data if item['name'] == class_name), None)
+        class_id = class_obj['id']
+        
+        # check if new_grades doesn't exist
+        if 'new_grades' not in class_obj:
+            class_obj['new_grades'] = [grade['name'] for grade in class_grades]  # Store only names
+            # update the classes sheet
+            update_data(class_id, "id", class_obj, "Classes")
+            # notify for all grades in the past 3 days
+            for grade in class_grades:
+                grade_date = datetime.datetime.strptime(grade['date'], '%m/%d/%Y')
+                if grade_date < datetime.datetime.now() - datetime.timedelta(days=6):
+                    continue
+                notify_new_grade(grade, class_obj, tokens_data)
+        # else, if new_grades exists, notify for all grades not in new_grades
+        else:
+            new_grade_names = []
+            for grade in class_grades:
+                if grade['name'] in class_obj['new_grades']:
+                    continue
+                notify_new_grade(grade, class_obj, tokens_data)
+                new_grade_names.append(grade['name'])
+            if len(new_grade_names) > 0:
+                class_obj['new_grades'].extend(new_grade_names)  # Add only the names
+                # update the classes sheet
+                update_data(class_id, "id", class_obj, "Classes")
+        
+def notify_new_grade(grade, class_obj, tokens_data):  # Renamed parameter to tokens_data
+    from database import send_notification
+    # Get all students in the class
+    students = class_obj['OSIS']
+    # if students is an int, put it in a list
+    if isinstance(students, int):
+        students = [students]
+    # Get tokens for all students
+    student_tokens = []  # Renamed variable to avoid conflict
+    for student in students:
+        for token_obj in tokens_data:  # Use tokens_data instead of tokens
+            if str(token_obj['OSIS']) == str(student):
+                student_tokens.append(token_obj['token'])
+                # continue to next student
+                break
+    # remove duplicates
+    student_tokens = list(dict.fromkeys(student_tokens))
+    
+    # Send notification to all students
+    title = f"New grade posted in {class_obj['name']}: {grade['name']}"
+    body = "Click to pull your grades, see your score, the class distribution, and more!"
+    action = 'https://bxsciweb.org/EnterGrades'
+    for token in student_tokens:
+        send_notification(token, title, body, action)
+
+def notify_new_member(classes_added, tokens_data):
+    from database import send_notification
+    print("notify_new_member")
+    tokens = []
+    # for every class that the user joined, notify existing members that that user joined
+    for class_info in classes_added:
+        class_name = class_info['name']
+        students = class_info['OSIS']
+        for student in students:
+            if str(student) == str(session['user_data']['osis']):
+                continue
+            for token_obj in tokens_data:
+                if str(token_obj['OSIS']) == str(student):
+                    tokens.append((token_obj['token'], class_name))
+        
+    for token in tokens:
+        send_notification(token[0], "New Classmate", f"{session['user_data']['first_name']} has joined {token[1]}!", "https://bxsciweb.org/Classes")
+
+
+
+
+

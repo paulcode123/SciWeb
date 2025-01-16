@@ -6,6 +6,8 @@ var times;
 var weights;
 var grade_spreads;
 var grades;
+var allgrades;
+var currentDistributions;
 var val_sums;
 
 var currentCategories;
@@ -16,7 +18,19 @@ var combinedy;
 
 async function main(){
   startLoading();
-  const data = await fetchRequest('/GAsetup', { data: '' });
+  // get all the data
+  const sheets = await fetchRequest('/data', { data: 'Classes, Goals, Distributions, Grades' });
+  // if no grades(len grades < 2, show error)
+  if(sheets['Grades'].length < 2){
+    const errorMessage = document.getElementById("error");
+    errorMessage.textContent = "No grades found";
+    // hide loading wheel
+    endLoading();
+    // stop any further execution
+    window.stop();
+    return;
+  }
+  const data = await fetchRequest('/GAsetup', sheets);
 
     if(data['error']){
       const errorMessage = document.getElementById("error");
@@ -33,6 +47,9 @@ async function main(){
     times = data["times"];
     grade_spreads = data["grade_spreads"];
     grades = data["grades"];
+    allgrades = grades;
+    currentDistributions = data["distributions"];
+    console.log(currentDistributions)
     categories = data["categories"];
     stats = data["stats"];
     compliments = data["compliments"];
@@ -46,6 +63,10 @@ async function main(){
     
     draw_graphs(grade_spreads, times, weights, grades, ['All', 'all'], val_sums, 5, goals);
     setGoalTable(goals)
+    displayGrades(allgrades);
+
+    // Initialize modal after data is loaded
+    initializeGoalModal();
     endLoading();
 }
 
@@ -233,7 +254,8 @@ for (let i = 0; i < grades.length; i++) {
   let grade = grades[i];
   console.log(cat.includes('all') && cat.includes('All'))
   
-  if ((cat.includes(grade['class']) || cat.includes('all')) && (cat.includes(grade['category']) || cat.includes('All'))) {
+  if ((cat.includes(grade['class'].toLowerCase()) || cat.includes('all')) && 
+      (cat.includes(grade['category'].toLowerCase()) || cat.includes('All'))) {
     grade_points.push(grade);
   }
 }
@@ -247,7 +269,8 @@ for (const spread_class in grade_spreads) {
   for (const spread_category in grade_spreads[spread_class]) {
     let spread = grade_spreads[spread_class][spread_category];
     // if cla includes spread['class'] or all AND cat includes spread['category'] or all, add spread to spreads
-    if ((cat.includes(spread_class) || cat.includes('all')) && (cat.includes(spread_category) || cat.includes('All'))) {
+    if ((cat.includes(spread_class.toLowerCase()) || cat.includes('all')) && 
+        (cat.includes(spread_category.toLowerCase()) || cat.includes('All'))) {
       spreads.push(spread);
       spread_names.push(spread_category + " " + spread_class); // Switch order to "category class"
       w.push(weights[spread_class][spread_category]);
@@ -397,7 +420,10 @@ combinedy = final;
 let finalTraces = [];
 let numTraces = [];
 for (let i = 0; i < spreads.length; i++) {
-  finalTraces.push({y: final});
+  finalTraces.push({
+    y: final,
+    hovertemplate: 'Combined<br>Date: %{x}<br>Grade: %{y:.1f}%<extra></extra>'
+  });
   numTraces.push(i+1);
 }
 
@@ -427,9 +453,30 @@ setTimeout(function(){
   document.getElementById('components').addEventListener('change', function() {
     if(this.checked) {
       // Split the lines when checked
-      console.log(spreads)
-      traces = spreads.map(spread => {return {y: spread}});
-      animationGOTC(numTraces, traces);
+      let componentTraces = spreads.map((spread, index) => {
+        return {
+          y: spread,
+          hovertemplate: `${spread_names[index]}<br>Date: %{x}<br>Grade: %{y:.1f}%<extra>${spread_names[index]}</extra>`
+        };
+      });
+      animationGOTC(numTraces, componentTraces);
+    } else {
+      // Combine the lines when unchecked
+      animationGOTC(numTraces, finalTraces);
+    }
+  });
+
+  // Add event listener for the new "Class components" checkbox
+  document.getElementById('classComponents').addEventListener('change', function() {
+    if (this.checked) {
+      // Calculate and display class components
+      let classTraces = calculateClassComponents(spreads, weights, spread_names, w);
+      // Add proper hover templates to class traces
+      classTraces = classTraces.map(trace => ({
+        ...trace,
+        hovertemplate: `${trace.name}<br>Date: %{x}<br>Grade: %{y:.1f}%<extra>${trace.name}</extra>`
+      }));
+      animationGOTC(numTraces, classTraces);
     } else {
       // Combine the lines when unchecked
       animationGOTC(numTraces, finalTraces);
@@ -728,7 +775,12 @@ var layout = {
 // Store the combined KDE
 var data = grades.map(grade => grade['score']/grade['value']*100);
 var kde = kernelDensityEstimation(data, epanechnikovKernel, bandwidth);
-let combinedTrace = {x: kde.x, y: kde.y};
+let combinedTrace = {
+  x: kde.x,
+  y: kde.y,
+  name: 'Combined',
+  hovertemplate: 'Combined<br>Grade: %{x:.1f}%<br>Density: %{y:.3f}<extra></extra>'
+};
 
 // Define tracenums
 let tracenums = Array.from({length: traces.length}, (_, i) => i);
@@ -781,16 +833,22 @@ function draw_graphs(grade_spreads, times, weights, grades, cat, val_sums, comp_
 document.getElementById("class-form").addEventListener("submit", function(event) {
   event.preventDefault();
   const errorMessage = document.getElementById("error-message");
-errorMessage.textContent = "";
+  errorMessage.textContent = "";
   const checkboxes = document.querySelectorAll('input[name="class"]:checked');
   const selectedClasses = Array.from(checkboxes).map(function(checkbox) {
     return checkbox.value;
-  });
+  }).filter(value => value.toLowerCase() !== 'all'); // Filter out "All" from selections
   
   if (selectedClasses.length === 0) {
     errorMessage.textContent = "Please select at least one class.";
     return;
   }
+
+  // Uncheck all component and individual grade checkboxes
+  document.getElementById('components').checked = false;
+  document.getElementById('individual').checked = false;
+  document.getElementById('componentsHisto').checked = false;
+  document.getElementById('componentsChange').checked = false;
 
   console.log(document.getElementById('loadingWheel').style.visibility)
   document.getElementById('loadingWheel').style.visibility = "visible";
@@ -798,11 +856,9 @@ errorMessage.textContent = "";
   
   let specificity = document.getElementById("mySlider").value;
   console.log(selectedClasses);
-  // document.getElementById("class-form").reset();
   draw_graphs(grade_spreads, times, weights, grades, selectedClasses, val_sums, specificity);
   console.log("done")
-  
-  });
+});
 
 
 
@@ -1000,9 +1056,16 @@ async function shareGraph(id) {
 
 function setGoalTable(goals) {
   const tableBody = document.getElementById('goalTableBody');
-  tableBody.innerHTML = ''; // Clear existing rows
+  tableBody.innerHTML = '';
 
-  goals.forEach((goal, index) => {
+  if (!goals || !goals.length) {
+    const emptyRow = document.createElement('tr');
+    emptyRow.innerHTML = '<td colspan="7" style="text-align: center;">No goals set yet. Click "Add Goal Manually" or use "Click Graph to Add Goal" to get started.</td>';
+    tableBody.appendChild(emptyRow);
+    return;
+  }
+
+  goals.forEach(goal => {
     const row = document.createElement('tr');
     
     const dateSet = new Date(goal.date_set);
@@ -1011,41 +1074,96 @@ function setGoalTable(goals) {
     const daysLeft = Math.ceil((goalDate - today) / (1000 * 60 * 60 * 24));
     
     const totalDays = Math.ceil((goalDate - dateSet) / (1000 * 60 * 60 * 24));
-    const daysPassed = totalDays - daysLeft;
+    const daysPassed = Math.max(0, totalDays - daysLeft);
     const percentTimeComplete = Math.round((daysPassed / totalDays) * 100);
 
-    // Interpolate the grade when set
-    const gradeWhenSet = interpolate(dateToSerial(goal.date_set), combinedx, combinedy);
-    const currentGrade = interpolate(dateToSerial(today.toLocaleDateString()), combinedx, combinedy);
+    // Get current grade and calculate progress with error handling
+    let currentGrade = 0;
+    let gradeWhenSet = 0;
+    try {
+      currentGrade = interpolate(dateToSerial(today.toLocaleDateString()), combinedx, combinedy) || 0;
+      gradeWhenSet = interpolate(dateToSerial(goal.date_set), combinedx, combinedy) || 0;
+    } catch (e) {
+      console.error('Error calculating grades:', e);
+    }
 
     const totalGradeChange = goal.grade - gradeWhenSet;
     const currentGradeChange = currentGrade - gradeWhenSet;
-    const percentGradeComplete = Math.round((currentGradeChange / totalGradeChange) * 100);
+    const percentGradeComplete = Math.round((currentGradeChange / totalGradeChange) * 100) || 0;
 
+    // Calculate if on track with error handling
     const expectedGrade = gradeWhenSet + (totalGradeChange * (daysPassed / totalDays));
-    const percentAboveBelow = Math.round((currentGrade - expectedGrade) * 100) / 100;
+    const percentAboveBelow = Math.round(((currentGrade - expectedGrade) || 0) * 100) / 100;
+    
+    let status = '';
+    if (percentAboveBelow >= 0) {
+      status = '<span class="goal-status on-track">On Track</span>';
+    } else if (percentAboveBelow >= -5) {
+      status = '<span class="goal-status at-risk">At Risk</span>';
+    } else {
+      status = '<span class="goal-status behind">Behind</span>';
+    }
+
+    // Create progress bar with error handling
+    const progressBar = `
+      <div class="goal-progress-bar">
+        <div class="goal-progress-fill" style="width: ${Math.max(0, Math.min(100, percentGradeComplete || 0))}%"></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 0.8em;">
+        <span>${(currentGrade || 0).toFixed(1)}%</span>
+        <span>${goal.grade.toFixed(1)}%</span>
+      </div>
+    `;
+
+    // Create trend indicator with error handling
+    const trend = `
+      <div class="trend-sparkline">
+        ${percentAboveBelow >= 0 ? '↗️' : '↘️'} ${Math.abs(percentAboveBelow || 0).toFixed(1)}%
+      </div>
+    `;
 
     row.innerHTML = `
-      <td>${daysLeft}</td>
-      <td>${percentTimeComplete}%</td>
-      <td>${percentGradeComplete}%</td>
-      <td>${percentAboveBelow > 0 ? '+' : ''}${percentAboveBelow}%</td>
-      <td>${goal.grade.toFixed(2)}%</td>
-      <td>${goal.categories.join(', ')}</td>
-      <td><span class="delete-goal" data-id="${goal.id}">🗑️</span></td>
+      <td>${status}</td>
+      <td>${goal.class}/${goal.category}</td>
+      <td>${progressBar}</td>
+      <td>${goal.grade.toFixed(1)}%</td>
+      <td>${formatDueDate(goal.date)} (${daysLeft} days)</td>
+      <td>${trend}</td>
+      <td>
+        <div class="goal-actions">
+          <button class="goal-action-btn edit-goal" title="Edit Goal" data-id="${goal.id}">✏️</button>
+          <button class="goal-action-btn delete-goal" title="Delete Goal" data-id="${goal.id}">🗑️</button>
+          ${goal.notes ? '<button class="goal-action-btn view-notes" title="View Notes" data-notes="' + goal.notes + '">📝</button>' : ''}
+        </div>
+      </td>
     `;
 
     tableBody.appendChild(row);
   });
 
-  // Add event listeners for delete buttons
+  // Add event listeners for actions
   document.querySelectorAll('.delete-goal').forEach(button => {
-    button.addEventListener('click', async function() {
-      const goalId = this.getAttribute('data-id');
-      goals = await deleteGoal(goalId);
-      // Refresh the graph and table
-      draw_graphs(grade_spreads, times, weights, grades, currentCategories, val_sums, 5, goals);
-      setGoalTable(goals);
+    button.addEventListener('click', async () => {
+      const goalId = button.dataset.id;
+      if (confirm('Are you sure you want to delete this goal?')) {
+        goals = await deleteGoal(goalId);
+        draw_graphs(grade_spreads, times, weights, grades, currentCategories, val_sums, 5, goals);
+        setGoalTable(goals);
+      }
+    });
+  });
+
+  document.querySelectorAll('.edit-goal').forEach(button => {
+    button.addEventListener('click', () => {
+      const goalId = button.dataset.id;
+      const goal = goals.find(g => g.id === parseInt(goalId));
+      openEditGoalModal(goal);
+    });
+  });
+
+  document.querySelectorAll('.view-notes').forEach(button => {
+    button.addEventListener('click', () => {
+      alert(button.dataset.notes);
     });
   });
 }
@@ -1064,8 +1182,8 @@ function draw_change_graph(grade_spreads, times, weights, cat, timeframe=15) {
   for (const spread_class in grade_spreads) {
     for (const spread_category in grade_spreads[spread_class]) {
       let spread = grade_spreads[spread_class][spread_category];
-      if ((cat.includes(spread_class) || cat.includes('all')) && 
-          (cat.includes(spread_category) || cat.includes('All'))) {
+      if ((cat.includes(spread_class.toLowerCase()) || cat.includes('all')) && 
+          (cat.includes(spread_category.toLowerCase()) || cat.includes('All'))) {
         spreads.push(spread);
         spread_names.push(spread_category + " " + spread_class);
         w.push(weights[spread_class][spread_category]);
@@ -1240,5 +1358,309 @@ function draw_change_graph(grade_spreads, times, weights, cat, timeframe=15) {
   timeframeSlider.addEventListener('input', timeframeSlider.inputHandler);
 }
 
+// when the user types in the input field, search and display allgrades for which the name matches
 
+let currentController = null;
+
+document.getElementById('gradeSearch').addEventListener('keyup', function() {
+    // Abort previous search if it exists
+    if (currentController) {
+        currentController.abort();
+    }
+
+    // Create new controller for this search
+    currentController = new AbortController();
+    const signal = currentController.signal;
+
+    const searchTerm = this.value.toLowerCase();
+    
+    try {
+        document.querySelectorAll('.result-item').forEach(item => {
+            // Check if search was aborted
+            if (signal.aborted) {
+                throw new Error('aborted');
+            }
+            
+            if (item.textContent.toLowerCase().includes(searchTerm)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    } catch (e) {
+        if (e.message === 'aborted') {
+            return; // Exit if search was aborted
+        }
+        throw e; // Re-throw if it's a different error
+    }
+});
+
+function displayGrades(grades) {
+  const resultsDiv = document.getElementById('searchResults')
+  grades.forEach(grade => {
+    const resultItem = document.createElement('div');
+    resultItem.style.display = 'none';
+    resultItem.className = 'result-item';
+    
+    const info = document.createElement('span');
+    info.textContent = `${grade.name} - ${grade.category}`;
+    
+    const button = document.createElement('button');
+    button.className = 'opt-in-btn';
+    
+    // Find matching distribution
+    const dist = currentDistributions.find(d => d.name === grade.name && d.class_name === grade.class);
+    const opted_in = dist?.OSIS?.includes(osis);
+    
+    button.textContent = opted_in ? 'View Distribution' : 'Opt In';
+    
+    // Create separate handlers for view and opt-in
+    if (opted_in && dist) {
+      button.onclick = function() {
+        console.log("Viewing existing distribution:", dist);
+        graphDistribution(dist, grade);
+      };
+    } else {
+      button.onclick = function() {
+        console.log("Opting into distribution");
+        optInDistribution(grade, dist);
+      };
+    }
+    
+    resultItem.appendChild(info);
+    resultItem.appendChild(button);
+    resultsDiv.appendChild(resultItem);
+  });
+}
+
+function graphDistribution(dist, grade) {
+  console.log("Graphing distribution:", dist);
+  if (!dist.scores || dist.scores.length === 0) {
+    console.error("No scores available for distribution");
+    return;
+  }
+
+  const data = dist.scores.map(score => score / dist.value * 100);
+  
+  // Calculate bandwidth based on data variance
+  const bandwidth = Math.max(
+    Math.sqrt(data.reduce((acc, val) => 
+      acc + Math.pow(val - data.reduce((a, b) => a + b) / data.length, 2), 0
+    ) / data.length),
+    0.5
+  );
+  
+  const kde = kernelDensityEstimation(data, epanechnikovKernel, bandwidth);
+  
+  // Distribution curve
+  const distributionTrace = {
+    x: kde.x,
+    y: kde.y,
+    mode: 'lines',
+    name: `${dist.class_name} - ${dist.name}`,
+    line: {
+      color: 'rgb(228, 76, 101)'
+    }
+  };
+  
+  // User's grade point
+  const userScore = grade ? grade.score / grade.value * 100 : 
+                   dist.scores[dist.OSIS.indexOf(osis)] / dist.value * 100;
+  
+  const userGradeTrace = {
+    x: [userScore],
+    y: [0], // Place at bottom of graph
+    mode: 'markers',
+    name: 'Your Grade',
+    marker: {
+      size: 12,
+      color: 'white',
+      symbol: 'diamond'
+    }
+  };
+  
+  const layout = {
+    title: 'Grade Distribution',
+    xaxis: {title: 'Grade (%)', showgrid: false},
+    yaxis: {title: 'Density', showgrid: false},
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: 'white' },
+    showlegend: true,
+    legend: {
+      x: 1,
+      y: 1
+    }
+  };
+  
+  Plotly.newPlot('distributionGraph', [distributionTrace, userGradeTrace], layout);
+}
+
+async function optInDistribution(grade, dist) {
+  console.log("Opting in with grade:", grade, "and existing dist:", dist);
+  // if dist is undefined, create a new distribution
+  if (dist === undefined) {
+    dist = {
+      name: grade.name,
+      OSIS: [osis],
+      scores: [grade.score],
+      class_name: grade.class,
+      category: grade.category,
+      value: grade.value,
+      id: Math.floor(Math.random() * 100000000)
+    }
+    await fetchRequest('/post_data', { sheet: "Distributions", data: dist });
+  }
+  else {
+    // add the osis and score to the distribution
+    dist.OSIS.push(osis);
+    dist.scores.push(grade.score);
+    // post the distribution to the database
+    await fetchRequest('/update_data', { sheet: "Distributions", row_name: "id", row_value: dist.id, data: dist });
+  }
+  // update the distribution table
+  graphDistribution(dist);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Tab functionality
+  const tabButtons = document.querySelectorAll('.tab-button');
+  tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      // Remove active class from all buttons and contents
+      tabButtons.forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      // Add active class to clicked button and corresponding content
+      button.classList.add('active');
+      document.getElementById(`${button.dataset.tab}-tab`).classList.add('active');
+    });
+  });
+
+  // Collapsible functionality
+  const collapsibles = document.querySelectorAll('.collapsible-button');
+  collapsibles.forEach(button => {
+    button.addEventListener('click', () => {
+      const content = button.parentElement;
+      content.classList.toggle('active');
+    });
+  });
+});
+
+function calculateClassComponents(spreads, weights, spread_names, w) {
+    let classComponents = {};
+    let classWeights = {};
+
+    // First pass: Group by class name and accumulate weighted values
+    for (let i = 0; i < spreads.length; i++) {
+        // Get category and class name by finding the first occurrence of a class name from weights
+        let fullName = spread_names[i];
+        let className = null;
+        
+        // Find which class this spread belongs to by checking weights keys
+        for (let possibleClass in weights) {
+            if (fullName.includes(possibleClass)) {
+                className = possibleClass;
+                break;
+            }
+        }
+        
+        // Skip if we couldn't find a matching class
+        if (!className) continue;
+        
+        let weight = w[i];
+        
+        if (!classComponents[className]) {
+            classComponents[className] = Array(spreads[i].length).fill(0);
+            classWeights[className] = {};
+        }
+        
+        // Add values without weights initially
+        for (let j = 0; j < spreads[i].length; j++) {
+            if (spreads[i][j] !== 99.993) {
+                if (!classComponents[className][j]) {
+                    classComponents[className][j] = {
+                        sum: 0,
+                        weightSum: 0
+                    };
+                }
+                classComponents[className][j].sum += spreads[i][j] * weight;
+                classComponents[className][j].weightSum += weight;
+            }
+        }
+    }
+
+    // Create traces with properly weighted averages
+    let classTraces = [];
+    for (let className in classComponents) {
+        // Calculate weighted average at each time point
+        let weightedAverage = classComponents[className].map(point => 
+            point && point.weightSum > 0 ? point.sum / point.weightSum : null
+        );
+        
+        // Filter out null values
+        weightedAverage = weightedAverage.map(val => val === null ? 100 : val);
+
+        let trace = {
+            x: times,
+            y: weightedAverage,
+            mode: 'lines',
+            name: className,
+            line: {
+                color: `#${Math.floor(Math.random()*16777215).toString(16)}`,
+                width: 2
+            },
+            hovertemplate: `${className}<br>Date: %{x}<br>Grade: %{y:.1f}%<extra>${className}</extra>`
+        };
+        classTraces.push(trace);
+    }
+
+    return classTraces;
+}
+
+// Goal Management Functions
+let isClickToAddActive = false;
+let clickIndicator = null;
+
+function initializeGoalModal() {
+  // Get all the necessary elements
+  const modal = document.getElementById('goalModal');
+  const closeBtn = document.querySelector('.goal-modal-close');
+  const addGoalBtn = document.getElementById('addGoal');
+  const clickToAddBtn = document.getElementById('clickToAddGoal');
+  const goalForm = document.getElementById('goalForm');
+
+  // Add click handler for manual goal entry
+  addGoalBtn.addEventListener('click', () => {
+    // Reset form and show modal
+    goalForm.reset();
+    
+    // Set minimum date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('goalDate').min = today;
+    
+    // Reset goal type buttons
+    document.querySelectorAll('.goal-type-button').forEach(btn => {
+      btn.classList.remove('active');
+      btn.style.backgroundColor = 'transparent';
+    });
+    document.querySelector('[data-type="grade"]').classList.add('active');
+    document.querySelector('[data-type="grade"]').style.backgroundColor = 'rgb(228, 76, 101)';
+    
+    // Show modal
+    modal.style.display = 'block';
+  });
+
+  // Rest of the initialization code remains the same...
+}
+
+function formatDueDate(dateString) {
+    const date = new Date(dateString);
+    const options = { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric'
+    };
+    return date.toLocaleDateString('en-US', options);
+}
 

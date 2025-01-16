@@ -12,6 +12,10 @@
 
 <!-- content block -->
 {% block content %}
+  <div id="logged-in-popup" style="display: none;" class="popup">
+    <p>You're already logged in!</p>
+    <a href="/" class="button primary">Go to Dashboard</a>
+  </div>
 
   <form id="login-form">
     <div id="toggleSlider" class="slider" onclick="toggleSlider()">
@@ -30,6 +34,9 @@
 
     <label for="grade" id="gradelabel" style="display: none;">Grade</label>
     <input type="number" id="grade" name="grade" placeholder="Enter your grade" style="display: none;">
+
+    <label for="email" id="emaillabel" style="display: none;">Email</label>
+    <input type="email" id="email" name="email" placeholder="Enter your email" style="display: none;">
     <br>
     <div id="button-wrapper">
     <input type="submit" value="Log In" id="submit">

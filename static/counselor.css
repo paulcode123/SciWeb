@@ -14,6 +14,13 @@
     z-index: 1000;
 }
 
+/* Add media query to hide sidebar on mobile */
+@media screen and (max-width: 768px) {
+    .ai-sidebar {
+        display: none;
+    }
+}
+
 .toggle-logo {
     width: 50px; /* Adjust size as needed */
     height: auto;

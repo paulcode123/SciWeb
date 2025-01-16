@@ -1,0 +1,141 @@
+{% extends "darkThemeTemplate.html" %}
+
+{% block title %}
+<title>SciWeb | AI Study Guide Generator</title>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="/static/derive.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="page-intro">
+    <h2><i class="fas fa-brain"></i>AI-Powered Learning Journey</h2>
+    <p>Transform your understanding through an intelligent, adaptive learning experience. Our AI system analyzes your responses and builds a personalized study guide tailored to your learning style.</p>
+    
+    <div class="feature-list">
+        <div class="feature-item">
+            <i class="fas fa-robot"></i>
+            <div>
+                <h4>Adaptive Intelligence</h4>
+                <p>Advanced AI that adapts to your understanding and learning pace</p>
+            </div>
+        </div>
+        <div class="feature-item">
+            <i class="fas fa-network-wired"></i>
+            <div>
+                <h4>Knowledge Mapping</h4>
+                <p>Builds connections between concepts for deeper understanding</p>
+            </div>
+        </div>
+        <div class="feature-item">
+            <i class="fas fa-brain"></i>
+            <div>
+                <h4>Smart Organization</h4>
+                <p>Intelligently structures information for optimal learning</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="class-selection">
+    <div class="select-wrapper">
+        <i class="fas fa-graduation-cap"></i>
+        <select id="class-select">
+            <option value="">Select Your Course</option>
+        </select>
+    </div>
+    <div class="select-wrapper">
+        <i class="fas fa-book"></i>
+        <select id="unit-select" disabled>
+            <option value="">Choose Learning Unit</option>
+        </select>
+    </div>
+    <button id="start-derive" class="start-derive-button">
+        <i class="fas fa-play"></i> Begin Learning Journey
+    </button>
+</div>
+
+<div id="loading" style="display: none;">
+    <div class="loading-spinner"></div>
+    <h3>Initializing AI Analysis</h3>
+    <p>Our AI is analyzing course content and preparing your personalized learning experience...</p>
+</div>
+
+<div id="derive-container" style="display: none;">
+    <div class="split-container">
+        <div class="question-section">
+            <div class="question-header">
+                <div class="section-info">
+                    <i class="fas fa-lightbulb"></i>
+                    <h3>Topic: <span id="current-section"></span></h3>
+                </div>
+                <div class="progress-info">
+                    <span class="progress-text">Question <span id="question-number">1</span></span>
+                </div>
+            </div>
+            
+            <div class="question-content">
+                <p id="current-question"></p>
+                <textarea id="answer" rows="4" placeholder="Share your understanding..."></textarea>
+                <div class="action-buttons">
+                    <button id="submit-answer" class="action-button">
+                        <i class="fas fa-paper-plane"></i> Submit Response
+                    </button>
+                    <button id="next-question" class="action-button" style="display: none;">
+                        <i class="fas fa-arrow-right"></i> Next Concept
+                    </button>
+                    <button id="help-button" class="action-button help-button" style="display: none;">
+                        <i class="fas fa-lightbulb"></i> Get Help
+                    </button>
+                </div>
+                <div id="feedback" style="display: none;"></div>
+                
+                <div id="conversation-container" class="conversation-container" style="display: none;">
+                    <div class="conversation-header">
+                        <h4><i class="fas fa-chalkboard-teacher"></i> Interactive Learning Session</h4>
+                        <button id="close-conversation" class="close-button">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div id="conversation-messages" class="conversation-messages"></div>
+                    <div class="conversation-input">
+                        <textarea id="conversation-input" placeholder="Share your thoughts..."></textarea>
+                        <button id="send-message" class="action-button">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="guide-section">
+            <div class="guide-header">
+                <h3><i class="fas fa-book-reader"></i> Your Knowledge Map</h3>
+                <button id="interim-save" class="action-button save-button" style="display: none;">
+                    <i class="fas fa-save"></i> Save Progress
+                </button>
+            </div>
+            <div id="guide-content" class="guide-content">
+                <!-- Guide sections will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="completion" style="display: none;" class="completion-screen">
+    <div class="completion-content">
+        <i class="fas fa-check-circle"></i>
+        <h3>Journey Complete!</h3>
+        <p>You've successfully created your personalized study guide. Ready to save your knowledge map?</p>
+        <button id="save-guide" class="action-button">
+            <i class="fas fa-save"></i> Save Knowledge Map
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script src="/static/derive.js"></script>
+{% endblock %} 

@@ -7,6 +7,12 @@ from firebase_admin import firestore
 import json
 from flask import session
 from google.oauth2 import service_account
+from firebase_admin import messaging
+import firebase_admin
+from firebase_admin import credentials
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 #get data from Google Sheets API
 def get_data_gsheet(sheet, row_name, row_val):
@@ -253,7 +259,6 @@ def delete_data(row_val, row_name, collection):
 
 def get_user_data(sheet, prev_sheets=[]):
   from main import get_name
-  from jupiter import get_grades
   print("sheet", sheet)
   # if trying to get just the user's data, call the get_name function
   if sheet=="Name":
@@ -265,11 +270,14 @@ def get_user_data(sheet, prev_sheets=[]):
   
   # special case for the Grades, since it's not a normal sheet: it must be processed differently
   if sheet=="Grades":
-    return get_grades()
+    print("error: Grades are stored in the cache, not the database")
+    return None;
   
   # if the sheet is one of these exceptions that require special filtering
   if sheet=="FULLUsers":
     return get_data("Users")
+  if sheet=="Battles":
+    return get_data("Battles")
   if sheet=="Users":
     #only include the first 3 columns of the Users sheet, first_name, last_name, and osis
     data = get_data(sheet)
@@ -283,11 +291,19 @@ def get_user_data(sheet, prev_sheets=[]):
   if sheet=="Assignments":
     # send if item['class'] is the id for any of the rows in response['Classes']
     class_ids = [int(item['id']) for item in prev_sheets['Classes']]
+    print("class_ids assignments", class_ids)
     return get_data("Assignments", row_name="class", row_val=class_ids, operator="in")
+  if sheet=="StudyGroups":
+    class_ids = [str(item['id']) for item in prev_sheets['Classes']]
+    return get_data("StudyGroups", row_name="class_id", row_val=class_ids, operator="in")
   if sheet=="Notebooks":
     #  send if the classID is the id for any of the rows in response['Classes']
     class_ids = [str(item['id']) for item in prev_sheets['Classes']]
     return get_data("Notebooks", row_name="classID", row_val=class_ids, operator="in")
+  if sheet=="NbS":
+    # send if the classID is the id for any of the rows in response['Classes']
+    class_ids = [int(item['id']) for item in prev_sheets['Classes']]
+    return get_data("NbS", row_name="classID", row_val=class_ids, operator="in")
   if sheet=="FClasses":
     #send all of the classes that the user's friends are in
     friend_request_data = prev_sheets['Friends']
@@ -300,6 +316,13 @@ def get_user_data(sheet, prev_sheets=[]):
     return get_data("Leagues", row_name="OSIS", row_val=str(session['user_data']['osis']), operator="array_contains")
   if sheet=="Courses":
      return get_data(sheet)
+  if sheet == "Distributions":
+    # Get all distributions where the class_name matches any of the user's classes
+    class_names = [item['name'] for item in prev_sheets['Classes']]
+    distributions = get_data("Distributions", row_name="class_name", row_val=class_names, operator="in")
+    
+    
+    return distributions
   
   #Otherwise, filter the data for the user's osis
   int_data = get_data(sheet, row_name="OSIS", row_val=int(session['user_data']['osis']), operator="==")
@@ -307,4 +330,85 @@ def get_user_data(sheet, prev_sheets=[]):
     return int_data
   return get_data(sheet, row_name="OSIS", row_val=str(session['user_data']['osis']), operator="==")
   
-  
+def send_notification(token, title, body, action):
+    """
+    Sends a notification to a specific device token using Firebase Cloud Messaging
+    
+    Args:
+        token (str): The FCM token of the target device
+        notification_text (str): The message to send
+    """
+    try:
+        message = messaging.Message(
+            notification=messaging.Notification(
+                title=title,
+                body=body,
+            ),
+            token=token,
+        )
+        
+        # Send the message
+        messaging.send(message)
+        print(f'Successfully sent notification: {token}')
+        return True
+    except Exception as e:
+        print(f'Error sending notification: {e}')
+        return False
+
+def send_email(email_address, message):
+    """
+    Sends an email to the specified address
+    
+    Args:
+        email_address (str): The recipient's email address
+        message (MIMEMultipart): The email message to send
+    """
+    try:
+        # Email configuration
+        sender_email = "sciwebbot@gmail.com"  # Replace with your actual no-reply email
+        # get password from api_keys.json
+        with open('api_keys.json', 'r') as file:
+            api_keys = json.load(file)
+        sender_password = api_keys['email_password']
+        # If message is a string, create a MIMEMultipart object
+        if isinstance(message, str):
+            msg = MIMEMultipart()
+            msg['From'] = sender_email
+            msg['To'] = email_address
+            msg['Subject'] = "Message from SciWeb"
+            msg.attach(MIMEText(message, 'plain'))
+            message = msg
+        # Create SMTP session
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(sender_email, sender_password)
+            server.send_message(message)
+
+        print(f"Email sent successfully to {email_address}")
+        return True
+
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        return False
+
+def send_welcome_email(user_email, first_name):
+    # Sends a welcome email to new users upon signup
+    
+    # Email body
+    body = f"""
+    Hi {first_name},
+
+    Welcome to SciWeb! We're excited to have you join our community.
+
+    You can now:
+    - Connect with other students
+    - Access your classes
+    - Track your assignments
+    - And much more!
+
+    If you have any questions, please don't hesitate to reach out to our support team.
+
+    Best regards,
+    The SciWeb Team
+    """
+
+    send_email(user_email, body)

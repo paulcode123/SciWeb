@@ -22,6 +22,7 @@ function displayUserInfo(userData){
   document.getElementById("last-name-text").textContent = userData.last_name;
   document.getElementById("password-text").textContent = userData.password;
   document.getElementById("grade-text").textContent = userData.grade;
+  document.getElementById("email-text").textContent = userData.email;
 }
 function editField(fieldName) {
   const textElement = document.getElementById(`${fieldName}-text`);
@@ -59,7 +60,7 @@ document.getElementById(`${fieldName}_submit`).style.visibility = "visible";
 
 
 async function update_data(data){
-  result = await fetchRequest('/update-data', data);
+  result = await fetchRequest('/update_data', {"sheet": "Users", "data": data, "row_value": parseInt(userData.osis), "row_name": "osis"});
 }
 
 
@@ -92,7 +93,7 @@ async function savePubProf(){
     "showClasses": document.getElementById('showClassesInput').checked,
     "showFriends": document.getElementById('showFriendsInput').checked
   }
-  await fetchRequest('/update-data', {"sheet": "Profiles", "data": data, "row_value": userData.osis, "row_name": "osis"});
+  await fetchRequest('/update_data', {"sheet": "Profiles", "data": data, "row_value": userData.osis, "row_name": "osis"});
   
 }
 

@@ -1,46 +1,53 @@
-# import session from flask
 from flask import session
 import requests
 import openai
 import time
-from database import get_user_data
-from jupiter import get_grades
+from database import get_user_data, post_data, update_data
+from langchain.chains import LLMChain, SequentialChain
+from langchain.memory import ConversationBufferMemory
+from datetime import datetime
+import random
+from langchain_community.document_loaders import PyPDFLoader
+import tempfile
+import os
+import json
+from langchain_core.output_parsers import PydanticOutputParser
 
+from models import *
+from output_processor import clean_llm_response, parse_json_response, create_llm_chain
+from prompts import *
 
-# Query the LLM API to get insights
+def init_pydantic():
+    """Initialize Pydantic output parsers for various response types"""
+    return (
+        PydanticOutputParser(pydantic_object=ResponseFormat),
+        PydanticOutputParser(pydantic_object=ResponseTypeBloom),
+        PydanticOutputParser(pydantic_object=FinalEvaluation)
+    )
+
 def get_insights(prompts, format=None):
-  from main import init
-  vars = init()
-  if format is None:
-    completion = vars['client'].beta.chat.completions.parse(
-      model="gpt-4o-mini",
-      messages=prompts
-    )
-    insights = completion.choices[0].message.content
-  else:
-    completion = vars['client'].beta.chat.completions.parse(
-      model="gpt-4o-mini",
-      messages=prompts,
-      response_format=format
-    )
-    # completion = completion.to_dict()
-    # print("completion: " + completion)
-    insights = completion.choices[0].message.content
-
-  
-  
-  print("insights: "+str(insights))
-  return insights
-
-
-
-
-
+    from main import init
+    vars = init()
+    if format is None:
+        completion = vars['client'].beta.chat.completions.parse(
+            model="gpt-4o-mini",
+            messages=prompts
+        )
+        insights = completion.choices[0].message.content
+    else:
+        completion = vars['client'].beta.chat.completions.parse(
+            model="gpt-4o-mini",
+            messages=prompts,
+            response_format=format
+        )
+        insights = completion.choices[0].message.content
+    
+    print("insights: "+str(insights))
+    return insights
 
 def get_insights_from_file(prompts, format, file_id):
     from main import init
     vars = init()
-    # Create an assistant
     assistant = vars['client'].beta.assistants.create(
         name="Worksheet Analyzer",
         instructions="You are an expert at analyzing educational worksheets and creating study materials.",
@@ -48,12 +55,7 @@ def get_insights_from_file(prompts, format, file_id):
         tools=[{"type": "file_search"}]
     )
 
-
-    # Create a thread
     thread = vars['client'].beta.threads.create()
-
-
-    # Add a message to the thread
     message = vars['client'].beta.threads.messages.create(
         thread_id=thread.id,
         role="user",
@@ -61,27 +63,19 @@ def get_insights_from_file(prompts, format, file_id):
         file_ids=[file_id]
     )
 
-
-    # Run the assistant
     run = vars['client'].beta.threads.runs.create(
         thread_id=thread.id,
         assistant_id=assistant.id,
         instructions="Analyze the worksheet and provide insights in JSON format."
     )
 
-
-    # Wait for the run to complete
     while run.status != 'completed':
         time.sleep(1)
         run = vars['client'].beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
 
-
-    # Retrieve the messages
     messages = vars['client'].beta.threads.messages.list(thread_id=thread.id)
-
-
-    # Get the last assistant message
     assistant_messages = [msg for msg in messages if msg.role == 'assistant']
+    
     if assistant_messages:
         last_message = assistant_messages[-1]
         insights = last_message.content[0].text.value
@@ -90,15 +84,10 @@ def get_insights_from_file(prompts, format, file_id):
     else:
         raise ValueError("No assistant response found")
 
-
-
-
-# Function to communicate with the OpenAI API
 def chat_with_function_calling(prompt):
     from main import init
     vars = init()
     client = vars['client']
-    # Define a function for get_data(sheet) that the API can call
     function_definitions = [
         {
             "name": "get_data",
@@ -108,7 +97,7 @@ def chat_with_function_calling(prompt):
                 "properties": {
                     "sheet": {
                         "type": "string",
-                        "description": "The name of the sheet to fetch data from: Assignments, Classes, Leagues(that the user is in), Chat(the user's messages), Notebooks(notes for the user's classes), Goals(that the user has set for themselves), or Profiles",
+                        "description": "The name of the sheet to fetch data from",
                     },
                 },
                 "required": ["sheet"],
@@ -122,83 +111,57 @@ def chat_with_function_calling(prompt):
         }
     ]
 
-    # Send the initial request with function calling enabled
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=prompt,
         functions=function_definitions,
-        function_call="auto"  # allows GPT to decide if it needs to call a function
+        function_call="auto"
     )
-    # convert response to dictionary
     response = response.to_dict()
-    # Check if a function call is required
-    print("response: " + str(response))
     message = response['choices'][0]['message']
 
     if message.get("function_call"):
         function_name = message["function_call"]["name"]
         arguments = message["function_call"]["arguments"]
 
-        # Call the get_data function if requested
         if function_name == "get_data":
-            sheet = eval(arguments).get("sheet")  # Extract sheet name
+            sheet = eval(arguments).get("sheet")
             function_response = get_user_data(sheet)
         elif function_name == "get_grades":
             function_response = get_grades()
+            
         follow_up_prompt = {"role": "function", "name": function_name, "content": str(function_response)}
-        # Add message and follow_up_prompt to prompts
         prompt.append(message)
         prompt.append(follow_up_prompt)
-        # Send the function result back to OpenAI for a complete response
+        
         follow_up_response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=prompt
         )
 
-        # Return the final response
         follow_up_response = follow_up_response.to_dict()
-        print("follow_up_response: " + str(follow_up_response))
         return follow_up_response['choices'][0]['message']['content']
 
-    # If no function call was needed, return the initial response
     return message['content']
 
-
-
-
 def search_youtube(query):
-    """
-    Searches YouTube for the given query and returns the titles, descriptions, and URLs of the first 5 results.
-    
-    Parameters:
-        query (str): The search query.
-    
-    Returns:
-        list of dict: A list of dictionaries containing 'title', 'description', and 'url' keys.
-    """
     from main import init
     vars = init()
     api_key = vars['gSheet_api_key']
-    # YouTube Data API endpoint
     search_url = "https://www.googleapis.com/youtube/v3/search"
     
-    # Parameters for the API request
     params = {
         'part': 'snippet',
         'q': query,
         'key': api_key,
         'maxResults': 5,
-        'type': 'video'  # Ensures that we only get videos, not channels or playlists
+        'type': 'video'
     }
     
-    # Make the API request
     response = requests.get(search_url, params=params)
-    response.raise_for_status()  # Check for HTTP errors
-    
-    # Parse the response JSON
+    response.raise_for_status()
     data = response.json()
     
-    # Extract video details
     results = []
     for item in data.get('items', []):
         video_id = item['id']['videoId']
@@ -214,17 +177,9 @@ def search_youtube(query):
     
     return results
 
-
-
 def run_inspire(user_input, inspire_format):
-    # take in user_input, which is something the user needs motivation for, such as an assignment or studying for a test
-    # call get_insights() to generate a youtube query for a video about an inspiring story about how that topic led to a discovery
-    # call search_youtube() to search for videos on youtube, and return the top 5 titles, descriptions, and urls
-    # call get_insights() again to pick which video to watch based on the results
-    # return the video url
-
     prompts = [
-        {"role": "system", "content": "You are an expert at generating youtube queries to find inspiring stories about a topic. Return the query text in a string."},
+        {"role": "system", "content": "You are an expert at generating youtube queries to find inspiring stories about a topic."},
         {"role": "user", "content": user_input}
     ]
     
@@ -234,3 +189,162 @@ def run_inspire(user_input, inspire_format):
     prompts.append({"role": "user", "content": "choose the best video from the following results: " + str(youtube_results)})
     youtube_video = get_insights(prompts, inspire_format)
     return youtube_video
+
+def generate_practice_questions(llm, mcq_count, written_count, subtopics, practice_questions):
+    chain = create_llm_chain(llm, EVALUATE_PROMPT)
+    response = chain.invoke({
+        "mcq_count": mcq_count,
+        "written_count": written_count,
+        "topics": subtopics,
+        "examples": practice_questions
+    })
+    
+    return parse_json_response(response, ResponseFormat)
+
+def generate_final_evaluation(llm, followup_history):
+    chain = create_llm_chain(llm, EVALUATE_EVAL_PROMPT)
+    evaluation = chain.run({"history": json.dumps(followup_history)})
+    
+    parsed_eval = parse_json_response(evaluation, FinalEvaluation)
+    post_data("Evaluations", {
+        "predicted_success": parsed_eval.predicted_success,
+        "followup_history": followup_history,
+        "OSIS": session['user_data']['osis'],
+        "classID": session['current_class'],
+        "unit": session['current_unit']
+    })
+    return parsed_eval
+
+def generate_followup_question(llm, question, answer, history):
+    memory = ConversationBufferMemory()
+    for entry in range(0, len(history), 2):
+        memory.save_context(
+            {"output": str(history[entry]['question'])},
+            {"input": str(history[entry+1]['answer'])}
+        )
+
+    chain = create_llm_chain(llm, EVALUATE_FOLLOWUP_PROMPT, memory=memory)
+    return chain.run({"qa_pair": f"Question: {question}\nAnswer: {answer}"})
+
+def process_pdf_content(llm, pdf_content: bytes) -> ResponseTypeNB:
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+        tmp_file.write(pdf_content)
+        tmp_path = tmp_file.name
+
+    try:
+        loader = PyPDFLoader(tmp_path)
+        pages = loader.load()
+        text_content = " ".join([page.page_content for page in pages])
+
+        notebook_prompt = ChatPromptTemplate.from_messages([
+            ("system", "You are an expert at analyzing educational worksheets."),
+            ("human", "Analyze this worksheet content: {text}")
+        ])
+
+        chain = create_llm_chain(llm, notebook_prompt)
+        result = chain.run({"text": text_content[:4000]})
+        return parse_json_response(result, ResponseTypeNB)
+
+    finally:
+        os.unlink(tmp_path)
+
+def process_image_content(llm, image_content: str, file_type: str) -> ResponseTypeNB:
+    padding = len(image_content) % 4
+    if padding:
+        image_content += '=' * (4 - padding)
+
+    response = IMAGE_ANALYSIS_PROMPT.invoke({"image_content": image_content, "file_type": file_type})
+    return parse_json_response(response, ResponseTypeNB)
+
+def generate_derive_questions(llm, notebook_synthesis: str) -> DeriveQuestions:
+    chain = create_llm_chain(llm, DERIVE_PROMPT)
+    response = chain.invoke({"synthesis": notebook_synthesis})
+    print("derive questions: " + str(response))
+    return parse_json_response(response, DeriveQuestions)
+
+def evaluate_derive_answer(llm, question: str, expected_answer: str, user_answer: str) -> DeriveResponse:
+    chain = create_llm_chain(llm, DERIVE_EVAL_PROMPT)
+    response = chain.invoke({
+        "question": question,
+        "expected": expected_answer,
+        "answer": user_answer
+    })
+    return parse_json_response(response, DeriveResponse)
+
+def make_explanation_cards(notebook_content, llm, history: List[dict] = None, user_input: str = None) -> List[dict]:
+    if history:
+        all_green_highlights = []
+        all_red_highlights = []
+        for prev_expl in history:
+            all_green_highlights.extend(prev_expl.get('greenHighlights', []))
+            all_red_highlights.extend(prev_expl.get('redHighlights', []))
+            
+        chain = create_llm_chain(llm, ITERATIVE_EXPLANATION_PROMPT)
+        response = chain.invoke({
+            "green_highlights": all_green_highlights,
+            "red_highlights": all_red_highlights,
+            "notebook_content": notebook_content,
+            "user_input": user_input or "No specific request provided."
+        })
+    else:
+        chain = create_llm_chain(llm, EXPLANATION_PROMPT)
+        response = chain.invoke({
+            "notebook_content": notebook_content
+        })
+    
+    return parse_json_response(response)['explanations']
+
+def generate_bloom_questions(llm, level: str, previous_answers: list, notebook_content: str) -> ResponseTypeBloom:
+    """Generate Bloom's Taxonomy questions using LangChain"""
+    if len(notebook_content) > 4000:
+        notebook_content = notebook_content[:4000] + "..."
+
+    chain = create_llm_chain(llm, LEVELS_GENERATE_PROMPT)
+    response = chain.invoke({
+        "level": level,
+        "content": notebook_content,
+        "previous": str(previous_answers)
+    })
+    
+    return parse_json_response(response, ResponseTypeBloom)
+
+def evaluate_bloom_answer(llm, question, answer, level, guide=None):
+    """Evaluate answer using LangChain"""
+
+    chain = create_llm_chain(llm, LEVELS_EVAL_PROMPT)
+    response = chain.invoke({
+        "level": level,
+        "question": question,
+        "answer": answer,
+        "guide": guide
+    })
+    print("bloom eval response: " + str(response))
+    
+    return parse_json_response(response, ScoreBloom)
+
+def answer_worksheet_question(llm, image_content: str, file_type: str, question: str) -> str:
+    """Process image content and answer a specific question about it"""
+    padding = len(image_content) % 4
+    if padding:
+        image_content += '=' * (4 - padding)
+    response = WORKSHEET_ANSWER_PROMPT.invoke({"image_content": image_content, "file_type": file_type, "question": question})
+    return response.content
+
+def synthesize_unit(notebook_data, llm):
+    """Synthesize a unit of study into a concise summary"""
+    
+    formatted_data = []
+    for nb in notebook_data:
+        formatted_data.append(f"Topic: {nb['topic']}")
+        formatted_data.append("Notes:")
+        for note in nb['subtopics']:
+            formatted_data.append(f"- {note}")
+        formatted_data.append("Practice Questions:")
+        for q in nb['practice_questions']:
+            formatted_data.append(f"- {q}")
+        formatted_data.append("---")
+    
+    chain = SYNTHESIZE_UNIT_PROMPT | llm
+    response = chain.invoke({"notebook_data": "\n".join(formatted_data)})
+    
+    return response.content

@@ -1,0 +1,118 @@
+1. Enter Grades
+   a. Users can pull grades from Jupiter Ed or enter them manually
+   b. Classes can be joined based on grade information, and leagues can be updated with new stats
+   c. Grades can be downloaded as a CSV file
+   d. Grades displayed in a table
+   e. Users can override grades uploaded from Jupiter Ed
+   f. Users can share the grade as text which can be auto pasted into a text message or SM post
+   g. Users can share grade with friends on the site, which sends them a notification
+   h. Users are notified when a new grade is posted for a class they are in
+   i. Users are notified when a new member joins their class
+
+2. Grade Analysis
+    a. 3 charts: Grades over Time, Score Distribution, and Change in grade bar graph per block of Time
+    b. Users can select which of their classes/categories to graph, and all three charts will update
+    c. Each chart has a checkbox to break it down into components, which will pull apart the line/bar into multiple lines/bars for each category
+    d. Grades over Time chart has a checkbox to graph individual grades, and on hover, shows grade info and impact of the grade on category, class, and overall
+    e. Also on the Grades over Time chart, users can click on the graph to set a goal for that grade, which appears in a table below, including days left to achieve it, % on track, etc.
+    f. Compliments slide carousel with a random sample of compliments based on recent grades
+    g. Stats section with GPA, most improved/worstened class, recent change in grade
+    h. Assignment distributions tool, where users can search their grades, opt in to anonymized sharing, and see a chart of the grade distribution for sharing users of that assignment
+
+3. Goals
+   a. Users can chat with the AI to set long term goals, specifying their motivation, steps, and due dates, which are then represented on a timeline on the page
+
+4. Inspire
+    a. Users can enter something they need motivation for, and the AI will write a youtube search query for an inspirational video, which is then embedded on the website
+
+5. Notebook
+    a. User's classes are listed in a sidebar
+    b. Users can see previously created units within those classes or create new ones
+    c. Within those units, users can upload images or pdfs of notes, the file is stored, and the AI writes notes and extracts questions from the file content
+    d. Users can view the image or delete the notes
+    e. Users can chat with the AI to ask questions about the notes, and the AI will answer them
+    f. Users can add new notes or practice questions to the worksheet extract.
+    g. When a user tries to upload a file from PC, a qr code is generated, which can be scanned by the phone to take a picture of the file and upload it.
+    h. A button to synthesize the unit, which will generate a maximally diverse sample of questions from the unit.
+
+6. Evaluate
+    a. Users can select a class and unit, a number of multiple choice and short response questions, and a grading style
+    b. The AI will generate questions based on the notebook data, and ask the user one at at a time
+    c. The AI will generate 3 follow up questions per question to understand the user's thought process
+    c. The AI will score the user's answers, and give them a predicted test grade and strengths and weaknesses based on the test
+
+7. Levels
+    a. The user can select a class and unit, starting level(of Bloom's Taxonomy), # of points to advance to next level, and specify a custom prompt(or browse a selection of prompts) for question generation and scoring
+    b. The AI will generate questions based on the notebook data, score the user's answers in real time, and update the level
+    c. The AI will update the existing study guide for the unit, which can be viewed in a panel on the page
+
+8. Derive
+    a. Users can select a class and unit, and the AI will generate 20-40 theorems/statements about the unit, and a question that should lead to the user deriving the theorem/statement
+    b. It will ask the questions one at a time, and if it's close enough to the statement, it will rephrase the expected answer to be more condusive to the user's answer
+    c. If not, it will ask a simpler question to help the user arrive at the statement
+   
+8. Battle(in progress)
+    a. Users can select a class and unit, and a game mode, and a join code will be generated, or enter a join code to join a battle
+    b. Users are redirected to the game page, where they play the game involving answering questions related to the unit
+
+9. Classes
+    a. Users can select the class from the list, be redirected to the class page
+    b. Class page features a modern, community-focused design with intuitive navigation
+    c. Activity Feed
+        - View and filter class activities (assignments, discussions, collaborations)
+        - Like and comment on activities
+        - Real-time updates for new activities
+        - Activity statistics and engagement metrics
+    d. Study Groups
+        - Create and join study groups
+        - Schedule recurring or one-time study sessions
+        - Share resources within study groups
+        - Group chat and collaboration tools
+        - Track group attendance and participation
+    e. Resource Sharing
+        - Share notes, practice problems, study guides, and external links
+        - Tag and categorize resources
+        - Like and comment on shared resources
+        - Control resource visibility (class-only or public)
+        - Character limits and content moderation
+    f. Enhanced Chat Features
+        - Multiple chat channels (General, Questions, Resources)
+        - Emoji reactions and polls
+        - File sharing and attachments
+        - Message threading and replies
+        - Online status indicators
+    g. Class Statistics
+        - Track class engagement metrics
+        - View assignment completion rates
+        - Monitor resource usage and popularity
+        - Study group participation stats
+    h. Community Tools
+        - Member directory with online status
+        - Collaborative study sessions
+        - Peer support system
+        - Achievement tracking
+    i. Class Management
+        - Assignment creation and tracking
+        - Category management with weights
+        - Resource organization
+        - Member management
+    j. Video Conferencing
+        - Integrated study rooms
+        - Screen sharing capabilities
+        - Whiteboard collaboration
+        - Session recording options
+
+10. Assignments
+    a. Users can see assignments, their class and due date
+    b. on an assignment's assignment page, users can chat with each other about the assignment, edit the details, and join a class meeting about the assignment
+
+11. Calendar
+    a. Users can drag and drop assignments, study blocks, and aspiration steps into the calendar(UI in progress)
+
+12. Messages
+    a. Classes, friends, and leagues appear in the sidebar, and can be selected to chat and add files
+
+13. Leagues(currently unfunctional)
+    a. Users can create leagues, select members, and select shared metrics
+    b. On the league page, users can view their friends share metrics/leaderboard
+

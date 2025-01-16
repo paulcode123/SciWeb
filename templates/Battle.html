@@ -10,30 +10,19 @@
 {% endblock %}
 
 {% block content %}
-    <div class="battle-container">
-        <canvas id="battleCanvas"></canvas>
-        
-        <div id="gameInterface">
-            <div id="playersList"></div>
-            
-            <div id="questionArea">
-                <div id="questionText"></div>
-                <div id="answerOptions"></div>
-                <div id="timer"></div>
-            </div>
-            
-            <div id="scoreBoard"></div>
-        </div>
-        
-        <div id="gameControls">
-            <button id="readyButton">Ready</button>
-            <button id="leaveGame">Leave Game</button>
-        </div>
-    </div>
+<div id="game-container"></div>
 {% endblock %}
 
 <!-- js block -->
 {% block js %}
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+<!-- mathjax -->
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script>
+    window.MathJax = {
+        tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+    };
+</script>
  <script src="/static/Battle.js" type="module"></script>
 {% endblock %}
 

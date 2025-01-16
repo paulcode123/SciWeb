@@ -1,0 +1,53 @@
+{% extends "darkThemeTemplate.html" %}
+
+{% block title %}
+<title>SciWeb | Schedule</title>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="/static/schedule.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="schedule-container">
+    <!-- Sidebar for draggable items -->
+    <div class="sidebar">
+        <div class="sidebar-section">
+            <h3><i class="fas fa-tasks"></i> Assignments</h3>
+            <div id="assignments-list" class="draggable-list"></div>
+        </div>
+        
+        <div class="sidebar-section">
+            <h3><i class="fas fa-star"></i> Aspirations</h3>
+            <div id="aspirations-list" class="draggable-list"></div>
+        </div>
+        
+        <div class="sidebar-section">
+            <h3><i class="fas fa-book"></i> Study Blocks</h3>
+            <div id="study-blocks" class="draggable-list"></div>
+        </div>
+
+        <div class="sidebar-section">
+            <h3><i class="fas fa-plus"></i> Custom Task</h3>
+            <div class="custom-task-form">
+                <input type="text" id="custom-task-name" placeholder="Task name">
+                <textarea id="custom-task-desc" placeholder="Description"></textarea>
+                <button id="add-custom-task"><i class="fas fa-plus"></i> Add Task</button>
+            </div>
+        </div>
+    </div>
+
+
+<div class="calendar-container">
+    <div id="calendar"></div>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+
+{% endblock %}
+
+{% block js %}
+<script src="/static/schedule.js"></script>
+{% endblock %} 

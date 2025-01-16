@@ -11,16 +11,44 @@ var ip;
 
 
 async function send_data(userId, grades_key) {
-console.log(userId, grades_key);
-// if grades_key is null, set it to "none"
-if (grades_key == null) {
-  console.log("grades_key is null")
-  grades_key = "none"
-}
-data = await fetchRequest('/home-ip', {"userId": userId, "grades_key": grades_key})
-
-console.log(data["Name"])
-set_data(data['Name'])
+  if (grades_key == null) {
+    console.log("grades_key is null")
+    grades_key = "none"
+  }
+    // Check for login parameter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const loginParam = urlParams.get('login');
+    
+    if (loginParam) {
+        // Decrypt login parameter (first_name + password)
+        const decoded = atob(loginParam);
+        const [first_name, password] = decoded.split(':');
+        
+        // Attempt auto-login
+        const loginResult = await fetchRequest('/post-login', {
+            data: {
+                "first_name": first_name,
+                "password": password,
+                "IP": userId
+            },
+            mode: "Login"
+        });
+        
+        if (loginResult['data'] === "success") {
+            // Don't redirect, just continue with normal data loading
+            data = await fetchRequest('/home-ip', {"userId": userId, "grades_key": grades_key});
+            set_data(data['Name']);
+            // Signal that login is complete
+            window.loginComplete = true;
+            return;
+        }
+    }
+    
+    // Normal login flow
+    data = await fetchRequest('/home-ip', {"userId": userId, "grades_key": grades_key});
+    set_data(data['Name']);
+    // Signal that login is complete
+    window.loginComplete = true;
 }
 
 function get_ip(){

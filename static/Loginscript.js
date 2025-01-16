@@ -26,6 +26,7 @@ form.addEventListener('submit', function(event) {
   const lname = document.getElementById('lname').value;
   const password = document.getElementById('password').value;
   const grade = document.getElementById('grade').value;
+  const email = document.getElementById('email').value;
   //generate random 7 digit osis
   const osis = Math.floor(Math.random() * 9000000)+1000000;
   document.getElementById("login-form").reset();
@@ -36,6 +37,7 @@ form.addEventListener('submit', function(event) {
     "osis": osis, 
     "grade": grade,
     "password": password,
+    "email": email,
     "IP": ip
   }, mode: toggleMode});
   
@@ -74,6 +76,8 @@ function toggleSlider() {
   var lnamelabel = document.getElementById("lnamelabel");
   var gradelabel = document.getElementById("gradelabel");
   var submitbutton = document.getElementById("submit");
+  var emailfield = document.getElementById("email");
+  var emaillabel = document.getElementById("emaillabel");
 
   if (slider.classList.contains("on")) {
     slider.classList.remove("on");
@@ -88,9 +92,12 @@ function toggleSlider() {
     lastnamefield.style.display = "none";
     lnamelabel.style.display = "none";
     gradelabel.style.display = "none";
+    emailfield.style.display = "none";
+    emaillabel.style.display = "none";
     // make sure these fields are not required
     gradefield.required = false;
     lastnamefield.required = false;
+    emailfield.required = false;
   } else {
     slider.classList.add("on");
     text.textContent = "Sign-Up";
@@ -104,11 +111,23 @@ function toggleSlider() {
     lastnamefield.style.display = "block";
     lnamelabel.style.display = "block";
     gradelabel.style.display = "block";
+    emailfield.style.display = "block";
+    emaillabel.style.display = "block";
     // make sure these fields are required
     gradefield.required = true;
     lastnamefield.required = true;
+    emailfield.required = true;
   }
 }
+
+function checkLoginStatus() {
+  if (logged_in) {
+    document.getElementById('logged-in-popup').style.display = 'block';
+
+  }
+}
+
+checkLoginStatus();
 
 
 

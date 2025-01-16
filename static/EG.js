@@ -9,6 +9,8 @@ const form = document.querySelector("#gradeform");
 const tbody = document.querySelector("#mytbody");
 var grades;
 const Pullbutton = document.querySelector('#Jupull');
+var rawclasses;
+var friends;
 
 // when OpenGA button is clicked, open the GradeAnalysis page
 document.getElementById('OpenGA').addEventListener('click', () => {
@@ -20,51 +22,106 @@ Pullbutton.addEventListener('click', pullfromJupiter);
 
 async function pullfromJupiter(){
   startLoading();
-  start_loading(12);
-  console.log("pulling from Jupiter")
-  // make loading wheel visible
-  // document.getElementById('loadingWheel').style.visibility = "visible";
+  const addClasses = document.getElementById('addclasses').checked;
+  const loadingTime = addClasses ? 45 : 25;
+  start_loading(loadingTime);
+  
+  // Create status display element
+  const statusDiv = document.createElement('div');
+  statusDiv.id = 'status-updates';
+  document.body.appendChild(statusDiv);
+
   const osis = document.getElementById('osis').value;
   const password = document.getElementById('password').value;
-  const addClasses = document.getElementById('addclasses').checked;
-  const encrypt = document.getElementById('encrypt').checked;
+  const addclasses = document.getElementById('addclasses').checked;
   const updateLeagues = document.getElementById('updateLeagues').checked;
-  console.log(encrypt)
-  // if encrypt is checked, generate a key and set it as a cookie
-  var key="none"
-  if(encrypt == true){
-    console.log("encrypting")
-    key = Math.floor(Math.random() * 10000000000000000);
-    // Store first 3 digits of key
-    const keyPrefix = Math.floor(key / 10000000000000);
-    document.cookie = "gradeKey="+key;
-    // Include keyPrefix in the request
-    key = `${keyPrefix}:${key}`;
+  
+
+  // First make POST request with credentials
+  const response = await fetchRequest('/jupiter_auth', {
+      "osis": osis,
+      "password": password,
+      "addclasses": addclasses,
+      "updateLeagues": updateLeagues
+    });
+  
+
+  if (!response.status) {
+    alert('Authentication failed');
+    endLoading();
+    return;
   }
-  //Send to python with fetch request
-  const data = await fetchRequest('/jupiter', {"osis": osis, "password": password, "addclasses": addClasses, "encrypt": key, "updateLeagues": updateLeagues});
-  // document.getElementById('loadingWheel').style.visibility = "hidden";
-  if(data['error']){
-    alert(data['error']);
-  }
-  else{
-  console.log("got response")
-  // document.getElementById('loadingWheel').style.visibility = "hidden";
-  // document.getElementById("loadingBar").style.visibility = "hidden";
-  // if data is a dict with error key, show error message
-  if(data['error']){
-    alert(data['error']);
-  }
-  else{
-  grades = data;
-  createGradesTable(grades);
-  endLoading();
-  // If new classes were added, send notifications
-  if (data.new_classes && data.new_classes.length > 0) {
-    notifyClassmates(data.new_classes, data.class_tokens);
-  }
-  }
-}
+
+  // Then create EventSource for streaming
+  const evtSource = new EventSource('/jupiter');
+  
+  evtSource.onmessage = function(event) {
+    try {
+        console.log("Received SSE message:", event.data.substring(0, 30));
+        const data = JSON.parse(event.data);
+        
+        if(data.error) {
+            console.error("SSE error:", data.error);
+            evtSource.close();
+            statusDiv.remove();
+            alert(data.error);
+            endLoading();
+            return;
+        }
+        
+        if(data.status === 'complete') {
+            evtSource.close();
+            statusDiv.remove();
+            
+            // Create completion animation
+            const checkDiv = document.createElement('div');
+            checkDiv.className = 'completion-check';
+            const checkIcon = document.createElement('div');
+            checkIcon.className = 'check-icon';
+            checkDiv.appendChild(checkIcon);
+            document.body.appendChild(checkDiv);
+            
+            // Remove animation and show grades after delay
+            setTimeout(() => {
+                checkDiv.classList.add('fade-out');
+                setTimeout(() => {
+                    checkDiv.remove();
+                    createGradesTable(data.grades);
+                }, 300);
+            }, 1200);
+            
+            // set Grades in cache
+            localStorage.setItem('Grades', JSON.stringify({
+              data: data.grades,
+              timestamp: Date.now()
+            }));
+            console.log("Grades set in cache", localStorage.getItem('Grades').substring(0, 30));
+
+            endLoading();
+        } else {
+            console.log("Updating status:", data.message);
+            statusDiv.innerHTML = `<p>${data.message}</p>`;
+        }
+    } catch (error) {
+        console.error('Error parsing SSE data:', error, 'Raw data:', event.data);
+        evtSource.close();
+        statusDiv.remove();
+        alert('Error processing server response');
+        endLoading();
+    }
+  };
+
+  evtSource.onopen = function() {
+    console.log("SSE connection opened");
+  };
+
+  evtSource.onerror = function(err) {
+    console.error("SSE error:", err);
+    evtSource.close();
+    statusDiv.remove();
+    alert('Error occurred while fetching grades');
+    endLoading();
+  };
 }
 
 //When the user selects a class, update the category dropdown with the categories for that class
@@ -187,11 +244,12 @@ async function post_grades(grades){
 
 
 
-  data = await fetchRequest('/data', {"data": 'Name, Grades, Classes'});
+  var data = await fetchRequest('/data', {"data": 'Name, Grades, Classes, Friends'});
   
   
   grades = data['Grades']
-  var rawclasses = data['Classes']
+  rawclasses = data['Classes']
+  friends = data['Friends']
   const classes = rawclasses.filter(item => (item.OSIS.toString()).includes(osis));
   if(classes.length == 0){
     // check "Join Classes" checkbox in jupiter form to add classes
@@ -273,7 +331,8 @@ async function update_grades(id, grades){
 // add event listener
 document.getElementById('DeleteGrades').addEventListener('click', DeleteGrades);
 async function DeleteGrades(){
-  const result = await fetchRequest('/delete_data', {"sheet": "Grades", "row_value": osis, "row_name": "osis"});
+  // clear grades from cache
+  localStorage.removeItem('Grades');
   
     // hide button
     document.getElementById('DeleteGrades').style.visibility = "hidden";
@@ -417,6 +476,11 @@ function createGradesTable(grades) {
     cells.forEach(cell => row.appendChild(cell));
     tableBody.appendChild(row);
   }
+  
+  // Reset search bar
+  if (document.getElementById('gradeSearch')) {
+    document.getElementById('gradeSearch').value = '';
+  }
 }
 
 
@@ -433,45 +497,19 @@ function createShowFriendsButton(grade) {
 }
 
 async function showFriends(grade) {
-  const db = getFirestore();
-  
-  // Get user's friends
-  const friendsData = await fetchRequest('/data', { data: 'Friends' });
-  console.log(friendsData)
-  const friends = friendsData['Friends'].filter(friend => friend.OSIS === osis && friend.status === 'accepted');
+  // filter friends where status is "accepted"
+  const acceptedFriends = friends.filter(item => item.status == "accepted");
 
-  // Get friends' tokens
-  const usersData = await fetchRequest('/data', { data: 'Tokens' });
-  const friendTokens = friends.map(friend => {
-    const user = usersData.find(u => u.OSIS === friend.targetOSIS);
-    return user ? user.token : null;
-  }).filter(token => token !== null);
-
-  // Prepare the notification message
-  const message = {
-    title: "Friend's Grade Update",
-    body: `${osis} got ${grade.score}/${grade.value} in ${grade.class} for ${grade.name}!`,
-    data: {
-      gradeId: grade.id,
-      senderOSIS: osis
-    }
-  };
-
-  console.log(friendTokens)
-  // Send notifications to friends
-  for (const token of friendTokens) {
-    try {
-      await addDoc(collection(db, "notifications"), {
-        token: token,
-        message: message
-      });
-      console.log("Notification sent successfully to", token);
-    } catch (error) {
-      console.error("Error sending notification:", error);
+  // for each friend, out of columns "OSIS" and "targetOSIS", add the one that is not the user's osis to a list
+  const friendOSIS = []
+  for(let i=0; i<acceptedFriends.length; i++){
+    if(parseInt(acceptedFriends[i].OSIS) != parseInt(osis)){
+      friendOSIS.push(parseInt(acceptedFriends[i].OSIS))
+    } else {
+      friendOSIS.push(parseInt(acceptedFriends[i].targetOSIS))
     }
   }
-
-  alert("Grade shared with friends!");
+  fetchRequest('/send_notification', { OSIS: friendOSIS, title: first_name+" shared a grade with you!", body: `${first_name} got a ${grade.score}/${grade.value} on ${grade.name} in ${grade.class}!`, url: "https://bxsciweb.org/Stream"});
 }
 
 // Function to handle high five
@@ -545,37 +583,6 @@ function showNotification(title, body, onClickCallback = null) {
   }
 }
 
-async function notifyClassmates(newClasses, classTokens) {
-  const db = getFirestore();
-
-  for (const className of newClasses) {
-    const tokens = classTokens[className];
-
-    // Prepare the notification message
-    const message = {
-      title: "New Classmate",
-      body: `${first_name} has joined ${className}!`,
-      data: {
-        type: "newClassmate",
-        className: className,
-        newClassmateOSIS: osis
-      }
-    };
-
-    // Send notifications to classmates
-    for (const token of tokens) {
-      try {
-        await addDoc(collection(db, "notifications"), {
-          token: token,
-          message: message
-        });
-        console.log("Notification sent successfully to", token);
-      } catch (error) {
-        console.error("Error sending notification:", error);
-      }
-    }
-  }
-}
 
 // Function to create the edit button
 function createEditButton(grade) {
@@ -590,22 +597,56 @@ function createEditButton(grade) {
 
 // Function to show the edit modal
 function showEditModal(grade) {
-  console.log(grade)
   const modal = document.createElement('div');
   modal.classList.add('edit-modal');
   modal.innerHTML = `
     <div class="edit-modal-content">
       <h3>Edit Grade</h3>
-      <p>Assignment: ${grade.name}</p>
-      <p>Class: ${grade.class}</p>
-      <input type="number" id="editScore" placeholder="New Score" value="${grade.score}">
-      <input type="number" id="editValue" placeholder="New Value" value="${grade.value}">
-      <input type="number" id="editWeight" placeholder="Weight" value="1">
-      <button id="submitEdit">Submit</button>
-      <button id="cancelEdit">Cancel</button>
+      <div class="edit-field">
+        <label for="editName">Assignment Name:</label>
+        <input type="text" id="editName" value="${grade.name}">
+      </div>
+      <div class="edit-field">
+        <label for="editDate">Date:</label>
+        <input type="date" id="editDate" value="${grade.date}">
+      </div>
+      <div class="edit-field">
+        <label for="editScore">Score:</label>
+        <input type="number" id="editScore" step="0.01" value="${grade.score}">
+      </div>
+      <div class="edit-field">
+        <label for="editValue">Total Value:</label>
+        <input type="number" id="editValue" step="0.01" value="${grade.value}">
+      </div>
+      <div class="edit-field">
+        <label for="editWeight">Weight (scales score and value):</label>
+        <input type="number" id="editWeight" step="0.01" value="${grade.value}">
+      </div>
+      <div class="edit-buttons">
+        <button id="submitEdit" class="primary-button">Apply Override</button>
+        <button id="cancelEdit" class="secondary-button">Cancel</button>
+      </div>
     </div>
   `;
   document.body.appendChild(modal);
+
+  // Add event listener for weight changes
+  const weightInput = document.getElementById('editWeight');
+  const valueInput = document.getElementById('editValue');
+  const scoreInput = document.getElementById('editScore');
+  
+  weightInput.addEventListener('input', () => {
+    const weight = parseFloat(weightInput.value) || grade.value;
+    const value = parseFloat(valueInput.value) || grade.value;
+    const score = parseFloat(scoreInput.value) || grade.score;
+    
+    if (weight !== value) {
+      // Scale the score and value based on the weight
+      const scaleFactor = weight / value;
+      valueInput.value = weight;
+      scoreInput.value = (score * scaleFactor).toFixed(2);
+    }
+  });
 
   document.getElementById('submitEdit').addEventListener('click', () => submitEdit(grade, modal));
   document.getElementById('cancelEdit').addEventListener('click', () => document.body.removeChild(modal));
@@ -613,27 +654,73 @@ function showEditModal(grade) {
 
 // Function to submit the edit
 async function submitEdit(grade, modal) {
+  const newName = document.getElementById('editName').value;
+  const newDate = document.getElementById('editDate').value;
   const newScore = document.getElementById('editScore').value;
   const newValue = document.getElementById('editValue').value;
-  const weight = document.getElementById('editWeight').value;
-
-  let score = newScore*weight/newValue;
 
   const correction = {
     assignment: grade.name,
     class: grade.class,
-    score: score,
-    value: parseInt(weight),
+    score: parseFloat(newScore),
+    value: parseFloat(newValue),
+    date: newDate,
+    new_name: newName,
     OSIS: osis
   };
 
   try {
     await fetchRequest('/post_data', { sheet: "GradeCorrections", data: correction });
-    alert('Grade corrected successfully! Repull from Jupiter to apply it.');
+    alert('Grade correction saved! Repull from Jupiter to apply it.');
     document.body.removeChild(modal);
-    // Optionally, refresh the grades table here
   } catch (error) {
     console.error('Error submitting grade correction:', error);
     alert('Failed to submit grade correction. Please try again.');
+  }
+}
+
+// Add this at the end of your file for testing
+// document.addEventListener('DOMContentLoaded', () => {
+//   console.log("DOMContentLoaded");
+//     // Create completion animation
+//     const checkDiv = document.createElement('div');
+//     checkDiv.className = 'completion-check';
+//     const checkIcon = document.createElement('div');
+//     checkIcon.className = 'check-icon';
+//     checkDiv.appendChild(checkIcon);
+//     document.body.appendChild(checkDiv);
+    
+//     // Remove animation after delay
+//     setTimeout(() => {
+//         checkDiv.classList.add('fade-out');
+//         setTimeout(() => {
+//             checkDiv.remove();
+//         }, 300);
+//     }, 1200);
+// });
+
+// Add this after your other document.ready event listeners
+document.getElementById('gradeSearch').addEventListener('input', filterGrades);
+
+function filterGrades() {
+  const searchTerm = document.getElementById('gradeSearch').value.toLowerCase();
+  const rows = document.getElementById('gradesBody').getElementsByTagName('tr');
+
+  for (let row of rows) {
+    const cells = row.getElementsByTagName('td');
+    let shouldShow = false;
+    
+    // Check cells 1 (score), 3 (class), 4 (category), and 5 (name)
+    // Skip cell 0 (date), cell 2 (value), and last cells (buttons)
+    const cellsToSearch = [1, 3, 4, 5];
+    
+    for (let i of cellsToSearch) {
+      if (cells[i] && cells[i].textContent.toLowerCase().includes(searchTerm)) {
+        shouldShow = true;
+        break;
+      }
+    }
+    
+    row.style.display = shouldShow || searchTerm === '' ? '' : 'none';
   }
 }

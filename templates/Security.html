@@ -1,0 +1,126 @@
+{% extends "About/PitchPageTemplate.html" %}
+
+{% block title %}
+<title>SciWeb | Security</title>
+{% endblock %}
+
+{% block css %}
+<style>
+.security-list {
+    list-style: none;
+    padding: 0;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.security-item {
+    background: rgba(255, 255, 255, 0.05);
+    margin: 1.5em 0;
+    padding: 1.5em;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    border-left: 4px solid #5480f1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.security-item:hover {
+    transform: translateX(10px);
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+.security-item h3 {
+    color: #fff;
+    margin-bottom: 0.5em;
+    font-size: 1.4em;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.security-item p {
+    margin: 0;
+    color: #fff;
+    line-height: 1.6;
+    opacity: 0.9;
+}
+
+.security-header {
+    text-align: center;
+    margin: 3em auto 4em;
+    max-width: 800px;
+}
+
+.security-header h2 {
+    color: #fff;
+    font-size: 2.5em;
+    margin-bottom: 0.5em;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.security-header p {
+    color: #fff;
+    font-size: 1.1em;
+    line-height: 1.6;
+    opacity: 0.9;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 736px) {
+    .security-header {
+        margin: 2em auto 3em;
+    }
+    
+    .security-header h2 {
+        font-size: 2em;
+    }
+    
+    .security-item {
+        margin: 1em 0;
+        padding: 1.2em;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="security-header">
+    <h2>Security Measures</h2>
+    <p>At SciWeb, we take your security and privacy seriously. Here are some of the key security measures we've implemented to protect your data:</p>
+</div>
+
+<ul class="security-list">
+    <li class="security-item">
+        <h3>Password Hashing</h3>
+        <p>All passwords are securely hashed using SHA-256 before storage, ensuring that even in the unlikely event of a data breach, your password remains protected.</p>
+    </li>
+    
+    <li class="security-item">
+        <h3>Grade Encryption</h3>
+        <p>All grade data is encrypted before storage using secure encryption keys, ensuring your academic information remains private. The keys are stored locally as a cookie, so not even we can access your grades.</p>
+    </li>
+    
+    <li class="security-item">
+        <h3>API Key Protection</h3>
+        <p>All API keys are stored securely in separate configuration files and are never exposed to the client side or version control systems.</p>
+    </li>
+    
+    <li class="security-item">
+        <h3>Google Cloud Protection</h3>
+        <p>Our database is hosted on Google Cloud, which is one of the most secure cloud platforms available. We use Google's robust security measures to protect your data.</p>
+    </li>
+    
+    <li class="security-item">
+        <h3>HTTPS Protocol</h3>
+        <p>All communication between your browser and our servers is encrypted using HTTPS, protecting your data during transmission.</p>
+    </li>
+    
+    <li class="security-item">
+        <h3>Access Control</h3>
+        <p>Robust authentication and authorization systems ensure users can only access their own data and permitted resources.</p>
+    </li>
+    
+    <li class="security-item">
+        <h3>Regular Security Updates</h3>
+        <p>We maintain regular security updates and implement the latest security best practices to protect against emerging threats.</p>
+    </li>
+</ul>
+{% endblock %}

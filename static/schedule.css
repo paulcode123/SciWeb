@@ -1,0 +1,204 @@
+:root {
+    --primary-color: #2196F3;
+    --secondary-color: #1976D2;
+    --background-dark: #1E1E1E;
+    --background-light: #2D2D2D;
+    --text-color: #FFFFFF;
+    --border-color: #404040;
+    --hover-color: #3B3B3B;
+    --success-color: #4CAF50;
+    --warning-color: #FFC107;
+    --danger-color: #F44336;
+    --assignment-color: #4285f4;
+    --study-color: #ea4335;
+    --aspiration-color: #34a853;
+    --task-color: #fbbc05;
+}
+
+.schedule-container {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    height: calc(100vh - 100px);
+    background-color: var(--background-dark);
+    color: var(--text-color);
+}
+
+/* Sidebar Styles */
+.sidebar {
+    width: 300px;
+    background-color: var(--background-light);
+    border-radius: 10px;
+    padding: 15px;
+    overflow-y: auto;
+}
+
+.sidebar-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: var(--background-dark);
+    border-radius: 8px;
+}
+
+.sidebar-section h3 {
+    margin-bottom: 15px;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.draggable-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.draggable-item {
+    padding: 10px;
+    background-color: var(--background-light);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: grab;
+    transition: all 0.3s ease;
+}
+
+.draggable-item:hover {
+    background-color: var(--hover-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Calendar Styles */
+.calendar-container {
+    flex: 1;
+    background-color: var(--background-light);
+    border-radius: 10px;
+    padding: 20px;
+    overflow: hidden;
+}
+
+/* FullCalendar theme overrides */
+.fc {
+    background-color: var(--background-light);
+    color: var(--text-color);
+}
+
+.fc-theme-standard td, 
+.fc-theme-standard th,
+.fc-theme-standard .fc-scrollgrid {
+    border-color: var(--border-color);
+}
+
+.fc .fc-toolbar-title {
+    color: var(--text-color);
+}
+
+.fc .fc-button {
+    background-color: var(--primary-color);
+    border-color: var(--border-color);
+}
+
+.fc .fc-button:hover {
+    background-color: var(--secondary-color);
+}
+
+.fc-day-today {
+    background-color: var(--hover-color) !important;
+}
+
+.fc-timegrid-slot {
+    height: 60px !important;
+}
+
+/* Scheduled items styling */
+.scheduled-task {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    padding: 4px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    overflow: hidden;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.scheduled-task.assignment {
+    background-color: var(--assignment-color);
+}
+
+.scheduled-task.study {
+    background-color: var(--study-color);
+}
+
+.scheduled-task.aspiration {
+    background-color: var(--aspiration-color);
+}
+
+.scheduled-task.custom {
+    background-color: var(--task-color);
+}
+
+/* Hover info styling */
+.task-hover-info {
+    display: none;
+    position: absolute;
+    background: var(--background-dark);
+    border: 1px solid var(--border-color);
+    padding: 8px;
+    border-radius: 4px;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.scheduled-task:hover .task-hover-info {
+    display: block;
+}
+
+/* Task Details Popup */
+.task-details {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--background-light);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+}
+
+.task-details.hidden {
+    display: none;
+}
+
+/* Custom Task Form */
+.custom-task-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.custom-task-form input,
+.custom-task-form textarea {
+    padding: 8px;
+    background-color: var(--background-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-color);
+}
+
+.custom-task-form button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.custom-task-form button:hover {
+    background-color: var(--secondary-color);
+} 

@@ -1,0 +1,84 @@
+{% extends "darkThemeTemplate.html" %}
+
+{% block title %}
+<title>SciWeb | Study</title>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="/static/study.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="study-container">
+    <!-- Initial Class/Unit Selection -->
+    <div id="class-selection">
+        <select id="class-select">
+            <option value="">Select a class</option>
+        </select>
+        <select id="unit-select" disabled>
+            <option value="">Select a unit</option>
+        </select>
+        <button id="start-study" class="primary-button">Start Studying</button>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loading" class="loading-container" style="display: none;">
+        <div class="spinner"></div>
+        <p>Analyzing content and generating question...</p>
+    </div>
+
+    <!-- Main Study Area -->
+    <div id="study-area" style="display: none;">
+        <!-- Question Display -->
+        <div id="question-container" class="question-container">
+            <!-- Question content will be dynamically inserted here -->
+        </div>
+
+        <!-- Answer Area -->
+        <div id="answer-area" class="answer-area">
+            <!-- Dynamic answer interface will be inserted here -->
+        </div>
+
+        <!-- Submit Button -->
+        <button id="submit-answer" class="submit-button">Submit Answer</button>
+
+        <!-- Thought Process Comparison (Hidden by default) -->
+        <div id="thought-process" class="thought-process" style="display: none;">
+            <div class="thought-process-grid">
+                <div class="user-thought">
+                    <h3>Your Thought Process</h3>
+                    <div id="user-thoughts" class="thought-steps">
+                        <!-- User thoughts will be inserted here -->
+                    </div>
+                </div>
+                <div class="correct-thought">
+                    <h3>Correct Approach</h3>
+                    <div id="correct-thoughts" class="thought-steps">
+                        <!-- Correct thoughts will be inserted here -->
+                    </div>
+                </div>
+            </div>
+            <div id="misconceptions" class="misconceptions">
+                <h3>Key Misconceptions</h3>
+                <!-- Misconceptions will be listed here -->
+            </div>
+        </div>
+
+        <!-- Next Question Button (Hidden initially) -->
+        <button id="next-question" class="next-button" style="display: none;">
+            Next Question
+        </button>
+    </div>
+
+    <!-- Reference Material Button -->
+    <button id="open-notebook" class="notebook-button">
+        <i class="fas fa-book"></i> Open Reference Material
+    </button>
+</div>
+{% endblock %}
+
+{% block js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.0/es5/tex-mml-chtml.js"></script>
+<script src="/static/study.js"></script>
+{% endblock %} 

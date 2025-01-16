@@ -1,218 +1,339 @@
+:root {
+  --cyber-green: #00ff9d;
+  --cyber-dark: #002b20;
+  --cyber-glow: 0 0 20px rgba(0, 255, 157, 0.3);
+  --cyber-gradient: linear-gradient(135deg, #004d3c, #001a13);
+}
+
 table {
   border-collapse: collapse;
   width: 100%;
+  background: rgba(0, 43, 32, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 1rem 0;
 }
 
 th, td {
   text-align: left;
-  padding: 8px;
-  border-bottom: 1px solid #ddd;
+  padding: 12px;
+  border-bottom: 1px solid rgba(0, 255, 157, 0.1);
 }
 
 th {
-  background-color: transparent;
-  color: #333;
+  background-color: rgba(0, 255, 157, 0.1);
+  color: var(--cyber-green);
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
 }
 
 tr:nth-child(even) {
-  background-color: #252525;
+  background-color: rgba(0, 255, 157, 0.03);
 }
 
+tr:hover {
+  background-color: rgba(0, 255, 157, 0.05);
+}
 
-input[type="number"], input[type="date"], select {
+input[type="number"], input[type="date"], input[type="text"], input[type="password"], select {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  background-color: #333;
+  padding: 8px 12px;
+  border: 1px solid rgba(0, 255, 157, 0.2);
+  background-color: rgba(0, 43, 32, 0.3);
   border-radius: 4px;
-  box-sizing: border-box;
-  /* text color black */
-  color: whitesmoke;
-}
-input[type="text"] {
-  width: 100%;
+  color: var(--cyber-green);
+  transition: all 0.3s ease;
 }
 
-#osis{
-  width:100px;
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--cyber-green);
+  box-shadow: var(--cyber-glow);
 }
 
-#password{
-  width: 100px;
+#osis, #password {
+  width: 250px;
+  margin-bottom: 1rem;
 }
 
-#DeleteGrades{
-  visibility: hidden;
-  border-radius: 5px;
-  padding: 5px;
-  background-color: transparent;
-  border: 3px solid red;
-  color: whitesmoke;
-}
-
-
-#DeleteGrades:hover {
-  background-color: rgb(250, 147, 147);
-}
-
-
-#Jupull{
-  
-  border-radius: 5px;
-  padding: 5px;
-  background-color: transparent;
-  border: 3px solid green;
-  color: white;
-}
-
-
-#Jupull:hover {
-  background-color: rgb(147, 250, 147);
-}
-
-#OpenGA{
-  
-  border-radius: 5px;
-  padding: 5px;
-  visibility: hidden;
-  background-color: transparent;
-  border: 3px solid rgb(20, 185, 244);
-  color: whitesmoke;
-}
-
-
-#OpenGA:hover {
-  background-color: rgb(148, 233, 239);
-}
-
-#DownloadGrades{
-  
-  border-radius: 5px;
-  padding: 5px;
-  background-color: transparent;
-  visibility: hidden;
-  background-color: transparent;
-  border: 3px solid rgb(71, 243, 114);
-  color: whitesmoke;
-}
-
-/* turn background color light green on hover */
-#DownloadGrades:hover {
-  background-color: rgb(148, 239, 154);
-} 
-
-/* div containing fields and button to pull grades from jupiter */
-#pullJup{
-  border-radius: 5px;
-  border-width: 2px;
-  border-style: solid;
-  border-color: rgb(244, 85, 85);
-  padding: 20px;
-}
-
-.loading-bar-container {
-  width: 80%;
-  background-color: #ddd;
-  border-radius: 25px;
+#pullJup {
+  background: var(--cyber-gradient);
+  border: 1px solid rgba(0, 255, 157, 0.2);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: var(--cyber-glow);
+  position: relative;
   overflow: hidden;
 }
 
+#pullJup::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyber-green), transparent);
+  animation: scan 2s linear infinite;
+}
+
+@keyframes scan {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+#Jupull {
+  background: transparent;
+  border: 2px solid var(--cyber-green);
+  color: var(--cyber-green);
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+#Jupull:hover {
+  background: rgba(0, 255, 157, 0.1);
+  box-shadow: var(--cyber-glow);
+}
+
+#Jupull::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: -100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 157, 0.2), transparent);
+  transition: 0.5s;
+}
+
+#Jupull:hover::after {
+  left: 100%;
+}
+
+.loading-bar-container {
+  width: 100%;
+  height: 4px;
+  background: rgba(0, 255, 157, 0.1);
+  border-radius: 2px;
+  margin-top: 1rem;
+  overflow: hidden;
+  position: relative;
+}
+
 .loading-bar {
-  height: 30px;
-  width: 0;
-  background-color: #4caf50;
-  border-radius: 25px 0 0 25px;
-  display: none;
+  height: 100%;
+  background: var(--cyber-green);
+  position: relative;
+  border-radius: 2px;
+  transition: width 0.1s ease;
 }
 
-/* body{
-  background-image: url('/static/media/EGbgd.png'); /* URL of the background image */
-  /* background-size: cover; Cover the entire page */
-  /* background-position: center; Center the image */
-  /* background-repeat: no-repeat; Do not repeat the image */
-/* } */ 
-
-#toggleGradeForm{
-  /* thin, black, rounded border, transparent */
-  border: 1px solid rgb(244, 90, 90);
-  border-radius: 5px;
-  background-color: transparent;
-  color: whitesmoke;
-  padding: 10px;
-  transition: background-color 0.3s ease;
+.loading-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: loading-shine 1s linear infinite;
 }
 
-/* hide gradeform */
-#gradeform{
-  display: none;
+@keyframes loading-shine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
-/* ... existing styles ... */
+/* Matrix-style loading animation */
+#status-updates {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 10, 7, 0.95);
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: var(--cyber-glow);
+  border: 1px solid rgba(0, 255, 157, 0.2);
+  z-index: 1000;
+  min-width: 300px;
+}
 
-/* Add this new style for the Show Friends button */
+#status-updates p {
+  color: var(--cyber-green);
+  font-family: 'Courier New', monospace;
+  margin: 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typing 3s steps(40) infinite;
+}
+
+@keyframes typing {
+  0% { width: 0 }
+  50% { width: 100% }
+  100% { width: 100% }
+}
+
+.completion-check {
+  background: var(--cyber-gradient) !important;
+  border: 2px solid var(--cyber-green) !important;
+  box-shadow: var(--cyber-glow) !important;
+}
+
+.check-icon::before,
+.check-icon::after {
+  background-color: var(--cyber-green) !important;
+  box-shadow: var(--cyber-glow) !important;
+}
+
+#DeleteGrades, #OpenGA, #DownloadGrades {
+  background: transparent;
+  border: 2px solid var(--cyber-green);
+  color: var(--cyber-green);
+  padding: 8px 16px;
+  border-radius: 6px;
+  margin: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#DeleteGrades:hover, #OpenGA:hover, #DownloadGrades:hover {
+  background: rgba(0, 255, 157, 0.1);
+  box-shadow: var(--cyber-glow);
+}
+
+.search-container {
+  margin: 2rem 0;
+  position: relative;
+}
+
+.search-container input {
+  width: 100%;
+  padding: 12px 45px 12px 20px;
+  border: 2px solid rgba(0, 255, 157, 0.2);
+  border-radius: 25px;
+  background: rgba(0, 43, 32, 0.3);
+  color: var(--cyber-green);
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.search-container input:focus {
+  border-color: var(--cyber-green);
+  box-shadow: var(--cyber-glow);
+}
+
+.search-container::after {
+  content: '🔍';
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Share and Edit buttons */
+.share-icon, .edit-grade-button {
+  padding: 6px;
+  background: rgba(0, 255, 157, 0.1);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 255, 157, 0.2);
+}
+
+.share-icon:hover, .edit-grade-button:hover {
+  background: rgba(0, 255, 157, 0.2);
+  box-shadow: var(--cyber-glow);
+  transform: scale(1.1);
+}
+
+/* Show Friends button */
 .show-friends-button {
-  border-radius: 5px;
-  padding: 5px 10px;
-  background-color: transparent;
-  border: 2px solid #4a90e2;
-  color: #4a90e2;
+  background: transparent;
+  border: 1px solid var(--cyber-green);
+  color: var(--cyber-green);
+  padding: 6px 12px;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .show-friends-button:hover {
-  background-color: #4a90e2;
-  color: white;
+  background: rgba(0, 255, 157, 0.1);
+  box-shadow: var(--cyber-glow);
 }
 
-/* Style for the share icon */
-.share-icon {
-  width: 20px;
-  height: 20px;
+#pullJup a {
+  color: var(--cyber-green);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--cyber-green);
+  transition: all 0.3s ease;
+}
+
+#pullJup a:hover {
+  box-shadow: var(--cyber-glow);
+  border-bottom-style: solid;
+}
+
+#toggleGradeForm {
+  background: transparent;
+  border: 2px solid var(--cyber-green);
+  color: var(--cyber-green);
+  padding: 10px 20px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: transform 0.3s ease;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  margin: 1rem 0;
 }
 
-.share-icon:hover {
-  transform: scale(1.2);
+#toggleGradeForm:hover {
+  background: rgba(0, 255, 157, 0.1);
+  box-shadow: var(--cyber-glow);
 }
 
-/* Add some spacing to the table cells */
-#gradesTable td {
-  padding: 10px;
-  vertical-align: middle;
-}
-
-/* Center the buttons and icons in their cells */
-#gradesTable td:last-child,
-#gradesTable td:nth-last-child(2) {
-  text-align: center;
-}
-
-/* ... rest of the existing styles ... */
-
-/* Edit button styles */
-.edit-grade-button {
-  background: none;
-  border: none;
+#gradeform button[type="submit"] {
+  background: var(--cyber-gradient);
+  border: 2px solid var(--cyber-green);
+  color: var(--cyber-green);
+  padding: 12px 24px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 1.2em;
-  padding: 5px;
-  transition: transform 0.3s ease;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  margin-top: 1rem;
+  width: 100%;
 }
 
-.edit-grade-button:hover {
-  transform: scale(1.2);
+#gradeform button[type="submit"]:hover {
+  background: rgba(0, 255, 157, 0.1);
+  box-shadow: var(--cyber-glow);
 }
 
-/* Edit modal styles */
+/* Edit Modal Styling */
 .edit-modal {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 10, 7, 0.9);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -220,59 +341,158 @@ input[type="text"] {
 }
 
 .edit-modal-content {
-  background-color: #333;
-  padding: 20px;
-  border-radius: 5px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-  max-width: 400px;
-  width: 100%;
+  background: var(--cyber-gradient);
+  padding: 2rem;
+  border-radius: 12px;
+  border: 1px solid var(--cyber-green);
+  box-shadow: var(--cyber-glow);
+  max-width: 500px;
+  width: 90%;
+  color: var(--cyber-green);
 }
 
 .edit-modal-content h3 {
-  margin-top: 0;
-  color: #fff;
+  margin: 0 0 1.5rem 0;
+  color: var(--cyber-green);
+  font-size: 1.5rem;
+  text-align: center;
 }
 
-.edit-modal-content p {
-  margin-bottom: 10px;
-  color: #ddd;
+.edit-field {
+  margin-bottom: 1rem;
 }
 
-.edit-modal-content input {
+.edit-field label {
+  display: block;
+  color: var(--cyber-green);
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.edit-field input {
   width: 100%;
-  padding: 8px;
-  margin-bottom: 10px;
-  border: 1px solid #555;
-  background-color: #444;
-  color: #fff;
+  padding: 0.75rem;
+  border: 1px solid rgba(0, 255, 157, 0.2);
+  background: rgba(0, 43, 32, 0.3);
+  color: var(--cyber-green);
   border-radius: 4px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
 }
 
-.edit-modal-content button {
-  padding: 8px 15px;
-  margin-right: 10px;
-  border: none;
+.edit-field input:focus {
+  border-color: var(--cyber-green);
+  box-shadow: var(--cyber-glow);
+}
+
+.edit-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+#submitEdit, #cancelEdit {
+  background: transparent;
+  border: 2px solid var(--cyber-green);
+  color: var(--cyber-green);
+  padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+#submitEdit:hover, #cancelEdit:hover {
+  background: rgba(0, 255, 157, 0.1);
+  box-shadow: var(--cyber-glow);
 }
 
 #submitEdit {
-  background-color: #4CAF50;
-  color: white;
+  background: rgba(0, 255, 157, 0.1);
 }
 
-#submitEdit:hover {
-  background-color: #45a049;
+#gradeform {
+  display: none;
 }
 
-#cancelEdit {
-  background-color: #f44336;
-  color: white;
+/* Completion Animation */
+.completion-check {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 160px;
+  height: 160px;
+  background: var(--cyber-gradient);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: popIn 0.4s ease-out;
+  border: 2px solid var(--cyber-green);
+  box-shadow: var(--cyber-glow);
 }
 
-#cancelEdit:hover {
-  background-color: #da190b;
+.check-icon {
+  width: 64px;
+  height: 64px;
+  position: relative;
+  transform: rotate(-45deg) translate(8px, -12px);
+  animation: drawCheck 0.6s ease-out 0.4s forwards;
+  opacity: 0;
 }
 
-/* ... rest of the existing styles ... */
+.check-icon::before {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 0;
+  background-color: var(--cyber-green);
+  bottom: 0;
+  left: 0;
+  box-shadow: var(--cyber-glow);
+  animation: drawVertical 0.2s ease-out 0.4s forwards;
+}
+
+.check-icon::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 6px;
+  background-color: var(--cyber-green);
+  bottom: 0;
+  left: 0;
+  box-shadow: var(--cyber-glow);
+  animation: drawHorizontal 0.2s ease-out 0.6s forwards;
+}
+
+@keyframes drawVertical {
+  0% { height: 0; }
+  100% { height: 32px; }
+}
+
+@keyframes drawHorizontal {
+  0% { width: 0; }
+  100% { width: 64px; }
+}
+
+@keyframes popIn {
+  0% { transform: translate(-50%, -50%) scale(0); }
+  60% { transform: translate(-50%, -50%) scale(1.2); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes drawCheck {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.completion-check.fade-out {
+  animation: fadeOut 0.3s ease-out forwards;
+}
+
+@keyframes fadeOut {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+}

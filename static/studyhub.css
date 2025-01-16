@@ -1,0 +1,192 @@
+/* Main container styles */
+.studyhub-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.main-title {
+    font-size: 2.5rem;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+    text-align: center;
+}
+
+.main-description {
+    text-align: center;
+    color: var(--text-color-secondary);
+    font-size: 1.2rem;
+    margin-bottom: 3rem;
+}
+
+/* Grid layout for sections */
+.study-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+}
+
+/* Section styles */
+.study-section {
+    background: var(--background-light);
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.study-section:hover {
+    transform: translateY(-5px);
+}
+
+/* Section headers */
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.section-header i {
+    font-size: 1.8rem;
+}
+
+.section-header h2 {
+    margin: 0;
+    font-size: 1.8rem;
+}
+
+.section-description {
+    color: var(--text-color-secondary);
+    margin-bottom: 2rem;
+    line-height: 1.5;
+}
+
+/* Section-specific colors */
+.derive-section .section-header i {
+    color: #4CAF50;
+}
+
+.practice-section .section-header i {
+    color: #2196F3;
+}
+
+.evaluate-section .section-header i {
+    color: #FF9800;
+}
+
+.guides-section .section-header i {
+    color: #9C27B0;
+}
+
+/* Tool buttons */
+.tool-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.tool-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem 1.2rem;
+    border-radius: 8px;
+    background: var(--primary-color);
+    color: white;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+}
+
+.tool-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.tool-button i {
+    font-size: 1.2rem;
+}
+
+/* Tables section */
+.guides-section {
+    grid-column: span 2;
+}
+
+.table-container {
+    margin-top: 2rem;
+    background: var(--background);
+    border-radius: 10px;
+    padding: 1.5rem;
+}
+
+.table-container h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    color: var(--text-color);
+}
+
+.table-container h3 i {
+    color: var(--primary-color);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+th {
+    background: var(--primary-color);
+    color: white;
+    padding: 1rem;
+    text-align: left;
+}
+
+td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Notebook indicators */
+.notebook-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.notebook-indicator i {
+    color: var(--primary-color);
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+    .study-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .guides-section {
+        grid-column: span 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .studyhub-container {
+        padding: 1rem;
+    }
+    
+    .tool-buttons {
+        flex-direction: column;
+    }
+    
+    .tool-button {
+        width: 100%;
+    }
+    
+    .table-container {
+        overflow-x: auto;
+    }
+} 
