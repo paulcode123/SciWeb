@@ -125,31 +125,35 @@ function generateUserID() {
 function set_data(data){
  
   if(data[0] != "Login"){
-  logged_in = true;
-  first_name = JSON.stringify(data["first_name"]).slice(1, -1);
-  last_name = JSON.stringify(data["last_name"]);
-  osis = parseInt(data["osis"]);
-  console.log(osis)
-  grade = parseInt(data["grade"])
-  console.log(grade)
-  
-  document.getElementById('profile').textContent = first_name;
-  document.getElementById('profile').href = "/Profile";
-  
-console.log(osis)
-}
-else{
-  logged_in = false;
-  // if the user is on the home page, redirect to the Pitch page
-  loc = window.location.pathname
-  if(loc == "/"){
-    window.location.href = "/Pitch"
+    logged_in = true;
+    first_name = JSON.stringify(data["first_name"]).slice(1, -1);
+    last_name = JSON.stringify(data["last_name"]);
+    osis = parseInt(data["osis"]);
+    console.log(osis)
+    grade = parseInt(data["grade"])
+    console.log(grade)
+    
+    document.getElementById('profile').textContent = first_name;
+    document.getElementById('profile').href = "/Profile";
+    
+    console.log(osis)
   }
-  else if(loc != "/Login" && loc != "/Pitch" && loc != "/GetStart"){
-    // if the user is on the Pitch page, redirect to the login page
-    window.location.href = "/Login"
+  else {
+    logged_in = false;
+    // if the user is on the home page, redirect to the Pitch page
+    loc = window.location.pathname
+    if(loc == "/"){
+      window.location.href = "/Pitch"
+    }
+    else if(loc != "/Login" && 
+            loc != "/Pitch" && 
+            loc != "/GetStart" && 
+            loc != "/terms" && 
+            !loc.startsWith("/simulations/")) {
+      // if the user is not on an exempt page, redirect to login
+      window.location.href = "/Login"
+    }
   }
-}
 }
 
 

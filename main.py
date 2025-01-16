@@ -235,6 +235,10 @@ def study_hub():
 def derive_guide():
     return render_template('DeriveGuide.html')
 
+@app.route('/simulations/Springs')
+def springs_simulation():
+    return render_template('Springs.html')
+
 
 
 # @app.route('/Features/AI')
@@ -609,7 +613,7 @@ def set_aspirations():
 # make route for AI with function calling
 @app.route('/AI_function_calling', methods=['POST'])
 def get_AI_function_calling():
-  response = chat_with_function_calling(request.json['data'])
+  response = chat_with_function_calling(request.json['data'], request.json['grades'])
   print("response", response)
   return json.dumps(response)
 
@@ -634,7 +638,7 @@ def ask_question():
 def get_insights_ga():
   classes_data = get_user_data("Classes")
   user_data = get_name()
-  grades = get_grades()
+  grades = 'temporarily unavailable'
   grade_spreads = {}
 
   grade_spreads["All"] = process_grades(grades, user_data, classes_data)
@@ -992,32 +996,6 @@ def synthesize_unit_route():
   return json.dumps({"message": "success"})
 
 
-@app.route('/update-guide', methods=['POST'])
-def update_guide():
-    data = request.json
-    try:
-        updated_guide = update_study_guide(
-            vars['llm'],
-            data['guide_content'],
-            data['qa_history']
-        )
-        return jsonify({"success": True, "updated_guide": updated_guide})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
-
-@app.route('/modify-guide-section', methods=['POST'])
-def modify_guide_section_route():
-    data = request.json
-    try:
-        updated_guide = modify_guide_section(
-            vars['llm'],
-            data['guide_content'],
-            data['selected_text'],
-            data['modification_request']
-        )
-        return jsonify({"success": True, "updated_guide": updated_guide})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
 
 @app.route('/save-guide', methods=['POST'])
 def save_guide():
@@ -1099,7 +1077,7 @@ def derive_conversation():
 def get_impact():
   data = request.json
   
-  grades = get_grades()
+  grades = 'temporarily unavailable'
   classes = get_user_data("Classes")
   category_grades = filter_grades(grades, session['user_data'], [data['class'], data['category']])
   

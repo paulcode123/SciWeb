@@ -13,7 +13,7 @@
 
 <!-- content block -->
 {% block content %}
-<h2>AI Study Tools - Bloom's Taxonomy</h2>
+<h2>AI Study Tools - Difficulty Levels</h2>
 
 <div id="class-selection">
     <select id="class-select">
@@ -35,12 +35,11 @@
             <div class="setting-item">
                 <label for="starting-level">Starting Level:</label>
                 <select id="starting-level">
-                    <option value="0">Remembering</option>
-                    <option value="1">Understanding</option>
-                    <option value="2">Applying</option>
-                    <option value="3">Analyzing</option>
-                    <option value="4">Evaluating</option>
-                    <option value="5">Creating</option>
+                    <option value="0">Rookie - Single step problems</option>
+                    <option value="1">Challenger - Multi-step problems</option>
+                    <option value="2">Scholar - AP level problems</option>
+                    <option value="3">Master - Hard AP level problems</option>
+                    <option value="4">Samurai - College level problems</option>
                 </select>
             </div>
             <div class="setting-item">
@@ -51,12 +50,12 @@
         
         <div class="setting-item full-width">
             <label for="question-prompt">Custom Question Generation Prompt:</label>
-            <textarea id="question-prompt" rows="3">Generate 5 specific short-response questions about the topics/example questions. The questions should be at the {level} level of Bloom's Taxonomy...</textarea>
+            <textarea id="question-prompt" rows="3">Generate 5 specific questions about the topics/example questions. The questions should be at the {level} level ({levelDesc})...</textarea>
         </div>
         
         <div class="setting-item full-width">
             <label for="scoring-prompt">Custom Scoring Prompt:</label>
-            <textarea id="scoring-prompt" rows="3">You are an AI assistant tasked with evaluating a student's answer to a {level}-level question in Bloom's Taxonomy...</textarea>
+            <textarea id="scoring-prompt" rows="3">You are an AI assistant tasked with evaluating a student's answer to a {level}-level question ({levelDesc})...</textarea>
         </div>
 
         <button id="open-notebook" class="notebook-button">
@@ -73,7 +72,7 @@
     <!-- Left side: Questions and answers -->
     <div class="question-section">
         <div class="question-header">
-            <h3 id="current-level">Level: Remembering</h3>
+            <h3 id="current-level">Level: Rookie - Single step problems</h3>
             <div id="progress-bar">
                 <div id="progress-fill"></div>
             </div>
@@ -95,18 +94,6 @@
             <h3>Study Guide</h3>
         </div>
         <div id="study-guide-content" class="guide-content">
-            <!-- Add this template for suggested changes -->
-            <div class="change-suggestion">
-                <div class="change-text">
-                    <span class="deletion">The mitochondria produces</span>
-                    <span class="addition">The mitochondria produce</span>
-                    ATP through cellular respiration.
-                </div>
-                <div class="change-actions">
-                    <button class="accept-change" title="Accept change">✓</button>
-                    <button class="reject-change" title="Reject change">✗</button>
-                </div>
-            </div>
         </div>
     </div>
 </div>
@@ -119,7 +106,7 @@
 
 <div id="all-levels-complete" style="display: none;">
     <h3>Congratulations!</h3>
-    <p>You've completed all levels of Bloom's Taxonomy for this unit.</p>
+    <p>You've mastered all difficulty levels for this unit! You are now a Samurai of this topic.</p>
 </div>
 {% endblock %}
 

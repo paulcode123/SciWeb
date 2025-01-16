@@ -1,0 +1,27 @@
+{% extends "darkThemeTemplate.html" %}
+
+{% block css %}
+<link rel="stylesheet" href="/static/simulations.css">
+{% endblock %}
+
+{% block content %}
+<div class="simulation-container">
+    <div class="simulation-header">
+        <h1>{% block simulation_title %}{% endblock %}</h1>
+        <div class="simulation-controls">
+            {% block simulation_controls %}{% endblock %}
+        </div>
+    </div>
+    <div class="simulation-canvas-container">
+        <canvas id="simulationCanvas"></canvas>
+    </div>
+    <div class="simulation-info">
+        {% block simulation_info %}{% endblock %}
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script src="/static/simulations.js"></script>
+{% block simulation_specific_js %}{% endblock %}
+{% endblock %} 

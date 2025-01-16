@@ -86,7 +86,10 @@ async function await_enter(inputElement=document.getElementById('user-input'), c
 }
 
 async function AI_response(prompt){
-    var response = await fetchRequest('/AI_function_calling', {"data": prompt})
+    // get grades from local storage if it exists
+    var grades = localStorage.getItem('Grades');
+    console.log("grades", grades);
+    var response = await fetchRequest('/AI_function_calling', {"data": prompt, "grades": grades})
     return response;
 }
 

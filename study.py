@@ -84,7 +84,7 @@ def get_insights_from_file(prompts, format, file_id):
     else:
         raise ValueError("No assistant response found")
 
-def chat_with_function_calling(prompt):
+def chat_with_function_calling(prompt, grades=None):
     from main import init
     vars = init()
     client = vars['client']
@@ -97,7 +97,7 @@ def chat_with_function_calling(prompt):
                 "properties": {
                     "sheet": {
                         "type": "string",
-                        "description": "The name of the sheet to fetch data from",
+                        "description": "The name of the sheet to fetch data from: Grades, Classes, Assignments, Chat, Calendar, Distributions, or Guides",
                     },
                 },
                 "required": ["sheet"],
@@ -128,7 +128,7 @@ def chat_with_function_calling(prompt):
             sheet = eval(arguments).get("sheet")
             function_response = get_user_data(sheet)
         elif function_name == "get_grades":
-            function_response = get_grades()
+            function_response = grades
             
         follow_up_prompt = {"role": "function", "name": function_name, "content": str(function_response)}
         prompt.append(message)
@@ -253,7 +253,10 @@ def process_image_content(llm, image_content: str, file_type: str) -> ResponseTy
     if padding:
         image_content += '=' * (4 - padding)
 
-    response = IMAGE_ANALYSIS_PROMPT.invoke({"image_content": image_content, "file_type": file_type})
+    print("IMAGE_ANALYSIS_PROMPT:", IMAGE_ANALYSIS_PROMPT)
+    chain = create_llm_chain(llm, IMAGE_ANALYSIS_PROMPT)
+    response = chain.invoke({"image_content": image_content, "file_type": file_type})
+    print("Response from chain:", response)
     return parse_json_response(response, ResponseTypeNB)
 
 def generate_derive_questions(llm, notebook_synthesis: str) -> DeriveQuestions:

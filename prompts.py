@@ -128,15 +128,16 @@ QUESTION_TYPE_PROMPT = ChatPromptTemplate.from_messages([
 
 # Notebooks
 IMAGE_ANALYSIS_PROMPT = ChatPromptTemplate.from_messages([
-    ("system", """You are an expert at analyzing educational worksheets. 
-    Always respond in the following JSON format:
-    {
-        "topic": "Main topic of the worksheet",
-        "notes": ["Key point 1", "Key point 2", ...],
-        "practice_questions": ["Question 1", "Question 2", ...]
-    }"""),
-    ("user", """Analyze this worksheet image and provide the key information in JSON format:
-    data:{file_type};base64,{image_content}""")
+    ("system", """You are an expert at analyzing educational worksheets. Given a {file_type} file with the following content:
+
+{image_content}
+
+Analyze the content and respond in the following JSON format:
+{{
+    "topic": "Main topic of the worksheet (derived from content)",
+    "notes": ["Key point 1", "Key point 2", ...],
+    "practice_questions": ["Question 1", "Question 2", ...]
+}}""")
 ])
 
 WORKSHEET_ANSWER_PROMPT = ChatPromptTemplate.from_messages([
@@ -156,10 +157,10 @@ SYNTHESIZE_UNIT_PROMPT = ChatPromptTemplate.from_messages([
 
 # Levels
 LEVELS_GENERATE_PROMPT = ChatPromptTemplate.from_messages([
-        ("system", "You are an expert at creating practice questions. Return only valid JSON without markdown."),
+        ("system", "You are an expert at creating practice questions of varying difficulty levels. Return only valid JSON without markdown."),
         ("human", """Here is a maximally diverse sample of questions from the unit: {content}
          
-         Create 3 Bloom's Taxonomy level {level} questions within the bounds of this sample.
+         Create 3 {level} level questions ({level} = single step for Rookie, multi-step for Challenger, AP level for Scholar, hard AP level for Master, college level for Samurai).
 
 Previous questions to avoid: {previous}
 
@@ -174,16 +175,16 @@ Return exactly this JSON structure:
 }}
 
 Requirements:
-1. Questions must be at the Bloom's {level} cognitive level and be inline with the sample
-2. Vary difficulty (1-5 scale)
+1. Questions must match the difficulty level description
+2. Vary difficulty within the level (1-5 scale)
 3. Use LaTeX for math: \\\\(x^2\\\\)
-4. Questions should be very applied, as opposed to theoretical. They should require reasoning and mulitple steps""")
+4. Questions should be applied and practical, requiring reasoning and appropriate number of steps for the level""")
 ])
 
 LEVELS_EVAL_PROMPT = ChatPromptTemplate.from_messages([
-        ("system", """You are an expert at evaluating student responses based on Bloom's Taxonomy.
+        ("system", """You are an expert at evaluating student responses based on difficulty level.
                      You must respond with ONLY a JSON object. Do not include markdown formatting."""),
-        ("human", """For this {level}-level question: {question}
+        ("human", """For this {level}-level question ({level} = single step for Rookie, multi-step for Challenger, AP level for Scholar, hard AP level for Master, college level for Samurai): {question}
                      Evaluate this answer: {answer}. 
                      And consider how to modify this Study guide to mitigate any error: {guide}
                      
