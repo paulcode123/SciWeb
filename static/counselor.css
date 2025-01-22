@@ -3,15 +3,24 @@
 /* Styles for AI Counselor Sidebar */
 .ai-sidebar {
     position: fixed;
-    right: 0;
-    top: 60px; /* Adjusted to position below the navbar */
-    transform: translateY(0);
-    width: 300px;
-    background-color: #333;
-    color: white;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    right: 10px;
+    bottom: 10px;
+    width: 50px;
+    background-color: var(--surface-color);
+    color: var(--text-color);
+    border-radius: 25px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
     z-index: 1000;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.ai-sidebar.expanded {
+    width: 300px;
+    border-radius: 12px;
+    height: 400px;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Add media query to hide sidebar on mobile */
@@ -22,31 +31,78 @@
 }
 
 .toggle-logo {
-    width: 50px; /* Adjust size as needed */
-    height: auto;
+    width: 40px;
+    height: 40px;
     cursor: pointer;
     display: block;
-    margin: 10px auto; /* Center the logo */
+    margin: 5px;
+    padding: 5px;
+    border-radius: 50%;
+    transition: background-color 0.3s;
+}
+
+.toggle-logo:hover {
+    background-color: var(--surface-color-hover);
 }
 
 .chat-area {
+    display: none;
     padding: 10px;
+    background: var(--surface-color);
+    flex: 1;
+    flex-direction: column;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.ai-sidebar.expanded .chat-area {
+    display: flex;
+    opacity: 1;
 }
 
 .chat-log {
-    max-height: 400px;
+    flex: 1;
     overflow-y: auto;
     margin-bottom: 10px;
+    padding: 10px;
+}
+
+.chat-input-area {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    border-top: 1px solid var(--border-color);
+}
+
+#user-input {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    background: var(--background-color);
+    color: var(--text-color);
+    resize: none;
+    font-family: inherit;
+    font-size: 14px;
+    min-height: 36px;
+    max-height: 100px;
 }
 
 .user-message {
     text-align: right;
-    color: #007bff;
+    color: var(--primary-color);
+    margin: 5px 0;
+    padding: 8px 12px;
+    background: var(--surface-color-alt);
+    border-radius: 12px 12px 2px 12px;
+    max-width: 80%;
+    margin-left: auto;
 }
 
 .ai-message {
     text-align: left;
-    color: #fff;
-}
-
-/* ... existing styles ... */
+    color: var(--text-color);
+    margin: 5px 0;
+    padding: 8px 12px;
+    background: var(--primary-color);
+    border-radius: 12px 12px 12px 

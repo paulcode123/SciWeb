@@ -27,11 +27,18 @@ async function typeOutText(text, speed, targetDiv = document.getElementById('cha
 const toggleButton = document.getElementById('toggle-sidebar');
 if (toggleButton) {
     toggleButton.addEventListener('click', function() {
+        const sidebar = document.querySelector('.ai-sidebar');
         const chatArea = document.getElementById('chat-area');
-        chatArea.style.display = chatArea.style.display === 'none' ? 'block' : 'none';
-        // if the chat Log is empty, call main
+        
+        // Toggle expanded class on sidebar
+        sidebar.classList.toggle('expanded');
+        
+        // Toggle chat area visibility
+        chatArea.classList.toggle('visible');
+        
+        // Initialize chat if it's empty
         const chatLog = document.getElementById('chat-log');
-        if (chatLog && chatLog.children.length === 0) {
+        if (chatLog && chatLog.children.length === 0 && chatArea.classList.contains('visible')) {
             main_counselor();
         }
     });

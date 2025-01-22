@@ -41,7 +41,7 @@ from database import get_data, post_data, update_data, delete_data, download_fil
 from classroom import init_oauth, oauth2callback, list_courses
 from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, get_stats, update_leagues, get_compliments, get_grade_impact
 from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, confirm_category_match, check_new_grades, notify_new_member
-from study import get_insights, chat_with_function_calling, run_inspire, init_pydantic, process_pdf_content, process_image_content, generate_final_evaluation, generate_followup_question, generate_practice_questions, generate_bloom_questions, evaluate_bloom_answer, answer_worksheet_question, make_explanation_cards, synthesize_unit, generate_derive_questions, evaluate_derive_answer, create_llm_chain
+from study import *
 from prompts import DERIVE_HELP_PROMPT
 #get api keys from static/api_keys.json file
 keys = json.load(open('api_keys.json'))  
@@ -231,15 +231,19 @@ def schedule():
 def study_hub():
     return render_template('StudyHub.html')
 
-@app.route('/DeriveGuide')
-def derive_guide():
-    return render_template('DeriveGuide.html')
 
 @app.route('/simulations/Springs')
 def springs_simulation():
     return render_template('Springs.html')
 
+@app.route('/Derive')
+@app.route('/derive')
+def derive():
+    return render_template('Derive.html')
 
+@app.route('/Maps')
+def maps():
+    return render_template('Maps.html')
 
 # @app.route('/Features/AI')
 # def ai_features():
@@ -817,6 +821,7 @@ def process_notebook_file():
     file_content = data['file']
     file_type = data['fileType']
     unit = data['unit']
+    class_id = data['classID']
     
     try:
         if file_type == 'application/pdf':
@@ -830,12 +835,35 @@ def process_notebook_file():
         # Convert Pydantic model to dict
         insights_dict = insights.model_dump()
         
+        # Store all practice questions in Problems sheet
+        for question in insights_dict["practice_questions"]:
+            question_id = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+            post_data("Problems", {
+                "id": question_id,
+                "classID": class_id,
+                "unit": unit,
+                "problem": question["question"],
+                "difficulty": question["difficulty"]
+            })
+
+        # Select random sample of 3 questions for frontend
+        sample_questions = random.sample(insights_dict["practice_questions"], min(3, len(insights_dict["practice_questions"])))
+        insights_dict["practice_questions"] = [q["question"] for q in sample_questions]
+        
         # Generate blob ID and store file
         blob_id = ''.join([str(random.randint(0, 9)) for _ in range(7)])
         # store the file in the cloud storage
         upload_file("sciweb-files", file_content, blob_id)
         # add to the Notebooks sheet
-        post_data("Notebooks", {"classID": data['classID'], "unit": unit, "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "image": blob_id, "topic": insights_dict["topic"], "subtopics": insights_dict["notes"], "practice_questions": insights_dict["practice_questions"]})
+        post_data("Notebooks", {
+            "classID": class_id, 
+            "unit": unit, 
+            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
+            "image": blob_id, 
+            "topic": insights_dict["topic"], 
+            "subtopics": insights_dict["notes"], 
+            "practice_questions": insights_dict["practice_questions"]
+        })
         return jsonify({"success": True, "message": "Worksheet processed and stored successfully"})  
     except Exception as e:
         print(f"Error processing worksheet: {str(e)}")
@@ -981,20 +1009,23 @@ def make_explanation_cards_route():
     return json.dumps({"explanations": explanations})
 
 
-@app.route('/synthesize_unit', methods=['POST'])
-def synthesize_unit_route():
-  data = request.json
-  synthesis = synthesize_unit(data['notebook'], vars['llm'])
-  row = {'synthesis': synthesis, 'classID': int(data['classID']), 'unit': data['unit'], 'id': random.randint(1000000, 9999999)}
-  # get data with classID and unit to check if it already exists, in which case, update it
-  existing_data = get_data("NbS", row_name="classID", row_val=int(data['classID']))
-  for item in existing_data:
-    if item['unit'] == data['unit']:
-      update_data(item['id'], 'id', row, "NbS")
-      return json.dumps({"message": "success"})
-  post_data("NbS", row)
-  return json.dumps({"message": "success"})
-
+@app.route('/map_problems', methods=['POST'])
+def map_problems_route():
+    data = request.json
+    print("in map_problems_route")
+    concept_map = data.get('conceptMap')
+    problems = data.get('problems')
+    
+    if not concept_map:
+        return json.dumps({"message": "error", "error": "No concept map found for this unit"})
+    
+    if not problems:
+        return json.dumps({"message": "error", "error": "No problems found for this unit"})
+    
+    # Map the problems to concepts
+    result = map_problems(problems, concept_map, vars['llm'])
+    
+    return json.dumps({"message": "success"})
 
 
 @app.route('/save-guide', methods=['POST'])
@@ -1051,23 +1082,57 @@ def evaluate_derive_answer_route():
 def derive_conversation():
     data = request.json
     
-    # Format conversation history
-    conversation_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in data['conversation_history']])
-    
-    # Create LangChain chain with the help prompt
-    chain = create_llm_chain(vars['llm'], DERIVE_HELP_PROMPT)
-    
     try:
-        # Extract the content from the response
-        response = chain.invoke({
-            "question": data['question'],
-            "expected_answer": data['expected_answer'],
-            "conversation_history": conversation_history,
-            "student_message": data.get('student_message', '')
+        # Get the concept and user message
+        concept = data['concept']
+        user_message = data['message']
+        chat_history = data.get('chat_history', [])
+        prerequisites_completed = data.get('prerequisites_completed', [])
+        
+        # Get response from derive_concept function
+        result = derive_concept(
+            vars['llm'],
+            concept,
+            user_message,
+            chat_history,
+            prerequisites_completed
+        )
+        
+        # If concept is derived, update UMaps
+        if result['derived']:
+            # Use existing UMap data passed from frontend
+            existing_umap = data.get('existing_umap')
+
+            # Create node progress data
+            node_data = {
+                "date_derived": datetime.now().strftime("%Y-%m-%d"),
+                "chat_history": chat_history + [
+                    {"role": "user", "content": user_message},
+                    {"role": "assistant", "content": result['response']}
+                ]
+            }
+
+            if existing_umap:
+                # Update existing UMap with new node progress
+                existing_umap['node_progress'][str(concept['id'])] = node_data
+                update_data(existing_umap['OSIS'], 'OSIS', existing_umap, "UMaps")
+            else:
+                # Create new UMap entry
+                umap_data = {
+                    "OSIS": session['user_data']['osis'],
+                    "classID": data['classID'],
+                    "unit": data['unit'],
+                    "node_progress": {
+                        str(concept['id']): node_data
+                    }
+                }
+                post_data("UMaps", umap_data)
+        
+        return jsonify({
+            "message": result['response'],
+            "derived": result['derived']
         })
         
-        # The response is a string since we're using ChatPromptTemplate
-        return jsonify({"message": response})
     except Exception as e:
         print(f"Error in derive conversation: {str(e)}")
         return jsonify({"error": "Failed to generate response"}), 500
@@ -1218,13 +1283,9 @@ def acceptFriend():
   post_data("Friends", data)
   return json.dumps({"data": "success"})
 
-# post grades route
-@app.route('/post_grades', methods=['POST'])
-def post_grades_route():
-  data = request.json
-  grades = data['data']
-  post_grades(grades, "none")
-  return json.dumps({"message": "success"})
+
+
+
 
 
 #Function to get the user's name from Users data
@@ -1270,11 +1331,16 @@ def get_name(ip=None, update=False):
 def utility_function():
   pass
 
+
+
+
+
+  
+
+
 vars = init()
 #uncomment to run locally, comment to deploy. Before deploying, change db to firebase, add new packages to requirements.txt
 
-if __name__ == '__main__':
-  app.run(host='localhost', port=8080)
-
-
+# if __name__ == '__main__':
+#   app.run(host='localhost', port=8080)
 

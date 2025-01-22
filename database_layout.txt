@@ -275,3 +275,47 @@ Sheet name: Modules
     name(name of the module)
     description(description of the module)
     sysPrompt(system prompt for the module)
+
+Sheet name: CMaps (Class-Specific Concept Maps and Starter Prompts)
+    classID (INT, 4-digit): Unique identifier for the class
+    unit (VARCHAR): Name of the unit
+    nodes (JSON): Array of concept map nodes containing:
+        {
+            id: (INT, 6-digit),
+            label: str,
+            description: str,
+            prerequisites: [str],  // Array of node IDs that must be derived first
+            starter_prompt: str  // Prompt to start deriving this concept
+        }
+    created_on (DATE): Date when the concept map was added
+    updated_on (DATE): Last modification date
+
+Sheet name: UMaps (User-Specific Progress and Notes)
+    OSIS (INT, 7-digit): Unique identifier for the user
+    classID (INT, 4-digit): Unique identifier for the class
+    unit (VARCHAR): Name of the unit
+    node_progress (JSON): Object mapping node IDs to progress:
+        {
+            "node_id": {
+                date_derived: "YYYY-MM-DD" | null,
+                chat_history: [str],  // Array of chat messages
+                user_notes: str,
+                question_history: [
+                    {
+                        date: "YYYY-MM-DD",
+                        error: str | null(if correct),
+                        question_id: str
+                    }
+                ]
+            }
+        }
+    last_accessed (DATE): Most recent session date for the unit
+
+Sheet name: Problems:
+
+    id(6 digit number)
+    classID(id of the class)
+    unit(name of the unit)
+    problem(problem statement)
+    difficulty(difficulty of the problem)
+    concepts(id of the concepts the problem requires) // added separately by problem mapping

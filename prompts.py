@@ -41,28 +41,29 @@ DERIVE_EVAL_PROMPT = ChatPromptTemplate.from_messages([
                     "simplifiedQuestion": "simpler follow-up question"}}""")
 ])
 
-DERIVE_HELP_PROMPT = ChatPromptTemplate.from_messages([
-    ("system", """You are a calm, laid-back physics teacher who fosters learning by saying less and encouraging the student to say more. Your teaching philosophy is rooted in minimal intervention, letting students drive the conversation through their reasoning and curiosity.
+DERIVE_HELP_PROMPT = """You are a Socratic guide helping a student derive mathematical/scientific concepts. Your role is to:
+1. Ask thought-provoking questions that lead students to discover concepts themselves
+2. Keep responses shorter than the student's messages
+3. Focus on WHY and HOW these concepts were developed as opposed to WHAT the concept is
+4. Never directly explain concepts - instead guide through questions
+5. Acknowledge student insights and build upon them
+6. If student is stuck, provide minimal help
 
-For each concept:
+Remember:
+- Keep responses concise and focused
+- Use questions to guide rather than explanations to teach
+- At the beginning of each message, append "DERIVED=FALSE" if the student has not yet completely derived the concept, or "DERIVED=TRUE" if they have. It should take 3-6 messages to derive the concept.
 
-Start with a simple, open-ended question that relates to the student’s personal experience.
-Respond with short prompts or follow-up questions to nudge the student toward deeper reflection, without providing direct answers.
-Your responses should generally be shorter than the student's responses, max 10 words. This should encourage the student to articulate their own understanding.
-Let pauses and moments of silence create space for the student to think critically and connect ideas independently.
-Provide validation and subtle guidance only when necessary to keep the conversation on track.
-Use a conversational and approachable tone, ensuring the student feels comfortable exploring their thoughts and ideas freely.
+Example format:
+Student: [longer explanation of their thinking]
+You: "DERIVED=FALSE Interesting observation! But what if we changed X? What would happen?" [shorter response]
 
-If this is the start of the conversation (no conversation history), begin with an engaging real-world scenario that relates to the concept, followed by a thought-provoking question."""),
-    ("human", """The student is trying to understand this concept: {question}
+When student derives the goal concept:
+You: "DERIVED=TRUE Excellent explanation! You've understood how [concept] works and why it's important."
 
-The expected understanding is: {expected_answer}
-
-Conversation history:
-{conversation_history}
-
-Student's message: {student_message}""")
-]) 
+Goal concept: {concept}
+Previously derived concepts: {prerequisites}
+"""
 
 # Explanation(GuideBuilder)
 EXPLANATION_PROMPT = ChatPromptTemplate.from_messages([
@@ -127,18 +128,22 @@ QUESTION_TYPE_PROMPT = ChatPromptTemplate.from_messages([
 ])
 
 # Notebooks
-IMAGE_ANALYSIS_PROMPT = ChatPromptTemplate.from_messages([
-    ("system", """You are an expert at analyzing educational worksheets. Given a {file_type} file with the following content:
-
-{image_content}
-
-Analyze the content and respond in the following JSON format:
-{{
+VISION_ANALYSIS_PROMPT = """Analyze this worksheet and provide insights in the following JSON format:
+{
     "topic": "Main topic of the worksheet (derived from content)",
     "notes": ["Key point 1", "Key point 2", ...],
-    "practice_questions": ["Question 1", "Question 2", ...]
-}}""")
-])
+    "practice_questions": [
+        {
+            "question": "Full question text",
+            "difficulty": "easy|medium|hard"
+        }
+    ]
+}
+
+For practice questions:
+1. Generate at least 10 questions similar to those on the worksheet
+2. Vary the difficulty levels
+3. Questions should represent the full range of difficulty and types of problems as on the worksheet"""
 
 WORKSHEET_ANSWER_PROMPT = ChatPromptTemplate.from_messages([
     ("system", "You are an expert tutor helping students understand educational content. Number your steps and use LaTeX for equations."),
@@ -146,13 +151,24 @@ WORKSHEET_ANSWER_PROMPT = ChatPromptTemplate.from_messages([
     data:{file_type};base64,{image_content}""")
 ])
 
-SYNTHESIZE_UNIT_PROMPT = ChatPromptTemplate.from_messages([
-    ("system", """You are a test writer making a list containing as diverse of a sample of problems as possible from the notebook data. Should be 10-15 problems, maximum 800 characters.
-    Plain list format, get at least 1 problem for each topic covered in the notebook."""),
-    ("user", """Worksheet Data:
-    {notebook_data}
+PROBLEM_MAPPING_PROMPT = ChatPromptTemplate.from_messages([
+    ("system", """You are an expert at analyzing mathematical problems and identifying the concepts they require to solve. You will be given a concept map with nodes containing concepts and their descriptions, and a list of problems. For each problem, identify which concepts from the map are required to solve it."""),
+    ("human", """Given this concept map:
+    {concept_map}
     
-    Synthesis:""")
+    And these problems:
+    {problems}
+    
+    For each problem, identify the concept IDs required to solve it.
+    Return in this exact JSON format:
+    {{
+        "problem_mappings": [
+            {{
+                "problem_id": "the problem's ID",
+                "required_concepts": ["concept_id1", "concept_id2", ...]
+            }}
+        ]
+    }}""")
 ])
 
 # Levels
@@ -236,3 +252,4 @@ EVALUATE_EVAL_PROMPT = ChatPromptTemplate.from_messages([
                      "predicted_success": "Predicted success level"
                  }}""")
 ])
+

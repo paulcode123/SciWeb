@@ -54,7 +54,13 @@ async function post_login(data){
   const result = await fetchRequest('/post-login', data);
 
   if(result['data']=="success"){
-    if (toggleMode === "Signup") {
+    // Check for redirect parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectUrl = urlParams.get('redirect');
+    
+    if (redirectUrl) {
+      window.location.href = decodeURIComponent(redirectUrl);
+    } else if (toggleMode === "Signup") {
       window.location.href = "/?signup=true";
     } else {
       window.location.href = "/";

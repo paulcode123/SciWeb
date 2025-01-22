@@ -296,6 +296,12 @@ def get_user_data(sheet, prev_sheets=[]):
   if sheet=="StudyGroups":
     class_ids = [str(item['id']) for item in prev_sheets['Classes']]
     return get_data("StudyGroups", row_name="class_id", row_val=class_ids, operator="in")
+  if sheet=="CMaps":
+    class_ids = [int(item['id']) for item in prev_sheets['Classes']]
+    return get_data("CMaps", row_name="classID", row_val=class_ids, operator="in")
+  if sheet=="Problems":
+    class_ids = [str(item['id']) for item in prev_sheets['Classes']]
+    return get_data("Problems", row_name="classID", row_val=class_ids, operator="in")
   if sheet=="Notebooks":
     #  send if the classID is the id for any of the rows in response['Classes']
     class_ids = [str(item['id']) for item in prev_sheets['Classes']]

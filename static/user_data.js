@@ -150,8 +150,9 @@ function set_data(data){
             loc != "/GetStart" && 
             loc != "/terms" && 
             !loc.startsWith("/simulations/")) {
-      // if the user is not on an exempt page, redirect to login
-      window.location.href = "/Login"
+      // if the user is not on an exempt page, redirect to login with the current URL as redirect parameter
+      const currentUrl = encodeURIComponent(window.location.pathname);
+      window.location.href = `/Login?redirect=${currentUrl}`;
     }
   }
 }

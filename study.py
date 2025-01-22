@@ -12,6 +12,7 @@ import tempfile
 import os
 import json
 from langchain_core.output_parsers import PydanticOutputParser
+from langchain.schema import HumanMessage, SystemMessage, AIMessage
 
 from models import *
 from output_processor import clean_llm_response, parse_json_response, create_llm_chain
@@ -253,10 +254,24 @@ def process_image_content(llm, image_content: str, file_type: str) -> ResponseTy
     if padding:
         image_content += '=' * (4 - padding)
 
-    print("IMAGE_ANALYSIS_PROMPT:", IMAGE_ANALYSIS_PROMPT)
-    chain = create_llm_chain(llm, IMAGE_ANALYSIS_PROMPT)
-    response = chain.invoke({"image_content": image_content, "file_type": file_type})
-    print("Response from chain:", response)
+    # Format the image URL
+    image_url = f"data:{file_type};base64,{image_content}"
+    
+    messages = [
+        SystemMessage(content="You are an expert at analyzing educational worksheets."),
+        HumanMessage(content=[
+            {"type": "text", "text": VISION_ANALYSIS_PROMPT},
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": image_url
+                }
+            }
+        ])
+    ]
+    
+    response = llm.invoke(messages)
+    print("Response from vision model:", response)
     return parse_json_response(response, ResponseTypeNB)
 
 def generate_derive_questions(llm, notebook_synthesis: str) -> DeriveQuestions:
@@ -333,21 +348,115 @@ def answer_worksheet_question(llm, image_content: str, file_type: str, question:
     response = WORKSHEET_ANSWER_PROMPT.invoke({"image_content": image_content, "file_type": file_type, "question": question})
     return response.content
 
-def synthesize_unit(notebook_data, llm):
-    """Synthesize a unit of study into a concise summary"""
+def map_problems(problems_data, concept_map, llm):
+    """Map problems to their required concepts using the concept map"""
     
-    formatted_data = []
-    for nb in notebook_data:
-        formatted_data.append(f"Topic: {nb['topic']}")
-        formatted_data.append("Notes:")
-        for note in nb['subtopics']:
-            formatted_data.append(f"- {note}")
-        formatted_data.append("Practice Questions:")
-        for q in nb['practice_questions']:
-            formatted_data.append(f"- {q}")
-        formatted_data.append("---")
+    # Format the concept map data: for each node in nodes get the id and description
+    formatted_concept_map = {node['id']: node['description'] for node in concept_map['nodes']}
     
-    chain = SYNTHESIZE_UNIT_PROMPT | llm
-    response = chain.invoke({"notebook_data": "\n".join(formatted_data)})
+    # Format the problems data - now using problem IDs
+    formatted_problems = []
+    for prob in problems_data:
+        formatted_problems.append({"problem_id": prob['id'], "text": prob['problem']})
     
-    return response.content
+    # Create and invoke the chain
+    chain = create_llm_chain(llm, PROBLEM_MAPPING_PROMPT)
+    response = chain.invoke({
+        "concept_map": formatted_concept_map,
+        "problems": formatted_problems
+    })
+    
+    # Parse the response using the Pydantic model
+    try:
+        # First clean the response content to ensure it's valid JSON
+        cleaned_content = clean_llm_response(response)
+        parsed_response = parse_json_response(cleaned_content, ProblemMappingResponse)
+        
+        # Update each problem with its concept mappings
+        for mapping in parsed_response.problem_mappings:
+            for prob in problems_data:
+                if prob['id'] == mapping.problem_id:
+                    prob['concepts'] = mapping.required_concepts
+                    update_data(prob['id'], 'id', prob, "Problems")
+        
+        return "Successfully mapped problems to concepts"
+    except Exception as e:
+        print(f"Error parsing response: {e}")
+        print(f"Response content: {response}")
+        raise
+
+def derive_concept(llm, concept, user_message, chat_history, prerequisites_completed):
+    """
+    Handles the derivation conversation for a specific concept
+    
+    Args:
+        llm: The language model to use
+        concept: Dictionary containing concept information (label, description, prerequisites)
+        user_message: The user's current message
+        chat_history: List of previous messages in the conversation
+        prerequisites_completed: List of completed prerequisite concepts
+        
+    Returns:
+        AI's response and whether the concept has been successfully derived
+    """
+    from langchain.schema import HumanMessage, AIMessage, SystemMessage
+    
+    # Format conversation history for the prompt
+    formatted_history = []
+    seen_messages = set()  # Track unique messages
+    
+    for msg in chat_history:
+        # Create a unique key for this message
+        msg_key = (msg['role'], msg['content'])
+        if msg_key not in seen_messages:
+            seen_messages.add(msg_key)
+            if msg['role'] == 'user':
+                formatted_history.append(HumanMessage(content=msg['content']))
+            else:
+                formatted_history.append(AIMessage(content=msg['content']))
+    
+    # Add the current message
+    # formatted_history.append(HumanMessage(content=user_message))
+    
+    # Create the system prompt with concept details
+    system_prompt = DERIVE_HELP_PROMPT.format(
+        concept=f"{concept['label']}: {concept['description']}",
+        prerequisites=", ".join(prerequisites_completed)  # Just join the labels
+    )
+    
+    # Create messages array for the chat model
+    messages = [
+        SystemMessage(content=system_prompt),
+        *formatted_history
+    ]
+    
+    try:
+        # Create chain with the chat model
+        chain = create_llm_chain(llm, ChatPromptTemplate.from_messages(messages))
+        response = chain.invoke({})
+        
+        # Extract the actual response text
+        if isinstance(response, dict):
+            response_text = response.get('text', '')
+        elif hasattr(response, 'content'):
+            response_text = response.content
+        else:
+            response_text = str(response)
+            
+        print("response_text: " + str(response_text))
+            
+        # Check if the AI signaled that the concept was derived
+        derived = "DERIVED=TRUE" in response_text
+        
+        # Remove the DERIVED signal from the response if present
+        response_text = response_text.replace("DERIVED=TRUE", "").strip()
+        response_text = response_text.replace("DERIVED=FALSE", "").strip()
+        
+        return {
+            "response": response_text,
+            "derived": derived
+        }
+        
+    except Exception as e:
+        print(f"Error in derive_concept: {str(e)}")
+        raise
