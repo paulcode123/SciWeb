@@ -364,3 +364,163 @@
 .right-panel ::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.2);
 }
+
+/* Chat History Styling */
+.chat-history {
+    padding: 20px;
+    overflow-y: auto;
+    max-height: 500px;
+}
+
+.message {
+    display: flex;
+    margin-bottom: 16px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: messageAppear 0.5s ease-out forwards;
+}
+
+.message-bubble {
+    position: relative;
+    padding: 12px 16px;
+    border-radius: 16px;
+    max-width: 80%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+    color: #fff;
+    line-height: 1.4;
+}
+
+.message-bubble:hover {
+    transform: scale(1.02);
+}
+
+.user-message {
+    justify-content: flex-end;
+}
+
+.assistant-message {
+    justify-content: flex-start;
+}
+
+.user-message .message-bubble {
+    background: rgba(76, 175, 80, 0.1);
+    border: 1px solid rgba(76, 175, 80, 0.2);
+    border-bottom-right-radius: 4px;
+}
+
+.assistant-message .message-bubble {
+    background: rgba(33, 150, 243, 0.1);
+    border: 1px solid rgba(33, 150, 243, 0.2);
+    border-bottom-left-radius: 4px;
+}
+
+.bubble-tail {
+    position: absolute;
+    bottom: -1px;
+    width: 10px;
+    height: 10px;
+}
+
+.user-message .bubble-tail {
+    right: -5px;
+    border-right: 1px solid rgba(76, 175, 80, 0.2);
+    border-bottom: 1px solid rgba(76, 175, 80, 0.2);
+    background: rgba(76, 175, 80, 0.1);
+    transform: rotate(45deg);
+    border-bottom-right-radius: 2px;
+}
+
+.assistant-message .bubble-tail {
+    left: -5px;
+    border-left: 1px solid rgba(33, 150, 243, 0.2);
+    border-bottom: 1px solid rgba(33, 150, 243, 0.2);
+    background: rgba(33, 150, 243, 0.1);
+    transform: rotate(45deg);
+    border-bottom-left-radius: 2px;
+}
+
+@keyframes messageAppear {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.no-history {
+    color: rgba(255, 255, 255, 0.6);
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+}
+
+/* User Notes Section */
+.user-notes-section {
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-notes-section h3 {
+    color: #fff;
+    font-size: 1.2em;
+    margin-bottom: 16px;
+    font-weight: 500;
+}
+
+.user-notes {
+    width: 100%;
+    min-height: 120px;
+    padding: 16px;
+    border-radius: 12px;
+    background: rgba(20, 23, 28, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.6;
+    margin-bottom: 16px;
+    transition: all 0.2s ease;
+}
+
+.user-notes:focus {
+    outline: none;
+    border-color: rgba(33, 150, 243, 0.5);
+    background: rgba(20, 23, 28, 0.8);
+}
+
+.save-notes-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: rgba(33, 150, 243, 0.2);
+    border: 1px solid rgba(33, 150, 243, 0.3);
+    border-radius: 12px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9em;
+}
+
+.save-notes-button:hover {
+    background: rgba(33, 150, 243, 0.3);
+    transform: translateY(-1px);
+}
+
+.save-notes-button .material-icons {
+    font-size: 18px;
+}
+
+/* Derivation Section */
+.derivation-section h3 {
+    color: #fff;
+    font-size: 1.2em;
+    margin-bottom: 16px;
+    font-weight: 500;
+}

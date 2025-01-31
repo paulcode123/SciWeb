@@ -150,3 +150,9 @@ class ProblemMapping(BaseModel):
 
 class ProblemMappingResponse(BaseModel):
     problem_mappings: list[ProblemMapping] 
+
+class EvaluationResponse(BaseModel):
+    score: float = Field(..., description="Score between 0 and 1 indicating level of understanding")
+    correct_concepts: List[str] = Field(..., description="List of correctly understood concepts")
+    misconceptions: List[str] = Field(..., description="List of misconceptions or areas needing improvement")
+    suggestions: List[str] = Field(..., description="Specific suggestions for improvement") 

@@ -11,43 +11,62 @@
 {% endblock %}
 
 {% block content %}
+<div id="particles-js"></div>
+<div id="notification" class="notification"></div>
+
 <h1>My Classes</h1>
 <p>Planning next year's courses? Try out our <a href="/CourseSelection" target="_blank">Course Selection Tool</a></p>
 <div id="classList">
-    <!-- The placeholder class has been removed -->
     <!-- Classes will be dynamically added here by JavaScript -->
 </div>
 <button id="joinButton" class="button">Join or Create Class</button>
-<form id="classForm" style="display: none;">
-    <div class="row gtr-uniform">
-        <div class="col-6 col-12-xsmall">
-            <label for="periodInput">Period:</label>
-            <input type="number" id="periodInput" autocomplete="off">
+
+<!-- Modal Overlay -->
+<div class="modal-overlay">
+    <form id="classForm">
+        <button type="button" class="modal-close">&times;</button>
+        <div class="row gtr-uniform">
+            <div class="col-6 col-12-xsmall">
+                <label for="periodInput">Period:</label>
+                <input type="number" id="periodInput" autocomplete="off">
+            </div>
+            <div class="col-6 col-12-xsmall">
+                <label for="teacherInput">Teacher:</label>
+                <input type="text" id="teacherInput" autocomplete="off">
+            </div>
+            <div class="col-12">
+                <label for="nameInput">Class Name:</label>
+                <input type="text" id="nameInput" autocomplete="off">
+            </div>
+            <div class="col-12">
+                <label for="categories">Grading Categories:</label>
+                <input type="text" id="categories" placeholder="ex. Participation: 20%, Assessments: 60%, Homework: 20%">
+            </div>
+            <div class="col-12">
+                <ul id="classOptions"></ul>
+            </div>
+            <div class="col-12">
+                <input type="submit" value="Submit" class="primary">
+            </div>
         </div>
-        <div class="col-6 col-12-xsmall">
-            <label for="teacherInput">Teacher:</label>
-            <input type="text" id="teacherInput" autocomplete="off">
-            </div>
-        <div class="col-12">
-            <label for="nameInput">Class Name:</label>
-            <input type="text" id="nameInput" autocomplete="off">
-            </div>
-        <div class="col-12">
-            <label for="categories">Grading Categories:</label>
-            <input type="text" id="categories" placeholder="ex. Participation: 20%, Assessments: 60%, Homework: 20%">
-            </div>
-        <div class="col-12">
-            <ul id="classOptions"></ul>
-            </div>
-        <div class="col-12">
-            <input type="submit" value="Submit" class="primary">
-            </div>
+    </form>
+</div>
+
+<!-- Confirmation Dialog -->
+<div class="confirm-dialog">
+    <h3>Class Action</h3>
+    <p class="confirm-message"></p>
+    <div class="confirm-buttons">
+        <button class="confirm-btn join">Join Class</button>
+        <button class="confirm-btn create">Create Class</button>
+        <button class="confirm-btn cancel">Cancel</button>
     </div>
-</form>
+</div>
 {% endblock %}
 
 <!-- js block -->
 {% block js %}
+<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 <script src="/static/Classes.js"></script>
 {% endblock %}
     

@@ -59,6 +59,7 @@ def jupapi_output_to_grades(data):
   
   # Get grade corrections for the current user
   corrections = get_user_data("GradeCorrections")
+  print("Found corrections:", corrections)  # Debug print
   
   for c in classes:
     assignments = c["assignments"]
@@ -71,13 +72,16 @@ def jupapi_output_to_grades(data):
       score = a["score"] if a["score"] != None else "null"
       value = a["points"]
       # if there are quotes in name, remove them
-      a["name"] = a["name"].replace('"', '')
+      a["name"] = a["name"].replace('"', '').strip()
       
-      # Check if there's a correction for this assignment
-      correction = next((corr for corr in corrections if corr['assignment'] == a['name'] and corr['class'] == c['name']), None)
+      # Check if there's a correction for this assignment (case-insensitive)
+      correction = next((corr for corr in corrections 
+                        if corr['assignment'].lower().strip() == a['name'].lower().strip() 
+                        and corr['class'].lower().strip() == c['name'].lower().strip()
+                        and str(corr['OSIS']) == str(session['user_data']['osis'])), None)
       
       if correction:
-        print("correction applied to ", a['name'], "in class", c['name'])
+        print(f"Found correction for {a['name']} in {c['name']}: {correction}")  # Debug print
         # Apply all possible corrections
         score = float(correction['score'])
         value = float(correction['value'])
@@ -100,8 +104,8 @@ def jupapi_output_to_grades(data):
         "id": id
       })
   
-  # filter out grades where grade["score"] = 'null' or grade["date"] = ''
-  grades = [grade for grade in grades if grade['score'] != 'null' and grade['date'] != '']
+  # filter out grades where grade["score"] = 'null' or grade["date"] = '' but keep numeric scores
+  grades = [grade for grade in grades if (grade['score'] != 'null' and grade['score'] is not None and grade['date'] != '') or isinstance(grade['score'], (int, float))]
   return grades
 
 
@@ -256,8 +260,10 @@ def check_new_grades(grades, class_data, tokens_data):
     
     for class_name, class_grades in grades_by_class.items():
         class_obj = next((item for item in class_data if item['name'] == class_name), None)
+        if class_obj is None:
+            continue
         class_id = class_obj['id']
-        
+
         # check if new_grades doesn't exist
         if 'new_grades' not in class_obj:
             class_obj['new_grades'] = [grade['name'] for grade in class_grades]  # Store only names

@@ -71,13 +71,7 @@ async function filterActivityFeed(type) {
 
 async function fetchMessages(tab) {
   try {
-    const response = await fetchRequest('/data', { 
-      data: 'Chat',
-      filters: {
-        location: classData.id,
-        type: tab
-      }
-    });
+    const response = await fetchRequest('/data', {data: 'Chat'});
     return response.Chat || [];
   } catch (error) {
     console.error('Error fetching messages:', error);
@@ -466,28 +460,63 @@ function setupEventListeners() {
 }
 
 // Assignment form handling
-function handleAssignmentSubmit(e) {
+async function handleAssignmentSubmit(e) {
   e.preventDefault();
-  const dueDate = new Date(document.getElementById('due').value);
-  const formattedDate = dueDate.toLocaleDateString('en-US', {
-    month: '2-digit',
-    day: '2-digit',
-    year: 'numeric'
-  });
+  startLoading();
   
-  const assignmentObj = {
-    name: document.getElementById('name').value,
-    category: document.getElementById('assignmentType').value,
-    points: document.getElementById('points').value,
-    due_date: formattedDate,
-    id: Math.floor(Math.random() * 10000),
-    class: parseInt(classData.id),
-    class_name: classData.name
-  };
+  try {
+    const dueDate = new Date(document.getElementById('due').value);
+    const formattedDate = dueDate.toLocaleDateString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric'
+    });
+    
+    const assignmentObj = {
+      name: document.getElementById('name').value,
+      category: document.getElementById('assignmentType').value,
+      points: document.getElementById('points').value,
+      due_date: formattedDate,
+      id: Math.floor(Math.random() * 10000),
+      class: parseInt(classData.id),
+      class_name: classData.name
+    };
 
-  post_assignment(assignmentObj);
-  formContainer.style.display = 'none';
-  assignmentForm.reset();
+    await postAssignment(assignmentObj);
+    
+    // Post activity to feed
+    await postActivity({
+      type: 'assignment',
+      content: `Added new assignment: ${assignmentObj.name}`,
+      related_id: assignmentObj.id
+    });
+    
+    // Refresh assignments display
+    const data = await fetchRequest('/data', { data: 'Assignments' });
+    display_assignments(data.Assignments, classData);
+    
+    // Close form and reset
+    formContainer.style.display = 'none';
+    assignmentForm.reset();
+    
+  } catch (error) {
+    console.error('Error submitting assignment:', error);
+    alert('Failed to add assignment. Please try again.');
+  } finally {
+    endLoading();
+  }
+}
+
+async function postAssignment(assignmentData) {
+  try {
+    await fetchRequest('/post_data', {
+      sheet: 'Assignments',
+      data: assignmentData
+    });
+  } catch (error) {
+    console.error('Error posting assignment:', error);
+    throw error;
+  }
 }
 
 // Category dropdown population

@@ -129,3 +129,17 @@
     a. Users can create leagues, select members, and select shared metrics
     b. On the league page, users can view their friends share metrics/leaderboard
 
+
+
+the derive(/derive) feature, where the user is guided towards discovering
+ the concepts and deriving the formulas. Here they use inductive reasoning
+to gain a conceptual understanding of the content, which is represented in
+a concept map(/Maps). Next is the Levels feature, which has the user
+employ the concepts they derived to solve a wide range of practice
+problems directly related to the concepts. This tests the user's
+adaptability and creative thinking. Progress is represented on the
+map, and error analysis is used to promote efficient and effective
+learning. Lastly is the Evaluate feature, which tests test-taking
+skills under time pressure with complex, wide ranging problems like
+ those on an exam. Users can modify the length, difficulty, and time
+  allotment, while never seeing the same question twice.

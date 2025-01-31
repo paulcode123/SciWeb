@@ -288,6 +288,14 @@ def get_user_data(sheet, prev_sheets=[]):
     return combined
   if sheet=="Classes":
     return get_data("Classes", row_name="OSIS", row_val=str(session['user_data']['osis']), operator="array_contains")
+  if sheet=="GradeCorrections":
+    # Try both string and int OSIS to ensure we get all corrections
+    str_data = get_data(sheet, row_name="OSIS", row_val=str(session['user_data']['osis']), operator="==")
+    int_data = get_data(sheet, row_name="OSIS", row_val=int(session['user_data']['osis']), operator="==")
+    # Combine and deduplicate the results
+    all_corrections = str_data + [corr for corr in int_data if corr not in str_data]
+    print(f"Found {len(all_corrections)} grade corrections for user {session['user_data']['osis']}")
+    return all_corrections
   if sheet=="Assignments":
     # send if item['class'] is the id for any of the rows in response['Classes']
     class_ids = [int(item['id']) for item in prev_sheets['Classes']]
@@ -299,6 +307,9 @@ def get_user_data(sheet, prev_sheets=[]):
   if sheet=="CMaps":
     class_ids = [int(item['id']) for item in prev_sheets['Classes']]
     return get_data("CMaps", row_name="classID", row_val=class_ids, operator="in")
+  if sheet=="UMaps":
+    class_ids = [int(item['id']) for item in prev_sheets['Classes']]
+    return get_data("UMaps", row_name="classID", row_val=class_ids, operator="in")
   if sheet=="Problems":
     class_ids = [str(item['id']) for item in prev_sheets['Classes']]
     return get_data("Problems", row_name="classID", row_val=class_ids, operator="in")

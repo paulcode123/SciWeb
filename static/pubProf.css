@@ -31,6 +31,18 @@ main {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
+.default-avatar {
+    background-color: #363636;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.default-avatar i {
+    font-size: 80px;
+    color: rgb(228, 76, 101);
+}
+
 .profile-name {
     color: #e0e0e0;
     font-size: 2.5em;
@@ -108,4 +120,20 @@ main {
 
 .class-card:hover {
     transform: translateY(-2px);
+}
+
+.profile-section.no-profile {
+    text-align: center;
+    padding: 40px;
+}
+
+.profile-section.no-profile h3 {
+    justify-content: center;
+    color: #888;
+}
+
+.profile-section.no-profile p {
+    color: #666;
+    font-size: 1.1em;
+    margin-top: 10px;
 }

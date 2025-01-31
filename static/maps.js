@@ -10,7 +10,9 @@ const UI = {
     conceptNotes: null,
     saveConceptNotes: null,
     currentTab: 'concept',
-    currentMap: null
+    currentMap: null,
+    currentUnit: null,  // Added to track current unit
+    currentClassId: null  // Added to track current class ID
 };
 
 // Sample concept data
@@ -245,11 +247,13 @@ async function loadUnits() {
 }
 
 // Load concept map
-function loadConceptMap(mapData) {
+async function loadConceptMap(mapData) {
     console.log('Loading concept map:', mapData);
     try {
         // Store current map data
         UI.currentMap = mapData;
+        UI.currentUnit = mapData.unit;
+        UI.currentClassId = mapData.classID;
         
         // Clear existing nodes and edges
         UI.nodes.clear();
@@ -260,30 +264,60 @@ function loadConceptMap(mapData) {
             return;
         }
 
-        // Add nodes with styling
-        const styledNodes = mapData.nodes.map(node => ({
-            id: node.id,
-            label: node.label || 'Unnamed Node',
-            status: 'pending',
-            color: {
-                background: getNodeColor('pending'),
-                border: getBorderColor('pending')
-            },
-            widthConstraint: {
-                minimum: 120,
-                maximum: 200
-            },
-            margin: 10,
-            shape: 'box',
-            font: {
-                size: 16,
-                color: '#fff'
+        // Fetch UMaps data for this unit
+        const response = await fetchRequest('/data', { 
+            data: 'Classes, UMaps',
+            unit: mapData.unit,
+            classID: mapData.classID
+        });
+        
+        // Find the UMap entry for the current unit and classID
+        const currentUMap = response.UMaps?.find(umap => 
+            umap.unit === mapData.unit && 
+            umap.classID === mapData.classID
+        );
+        const umap = currentUMap?.node_progress || {};
+
+        // Add nodes with styling based on UMaps data
+        const styledNodes = mapData.nodes.map(node => {
+            const nodeProgress = umap[node.id] || {};
+            const status = nodeProgress.date_derived ? 'completed' : 'pending';
+            
+            const nodeData = {
+                id: node.id,
+                label: node.label || 'Unnamed Node',
+                status: status,
+                color: {
+                    background: getNodeColor(status),
+                    border: getBorderColor(status)
+                },
+                widthConstraint: {
+                    minimum: 120,
+                    maximum: 200
+                },
+                margin: 10,
+                shape: 'box',
+                font: {
+                    size: 16,
+                    color: '#fff'
+                },
+                title: `${node.label}\n${status === 'completed' ? 
+                    `Derived on: ${nodeProgress.date_derived}` : 
+                    'Not yet derived'}`
+            };
+
+            // Apply saved position if available
+            if (mapData.structure?.nodes?.[node.id]) {
+                nodeData.x = mapData.structure.nodes[node.id].x;
+                nodeData.y = mapData.structure.nodes[node.id].y;
             }
-        }));
+
+            return nodeData;
+        });
 
         console.log('Created styled nodes:', styledNodes);
 
-        // Create edges from prerequisites
+        // Create edges from prerequisites and saved structure
         const edges = [];
         mapData.nodes.forEach(node => {
             if (node.prerequisites && node.prerequisites.length > 0) {
@@ -307,17 +341,19 @@ function loadConceptMap(mapData) {
         UI.nodes.add(styledNodes);
         UI.edges.add(edges);
 
-        // Enable physics and stabilize
-        UI.network.setOptions({
-            physics: {
-                enabled: true,
-                stabilization: {
+        // Enable physics and stabilize only if no structure exists
+        if (!mapData.structure?.nodes) {
+            UI.network.setOptions({
+                physics: {
                     enabled: true,
-                    iterations: 1000,
-                    updateInterval: 100
+                    stabilization: {
+                        enabled: true,
+                        iterations: 1000,
+                        updateInterval: 100
+                    }
                 }
-            }
-        });
+            });
+        }
 
         // Fit the network to view all nodes
         if (UI.network) {
@@ -373,6 +409,31 @@ function getBorderColor(status) {
     }
 }
 
+// Update notes content with conversation history and animated bubbles
+function createChatHistory(chatHistory) {
+    if (!chatHistory || chatHistory.length === 0) {
+        return '<p class="no-history">No derivation history available.</p>';
+    }
+
+    const messages = chatHistory.map((msg, index) => {
+        const role = msg.role === 'human' ? 'user' : msg.role;
+        return `
+            <div class="message ${role}-message" style="animation-delay: ${index * 0.1}s">
+                <div class="message-bubble">
+                    ${msg.content}
+                    <div class="bubble-tail"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="chat-history">
+            ${messages}
+        </div>
+    `;
+}
+
 // Select node and update UI
 async function selectNode(nodeId) {
     if (!UI.currentMap) return;
@@ -381,28 +442,59 @@ async function selectNode(nodeId) {
     const selectedNode = UI.currentMap.nodes.find(n => n.id === nodeId);
     if (!selectedNode) return;
 
+    // Get UMaps data for this node
+    const response = await fetchRequest('/data', { 
+        data: 'Classes, UMaps',
+        unit: UI.currentMap.unit,
+        classID: UI.currentMap.classID
+    });
+    const umap = response.UMaps?.[0]?.node_progress || {};
+    const nodeProgress = umap[nodeId] || {};
+
     // Get tab elements
-    const conceptTab = document.querySelector('.tab[data-tab="concept"]');
-    const conceptContent = document.getElementById('concept-tab');
-    const practiceContent = document.getElementById('practice-tab');
+    const conceptTab = document.getElementById('concept-tab');
+    const notesTab = document.getElementById('notes-tab');
+    const practiceTab = document.getElementById('practice-tab');
 
     // Update concept content
-    conceptContent.innerHTML = `
+    conceptTab.innerHTML = `
         <div class="concept-content">
             <h2 class="concept-title">${selectedNode.label}</h2>
             <div class="concept-text">${selectedNode.description}</div>
+            <div class="concept-status">
+                <p><strong>Status:</strong> ${nodeProgress.date_derived ? 'Derived' : 'Not Started'}</p>
+                ${nodeProgress.date_derived ? `<p><strong>Date Derived:</strong> ${nodeProgress.date_derived}</p>` : ''}
+            </div>
+        </div>
+    `;
+
+    // Update notes content with conversation history
+    notesTab.innerHTML = `
+        <div class="notes-content">
+            <div class="user-notes-section">
+                <h3>Your Notes</h3>
+                <textarea id="user-notes" class="user-notes" placeholder="Add your notes here...">${nodeProgress.notes || ''}</textarea>
+                <button class="save-notes-button" onclick="saveNotes('${nodeId}')">
+                    <span class="material-icons">save</span>
+                    Save Notes
+                </button>
+            </div>
+            <div class="derivation-section">
+                <h3>Derivation History</h3>
+                ${createChatHistory(nodeProgress.chat_history)}
+            </div>
         </div>
     `;
 
     // Fetch problems associated with this node
     try {
-        const response = await fetchRequest('/data', { data: 'Classes, Problems' });
-        const problems = response.Problems.filter(p => 
+        const problemsResponse = await fetchRequest('/data', { data: 'Classes, Problems' });
+        const problems = problemsResponse.Problems.filter(p => 
             p.concepts && p.concepts.includes(nodeId.toString())
         );
-        console.log("problems: " + response.Problems, "nodeId: " + nodeId);
+
         // Update practice content
-        practiceContent.innerHTML = `
+        practiceTab.innerHTML = `
             <div class="practice-section">
                 <div class="practice-questions">
                     ${problems.length > 0 ? 
@@ -418,7 +510,7 @@ async function selectNode(nodeId) {
         `;
     } catch (error) {
         console.error('Error fetching problems:', error);
-        practiceContent.innerHTML = `
+        practiceTab.innerHTML = `
             <div class="practice-section">
                 <p>Error loading practice problems.</p>
             </div>
@@ -482,6 +574,7 @@ function initializeUIElements() {
     UI.userNotes = document.getElementById('user-notes');
     UI.conceptNotes = document.getElementById('concept-notes');
     UI.saveConceptNotes = document.getElementById('save-concept-notes');
+    UI.saveStructureButton = document.getElementById('save-structure');
 }
 
 // Setup event listeners
@@ -546,6 +639,11 @@ function setupEventListeners() {
     if (UI.saveConceptNotes) {
         UI.saveConceptNotes.addEventListener('click', saveConceptNotes);
     }
+
+    // Map structure save button
+    if (UI.saveStructureButton) {
+        UI.saveStructureButton.addEventListener('click', saveMapStructure);
+    }
 }
 
 // Send message
@@ -559,10 +657,49 @@ function sendMessage() {
 }
 
 // Save notes
-function saveNotes() {
-    if (UI.userNotes) {
-        // Here you would typically save the notes to a backend
-        console.log('Notes saved:', UI.userNotes.value);
+async function saveNotes(nodeId) {
+    const notes = document.getElementById('user-notes').value;
+    const currentMap = UI.currentMap;
+    
+    try {
+        // Get existing UMaps data
+        const response = await fetchRequest('/data', { 
+            data: 'Classes, UMaps',
+            unit: currentMap.unit,
+            classID: currentMap.classID
+        });
+        
+        let umap = response.UMaps?.[0] || {
+            unit: currentMap.unit,
+            classID: currentMap.classID,
+            node_progress: {}
+        };
+        
+        // Update notes for the node
+        if (!umap.node_progress[nodeId]) {
+            umap.node_progress[nodeId] = {};
+        }
+        umap.node_progress[nodeId].notes = notes;
+        
+        // Save updated UMaps
+        await fetchRequest('/update_data', {
+            sheet: 'UMaps',
+            row_value: umap['docid'],
+            row_name: 'docid',
+            data: umap
+        });
+        
+        // Show success feedback
+        const saveButton = document.querySelector('.save-notes-button');
+        const originalText = saveButton.innerHTML;
+        saveButton.innerHTML = '<span class="material-icons">check</span>Saved!';
+        setTimeout(() => {
+            saveButton.innerHTML = originalText;
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Error saving notes:', error);
+        alert('Failed to save notes. Please try again.');
     }
 }
 
@@ -570,6 +707,65 @@ function saveNotes() {
 function getCurrentNodeId() {
     // In a real app, you would track the currently selected node
     return UI.network ? UI.network.getSelectedNodes()[0] : null;
+}
+
+// Save map structure
+async function saveMapStructure() {
+    if (!UI.network || !UI.currentMap) {
+        console.error('Network or map data not initialized');
+        return;
+    }
+
+    try {
+        // Get positions of all nodes
+        const positions = UI.network.getPositions();
+        const nodePositions = {};
+        
+        // Convert positions to a more manageable format
+        Object.keys(positions).forEach(nodeId => {
+            nodePositions[nodeId] = {
+                x: positions[nodeId].x,
+                y: positions[nodeId].y
+            };
+        });
+
+        // Get edge data
+        const edges = UI.edges.get();
+        const edgeData = edges.map(edge => ({
+            from: edge.from,
+            to: edge.to
+        }));
+
+        // Create structure object
+        const structure = {
+            nodes: nodePositions,
+            edges: edgeData,
+            lastUpdated: new Date().toISOString()
+        };
+
+        // Update the CMaps data
+        await fetchRequest('/update_data', {
+            sheet: 'CMaps',
+            row_value: UI.currentMap.id,
+            row_name: 'id',
+            data: {
+                ...UI.currentMap,
+                structure: structure
+            }
+        });
+
+        // Show success feedback
+        const saveButton = document.getElementById('save-structure');
+        const originalHTML = saveButton.innerHTML;
+        saveButton.innerHTML = '<span class="material-icons">check</span>';
+        setTimeout(() => {
+            saveButton.innerHTML = originalHTML;
+        }, 2000);
+
+    } catch (error) {
+        console.error('Error saving map structure:', error);
+        alert('Failed to save map structure. Please try again.');
+    }
 }
 
 // Initialize everything when the DOM is loaded

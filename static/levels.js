@@ -1,595 +1,1309 @@
-// Global variables
-let classes = [];
-let currentQuestions = [];
-let currentQuestionIndex = 0;
-let currentLevel = 0;
-let points = 0;
-var points_needed = 50;
-const levels = ['Remembering', 'Understanding', 'Applying', 'Analyzing', 'Evaluating', 'Creating'];
+const DEBUG = true;
 
-// Add default prompts as constants at the top of the file
-const DEFAULT_PROMPTS = {
-    questionGeneration: "Generate 5 specific short-response questions about the topics/example questions. The questions should be at the {level} level of Bloom's Taxonomy. After asking about all of the material, use the user's previous answers to generate questions like the ones they got wrong. Assign a personal difficulty to each question based on how well the user did on similar questions in the past, where 1 is easy and 10 is hard.",
-    scoring: "You are an AI assistant tasked with evaluating a student's answer to a {level}-level question in Bloom's Taxonomy, and giving them feedback on their answer. Score the answer on a scale of 0 to 10, where 10 is a perfect answer. Provide the score and tell them the right answer."
+function log(...args) {
+    if (DEBUG) {
+        console.log('[Levels]', ...args);
+    }
+}
+
+// Global UI elements container
+const UI = {
+    network: null,
+    nodes: null,
+    edges: null,
+    currentNode: null,
+    currentMap: null
 };
 
-// Add to global variables
-let customPrompts = {
-    questionGeneration: DEFAULT_PROMPTS.questionGeneration,
-    scoring: DEFAULT_PROMPTS.scoring
-};
-
-// Add new constants for prompt libraries
-const QUESTION_PROMPT_LIBRARY = [
-    {
-        focus: "Detailed Analysis",
-        icon: "fas fa-microscope",
-        prompt: "Generate 5 detailed questions that require deep analysis of the topics. Questions should be at the {level} level of Bloom's Taxonomy, focusing on specific concepts and their relationships. Include follow-up sub-questions when appropriate."
-    },
-    {
-        focus: "Real-World Application",
-        icon: "fas fa-globe",
-        prompt: "Create 5 scenario-based questions at the {level} level that connect the topics to real-world situations. Focus on practical applications and problem-solving in realistic contexts."
-    },
-    {
-        focus: "Concept Connections",
-        icon: "fas fa-project-diagram",
-        prompt: "Generate 5 questions at the {level} level that emphasize connections between different concepts within the topic. Focus on understanding relationships and interdependencies."
-    },
-    {
-        focus: "Critical Thinking",
-        icon: "fas fa-brain",
-        prompt: "Create 5 questions at the {level} level that challenge students to think critically and defend their positions. Include prompts for justification and evidence-based reasoning."
-    },
-    {
-        focus: "Visual Analysis",
-        icon: "fas fa-chart-line",
-        prompt: "Generate 5 questions at the {level} level that involve analyzing diagrams, graphs, or visual representations of the concepts. Focus on interpretation and visual literacy."
-    },
-    {
-        focus: "Historical Context",
-        icon: "fas fa-history",
-        prompt: "Create 5 questions at the {level} level that explore the historical development and evolution of the concepts. Include questions about key discoveries and breakthroughs."
-    },
-    {
-        focus: "Problem-Solving",
-        icon: "fas fa-puzzle-piece",
-        prompt: "Generate 5 problem-solving questions at the {level} level that require step-by-step solutions. Focus on methodology and process explanation."
-    },
-    {
-        focus: "Comparative Analysis",
-        icon: "fas fa-balance-scale",
-        prompt: "Create 5 questions at the {level} level that require comparing and contrasting different aspects of the topics. Focus on similarities, differences, and relationships."
-    },
-    {
-        focus: "Future Implications",
-        icon: "fas fa-rocket",
-        prompt: "Generate 5 questions at the {level} level about potential future developments and implications of the concepts. Focus on prediction and innovation."
-    },
-    {
-        focus: "Ethical Considerations",
-        icon: "fas fa-gavel",
-        prompt: "Create 5 questions at the {level} level that explore ethical implications and societal impacts of the topics. Focus on decision-making and responsibility."
-    }
-];
-
-const SCORING_PROMPT_LIBRARY = [
-    {
-        focus: "Comprehensive Feedback",
-        icon: "fas fa-clipboard-check",
-        prompt: "Evaluate the student's {level}-level response with detailed feedback. Score from 0-10, explain the scoring rationale, provide the correct answer, and suggest specific improvements."
-    },
-    {
-        focus: "Concept Mastery",
-        icon: "fas fa-star",
-        prompt: "Score the {level}-level answer from 0-10 based on concept mastery. Identify key concepts correctly used and those missing. Provide examples of how to better demonstrate understanding."
-    },
-    {
-        focus: "Critical Analysis",
-        icon: "fas fa-search",
-        prompt: "Evaluate the {level}-level response focusing on critical thinking skills. Score 0-10, assess the depth of analysis, and suggest ways to strengthen analytical reasoning."
-    },
-    {
-        focus: "Communication Clarity",
-        icon: "fas fa-comment-alt",
-        prompt: "Score the {level}-level answer from 0-10 emphasizing communication clarity. Assess how well ideas are expressed and organized, suggesting improvements in presentation."
-    },
-    {
-        focus: "Evidence-Based Evaluation",
-        icon: "fas fa-balance-scale-right",
-        prompt: "Rate the {level}-level response from 0-10 based on use of evidence and support. Evaluate the quality of examples and reasoning provided."
-    },
-    {
-        focus: "Problem-Solving Process",
-        icon: "fas fa-tools",
-        prompt: "Score the {level}-level answer from 0-10 focusing on problem-solving methodology. Assess approach, steps taken, and solution efficiency."
-    },
-    {
-        focus: "Creative Application",
-        icon: "fas fa-lightbulb",
-        prompt: "Evaluate the {level}-level response from 0-10 based on creative application of concepts. Assess innovative thinking and unique approaches."
-    },
-    {
-        focus: "Technical Accuracy",
-        icon: "fas fa-check-double",
-        prompt: "Score the {level}-level answer from 0-10 emphasizing technical accuracy. Evaluate precise use of terminology and concepts."
-    },
-    {
-        focus: "Practical Application",
-        icon: "fas fa-hammer",
-        prompt: "Rate the {level}-level response from 0-10 based on practical application ability. Assess how well theoretical knowledge is applied to real situations."
-    },
-    {
-        focus: "Holistic Understanding",
-        icon: "fas fa-circle-nodes",
-        prompt: "Score the {level}-level answer from 0-10 focusing on holistic understanding. Evaluate how well concepts are integrated and interconnected."
-    }
-];
-
-document.addEventListener('DOMContentLoaded', function() {
-    fetchClasses();
-    setupEventListeners();
-    initializePrompts();
-    loadMathJax();
-    // Start with settings expanded
-    document.getElementById('settings-content').classList.remove('collapsed');
-});
-
-function fetchClasses() {
-    fetchRequest('/data', { data: 'Name, Classes' })
-    .then(data => {
-        classes = data.Classes;
-        populateClassSelect();
-    })
-    .catch(error => console.error('Error:', error));
-}
-
-function populateClassSelect() {
-    const classSelect = document.getElementById('class-select');
-    classes.forEach(classItem => {
-        const option = document.createElement('option');
-        option.value = classItem.id;
-        option.textContent = classItem.name;
-        classSelect.appendChild(option);
-    });
-}
-
-function setupEventListeners() {
-    document.getElementById('class-select').addEventListener('change', handleClassSelect);
-    document.getElementById('start-evaluation').addEventListener('click', startEvaluation);
-    document.getElementById('submit-answer').addEventListener('click', submitAnswer);
-    document.getElementById('next-level').addEventListener('click', nextLevel);
-    document.getElementById('next-question').addEventListener('click', nextQuestion);
-    setupNotebookButton();
-}
-
-function handleClassSelect() {
-    const unitSelect = document.getElementById('unit-select');
-    unitSelect.innerHTML = '<option value="">Select a unit</option>';
-    unitSelect.disabled = true;
-
-    const selectedClassId = document.getElementById('class-select').value;
-
-    fetch('/get-units', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
+// Network configuration (similar to derive.js)
+const options = {
+    nodes: {
+        shape: 'box',
+        margin: 10,
+        font: {
+            size: 16,
+            face: 'Arial',
+            color: '#fff'
         },
-        body: JSON.stringify({ classId: selectedClassId }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.units) {
-            data.units.forEach(unit => {
-                const option = document.createElement('option');
-                option.value = unit;
-                option.textContent = unit;
-                unitSelect.appendChild(option);
-            });
-            unitSelect.disabled = false;
-        } else if (data.error) {
-            console.error('Error fetching units:', data.error);
-            showNotification('Failed to fetch units. Please try again.', 'error');
+        borderWidth: 2,
+        shadow: true,
+        fixed: {
+            x: false,
+            y: false
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showNotification('An error occurred while fetching units.', 'error');
-    });
-}
+    },
+    edges: {
+        width: 2,
+        arrows: {
+            to: {
+                enabled: true,
+                scaleFactor: 1
+            }
+        },
+        smooth: {
+            type: 'cubicBezier',
+            forceDirection: 'none',
+            roundness: 0.5
+        },
+        color: {
+            color: 'rgba(255, 255, 255, 0.5)',
+            highlight: '#3498db'
+        }
+    },
+    physics: {
+        enabled: true,
+        stabilization: {
+            enabled: true,
+            iterations: 1000,
+            updateInterval: 100,
+            fit: true
+        },
+        solver: 'forceAtlas2Based',
+        forceAtlas2Based: {
+            gravitationalConstant: -50,
+            centralGravity: 0.01,
+            springLength: 100,
+            springConstant: 0.08,
+            damping: 0.4,
+            avoidOverlap: 0.5
+        },
+        minVelocity: 0.75,
+        maxVelocity: 30
+    },
+    interaction: {
+        dragNodes: true,
+        dragView: true,
+        zoomView: true,
+        hover: true,
+        navigationButtons: true,
+        keyboard: {
+            enabled: true,
+            bindToWindow: false
+        }
+    },
+    layout: {
+        randomSeed: 2,
+        improvedLayout: true,
+        hierarchical: false
+    }
+};
 
-let previousAnswers = [];
+/**
+ * State management for problems
+ */
+const ProblemState = {
+    currentProblem: null,
+    currentAnswer: null,
+    problems: [],
+    problemIndex: 0,
+    recording: false,
+    mediaRecorder: null,
+    audioChunks: []
+};
 
-async function startEvaluation() {
-    const classId = document.getElementById('class-select').value;
-    const unitName = document.getElementById('unit-select').value;
+/**
+ * State management for data
+ */
+const DataState = {
+    classes: null,
+    cmaps: null,
+    umaps: null,
+    problems: null,
+    currentUnit: null,
+    currentClass: null
+};
 
-    if (!classId || !unitName) {
-        showNotification('Please select both a class and a unit.', 'warning');
+/**
+ * Initialize the network visualization
+ */
+async function initNetwork() {
+    log('Initializing network');
+    const container = document.getElementById('concept-map');
+    if (!container) {
+        log('Error: concept-map container not found');
         return;
     }
 
-    document.getElementById('class-selection').style.display = 'none';
-    document.getElementById('loading').style.display = 'block';
+    // Create empty dataset
+    const data = {
+        nodes: new vis.DataSet([]),
+        edges: new vis.DataSet([])
+    };
+    log('Created empty dataset');
 
-    const notebooks = await fetchRequest('/data', {"data": "Classes, Notebooks"})
-    // filter notebooks by classId and unitName
-    var filteredNotebooks = notebooks.Notebooks.filter(notebook => notebook.classID === classId && notebook.unit === unitName);
-    // take a random sample of 10 notebooks
-    filteredNotebooks = filteredNotebooks.sort(() => Math.random() - 0.5).slice(0, 10);
-    let topics = []
-    let questions = []
-    filteredNotebooks.forEach(notebook => {
-        topics.push(notebook.subtopics)
-        questions.push(notebook.practice_questions)
-    })
-    notebook_data = "topics: " + topics + " questions: " + questions
+    // Store references
+    UI.nodes = data.nodes;
+    UI.edges = data.edges;
 
-    // Get custom settings
-    const startingLevel = parseInt(document.getElementById('starting-level').value);
-    // if currentLevel is undefined or less than startingLevel, set currentLevel to startingLevel
-    if (currentLevel == undefined || currentLevel < startingLevel) {
-        currentLevel = startingLevel;
-    }
-    const customPointsNeeded = parseInt(document.getElementById('points-needed').value);
-    points_needed = customPointsNeeded;
-    document.getElementById('points').textContent = `Points: 0 / ${points_needed}`;
-
-    customPrompts.questionGeneration = document.getElementById('question-prompt').value.trim() || DEFAULT_PROMPTS.questionGeneration;
-    customPrompts.scoring = document.getElementById('scoring-prompt').value.trim() || DEFAULT_PROMPTS.scoring;
-
-    fetch('/generate-bloom-questions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-            level: levels[currentLevel],
-            previousAnswers: previousAnswers,
-            notebookContent: notebook_data,
-            customPrompt: customPrompts.questionGeneration
-        }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        currentQuestions = data.questions;
-        currentQuestionIndex = 0;
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('evaluation').style.display = 'block';
-        showQuestion(currentQuestionIndex);
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showNotification('Failed to generate questions. Please try again.', 'error');
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('class-selection').style.display = 'block';
-    });
-}
-
-function showQuestion(index) {
-    console.log("index", index, "currentLevel", currentLevel, levels[currentLevel])
-    document.getElementById('current-level').textContent = `Level: ${levels[currentLevel]}`;
-    const currentQuestion = currentQuestions.questions[index];
-    document.getElementById('question').innerHTML = currentQuestion.question;
-    document.getElementById('question-difficulty').textContent = `Estimated Difficulty: ${currentQuestion.personalDifficulty}`;
-    document.getElementById('answer').value = '';
-    document.getElementById('feedback').style.display = 'none';
-    document.getElementById('submit-answer').style.display = 'block';
-    document.getElementById('next-question').style.display = 'none';
-    updateProgressBar();
-    // Re-enable the next button when showing a new question
-    const nextButton = document.getElementById('next-question');
-    nextButton.disabled = false;
-
-    if (window.MathJax) {
-        MathJax.typesetPromise([document.getElementById('question')]);
-    }
-}
-
-async function submitAnswer() {
-    const answer = document.getElementById('answer').value;
-    if (!answer.trim()) {
-        showNotification('Please enter an answer before submitting.', 'warning');
-        return;
-    }
-
-    document.getElementById('submit-answer').disabled = true;
-    document.getElementById('loading').style.display = 'block';
-
-    try {
-        // First get the answer evaluation
-        const evalResponse = await fetch('/evaluate-answer', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                question: currentQuestions.questions[currentQuestionIndex].question,
-                answer: answer,
-                level: levels[currentLevel],
-                customPrompt: customPrompts.scoring
-            }),
-        });
-        const evalData = await evalResponse.json();
-        
-        // Then get the explanations
-        const explResponse = await fetch('/generate-explanations', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                question: currentQuestions.questions[currentQuestionIndex].question,
-                correct_answer: evalData.correct_answer,
-                level: levels[currentLevel],
-                classId: document.getElementById('class-select').value
-            }),
-        });
-        const explData = await explResponse.json();
-
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('submit-answer').disabled = false;
-        
-        // Show feedback and explanations
-        showFeedback(evalData.score, evalData.feedback);
-        showExplanations(explData.explanations);
-        updatePoints(evalData.score);
-
-        previousAnswers.push({
-            question: currentQuestions.questions[currentQuestionIndex].question,
-            answer: answer,
-            score: evalData.score
-        });
-
-        document.getElementById('submit-answer').style.display = 'none';
-        document.getElementById('next-question').style.display = 'block';
-    } catch (error) {
-        console.error('Error:', error);
-        showNotification('An error occurred. Please try again.', 'error');
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('submit-answer').disabled = false;
-    }
-}
-
-function showFeedback(score, feedback) {
-    const feedbackElement = document.getElementById('feedback');
-    feedbackElement.innerHTML = `Score: ${score}/10. ${feedback}`;
-    feedbackElement.className = score >= 5 ? 'feedback-positive' : 'feedback-negative';
-    feedbackElement.style.display = 'block';
-    document.getElementById('next-question').style.display = 'block';
-
-    // Re-render MathJax for the feedback
-    if (window.MathJax) {
-        MathJax.typesetPromise([feedbackElement]);
-    }
-}
-
-function updatePoints(score) {
-    console.log("updatePoints", score)
-    console.log("currentQuestionIndex", currentQuestionIndex, currentQuestions.questions.length)
-    points += score;
-    document.getElementById('points').textContent = `Points: ${points} / ${points_needed}`;
-    updateProgressBar();
-
-    if (currentQuestionIndex == currentQuestions.questions.length - 1) {
-        if (points >= points_needed) {  // Changed from 50 to 40 since we now have 5 questions
-            console.log("level complete")
-            showLevelComplete();
-        } else {
-            console.log("C3", points, points_needed)
-            startEvaluation(); // Generate new questions for the current level
-        }
-    }
-}
-
-function updateProgressBar() {
-    const progressFill = document.getElementById('progress-fill');
-    const percentage = (points / points_needed) * 100;
-    progressFill.style.width = `${percentage}%`;
-}
-
-function showLevelComplete() {
-    document.getElementById('evaluation').style.display = 'none';
-    document.getElementById('level-complete').style.display = 'block';
-    document.getElementById('level-complete-message').textContent = `You've completed the ${levels[currentLevel]} level!`;
-}
-
-function nextLevel() {
-    console.log("nextLevel", currentLevel)
-    currentLevel++;
-    points = 0;
-    currentQuestionIndex = 0;
-
-    if (currentLevel < levels.length) {
-        document.getElementById('level-complete').style.display = 'none';
-        // change the level text
-        document.getElementById('current-level').textContent = `Level: ${levels[currentLevel]}`;
-        console.log("C2", currentLevel, levels[currentLevel])
-        startEvaluation();
-    } else {
-        showAllLevelsComplete();
-    }
-}
-
-function showAllLevelsComplete() {
-    document.getElementById('level-complete').style.display = 'none';
-    document.getElementById('all-levels-complete').style.display = 'block';
-}
-
-function showNotification(message, type) {
-    // Implement this function to show notifications to the user
-    console.log(`${type}: ${message}`);
-    // You can use a library like toastr or create a custom notification system
-}
-
-// New function to handle moving to the next question
-function nextQuestion() {
-    // Disable the next button immediately
-    const nextButton = document.getElementById('next-question');
-    nextButton.disabled = true;
-
-    currentQuestionIndex++;
-    console.log("currentQuestionIndex", currentQuestionIndex)
-    showQuestion(currentQuestionIndex);
-}
-
-// Add new function for opening notebook
-function setupNotebookButton() {
-    document.getElementById('open-notebook').addEventListener('click', () => {
-        const classId = document.getElementById('class-select').value;
-        const unitName = document.getElementById('unit-select').value;
-        if (classId && unitName) {
-            window.open(`/notebook/${classId}/${unitName}`, '_blank');
-        } else {
-            showNotification('Please select a class and unit first.', 'warning');
-        }
-    });
-}
-
-// Add new function to initialize prompts
-function initializePrompts() {
-    document.getElementById('question-prompt').value = DEFAULT_PROMPTS.questionGeneration;
-    document.getElementById('scoring-prompt').value = DEFAULT_PROMPTS.scoring;
-    
-    // Add library buttons
-    const questionPromptArea = document.getElementById('question-prompt').parentElement;
-    const scoringPromptArea = document.getElementById('scoring-prompt').parentElement;
-    
-    questionPromptArea.insertAdjacentHTML('beforeend', `
-        <button class="library-button" onclick="showPromptLibrary('question')">
-            <i class="fas fa-book"></i> Question Prompt Library
-        </button>
-    `);
-    
-    scoringPromptArea.insertAdjacentHTML('beforeend', `
-        <button class="library-button" onclick="showPromptLibrary('scoring')">
-            <i class="fas fa-book"></i> Scoring Prompt Library
-        </button>
-    `);
-}
-
-function showPromptLibrary(type) {
-    const library = type === 'question' ? QUESTION_PROMPT_LIBRARY : SCORING_PROMPT_LIBRARY;
-    const modalContent = createPromptLibraryModal(library, type);
-    
-    // Create and show modal
-    const modal = document.createElement('div');
-    modal.className = 'prompt-library-modal';
-    modal.innerHTML = modalContent;
-    document.body.appendChild(modal);
-    
-    // Add event listeners for prompt selection
-    modal.querySelectorAll('.prompt-item').forEach(item => {
-        item.addEventListener('click', () => {
-            const prompt = item.getAttribute('data-prompt');
-            document.getElementById(`${type}-prompt`).value = prompt;
-            modal.remove();
-        });
-    });
-    
-    // Close modal when clicking outside
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.remove();
-    });
-}
-
-function createPromptLibraryModal(library, type) {
-    return `
-        <div class="prompt-library-content">
-            <h3>${type === 'question' ? 'Question' : 'Scoring'} Prompt Library</h3>
-            <div class="prompt-grid">
-                ${library.map(item => `
-                    <div class="prompt-item" data-prompt="${item.prompt}">
-                        <i class="${item.icon}"></i>
-                        <h4>${item.focus}</h4>
-                        <p>${item.prompt}</p>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-    `;
-}
-
-// Add new function to toggle settings
-function toggleSettings() {
-    const content = document.getElementById('settings-content');
-    const icon = document.querySelector('.settings-toggle-icon');
-    
-    content.classList.toggle('collapsed');
-    icon.classList.toggle('collapsed');
-}
-
-function loadMathJax() {
-    window.MathJax = {
-        tex: {
-            inlineMath: [['\\(', '\\)']],
-            displayMath: [['\\[', '\\]']],
-            processEscapes: true
-        },
-        options: {
-            skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+    // Start with physics disabled for initial setup
+    const initialOptions = {
+        ...options,
+        physics: {
+            ...options.physics,
+            enabled: false
         }
     };
+    
+    UI.network = new vis.Network(container, data, initialOptions);
+    log('Network created');
 
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
-    script.async = true;
-    document.head.appendChild(script);
+    // Add stabilization event handlers
+    UI.network.on('stabilizationProgress', function(params) {
+        log('Stabilization progress:', Math.round((params.iterations/params.total) * 100) + '%');
+    });
+
+    UI.network.on('stabilizationIterationsDone', function() {
+        log('Stabilization complete');
+        UI.network.setOptions({ physics: { enabled: false } });
+    });
+
+    // Add click event listener
+    UI.network.on('click', function(params) {
+        if (params.nodes.length > 0) {
+            log('Node clicked:', params.nodes[0]);
+            selectNode(params.nodes[0]);
+        }
+    });
+
+    // Load initial data and setup unit selection
+    await initializeData();
 }
 
-function showExplanations(explanations) {
-    const container = document.createElement('div');
-    container.className = 'explanations-container';
-    container.innerHTML = `
-        <h4>Rate these explanations to help improve future responses:</h4>
-        ${explanations.map((expl, index) => `
-            <div class="explanation-card">
-                <p><strong>Style:</strong> ${expl.style}</p>
-                <p>${expl.text}</p>
-                <div class="rating-container">
-                    <label>Rate this explanation (0-10):</label>
-                    <input type="number" min="0" max="10" class="explanation-rating" 
-                           data-index="${index}" value="5">
-                </div>
-            </div>
-        `).join('')}
-        <button class="submit-ratings-btn">Submit Ratings</button>
-    `;
+/**
+ * Initialize all data from the backend
+ */
+async function initializeData() {
+    log('Initializing data...');
+    try {
+        // Fetch all required data
+        const response = await fetchRequest('/data', { data: 'Classes, CMaps, UMaps, Problems' });
+        log('Received data response:', response);
 
-    document.getElementById('feedback').after(container);
+        if (!response.UMaps) {
+            log('Warning: No UMaps data in response');
+        }
 
-    container.querySelector('.submit-ratings-btn').addEventListener('click', () => {
-        const ratings = [...container.querySelectorAll('.explanation-rating')]
-            .map(input => ({
-                index: parseInt(input.dataset.index),
-                score: parseInt(input.value)
-            }));
+        // Store data in state
+        DataState.classes = response.Classes || [];
+        DataState.cmaps = response.CMaps || [];
+        DataState.umaps = response.UMaps || [];
+        DataState.problems = response.Problems || [];
 
-        submitExplanationRatings(explanations, ratings);
-        container.remove();
+        log('Stored UMaps data:', DataState.umaps);
+
+        // Setup unit selection
+        await setupUnitSelection();
+    } catch (error) {
+        log('Error initializing data:', error);
+        showError('Failed to load initial data. Please refresh the page.');
+    }
+}
+
+/**
+ * Setup unit selection dropdown
+ */
+async function setupUnitSelection() {
+    log('Setting up unit selection');
+    const unitSelect = document.getElementById('unit-select');
+    if (!unitSelect) {
+        log('Error: unit-select not found');
+        return;
+    }
+
+    try {
+        // Get unique units from CMaps
+        const units = [...new Set(DataState.cmaps.map(map => map.unit))];
+        log('Available units:', units);
+
+        // Clear existing options
+        unitSelect.innerHTML = '<option value="" disabled selected>Choose a unit...</option>';
+
+        // Add units to dropdown
+        units.forEach(unit => {
+            const option = document.createElement('option');
+            option.value = unit;
+            option.textContent = unit;
+            unitSelect.appendChild(option);
+        });
+
+        // Add change event listener
+        unitSelect.addEventListener('change', handleUnitSelection);
+
+        log('Unit selection setup complete');
+    } catch (error) {
+        log('Error setting up unit selection:', error);
+        showError('Failed to setup unit selection.');
+    }
+}
+
+/**
+ * Handle unit selection change
+ */
+async function handleUnitSelection(event) {
+    const selectedUnit = event.target.value;
+    log('Unit selected:', selectedUnit);
+
+    if (!selectedUnit) return;
+
+    try {
+        // Hide initial message and show problem section
+        const initialMessage = document.querySelector('.initial-message');
+        const problemSection = document.querySelector('.problem-section');
+        if (initialMessage) initialMessage.style.display = 'none';
+        if (problemSection) problemSection.style.display = 'block';
+
+        // Find corresponding map data
+        const mapData = DataState.cmaps.find(map => map.unit === selectedUnit);
+        if (!mapData) {
+            log('Error: No map data found for unit:', selectedUnit);
+            showError('Failed to load concept map for selected unit.');
+            return;
+        }
+
+        // Store current unit and class
+        DataState.currentUnit = selectedUnit;
+        DataState.currentClass = mapData.classID;
+
+        // Filter relevant data for this unit AND class
+        const unitData = {
+            cmap: mapData,
+            umaps: DataState.umaps.filter(u => 
+                u.unit === selectedUnit && 
+                parseInt(u.classID) === parseInt(mapData.classID)
+            ),
+            problems: DataState.problems.filter(p => 
+                p.unit === selectedUnit && 
+                p.classID === mapData.classID
+            )
+        };
+
+        log('Filtered UMaps data:', unitData.umaps);
+
+        // Update progress display
+        updateProgressStats(unitData);
+
+        // Load concept map
+        await loadConceptMap(unitData);
+
+        log('Unit data loaded successfully');
+    } catch (error) {
+        log('Error handling unit selection:', error);
+        showError('Failed to load unit data.');
+    }
+}
+
+/**
+ * Update progress statistics display
+ */
+function updateProgressStats(unitData) {
+    const problems = unitData.problems || [];
+    const completedProblems = problems.filter(p => p.completed).length;
+    
+    // Update problems count
+    const problemsStats = document.querySelector('.stat-value');
+    if (problemsStats) {
+        problemsStats.textContent = `${completedProblems}/${problems.length}`;
+    }
+
+    // Update time spent (placeholder for now)
+    const timeStats = document.querySelectorAll('.stat-value')[1];
+    if (timeStats) {
+        const startTime = UI.startTime || new Date();
+        const timeSpent = Math.floor((new Date() - startTime) / (1000 * 60)); // in minutes
+        timeStats.textContent = `${Math.floor(timeSpent/60)}h ${timeSpent%60}m`;
+    }
+}
+
+/**
+ * Show error message to user
+ */
+function showError(message) {
+    // Create error message element
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.textContent = message;
+
+    // Add to document
+    document.body.appendChild(errorDiv);
+
+    // Remove after delay
+    setTimeout(() => {
+        errorDiv.remove();
+    }, 5000);
+}
+
+/**
+ * Load concept map for the selected unit
+ */
+async function loadConceptMap(unitData) {
+    log('Loading concept map:', unitData);
+    try {
+        // Store current map data
+        UI.currentMap = unitData.cmap;
+        
+        // Clear existing nodes and edges
+        UI.nodes.clear();
+        UI.edges.clear();
+
+        if (!unitData.cmap.nodes || !Array.isArray(unitData.cmap.nodes)) {
+            log('Error: Invalid map data - nodes missing or not an array:', unitData.cmap);
+            return;
+        }
+
+        // Get UMaps data for this unit and class
+        if (!unitData.umaps || !Array.isArray(unitData.umaps)) {
+            log('Error: Invalid UMaps data:', unitData.umaps);
+            return;
+        }
+
+        log('UMaps data for unit:', unitData.umaps);
+        const umap = unitData.umaps?.[0]?.node_progress || {};
+        log('Node progress data:', umap);
+
+        if (Object.keys(umap).length === 0) {
+            log('Warning: No node progress data found in UMaps');
+        }
+
+        // Add nodes with styling based on UMaps data
+        const styledNodes = unitData.cmap.nodes.map(node => {
+            const nodeId = node.id.toString(); // Ensure string comparison
+            const nodeProgress = umap[nodeId] || {};
+            log(`Node ${nodeId} progress:`, nodeProgress);
+            
+            // Determine status based on derivation status only
+            const status = nodeProgress.date_derived ? 'completed' : 'pending';
+            log(`Node ${nodeId} status: ${status}, date_derived: ${nodeProgress.date_derived}`);
+            
+            const nodeData = {
+                id: nodeId,
+                label: node.label,
+                status: status,
+                color: getNodeColor(status),
+                borderWidth: 2,
+                borderColor: getBorderColor(status),
+                widthConstraint: {
+                    minimum: 120,
+                    maximum: 200
+                },
+                margin: 10,
+                shape: 'box',
+                font: {
+                    size: 16,
+                    color: '#fff'
+                },
+                title: `${node.label}\n${status === 'completed' ? 
+                    `Derived on: ${nodeProgress.date_derived}` : 
+                    'Not yet derived'}`,
+                prerequisites: node.prerequisites || [],
+                problems: unitData.problems.filter(p => p.concept_id === nodeId)
+            };
+
+            // Apply saved position if available
+            if (unitData.cmap.structure?.nodes?.[nodeId]) {
+                nodeData.x = unitData.cmap.structure.nodes[nodeId].x;
+                nodeData.y = unitData.cmap.structure.nodes[nodeId].y;
+            }
+
+            return nodeData;
+        });
+
+        log('Created styled nodes:', styledNodes);
+
+        // Create edges from prerequisites
+        const edges = [];
+        unitData.cmap.nodes.forEach(node => {
+            if (node.prerequisites && node.prerequisites.length > 0) {
+                node.prerequisites.forEach(prereqId => {
+                    edges.push({
+                        from: prereqId,
+                        to: node.id,
+                        length: 200,
+                        color: {
+                            color: 'rgba(255, 255, 255, 0.5)',
+                            highlight: '#3498db'
+                        }
+                    });
+                });
+            }
+        });
+
+        log('Created edges:', edges);
+
+        // Add nodes and edges first with physics disabled
+        UI.network.setOptions({ physics: { enabled: false } });
+        UI.nodes.add(styledNodes);
+        UI.edges.add(edges);
+
+        // Enable physics and stabilize only if no structure exists
+        if (!unitData.cmap.structure?.nodes) {
+            UI.network.setOptions({
+                physics: {
+                    enabled: true,
+                    stabilization: {
+                        enabled: true,
+                        iterations: 1000,
+                        updateInterval: 100
+                    }
+                }
+            });
+        }
+
+        // Fit the network to view all nodes
+        if (UI.network) {
+            log('Fitting network view');
+            // Wait for next frame to ensure nodes are added
+            requestAnimationFrame(() => {
+                UI.network.fit({
+                    animation: {
+                        duration: 1000,
+                        easingFunction: 'easeInOutQuad'
+                    }
+                });
+                
+                // Disable physics after stabilization
+                UI.network.once('stabilized', () => {
+                    log('Network stabilized');
+                    UI.network.setOptions({ physics: { enabled: false } });
+                });
+            });
+        } else {
+            log('Error: Network not initialized');
+        }
+
+        // Find first available node and load its problems
+        const nextNode = findNextConcept();
+        if (nextNode) {
+            log('Found next node to work on:', nextNode);
+            selectNode(nextNode.id);
+        } else {
+            log('No available nodes to work on');
+            showMessage('All concepts have been completed! You can click on any node to review it.');
+        }
+
+    } catch (error) {
+        log('Error loading concept map:', error);
+        showError('Failed to load concept map. Please try again.');
+    }
+}
+
+/**
+ * Handle node selection in the concept map
+ */
+function selectNode(nodeId) {
+    const node = UI.nodes.get(nodeId);
+    if (!node) return;
+
+    // Check if all prerequisites are completed
+    const prerequisites = node.prerequisites || [];
+    const completedPrereqs = prerequisites.every(prereqId => {
+        const prereqNode = UI.nodes.get(prereqId);
+        return prereqNode && prereqNode.status === 'completed';
+    });
+
+    if (!completedPrereqs && 1==2) {
+        showMessage('Please complete the prerequisite concepts first.');
+        // Highlight prerequisites
+        prerequisites.forEach(prereqId => {
+            const prereqNode = UI.nodes.get(prereqId);
+            if (prereqNode && prereqNode.status === 'pending') {
+                UI.network.selectNodes([prereqId], true);
+            }
+        });
+        return;
+    }
+
+    // Update current node
+    UI.currentNode = node;
+    
+    // Check if this node has problems
+    const hasProblems = DataState.problems.some(p => 
+        p.concepts && Array.isArray(p.concepts) && p.concepts.includes(nodeId.toString())
+    );
+
+    if (!hasProblems) {
+        log('No problems for node:', nodeId);
+        // Try to find next node with problems
+        const nextNodeWithProblems = findNextConceptWithProblems([nodeId]);
+        if (nextNodeWithProblems) {
+            log('Found next node with problems:', nextNodeWithProblems.id);
+            selectNode(nextNodeWithProblems.id);
+        } else {
+            showMessage('No problems available for any accessible concepts.');
+        }
+        return;
+    }
+    
+    // Load problems for this node
+    loadProblems(nodeId);
+}
+
+/**
+ * Find the next concept to work on
+ */
+function findNextConcept() {
+    if (!UI.currentMap || !UI.currentMap.nodes) return null;
+
+    const nodes = UI.nodes.get();
+    const completedNodeIds = nodes
+        .filter(node => node.status === 'completed')
+        .map(node => node.id);
+
+    // Find nodes where all prerequisites are completed
+    const availableNodes = nodes.filter(node => {
+        // Skip if already completed
+        if (node.status !== 'pending') return false;
+
+        // Check if all prerequisites are completed
+        return !node.prerequisites || 
+               node.prerequisites.length === 0 || 
+               node.prerequisites.every(prereq => completedNodeIds.includes(prereq));
+    });
+
+    // Return first node that has problems, or first available if none found
+    return findNextConceptWithProblems(availableNodes.map(n => n.id)) || availableNodes[0];
+}
+
+/**
+ * Find the next concept that has problems
+ */
+function findNextConceptWithProblems(excludeNodeIds = []) {
+    const nodes = UI.nodes.get();
+    const completedNodeIds = nodes
+        .filter(node => node.status === 'completed')
+        .map(node => node.id);
+
+    // Find nodes where all prerequisites are completed
+    return nodes.find(node => {
+        // Skip if already checked or completed
+        if (excludeNodeIds.includes(node.id) || node.status !== 'pending') return false;
+
+        // // Check if all prerequisites are completed
+        // const prereqsCompleted = !node.prerequisites || 
+        //     node.prerequisites.length === 0 || 
+        //     node.prerequisites.every(prereq => completedNodeIds.includes(prereq));
+
+        // if (!prereqsCompleted) return false;
+
+        // Check if node has problems
+        return DataState.problems.some(p => 
+            p.concepts && Array.isArray(p.concepts) && p.concepts.includes(node.id.toString())
+        );
     });
 }
 
-async function submitExplanationRatings(explanations, ratings) {
-    try {
-        await fetch('/save-explanation-ratings', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                classId: document.getElementById('class-select').value,
-                question: currentQuestions.questions[currentQuestionIndex].question,
-                level: levels[currentLevel],
-                explanations: explanations.map((expl, index) => ({
-                    ...expl,
-                    score: ratings.find(r => r.index === index).score
-                }))
-            }),
-        });
-        showNotification('Thank you for rating the explanations!', 'success');
-    } catch (error) {
-        console.error('Error saving ratings:', error);
-        showNotification('Failed to save ratings', 'error');
+/**
+ * Display problems for the selected concept
+ */
+function displayProblems(node) {
+    const problemsContainer = document.getElementById('problems-container');
+    if (!problemsContainer) return;
+
+    problemsContainer.innerHTML = '';
+    
+    if (!node.problems || node.problems.length === 0) {
+        problemsContainer.innerHTML = '<p>No problems available for this concept.</p>';
+        return;
+    }
+
+    const problemsList = document.createElement('div');
+    problemsList.className = 'problems-list';
+
+    node.problems.forEach(problem => {
+        const problemCard = document.createElement('div');
+        problemCard.className = `problem-card ${problem.completed ? 'completed' : ''}`;
+        problemCard.innerHTML = `
+            <h3>${problem.title}</h3>
+            <p>${problem.description}</p>
+            <button onclick="startProblem('${problem.id}')" ${problem.completed ? 'disabled' : ''}>
+                ${problem.completed ? 'Completed' : 'Start Problem'}
+            </button>
+        `;
+        problemsList.appendChild(problemCard);
+    });
+
+    problemsContainer.appendChild(problemsList);
+}
+
+/**
+ * Get node color based on status
+ */
+function getNodeColor(status) {
+    switch (status) {
+        case 'completed':
+            return '#2196F3';  // Mastered
+        case 'in_progress':
+            return '#4CAF50';  // Derived
+        case 'pending':
+            return '#FFA500';  // Not Started
+        default:
+            return '#999';
     }
 }
+
+/**
+ * Get border color based on status
+ */
+function getBorderColor(status) {
+    switch (status) {
+        case 'completed':
+            return '#1976D2';  // Mastered
+        case 'in_progress':
+            return '#388E3C';  // Derived
+        case 'pending':
+            return '#F57C00';  // Not Started
+        default:
+            return '#666';
+    }
+}
+
+/**
+ * Show message to user
+ */
+function showMessage(message) {
+    // Implement message display logic
+    console.log(message);
+}
+
+/**
+ * Load problems for the current concept node
+ * Fetches problems from the backend filtered by concept prerequisites
+ */
+async function loadProblems(nodeId) {
+    log('Loading problems for node:', nodeId);
+    
+    // Get problems for this concept from DataState
+    const conceptProblems = DataState.problems.filter(p => 
+        p.concepts && Array.isArray(p.concepts) && p.concepts.includes(nodeId.toString())
+    );
+    
+    // Sort by difficulty
+    conceptProblems.sort((a, b) => {
+        const difficultyOrder = { 'easy': 1, 'medium': 2, 'hard': 3 };
+        return difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty];
+    });
+    
+    log('Found problems:', conceptProblems);
+    
+    // Store in problem state
+    ProblemState.problems = conceptProblems;
+    ProblemState.problemIndex = 0;
+    ProblemState.currentProblem = conceptProblems[0] || null;
+    
+    // Display first problem
+    if (ProblemState.currentProblem) {
+        displayProblem(ProblemState.currentProblem);
+    } else {
+        showMessage('No problems available for this concept.');
+    }
+}
+
+/**
+ * Display the current problem
+ * Updates UI with problem details
+ */
+function displayProblem(problem) {
+    log('Displaying problem:', problem);
+    
+    // Update problem display
+    const problemNumber = document.querySelector('.problem-number');
+    const problemDifficulty = document.querySelector('.problem-difficulty');
+    const problemText = document.getElementById('problem-text');
+    const answerInput = document.getElementById('answer-input');
+    const submitButton = document.getElementById('submit-answer');
+    
+    if (problemNumber) {
+        problemNumber.textContent = `Problem #${ProblemState.problemIndex + 1}`;
+    }
+    
+    if (problemDifficulty) {
+        problemDifficulty.textContent = `Difficulty: ${problem.difficulty.charAt(0).toUpperCase() + problem.difficulty.slice(1)}`;
+    }
+    
+    if (problemText) {
+        problemText.textContent = problem.problem;
+    }
+    
+    // Reset answer input
+    if (answerInput) {
+        answerInput.value = '';
+        answerInput.disabled = false;
+    }
+    
+    // Enable submit button
+    if (submitButton) {
+        submitButton.disabled = true;
+    }
+    
+    // Hide explanation and evaluation sections
+    const explanationSection = document.getElementById('explanation-section');
+    const evaluationResults = document.getElementById('evaluation-results');
+    
+    if (explanationSection) {
+        explanationSection.classList.add('hidden');
+    }
+    if (evaluationResults) {
+        evaluationResults.classList.add('hidden');
+    }
+    
+    // Update navigation buttons
+    updateNavigationButtons();
+}
+
+/**
+ * Handle answer submission
+ * Validates answer and shows explanation section
+ */
+async function handleAnswerSubmit() {
+    log('Handling answer submission');
+    
+    const answerInput = document.getElementById('answer-input');
+    if (!answerInput || !answerInput.value.trim()) return;
+    
+    // Store answer
+    ProblemState.currentAnswer = answerInput.value.trim();
+    
+    // Disable input and submit button
+    answerInput.disabled = true;
+    const submitButton = document.getElementById('submit-answer');
+    if (submitButton) {
+        submitButton.disabled = true;
+    }
+    
+    // Show explanation section
+    const explanationSection = document.getElementById('explanation-section');
+    if (explanationSection) {
+        explanationSection.classList.remove('hidden');
+    }
+    
+    // Enable recording button
+    const recordButton = document.getElementById('record-button');
+    if (recordButton) {
+        recordButton.disabled = false;
+    }
+}
+
+/**
+ * Handle recording start/stop
+ */
+async function toggleRecording() {
+    const recordButton = document.getElementById('record-button');
+    if (!recordButton) return;
+
+    try {
+        if (!ProblemState.recording) {
+            // Start recording with specific audio configuration
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    channelCount: 1,
+                    sampleRate: 16000, // Changed to 16kHz for better compatibility
+                    sampleSize: 16
+                }
+            });
+            
+            ProblemState.mediaRecorder = new MediaRecorder(stream);
+            ProblemState.audioChunks = [];
+
+            ProblemState.mediaRecorder.ondataavailable = (event) => {
+                ProblemState.audioChunks.push(event.data);
+            };
+
+            ProblemState.mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(ProblemState.audioChunks, { type: 'audio/webm' });
+                
+                // Convert to WAV format
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)({
+                    sampleRate: 16000 // Match the recording sample rate
+                });
+                
+                const audioData = await audioBlob.arrayBuffer();
+                const audioBuffer = await audioContext.decodeAudioData(audioData);
+                
+                // Resample to 16kHz mono
+                const offlineContext = new OfflineAudioContext(1, audioBuffer.duration * 16000, 16000);
+                const source = offlineContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(offlineContext.destination);
+                source.start();
+                
+                const resampled = await offlineContext.startRendering();
+                const wavBlob = await audioBufferToWav(resampled);
+                await processAudio(wavBlob);
+                
+                // Stop all tracks
+                stream.getTracks().forEach(track => track.stop());
+            };
+
+            // Update UI
+            recordButton.textContent = 'Stop Recording';
+            recordButton.classList.add('recording');
+            
+            // Start recording
+            ProblemState.mediaRecorder.start();
+            ProblemState.recording = true;
+            
+            log('Started recording');
+        } else {
+            // Stop recording
+            if (ProblemState.mediaRecorder && ProblemState.mediaRecorder.state !== 'inactive') {
+                ProblemState.mediaRecorder.stop();
+            }
+            
+            // Update UI
+            recordButton.textContent = 'Record Explanation';
+            recordButton.classList.remove('recording');
+            recordButton.disabled = true;
+            
+            ProblemState.recording = false;
+            log('Stopped recording');
+        }
+    } catch (error) {
+        log('Error during recording:', error);
+        showError('Failed to access microphone. Please check your permissions.');
+        recordButton.disabled = true;
+    }
+}
+
+/**
+ * Convert AudioBuffer to WAV format
+ */
+function audioBufferToWav(buffer) {
+    const length = buffer.length * 2; // 16-bit samples
+    const view = new DataView(new ArrayBuffer(44 + length));
+
+    // Write WAV header
+    // "RIFF" chunk descriptor
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + length, true);
+    writeString(view, 8, 'WAVE');
+    
+    // "fmt " sub-chunk
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true); // subchunk1size (16 for PCM)
+    view.setUint16(20, 1, true); // audio format (1 for PCM)
+    view.setUint16(22, 1, true); // num channels (1 for mono)
+    view.setUint32(24, 16000, true); // sample rate
+    view.setUint32(28, 16000 * 2, true); // byte rate
+    view.setUint16(32, 2, true); // block align
+    view.setUint16(34, 16, true); // bits per sample
+    
+    // "data" sub-chunk
+    writeString(view, 36, 'data');
+    view.setUint32(40, length, true);
+
+    // Write audio data
+    const data = buffer.getChannelData(0);
+    let offset = 44;
+    for (let i = 0; i < data.length; i++, offset += 2) {
+        const sample = Math.max(-1, Math.min(1, data[i]));
+        view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+    }
+
+    return new Blob([view], { type: 'audio/wav' });
+}
+
+/**
+ * Helper function to write strings to DataView
+ */
+function writeString(view, offset, string) {
+    for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+    }
+}
+
+/**
+ * Process recorded audio
+ * Converts speech to text and displays result
+ */
+async function processAudio(audioBlob) {
+    log('Processing audio...');
+    const explanationText = document.getElementById('answer-input');
+    if (!explanationText) return;
+
+    try {
+        // Create form data with audio blob
+        const formData = new FormData();
+        
+        // Convert blob to base64 for reliable transfer
+        const reader = new FileReader();
+        const base64Promise = new Promise((resolve) => {
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(audioBlob);
+        });
+        
+        const base64Audio = await base64Promise;
+        
+        // Create a new blob from the base64 data
+        const base64Data = base64Audio.split(',')[1];
+        const binaryData = atob(base64Data);
+        const arrayBuffer = new ArrayBuffer(binaryData.length);
+        const uint8Array = new Uint8Array(arrayBuffer);
+        
+        for (let i = 0; i < binaryData.length; i++) {
+            uint8Array[i] = binaryData.charCodeAt(i);
+        }
+        
+        const processedBlob = new Blob([uint8Array], { type: 'audio/wav' });
+        
+        formData.append('audio', processedBlob, 'explanation.wav');
+        formData.append('problem_id', ProblemState.currentProblem.id);
+        formData.append('answer', ProblemState.currentAnswer);
+
+        // Log FormData contents
+        for (let [key, value] of formData.entries()) {
+            log('FormData:', key, value instanceof Blob ? 'Blob data' : value);
+        }
+
+        // Send to backend for processing
+        const response = await fetch('/process_audio', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to process audio: ${errorText}`);
+        }
+
+        const result = await response.json();
+        
+        // Display transcription
+        explanationText.value = result.transcription;
+        explanationText.disabled = false;
+        
+        // Enable evaluation button
+        const evaluateButton = document.getElementById('evaluate-button');
+        if (evaluateButton) {
+            evaluateButton.disabled = false;
+        }
+
+        // Display transcription
+        const transcriptionSection = document.getElementById('transcription');
+        const transcriptionText = document.getElementById('transcription-text');
+        if (transcriptionSection && transcriptionText) {
+            transcriptionSection.classList.remove('hidden');
+            transcriptionText.textContent = result.transcription;
+        }
+
+        log('Audio processed successfully');
+    } catch (error) {
+        log('Error processing audio:', error);
+        showError('Failed to process audio. Please try again.');
+        
+        // Enable manual entry
+        explanationText.disabled = false;
+        explanationText.placeholder = 'Failed to transcribe audio. Please type your explanation here...';
+    }
+}
+
+/**
+ * Evaluate user's answer and explanation
+ * Analyzes understanding and suggests improvements
+ */
+async function evaluateResponse() {
+    log('Evaluating response...');
+    const explanationText = document.getElementById('answer-input');
+    const evaluationSection = document.getElementById('evaluation-results');
+    
+    if (!explanationText || !evaluationSection) return;
+    
+    try {
+        // Show loading state
+        evaluationSection.classList.remove('hidden');
+        evaluationSection.innerHTML = '<div class="loading">Evaluating your response...</div>';
+        
+        // Prepare evaluation data
+        const evaluationData = {
+            problem_id: ProblemState.currentProblem.id,
+            answer: ProblemState.currentAnswer,
+            explanation: explanationText.value,
+            unit: DataState.currentUnit,
+            class_id: DataState.currentClass
+        };
+        
+        // Send to backend for evaluation
+        const response = await fetchRequest('/evaluate-answer', {
+            method: 'POST',
+            body: evaluationData
+        });
+        
+        if (!response.success) {
+            throw new Error(response.error || 'Failed to evaluate response');
+        }
+        
+        // Display evaluation results
+        displayEvaluation(response);
+        
+        // Update concept map if mastery achieved
+        if (response.mastery) {
+            await updateConceptMap(response.modifications);
+        }
+        
+    } catch (error) {
+        log('Error evaluating response:', error);
+        showError('Failed to evaluate response. Please try again.');
+        evaluationSection.classList.add('hidden');
+    }
+}
+
+/**
+ * Display evaluation results
+ * Shows correct/incorrect statements and suggestions
+ */
+function displayEvaluation(evaluation) {
+    log('Displaying evaluation:', evaluation);
+    const evaluationSection = document.getElementById('evaluation-results');
+    if (!evaluationSection) return;
+    
+    // Create evaluation display
+    const content = document.createElement('div');
+    content.className = 'evaluation-content';
+    
+    // Add understanding score
+    const scoreDiv = document.createElement('div');
+    scoreDiv.className = 'evaluation-score';
+    scoreDiv.innerHTML = `
+        <h3>Understanding Score</h3>
+        <div class="score-circle ${getScoreClass(evaluation.score)}">
+            ${Math.round(evaluation.score * 100)}%
+        </div>
+    `;
+    content.appendChild(scoreDiv);
+    
+    // Add correct concepts
+    if (evaluation.correct_concepts && evaluation.correct_concepts.length > 0) {
+        const correctList = document.createElement('div');
+        correctList.className = 'evaluation-section correct';
+        correctList.innerHTML = `
+            <h3>✓ Correct Understanding</h3>
+            <ul>
+                ${evaluation.correct_concepts.map(concept => `<li>${concept}</li>`).join('')}
+            </ul>
+        `;
+        content.appendChild(correctList);
+    }
+    
+    // Add misconceptions
+    if (evaluation.misconceptions && evaluation.misconceptions.length > 0) {
+        const misconceptionsList = document.createElement('div');
+        misconceptionsList.className = 'evaluation-section incorrect';
+        misconceptionsList.innerHTML = `
+            <h3>✗ Areas for Improvement</h3>
+            <ul>
+                ${evaluation.misconceptions.map(concept => `<li>${concept}</li>`).join('')}
+            </ul>
+        `;
+        content.appendChild(misconceptionsList);
+    }
+    
+    // Add suggestions
+    if (evaluation.suggestions && evaluation.suggestions.length > 0) {
+        const suggestionsList = document.createElement('div');
+        suggestionsList.className = 'evaluation-section suggestions';
+        suggestionsList.innerHTML = `
+            <h3>💡 Suggestions</h3>
+            <ul>
+                ${evaluation.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+            </ul>
+        `;
+        content.appendChild(suggestionsList);
+    }
+    
+    // Clear previous content and add new evaluation
+    evaluationSection.innerHTML = '';
+    evaluationSection.appendChild(content);
+    
+    // Show next problem button if available
+    const nextButton = document.getElementById('next-problem');
+    if (nextButton) {
+        nextButton.disabled = false;
+    }
+}
+
+/**
+ * Update concept map based on evaluation
+ * Modifies UMaps data with new understanding
+ */
+async function updateConceptMap(modifications) {
+    log('Updating concept map with:', modifications);
+    try {
+        // Get current UMaps data
+        const currentUmap = DataState.umaps.find(u => 
+            u.unit === DataState.currentUnit && 
+            parseInt(u.classID) === parseInt(DataState.currentClass)
+        );
+        
+        if (!currentUmap) {
+            log('No UMap found for current unit/class');
+            return;
+        }
+        
+        // Update node progress
+        const nodeId = UI.currentNode.id.toString();
+        const nodeProgress = currentUmap.node_progress[nodeId] || {};
+        
+        // Update progress data
+        nodeProgress.mastery_level = modifications.mastery_level;
+        nodeProgress.last_evaluation = new Date().toISOString();
+        nodeProgress.evaluation_history = [
+            ...(nodeProgress.evaluation_history || []),
+            {
+                date: new Date().toISOString(),
+                score: modifications.score,
+                problem_id: ProblemState.currentProblem.id
+            }
+        ];
+        
+        // Update UMaps in backend
+        await fetchRequest('/update_data', {
+            method: 'POST',
+            body: {
+                sheet: 'UMaps',
+                row_name: 'OSIS',
+                row_value: currentUmap.OSIS,
+                data: currentUmap
+            }
+        });
+        
+        // Update node styling
+        const node = UI.nodes.get(nodeId);
+        if (node) {
+            node.status = modifications.mastery_level >= 0.8 ? 'completed' : 'in_progress';
+            node.color = getNodeColor(node.status);
+            node.borderColor = getBorderColor(node.status);
+            UI.nodes.update(node);
+        }
+        
+        // Update progress stats
+        updateProgressStats({
+            problems: DataState.problems,
+            umaps: DataState.umaps
+        });
+        
+    } catch (error) {
+        log('Error updating concept map:', error);
+        showError('Failed to update progress. Your explanation was recorded but progress may not be reflected.');
+    }
+}
+
+/**
+ * Get CSS class for score display
+ */
+function getScoreClass(score) {
+    if (score >= 0.8) return 'excellent';
+    if (score >= 0.6) return 'good';
+    if (score >= 0.4) return 'fair';
+    return 'needs-work';
+}
+
+/**
+ * Navigate to next/previous problem
+ * Updates problem display and state
+ */
+function navigateProblem(direction) {
+    log('Navigating problem:', direction);
+    
+    const newIndex = direction === 'next' ? 
+        ProblemState.problemIndex + 1 : 
+        ProblemState.problemIndex - 1;
+    
+    if (newIndex >= 0 && newIndex < ProblemState.problems.length) {
+        ProblemState.problemIndex = newIndex;
+        ProblemState.currentProblem = ProblemState.problems[newIndex];
+        displayProblem(ProblemState.currentProblem);
+    }
+}
+
+/**
+ * Update navigation button states
+ */
+function updateNavigationButtons() {
+    const prevButton = document.getElementById('prev-problem');
+    const nextButton = document.getElementById('next-problem');
+    
+    if (prevButton) {
+        prevButton.disabled = ProblemState.problemIndex === 0;
+    }
+    
+    if (nextButton) {
+        nextButton.disabled = ProblemState.problemIndex === ProblemState.problems.length - 1;
+    }
+}
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', function() {
+    log('DOM loaded, initializing...');
+    
+    // Initialize network
+    initNetwork();
+    
+    // Add event listeners
+    const submitButton = document.getElementById('submit-answer');
+    const recordButton = document.getElementById('record-button');
+    const prevButton = document.getElementById('prev-problem');
+    const nextButton = document.getElementById('next-problem');
+    const answerInput = document.getElementById('answer-input');
+
+    if (submitButton) submitButton.addEventListener('click', handleAnswerSubmit);
+    if (recordButton) recordButton.addEventListener('click', toggleRecording);
+    if (prevButton) prevButton.addEventListener('click', () => navigateProblem('prev'));
+    if (nextButton) nextButton.addEventListener('click', () => navigateProblem('next'));
+    
+    // Enable submit button when answer is entered
+    if (answerInput) {
+        answerInput.addEventListener('input', function() {
+            if (submitButton) {
+                submitButton.disabled = !this.value.trim();
+            }
+        });
+    }
+
+    // Add map control event listeners
+    const zoomIn = document.getElementById('zoom-in');
+    const zoomOut = document.getElementById('zoom-out');
+    const resetView = document.getElementById('reset-view');
+
+    if (zoomIn) {
+        zoomIn.addEventListener('click', () => {
+            if (UI.network) {
+                UI.network.moveTo({
+                    scale: UI.network.getScale() * 1.2
+                });
+            }
+        });
+    }
+
+    if (zoomOut) {
+        zoomOut.addEventListener('click', () => {
+            if (UI.network) {
+                UI.network.moveTo({
+                    scale: UI.network.getScale() / 1.2
+                });
+            }
+        });
+    }
+
+    if (resetView) {
+        resetView.addEventListener('click', () => {
+            if (UI.network) {
+                UI.network.fit();
+            }
+        });
+    }
+
+    // Add recording styles
+    const style = document.createElement('style');
+    style.textContent = `
+        .recording {
+            background-color: #ff4444 !important;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+    `;
+    document.head.appendChild(style);
+
+    log('Initialization complete');
+});

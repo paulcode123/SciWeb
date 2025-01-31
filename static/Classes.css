@@ -1,177 +1,548 @@
+main {
+  max-width: 500px;
+  margin: 0 auto;
+}
 
-    main {
-      max-width: 500px;
-      margin: 0 auto;
-    }
+main .hidden {
+  display: none;
+}
 
-    main .hidden {
-      display: none;
-    }
+main button {
+  padding: 10px 20px;
+  font-size: 16px;
+}
 
-    main button {
-      padding: 10px 20px;
-      font-size: 16px;
-    }
+main form {
+  margin-top: 20px;
+}
 
-    main form {
-      margin-top: 20px;
-    }
+main label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 5px;
+}
 
-    main label {
-      font-weight: bold;
-      display: block;
-      margin-bottom: 5px;
-    }
+main input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
 
-    main input[type="text"] {
-      width: 100%;
-      padding: 10px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
+main ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
 
-     main ul {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
+main ul li {
+  margin: 5px;
+}
 
-    main ul li {
-      margin: 5px;
-    }
+main button{
+  background-color: #558f2c;
+}
+main button:hover {
+  background-color:#2c7e8f
+}
 
-    main button{
-      background-color: #558f2c;
-    }
-    main button:hover {
-      background-color:#2c7e8f
-    }
+main input[type="submit"] {
+  margin-top: 10px;
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #558f2c;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
 
-    main input[type="submit"] {
-      margin-top: 10px;
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: #558f2c;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    main input[type="submit"]:hover {
-      background-color: #2c7e8f;
-    }
+main input[type="submit"]:hover {
+  background-color: #2c7e8f;
+}
 
 .class-item {
-      margin-bottom: 10px;
-      padding: 10px;
-      background-color: #f5f5f5;
-      border-radius: 4px;
-      cursor: pointer;
+  margin-bottom: 10px;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.class-item:hover {
+  background-color: #e0e0e0;
+}
+
+.class-item h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.class-item p {
+  margin: 5px 0 0;
+  font-size: 14px;
+}
+
+body {
+  background-color: #1c1d26; /* Updated to match darkThemeTemplate.html */
+  color: #ffffff;
+}
+#page-wrapper {
+  background-color: #1c1d26; /* Updated to match darkThemeTemplate.html */
+}
+#main {
+  background-color: #1c1d26; /* Updated to match darkThemeTemplate.html */
+  padding: 3em 0;
+}
+.container {
+  padding: 0 2em;
+}
+h1 {
+  color: #ff4d4d; /* Red color from darkThemeTemplate.html */
+  margin: 0.5em 0 1em;
+  font-size: 3.5em; /* Slightly reduced for a more professional look */
+  font-weight: 600; /* Semi-bold for a cleaner appearance */
+  text-align: center;
+  text-transform: uppercase; /* Uppercase for added emphasis */
+  letter-spacing: 2px; /* Improved letter spacing */
+  position: relative;
+  padding-bottom: 0.5em;
+}
+h1::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 3px;
+  background-color: #ff4d4d; /* Red color from darkThemeTemplate.html */
+}
+#classList {
+  background-color: #222;
+  padding: 1em;
+  border-radius: 4px;
+  margin-bottom: 2em;
+}
+.class-item {
+  background-color: #1a1a1a;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+  color: #ffffff; /* Make the text white */
+}
+.class-item:hover {
+  background-color: #222;
+}
+.class-item h3 {
+  margin: 0 0 10px 0;
+  font-size: 1.2em;
+}
+.class-item p {
+  margin: 5px 0;
+  font-size: 0.9em;
+}
+#joinButton {
+  background: linear-gradient(45deg, #4a90e2, #357abd);
+  color: white;
+  border: none;
+  padding: 15px 35p;
+  border-radius: 30px;
+  font-size: 1.1em;
+  font-weight: 600;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 20px rgba(74, 144, 226, 0.2);
+  text-transform: uppercase;
+  display: block;
+  margin: 0 auto;  /* Center the button */
+  width: fit-content;  /* Make button width fit its content */
+}
+#joinButton:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 30px rgba(74, 144, 226, 0.3);
+  background: linear-gradient(45deg, #357abd, #4a90e2);
+}
+#classForm {
+  background-color: #333;
+  padding: 2em;
+  border-radius: 4px;
+  margin-top: 2em;
+  display: none;
+  transform-origin: top;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  transform: scaleY(0);
+}
+
+#classForm.show {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+/* Remove any .hidden class styles as we're using display: none and show class instead */
+.hidden {
+  display: none !important;
+}
+
+input[type="text"], input[type="number"] {
+  background-color: #444;
+  color: #ffffff;
+  border: 1px solid #555;
+}
+input[type="submit"] {
+  background-color: #4a90e2;
+  color: #ffffff;
+}
+input[type="submit"]:hover {
+  background-color: #3a7bc8;
+}
+
+/* Particle background container */
+#particles-js {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    opacity: 0.3;
+}
+
+/* Enhanced class item styling */
+.class-item {
+    background: linear-gradient(145deg, #1a1a1a, #222);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transform-origin: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.class-item:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.class-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        120deg,
+        transparent,
+        rgba(255, 255, 255, 0.05),
+        transparent
+    );
+    transition: 0.5s;
+}
+
+.class-item:hover::before {
+    left: 100%;
+}
+
+/* Progress bar styling */
+.progress-container {
+    margin-top: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    height: 8px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4a90e2, #63b3ed);
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+
+/* Notification system */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: -300px;
+    background: rgba(74, 144, 226, 0.9);
+    padding: 15px 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    color: white;
+    z-index: 1000;
+    transition: right 0.3s ease;
+}
+
+.notification.show {
+    right: 20px;
+}
+
+/* Animation for new class items */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
     }
-
-    .class-item:hover {
-      background-color: #e0e0e0;
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
+}
 
-    .class-item h3 {
-      margin: 0;
-      font-size: 18px;
-    }
+.class-item {
+    animation: slideIn 0.5s ease forwards;
+}
 
-    .class-item p {
-      margin: 5px 0 0;
-      font-size: 14px;
-    }
+/* Join button enhancement */
+#joinButton {
+    background: linear-gradient(45deg, #4a90e2, #63b3ed);
+    border: none;
+    padding: 12px 30px;
+    border-radius: 25px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+    transition: all 0.3s ease;
+}
 
+#joinButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);
+    background: linear-gradient(45deg, #63b3ed, #4a90e2);
+}
 
-    
+/* Form enhancements */
+input[type="text"], input[type="number"] {
+    background: rgba(68, 68, 68, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
 
-    body {
-      background-color: #1c1d26; /* Updated to match darkThemeTemplate.html */
-      color: #ffffff;
-  }
-  #page-wrapper {
-      background-color: #1c1d26; /* Updated to match darkThemeTemplate.html */
-  }
-  #main {
-      background-color: #1c1d26; /* Updated to match darkThemeTemplate.html */
-      padding: 3em 0;
-  }
-  .container {
-      padding: 0 2em;
-  }
-  h1 {
-      color: #ff4d4d; /* Red color from darkThemeTemplate.html */
-      margin: 0.5em 0 1em;
-      font-size: 3.5em; /* Slightly reduced for a more professional look */
-      font-weight: 600; /* Semi-bold for a cleaner appearance */
-      text-align: center;
-      text-transform: uppercase; /* Uppercase for added emphasis */
-      letter-spacing: 2px; /* Improved letter spacing */
-      position: relative;
-      padding-bottom: 0.5em;
-  }
-  h1::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100px;
-      height: 3px;
-      background-color: #ff4d4d; /* Red color from darkThemeTemplate.html */
-  }
-  #classList {
-      background-color: #222;
-      padding: 1em;
-      border-radius: 4px;
-      margin-bottom: 2em;
-  }
-  .class-item {
-      background-color: #1a1a1a;
-      padding: 15px;
-      margin-bottom: 10px;
-      border-radius: 4px;
-      transition: background-color 0.3s ease;
-      color: #ffffff; /* Make the text white */
-  }
-  .class-item:hover {
-      background-color: #222;
-  }
-  .class-item h3 {
-      margin: 0 0 10px 0;
-      font-size: 1.2em;
-  }
-  .class-item p {
-      margin: 5px 0;
-      font-size: 0.9em;
-  }
-  #joinButton {
-      background-color: #4a90e2;
-      color: #ffffff;
-      transition: background-color 0.3s ease;
-  }
-  #joinButton:hover {
-      background-color: #3a7bc8;
-  }
-  #classForm {
-      background-color: #333;
-      padding: 2em;
-      border-radius: 4px;
-      margin-top: 2em;
-      display: none;
-  }
-  input[type="text"], input[type="number"] {
-      background-color: #444;
-      color: #ffffff;
-      border: 1px solid #555;
-  }
-  input[type="submit"] {
-      background-color: #4a90e2;
-      color: #ffffff;
-  }
-  input[type="submit"]:hover {
-      background-color: #3a7bc8;
-  }
+input[type="text"]:focus, input[type="number"]:focus {
+    background: rgba(74, 144, 226, 0.1);
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-overlay.show {
+    display: flex;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+#classForm {
+    background: linear-gradient(145deg, #2a2a2a, #333);
+    padding: 2.5em;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    transform: scale(0.95);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-overlay.show #classForm {
+    transform: scale(1);
+    opacity: 1;
+}
+
+/* Close button for modal */
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(90deg);
+}
+
+/* Class options styling */
+#classOptions {
+    margin-top: 15px;
+    max-height: 200px;
+    overflow-y: auto;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 10px;
+}
+
+#classOptions::-webkit-scrollbar {
+    width: 8px;
+}
+
+#classOptions::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+#classOptions::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.class-option {
+    background: rgba(74, 144, 226, 0.1);
+    margin: 8px 0;
+    padding: 12px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.class-option:hover {
+    background: rgba(74, 144, 226, 0.2);
+    transform: translateX(5px);
+}
+
+.class-option-name {
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+}
+
+.class-option-details {
+    font-size: 0.9em;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Confirmation dialog */
+.confirm-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    background: linear-gradient(145deg, #2a2a2a, #333);
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 1100;
+    width: 90%;
+    max-width: 400px;
+    opacity: 0;
+    display: none;
+    text-align: center;
+}
+
+.confirm-dialog.show {
+    display: block;
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.confirm-dialog h3 {
+    margin-bottom: 20px;
+    color: #fff;
+    font-size: 1.5em;
+}
+
+.confirm-message {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.1em;
+    line-height: 1.4;
+    margin-bottom: 25px;
+}
+
+.confirm-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+    min-height: 45px; /* Ensure consistent height even when buttons are hidden */
+}
+
+.confirm-btn {
+    padding: 12px 30px;
+    border-radius: 25px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 1;
+    transform: scale(1);
+}
+
+.confirm-btn[style*="display: none"] {
+    opacity: 0;
+    transform: scale(0.8);
+    position: absolute;
+}
+
+.confirm-btn.join {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    color: white;
+    font-size: 1.1em;
+}
+
+.confirm-btn.create {
+    background: linear-gradient(45deg, #4a90e2, #357abd);
+    color: white;
+    font-size: 1.1em;
+}
+
+.confirm-btn.cancel {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 1em;
+}
+
+.confirm-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.confirm-btn.join:hover {
+    background: linear-gradient(45deg, #45a049, #4CAF50);
+}
+
+.confirm-btn.create:hover {
+    background: linear-gradient(45deg, #357abd, #4a90e2);
+}
+
+.confirm-btn.cancel:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+}

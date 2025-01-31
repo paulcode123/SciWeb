@@ -68,11 +68,13 @@ function add_user_text(text, chatLog){
 async function await_enter(inputElement=document.getElementById('user-input'), chatLog=document.getElementById('chat-log')) {
     return new Promise(resolve => {
         const handleKeyDown = (event) => {
-            if (event.key === 'Enter' && event.target === inputElement) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault(); // Prevent default Enter behavior
                 var input = inputElement.value;
                 if (input.trim()) {  // Only process non-empty messages
                     add_user_text(input, chatLog);
                     inputElement.value = '';
+                    chatLog.scrollTop = chatLog.scrollHeight; // Auto-scroll to bottom
                     resolve(input);
                 }
             }

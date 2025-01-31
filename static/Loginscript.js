@@ -4,8 +4,9 @@ var toggleMode = "Login";
 // document.getElementById("loadingWheel").style.display = "none";
 const form = document.getElementById('login-form');
 console.log("loginscript ip:"+ip);
+
 function demo(){
-  // document.getElementById("loadingWheel").style.display = "block";
+  startLoading();
   console.log(ip)
   post_login({data: {
     "first_name": "Demo", 
@@ -16,8 +17,9 @@ function demo(){
     "IP": ip
   }, mode: "Login"});
 }
+
 form.addEventListener('submit', function(event) {
-  // document.getElementById("loadingWheel").style.display = "block";
+  startLoading();
   // Prevent the form from submitting normally
   event.preventDefault();
 
@@ -40,100 +42,74 @@ form.addEventListener('submit', function(event) {
     "email": email,
     "IP": ip
   }, mode: toggleMode});
-  
-
-  
-  
-
 });
-// Using setTimeout
-
-
 
 async function post_login(data){
-  const result = await fetchRequest('/post-login', data);
+  try {
+    const result = await fetchRequest('/post-login', data);
 
-  if(result['data']=="success"){
-    // Check for redirect parameter
-    const urlParams = new URLSearchParams(window.location.search);
-    const redirectUrl = urlParams.get('redirect');
-    
-    if (redirectUrl) {
-      window.location.href = decodeURIComponent(redirectUrl);
-    } else if (toggleMode === "Signup") {
-      window.location.href = "/?signup=true";
+    if(result['data']=="success"){
+      // Check for redirect parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectUrl = urlParams.get('redirect');
+      
+      if (redirectUrl) {
+        window.location.href = decodeURIComponent(redirectUrl);
+      } else if (toggleMode === "Signup") {
+        window.location.href = "/?signup=true";
+      } else {
+        window.location.href = "/";
+      }
     } else {
-      window.location.href = "/";
+      endLoading();
+      alert("Invalid login credentials");
+      document.getElementById("login-form").reset();
     }
-  } else {
-    alert("Invalid login credentials");
-    // document.getElementById("loadingWheel").style.display = "none";
-    // clear form
-    document.getElementById("login-form").reset();
+  } catch (error) {
+    endLoading();
+    alert("An error occurred. Please try again.");
+    console.error('Login error:', error);
   }
 }
 
+// Function to toggle between login and signup modes
 function toggleSlider() {
-  var slider = document.getElementById("toggleSlider");
-  var text = document.getElementById("sliderText");
-  var passwordfield = document.getElementById("password");
-  var gradefield = document.getElementById("grade");
-  var lastnamefield = document.getElementById("lname");
-  var lnamelabel = document.getElementById("lnamelabel");
-  var gradelabel = document.getElementById("gradelabel");
-  var submitbutton = document.getElementById("submit");
-  var emailfield = document.getElementById("email");
-  var emaillabel = document.getElementById("emaillabel");
+    const toggle = document.getElementById('toggleSlider');
+    const submitBtn = document.getElementById('submit');
+    const signupFields = document.querySelectorAll('.signup-field');
+    const currentMode = toggle.getAttribute('data-mode') || 'login';
+    
+    if (currentMode === 'login') {
+        toggle.setAttribute('data-mode', 'signup');
+        submitBtn.textContent = 'Sign Up';
+        toggleMode = "Signup";
+        signupFields.forEach(field => {
+            field.style.display = 'block';
+            const input = field.querySelector('input');
+            if (input) input.required = true;
+        });
+    } else {
+        toggle.setAttribute('data-mode', 'login');
+        submitBtn.textContent = 'Log In';
+        toggleMode = "Login";
+        signupFields.forEach(field => {
+            field.style.display = 'none';
+            const input = field.querySelector('input');
+            if (input) input.required = false;
+        });
+    }
 
-  if (slider.classList.contains("on")) {
-    slider.classList.remove("on");
-    text.textContent = "Log-In";
-    text.classList.remove("right");
-    text.classList.add("left");
-    toggleMode = "Login";
-    submitbutton.value = "Log In";
-    passwordfield.autocomplete = "current-password";
-    // hide grade and last name fields
-    gradefield.style.display = "none";
-    lastnamefield.style.display = "none";
-    lnamelabel.style.display = "none";
-    gradelabel.style.display = "none";
-    emailfield.style.display = "none";
-    emaillabel.style.display = "none";
-    // make sure these fields are not required
-    gradefield.required = false;
-    lastnamefield.required = false;
-    emailfield.required = false;
-  } else {
-    slider.classList.add("on");
-    text.textContent = "Sign-Up";
-    text.classList.remove("left");
-    text.classList.add("right");
-    toggleMode = "Signup";
-    submitbutton.value = "Sign Up";
-    passwordfield.autocomplete = "new-password";
-    // show grade and last name fields
-    gradefield.style.display = "block";
-    lastnamefield.style.display = "block";
-    lnamelabel.style.display = "block";
-    gradelabel.style.display = "block";
-    emailfield.style.display = "block";
-    emaillabel.style.display = "block";
-    // make sure these fields are required
-    gradefield.required = true;
-    lastnamefield.required = true;
-    emailfield.required = true;
-  }
+    // Update active state of toggle options
+    const options = toggle.querySelectorAll('.toggle-option');
+    options.forEach(option => {
+        option.classList.toggle('active');
+    });
 }
 
-function checkLoginStatus() {
-  if (logged_in) {
+// Check if already logged in
+if (logged_in) {
     document.getElementById('logged-in-popup').style.display = 'block';
-
-  }
 }
-
-checkLoginStatus();
 
 
 

@@ -10,7 +10,7 @@ import json
 # hashlib is a library for hashing passwords
 import hashlib
 # datetime is a library for working with dates and times
-import datetime
+from datetime import datetime, timedelta
 # googleapiclient is a library for working with Google APIs(Getting data from Google Sheets in this case)
 from googleapiclient.discovery import build
 import traceback
@@ -33,7 +33,8 @@ from langchain_community.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain_openai import ChatOpenAI
 
-
+import speech_recognition as sr
+import io
 
 
 # Get functions from other files
@@ -147,13 +148,10 @@ def pitch():
 def study():
   return render_template('StudyBot.html')
 
-@app.route('/StudyLevels')
+@app.route('/Levels')
 def study_levels():
   return render_template('Levels.html')
 
-@app.route('/StudyLevels2')
-def study_levels2():
-  return render_template('Levels2.html')
 
 @app.route('/Diagnostic')
 def diagnostic():
@@ -202,10 +200,6 @@ def assignments():
 @app.route('/CourseSelection')
 def course_selection():
   return render_template('CourseSelection.html')
-
-@app.route('/Feedback')
-def feedback():
-  return render_template('Feedback.html')
 
 @app.route('/Messages')
 def messages():
@@ -341,26 +335,27 @@ def public_profile(userid):
   users = get_data("Users")
   profiles = get_data("Profiles")
   
-  profile = next((row for row in profiles if str(row['OSIS']) == str(userid)), None)
-  # if profile is not found, return an error without a separate page
-  if profile == None:
-    return json.dumps({"error": "Profile not found"})
-
-  
-  #Get just first name, last name, grade, and osis of the user, still as a dictionary
+  # Get user data first
   user_data = next(
-    ([row['first_name'], row['last_name'], row['grade'], row['osis']] for row in users if row['osis'] == userid), None)
-  #If the user wishes to show their classes
+    ([row['first_name'], row['last_name'], row['grade'], row['osis']] for row in users if str(row['osis']) == str(userid)), None)
+  
+  # If user doesn't exist at all, return 404
+  if user_data is None:
+    return render_template('404.html'), 404
+    
+  profile = next((row for row in profiles if str(row['OSIS']) == str(userid)), None)
+  
+  # If profile exists, get class data if showClasses is true
   class_data = ""
-  if 'showClasses' in profile and profile['showClasses'] == "TRUE":
+  if profile and 'showClasses' in profile and profile['showClasses'] == "TRUE":
     classes = get_user_data("Classes")
     class_data = [row for row in classes if str(userid) in row['OSIS']]
-    #Turn it into a string with "Classes: x, y, z"
     class_data = "Classes: " + ", ".join([row['name'] for row in class_data])
+    
   return render_template('pubProf.html',
-                         profile=profile,
-                         user_data=user_data,
-                         classes=class_data)
+                       profile=profile,
+                       user_data=user_data,
+                       classes=class_data)
 
 @app.route('/reviews/<courseid>')
 def course_reviews(courseid):
@@ -422,56 +417,60 @@ def jupiter_auth():
     print("jupiter_creds", session['jupiter_creds'])
     return jsonify({'status': 'ok'})
 
-@app.route('/jupiter')
-def jupiter_stream():
-    # Get credentials from session
+@app.route('/jupiter_process_classes', methods=['POST'])
+def jupiter_process_classes():
     creds = session.get('jupiter_creds', {})
     if not creds:
         return jsonify({'error': 'Not authenticated'}), 401
+        
+    try:
+        classes = run_puppeteer_script(creds['osis'], creds['password'])
+        
+        if classes == "WrongPass":
+            return jsonify({'error': 'Incorrect credentials'})
 
-    @stream_with_context
-    def generate():
-        try:
-            yield f"data: {json.dumps({'message': 'Connecting to Jupiter...'})}\n\n"
+        # Get the classes and tokens data
+        class_data = get_data("Classes")
+        tokens_data = get_data("Tokens")
+        
+        if str(creds['addclasses']).lower() == "true":
+            classes_added = jupapi_output_to_classes(classes, class_data)
+            notify_new_member(classes_added, tokens_data)
             
-            classes = run_puppeteer_script(creds['osis'], creds['password'])
-            
-            if classes == "WrongPass":
-                yield f"data: {json.dumps({'error': 'Incorrect credentials'})}\n\n"
-                return
+        return jsonify({'status': 'success', 'classes': classes})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)})
 
-            # Get the classes and tokens data
-            yield f"data: {json.dumps({'message': 'Getting classes and tokens data...'})}\n\n"
-            class_data = get_data("Classes")
-            tokens_data = get_data("Tokens")
+@app.route('/jupiter_process_grades', methods=['POST'])
+def jupiter_process_grades():
+    creds = session.get('jupiter_creds', {})
+    if not creds:
+        return jsonify({'error': 'Not authenticated'}), 401
+        
+    try:
+        classes = request.json.get('classes')
+        if not classes:
+            return jsonify({'error': 'No classes data provided'})
+            
+        # Get the classes and tokens data
+        class_data = get_data("Classes")
+        tokens_data = get_data("Tokens")
+        
+        grades = jupapi_output_to_grades(classes)
+        check_new_grades(grades, class_data, tokens_data)
+        
+        if confirm_category_match(grades, class_data):
+            jupapi_output_to_classes(classes, class_data)
 
-            if str(creds['addclasses']).lower() == "true":
-                yield f"data: {json.dumps({'message': 'Adding you to your classes...'})}\n\n"
-                classes_added = jupapi_output_to_classes(classes, class_data)
-                notify_new_member(classes_added, tokens_data)
+        if str(creds['updateLeagues']).lower() == "true":
+            update_leagues(grades, classes)
             
-            yield f"data: {json.dumps({'message': 'Processing grades...'})}\n\n"
-              
-            grades = jupapi_output_to_grades(classes)
-            print("c1")
-            
-            yield f"data: {json.dumps({'message': 'Checking for new grades to notify classmates about...'})}\n\n"
-            check_new_grades(grades, class_data, tokens_data)
-            
-            if confirm_category_match(grades, class_data):
-                jupapi_output_to_classes(classes, class_data)
-
-            if str(creds['updateLeagues']).lower() == "true":
-                yield f"data: {json.dumps({'message': 'Updating leagues...'})}\n\n"
-                update_leagues(grades, classes)
-
-            # Send completion message with grades data
-            yield f"data: {json.dumps({'status': 'complete', 'grades': grades})}\n\n"
-            
-        except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
-    print("session", session['user_data'])
-    return Response(generate(), mimetype='text/event-stream')
+        return jsonify({'status': 'success', 'grades': grades})
+        
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'error': str(e)})
 
 @app.route('/init_oauth', methods=['POST', 'GET'])
 def init_oauth_handler():
@@ -689,7 +688,7 @@ def upload_assignments():
   # call get_insights with the image file, data['image']
   base64_img = data['image']
   # set the date, in the format "Monday, 1/2/2024"
-  date = datetime.datetime.now().strftime('%A, %m/%d/%Y')
+  date = datetime.now().strftime('%A, %m/%d/%Y')
 
   prompts = [
         {"role": "system", "content": "You're role is to extract the name, due date(yyyy-mm-dd), and class of assignments from a Google Classroom assignment screenshot. You will be given the image, a list of all of the class names and ids that the user is i, and today's date. Return the class name that most closely matches the class in the image."},
@@ -741,7 +740,7 @@ def GA_setup():
     # convert dates of grades(m/d/yyyy) to ordinal dates
     ordinal_dated_grades = []
     for grade in grades:
-      ordinal_dated_grades.append({"date": datetime.datetime.strptime(grade['date'], "%m/%d/%Y").toordinal(), "value": grade['value'], "class": grade['class'], "category": grade['category'], "score": grade['score'], "name": grade['name']})
+      ordinal_dated_grades.append({"date": datetime.strptime(grade['date'], "%m/%d/%Y").toordinal(), "value": grade['value'], "class": grade['class'], "category": grade['category'], "score": grade['score'], "name": grade['name']})
 
     # run get_grade_impact for each grade, and add cat_impact, class_impact, GPA_impact to each grade dictionary
     for grade in ordinal_dated_grades:
@@ -754,12 +753,12 @@ def GA_setup():
     cat_value_sums = {}
     categories = []
     # calculate min and max dates across all grades in form m/d/yyyy
-    times = [datetime.datetime.strptime(grade['date'], "%m/%d/%Y").toordinal() for grade in grades]
+    times = [datetime.strptime(grade['date'], "%m/%d/%Y").toordinal() for grade in grades]
     # Convert back to dates for min and max
-    min_date = datetime.datetime.fromordinal(min(times))
-    max_date = datetime.datetime.fromordinal(max(times))
+    min_date = datetime.fromordinal(min(times))
+    max_date = datetime.fromordinal(max(times))
     # calculate 10 times(in ordinal form) between min and max date
-    times = [(min_date + datetime.timedelta(days=i*(max_date-min_date).days/10)).toordinal() for i in range(11)]
+    times = [(min_date + timedelta(days=i*(max_date-min_date).days/10)).toordinal() for i in range(11)]
     # For each category in each class, filter the grades for it
     for c in weights:
       grade_spreads[c] = {}
@@ -858,7 +857,7 @@ def process_notebook_file():
         post_data("Notebooks", {
             "classID": class_id, 
             "unit": unit, 
-            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
             "image": blob_id, 
             "topic": insights_dict["topic"], 
             "subtopics": insights_dict["notes"], 
@@ -978,21 +977,55 @@ def generate_bloom_questions_route():
         return jsonify({"error": "Failed to generate questions"}), 500
 
 @app.route('/evaluate-answer', methods=['POST'])
-def evaluate_answer_route():
-    data = request.json
-    print("data", data)
+def evaluate_answer():
     try:
-        evaluation = evaluate_bloom_answer(
-            vars['llm'],
-            data['question'],
-            data['answer'],
-            data['level'],
-            data['guide']
-        )
-        return jsonify(evaluation.model_dump())
+        data = request.json
+        
+        # Get problem details
+        problems = get_user_data("Problems")
+        problem = next((p for p in problems if str(p['id']) == str(data['problem_id'])), None)
+        
+        if not problem:
+            return jsonify({'error': 'Problem not found'}), 404
+            
+        # Get concept map for context
+        cmaps = get_user_data("CMaps")
+        cmap = next((m for m in cmaps if m['unit'] == data['unit'] and str(m['classID']) == str(data['class_id'])), None)
+        
+        if not cmap:
+            return jsonify({'error': 'Concept map not found'}), 404
+            
+        # Prepare evaluation context
+        evaluation_context = {
+            'problem': problem,
+            'student_answer': data['answer'],
+            'student_explanation': data['explanation'],
+            'concept_map': cmap,
+            'unit': data['unit']
+        }
+        
+        # Use LLM to evaluate response
+        evaluation = evaluate_student_response(vars['llm'], evaluation_context)
+        
+        # Calculate mastery level
+        mastery = evaluation['score'] >= 0.8
+        
+        return jsonify({
+            'success': True,
+            'score': evaluation['score'],
+            'correct_concepts': evaluation['correct_concepts'],
+            'misconceptions': evaluation['misconceptions'],
+            'suggestions': evaluation['suggestions'],
+            'mastery': mastery,
+            'modifications': {
+                'mastery_level': evaluation['score'],
+                'score': evaluation['score']
+            }
+        })
+        
     except Exception as e:
         print(f"Error evaluating answer: {str(e)}")
-        return jsonify({"error": "Failed to evaluate answer"}), 500
+        return jsonify({'error': f'Failed to evaluate answer: {str(e)}'}), 500
 
 
 
@@ -1115,13 +1148,16 @@ def derive_conversation():
             if existing_umap:
                 # Update existing UMap with new node progress
                 existing_umap['node_progress'][str(concept['id'])] = node_data
-                update_data(existing_umap['OSIS'], 'OSIS', existing_umap, "UMaps")
+                update_data(existing_umap['id'], 'id', existing_umap, "UMaps")
             else:
+                # generate random 6 digit id
+                id = random.randint(0, 1000000)
                 # Create new UMap entry
                 umap_data = {
                     "OSIS": session['user_data']['osis'],
                     "classID": data['classID'],
                     "unit": data['unit'],
+                    "id": int(id),
                     "node_progress": {
                         str(concept['id']): node_data
                     }
@@ -1148,7 +1184,7 @@ def get_impact():
   
   weights = get_weights(classes, session['user_data']['osis'])
   #get current date
-  current_date = datetime.datetime.now().date()
+  current_date = datetime.now().date()
   #get grade at current date
   current_grade = calculate_grade(category_grades, weights, current_date)
   print("current_grade", current_grade)
@@ -1328,6 +1364,93 @@ def get_name(ip=None, update=False):
   return "Login", 404
 
 
+@app.route('/get_concept_explanation', methods=['POST'])
+def get_concept_explanation():
+    data = request.json
+    try:
+        # Get concept from the passed concept map data
+        concept = next((n for n in data['cmap']['nodes'] 
+                       if str(n['id']) == str(data['concept_id'])), None)
+        
+        if not concept:
+            return jsonify({"error": "Concept not found"}), 404
+            
+        # Generate explanation
+        explanation = generate_concept_explanation(
+            vars['llm'],
+            concept['label'],
+            concept['description']
+        )
+        
+        return jsonify(explanation)
+        
+    except Exception as e:
+        print(f"Error in get_concept_explanation: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+
+# Audio processing routes
+@app.route('/process_audio', methods=['POST'])
+def process_audio():
+    print("in process_audio")
+    try:
+        if 'audio' not in request.files:
+            return jsonify({'error': 'No audio file provided'}), 400
+            
+        audio_file = request.files['audio']
+        problem_id = request.form.get('problem_id')
+        answer = request.form.get('answer')
+        
+        print(f"Received audio file: {audio_file.filename}, Content type: {audio_file.content_type}")
+        
+        # Convert audio to format suitable for speech recognition
+        audio_data = audio_file.read()
+        audio_io = io.BytesIO(audio_data)
+        
+        # Initialize speech recognizer with specific settings
+        recognizer = sr.Recognizer()
+        recognizer.energy_threshold = 300
+        recognizer.dynamic_energy_threshold = True
+        recognizer.pause_threshold = 0.8
+        
+        try:
+            # Convert audio to AudioFile format
+            with sr.AudioFile(audio_io) as source:
+                print("Reading audio file...")
+                audio = recognizer.record(source)
+                print("Audio file read successfully")
+                
+            try:
+                # Perform speech recognition
+                print("Starting speech recognition...")
+                transcription = recognizer.recognize_google(audio)
+                print("Speech recognition completed:", transcription)
+                
+                return jsonify({
+                    'transcription': transcription,
+                    'problem_id': problem_id,
+                    'answer': answer
+                })
+                
+            except sr.UnknownValueError:
+                print("Speech recognition could not understand audio")
+                return jsonify({'error': 'Could not understand audio. Please speak clearly and try again.'}), 400
+            except sr.RequestError as e:
+                print("Speech recognition service error:", str(e))
+                return jsonify({'error': f'Speech service error: {str(e)}'}), 500
+                
+        except Exception as e:
+            print("Error processing audio file:", str(e))
+            return jsonify({'error': f'Error processing audio file: {str(e)}'}), 500
+            
+    except Exception as e:
+        print(f"Error in process_audio: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+
+
+
 def utility_function():
   pass
 
@@ -1341,6 +1464,8 @@ def utility_function():
 vars = init()
 #uncomment to run locally, comment to deploy. Before deploying, change db to firebase, add new packages to requirements.txt
 
-# if __name__ == '__main__':
-#   app.run(host='localhost', port=8080)
+
+if __name__ == '__main__':
+  app.run(host='localhost', port=8080)
+
 

@@ -13,6 +13,8 @@ import os
 import json
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain.schema import HumanMessage, SystemMessage, AIMessage
+from pydantic import BaseModel, Field
+from typing import List, Optional, Dict, Union, Any
 
 from models import *
 from output_processor import clean_llm_response, parse_json_response, create_llm_chain
@@ -459,4 +461,63 @@ def derive_concept(llm, concept, user_message, chat_history, prerequisites_compl
         
     except Exception as e:
         print(f"Error in derive_concept: {str(e)}")
+        raise
+
+def evaluate_student_response(llm, context: Dict[str, Any]) -> Dict[str, Any]:
+    """Evaluate student response using LLM with Langchain"""
+    try:
+        # Format context for prompt
+        formatted_context = {
+            "problem": context['problem']['problem'],
+            "answer": context['student_answer'],
+            "explanation": context['student_explanation'],
+            "unit": context['unit'],
+            "concept_map": str(context['concept_map'])
+        }
+        
+        # Get response from LLM using the template
+        chain = LEVELS_EVAL_PROMPT | llm
+        response = chain.invoke(formatted_context)
+        
+        # Parse response into structured format using Pydantic
+        evaluation = EvaluationResponse.model_validate(response)
+        
+        # Convert to dictionary format
+        return {
+            'score': evaluation.score,
+            'correct_concepts': evaluation.correct_concepts,
+            'misconceptions': evaluation.misconceptions,
+            'suggestions': evaluation.suggestions
+        }
+        
+    except Exception as e:
+        print(f"Error in evaluate_student_response: {str(e)}")
+        raise
+
+def generate_concept_explanation(llm, concept_label: str, concept_description: str) -> dict:
+    """Generate a complete explanation for a derived concept
+    
+    Args:
+        llm: The language model to use
+        concept_label: The name/label of the concept
+        concept_description: Description of the concept
+        
+    Returns:
+        Dictionary containing the explanation
+    """
+    try:
+        # Create chain with the concept explanation prompt
+        chain = create_llm_chain(llm, CONCEPT_EXPLANATION_PROMPT)
+        
+        # Generate the explanation
+        response = chain.invoke({
+            "concept_label": concept_label,
+            "concept_description": concept_description
+        })
+        
+        # Parse and return the response
+        return parse_json_response(response)
+        
+    except Exception as e:
+        print(f"Error generating concept explanation: {str(e)}")
         raise

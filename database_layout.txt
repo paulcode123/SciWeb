@@ -279,6 +279,7 @@ Sheet name: Modules
 Sheet name: CMaps (Class-Specific Concept Maps and Starter Prompts)
     classID (INT, 4-digit): Unique identifier for the class
     unit (VARCHAR): Name of the unit
+    id(INT, 6-digit): Unique identifier for the concept map
     nodes (JSON): Array of concept map nodes containing:
         {
             id: (INT, 6-digit),
@@ -286,7 +287,9 @@ Sheet name: CMaps (Class-Specific Concept Maps and Starter Prompts)
             description: str,
             prerequisites: [str],  // Array of node IDs that must be derived first
             starter_prompt: str  // Prompt to start deriving this concept
+            youtube: [str, str]  // Array of [youtube link, time range(06:00-07:00)]
         }
+    structure(JSON): Object containing the structure of the concept map
     created_on (DATE): Date when the concept map was added
     updated_on (DATE): Last modification date
 
@@ -294,6 +297,7 @@ Sheet name: UMaps (User-Specific Progress and Notes)
     OSIS (INT, 7-digit): Unique identifier for the user
     classID (INT, 4-digit): Unique identifier for the class
     unit (VARCHAR): Name of the unit
+    id(INT, 6-digit): Unique identifier for the user's progress on the concept map
     node_progress (JSON): Object mapping node IDs to progress:
         {
             "node_id": {
@@ -313,7 +317,7 @@ Sheet name: UMaps (User-Specific Progress and Notes)
 
 Sheet name: Problems:
 
-    id(6 digit number)
+    id(str of 6 digit number)
     classID(id of the class)
     unit(name of the unit)
     problem(problem statement)

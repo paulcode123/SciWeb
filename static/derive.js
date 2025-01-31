@@ -15,7 +15,9 @@ const UI = {
     sendButton: null,
     userInput: null,
     currentNode: null,
-    currentMap: null
+    currentMap: null,
+    youtubePlayer: null,
+    reinforcementPanel: null
 };
 
 // Network configuration (same as maps.js)
@@ -227,20 +229,23 @@ async function loadConceptMap(mapData) {
     try {
         // Fetch UMaps data for this unit
         const response = await fetchRequest('/data', { 
-            data: 'UMaps',
-            unit: mapData.unit,
-            classID: mapData.classID
+            data: 'Classes, UMaps'
         });
         log('Received UMaps data:', response);
 
-        const umap = response.UMaps?.[0]?.node_progress || {};
+        // Find the UMap entry for the current unit and classID
+        const currentUMap = response.UMaps?.find(umap => 
+            umap.unit === mapData.unit && 
+            umap.classID === mapData.classID
+        );
+        const umap = currentUMap?.node_progress || {};
 
         // Add nodes with styling
         const nodes = mapData.nodes.map(node => {
             const nodeProgress = umap[node.id] || {};
             const status = nodeProgress.date_derived ? 'completed' : 'pending';
             
-            return {
+            const nodeData = {
                 id: node.id,
                 label: node.label,
                 title: node.description,
@@ -259,6 +264,14 @@ async function loadConceptMap(mapData) {
                 margin: 10,
                 shape: 'box'
             };
+
+            // Apply saved position if available
+            if (mapData.structure?.nodes?.[node.id]) {
+                nodeData.x = mapData.structure.nodes[node.id].x;
+                nodeData.y = mapData.structure.nodes[node.id].y;
+            }
+
+            return nodeData;
         });
         log('Created nodes:', nodes);
 
@@ -288,17 +301,19 @@ async function loadConceptMap(mapData) {
         UI.nodes.add(nodes);
         UI.edges.add(edges);
 
-        // Enable physics briefly for layout
-        UI.network.setOptions({
-            physics: {
-                enabled: true,
-                stabilization: {
+        // Enable physics briefly for layout only if no structure exists
+        if (!mapData.structure?.nodes) {
+            UI.network.setOptions({
+                physics: {
                     enabled: true,
-                    iterations: 1000,
-                    updateInterval: 100
+                    stabilization: {
+                        enabled: true,
+                        iterations: 1000,
+                        updateInterval: 100
+                    }
                 }
-            }
-        });
+            });
+        }
 
         // Find first incomplete node with completed prerequisites
         const nextNode = findNextConcept();
@@ -464,6 +479,9 @@ function initializeUIElements() {
         userInput: !!UI.userInput,
         inputValue: UI.userInput?.value
     });
+
+    // Initialize YouTube player
+    initYouTubePlayer();
 }
 
 /**
@@ -654,6 +672,18 @@ function celebrateDerivation(nodeId) {
     
     // Remove celebration message after animation
     setTimeout(() => celebration.remove(), 2000);
+
+    // Add reinforce button after celebration
+    setTimeout(() => {
+        const message = document.createElement('div');
+        message.className = 'message system';
+        const button = document.createElement('button');
+        button.className = 'reinforce-btn';
+        button.innerHTML = '<span class="material-icons">school</span> Reinforce Concept';
+        button.onclick = () => showReinforcementPanel(nodeId);
+        message.appendChild(button);
+        document.getElementById('chat-messages').appendChild(message);
+    }, 2000);
 }
 
 function createConfetti() {
@@ -726,7 +756,7 @@ async function sendMessage() {
         log('Completed prerequisites:', completedNodes);
 
         // Get existing UMaps data
-        const umapsResponse = await fetchRequest('/data', {data: 'UMaps'});
+        const umapsResponse = await fetchRequest('/data', {data: 'Classes, UMaps'});
         // filter for the current unit and classID
         const existingUmap = umapsResponse.UMaps?.filter(umap => umap.unit === UI.currentMap.unit && umap.classID === UI.currentMap.classID)?.[0] || null;
 
@@ -765,18 +795,27 @@ async function sendMessage() {
                 updateNodeStatus(UI.currentNode.id, 'completed');
                 celebrateDerivation(UI.currentNode.id);
                 
-                // Find next available concept
-                const nextConcept = findNextConcept();
-                if (nextConcept) {
-                    log('Moving to next concept:', nextConcept);
-                    setTimeout(() => {
-                        addMessage('system', "Excellent! You've derived this concept. Let's move on to the next one.");
-                        startDerivation(nextConcept);
-                    }, 3000); // Wait for celebration to finish
-                } else {
-                    log('All concepts completed');
-                    addMessage('system', "Congratulations! You've derived all the concepts in this unit!");
-                }
+                // Add a "Continue to Next Concept" button instead of automatically moving on
+                setTimeout(() => {
+                    const continueMessage = document.createElement('div');
+                    continueMessage.className = 'message system';
+                    const continueButton = document.createElement('button');
+                    continueButton.className = 'continue-btn';
+                    continueButton.innerHTML = '<span class="material-icons">arrow_forward</span> Continue to Next Concept';
+                    continueButton.onclick = () => {
+                        const nextConcept = findNextConcept();
+                        if (nextConcept) {
+                            log('Moving to next concept:', nextConcept);
+                            addMessage('system', "Let's move on to the next concept.");
+                            startDerivation(nextConcept);
+                        } else {
+                            log('All concepts completed');
+                            addMessage('system', "Congratulations! You've derived all the concepts in this unit!");
+                        }
+                    };
+                    continueMessage.appendChild(continueButton);
+                    document.getElementById('chat-messages').appendChild(continueMessage);
+                }, 3000); // Add continue button after celebration
             }
         } else {
             log('Error: Invalid response message format:', response.message);
@@ -894,6 +933,317 @@ function getBorderColor(status) {
             return '#666';
     }
 }
+
+/**
+ * Initialize YouTube player
+ * Creates a YouTube player instance for the reinforcement panel
+ */
+function initYouTubePlayer() {
+    log('Initializing YouTube player');
+    
+    // If YouTube API isn't ready yet, wait for it
+    if (!window.youtubeAPIReady) {
+        log('YouTube API not ready yet, will initialize when ready');
+        return;
+    }
+    
+    try {
+        // Check if player container exists
+        const playerContainer = document.getElementById('youtube-player');
+        if (!playerContainer) {
+            log('Error: youtube-player container not found');
+            return;
+        }
+
+        // If player already exists, destroy it first
+        if (UI.youtubePlayer) {
+            log('Destroying existing YouTube player');
+            UI.youtubePlayer.destroy();
+            UI.youtubePlayer = null;
+        }
+        
+        log('Creating new YouTube player');
+        UI.youtubePlayer = new YT.Player('youtube-player', {
+            height: '360',
+            width: '640',
+            videoId: '',
+            playerVars: {
+                autoplay: 0,
+                controls: 1,
+                modestbranding: 1,
+                rel: 0,
+                fs: 1,
+                playsinline: 1
+            },
+            events: {
+                onReady: (event) => {
+                    log('YouTube player ready');
+                },
+                onError: (e) => {
+                    log('YouTube player error:', e.data);
+                    const errorMessages = {
+                        2: 'Invalid video ID',
+                        5: 'HTML5 player error',
+                        100: 'Video not found',
+                        101: 'Video cannot be played in embedded players',
+                        150: 'Video cannot be played in embedded players'
+                    };
+                    const errorMessage = errorMessages[e.data] || 'An error occurred playing the video';
+                    addMessage('system', `Sorry, there was an error playing the video: ${errorMessage}`);
+                },
+                onStateChange: (event) => {
+                    log('YouTube player state changed:', event.data);
+                }
+            }
+        });
+        
+    } catch (error) {
+        log('Error initializing YouTube player:', error);
+        addMessage('system', 'Sorry, there was an error initializing the video player.');
+    }
+}
+
+// Make initYouTubePlayer available globally for the YouTube API callback
+window.initYouTubePlayer = initYouTubePlayer;
+
+/**
+ * Format explanation text with proper styling
+ * Handles LaTeX equations, newlines, and other formatting
+ */
+function formatExplanation(text) {
+    if (!text) return '';
+    
+    // First replace newlines
+    text = text.replace(/\\n/g, '<br>');
+    text = text.replace(/\n/g, '<br>');
+    
+    // Replace display-style LaTeX equations first (they can contain inline delimiters)
+    text = text.replace(/\\\[(.*?)\\\]/g, (match, equation) => {
+        try {
+            return katex.renderToString(equation, {
+                throwOnError: false,
+                displayMode: true,
+                strict: false
+            });
+        } catch (e) {
+            log('LaTeX display rendering error:', e);
+            return match;
+        }
+    });
+
+    // Then replace inline LaTeX equations
+    text = text.replace(/\\\((.*?)\\\)/g, (match, equation) => {
+        try {
+            return katex.renderToString(equation, {
+                throwOnError: false,
+                displayMode: false,
+                strict: false
+            });
+        } catch (e) {
+            log('LaTeX inline rendering error:', e);
+            return match;
+        }
+    });
+
+    return text;
+}
+
+/**
+ * Show reinforcement panel for a concept
+ * Displays video and explanation for the derived concept
+ */
+async function showReinforcementPanel(conceptId) {
+    log('Showing reinforcement panel for concept:', conceptId);
+    const node = UI.nodes.get(conceptId);
+    if (!node) return;
+
+    try {
+        // Get the concept's YouTube data directly from the current map data
+        const conceptData = UI.currentMap.nodes.find(n => n.id === conceptId);
+        if (!conceptData || !conceptData.youtube) {
+            throw new Error('Missing YouTube data for concept');
+        }
+
+        // Show panel
+        UI.reinforcementPanel = document.getElementById('reinforcement-panel');
+        UI.reinforcementPanel.style.display = 'flex';
+
+        // Load YouTube video
+        if (UI.youtubePlayer) {
+            const { videoId, startTime, endTime } = parseYouTubeData(conceptData.youtube);
+            log('Loading video with params:', { videoId, startTime, endTime });
+            UI.youtubePlayer.loadVideoById({
+                videoId: videoId,
+                startSeconds: startTime,
+                endSeconds: endTime
+            });
+        } else {
+            log('YouTube player not initialized');
+            // Reinitialize player
+            initYouTubePlayer();
+            // Add a small delay to allow initialization
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            if (UI.youtubePlayer) {
+                const { videoId, startTime, endTime } = parseYouTubeData(conceptData.youtube);
+                UI.youtubePlayer.loadVideoById({
+                    videoId: videoId,
+                    startSeconds: startTime,
+                    endSeconds: endTime
+                });
+            }
+        }
+
+        // Get AI explanation for the concept
+        const response = await fetchRequest('/get_concept_explanation', {
+            concept_id: conceptId,
+            cmap: UI.currentMap
+        });
+
+        // Format and set explanation
+        const explanationElement = document.getElementById('concept-explanation');
+        explanationElement.innerHTML = formatExplanation(response.explanation || 'No explanation available.');
+
+        // Load existing notes if any
+        const notes = node.notes || '';
+        document.getElementById('concept-notes').value = notes;
+
+        // Add event listeners
+        setupReinforcementControls(conceptId);
+
+    } catch (error) {
+        log('Error showing reinforcement panel:', error);
+        addMessage('system', 'Sorry, there was an error loading the reinforcement content.');
+    }
+}
+
+/**
+ * Parse YouTube data from the format [youtube_link, time_range]
+ * Handles various YouTube URL formats and time range formats
+ */
+function parseYouTubeData(youtubeData) {
+    const [link, timeRange] = youtubeData;
+    
+    // Extract video ID from various YouTube URL formats
+    let videoId = '';
+    try {
+        const url = new URL(link);
+        if (url.hostname.includes('youtube.com')) {
+            videoId = url.searchParams.get('v');
+        } else if (url.hostname.includes('youtu.be')) {
+            videoId = url.pathname.slice(1);
+        }
+    } catch (e) {
+        // If URL parsing fails, try direct extraction
+        const match = link.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+        if (match) {
+            videoId = match[1];
+        }
+    }
+
+    if (!videoId) {
+        log('Error: Could not extract video ID from:', link);
+        throw new Error('Invalid YouTube URL');
+    }
+
+    // Parse time range (format: MM:SS-MM:SS)
+    const [startStr, endStr] = timeRange.split('-');
+    
+    const parseTime = (timeStr) => {
+        const [minutes, seconds] = timeStr.trim().split(':').map(Number);
+        return minutes * 60 + seconds;
+    };
+
+    const startTime = parseTime(startStr);
+    const endTime = parseTime(endStr);
+
+    log('Parsed YouTube data:', { videoId, startTime, endTime });
+    return { videoId, startTime, endTime };
+}
+
+/**
+ * Setup event listeners for reinforcement panel controls
+ */
+function setupReinforcementControls(conceptId) {
+    const closeBtn = document.querySelector('.close-reinforcement');
+    const saveNotesBtn = document.getElementById('save-notes');
+
+    closeBtn.onclick = () => {
+        UI.reinforcementPanel.style.display = 'none';
+        if (UI.youtubePlayer) {
+            UI.youtubePlayer.stopVideo();
+        }
+    };
+
+    saveNotesBtn.onclick = async () => {
+        const notes = document.getElementById('concept-notes').value;
+        try {
+            await saveConceptNotes(conceptId, notes);
+            addMessage('system', 'Notes saved successfully!');
+        } catch (error) {
+            log('Error saving notes:', error);
+            addMessage('system', 'Failed to save notes. Please try again.');
+        }
+    };
+}
+
+/**
+ * Save concept notes to the backend
+ */
+async function saveConceptNotes(conceptId, notes) {
+    log('Saving notes for concept:', conceptId);
+    const node = UI.nodes.get(conceptId);
+    if (!node) return;
+
+    try {
+        await fetchRequest('/update_data', {
+            sheet: 'UMaps',
+            data: {
+                unit: UI.currentMap.unit,
+                concept_id: conceptId,
+                notes: notes
+            }
+        });
+
+        // Update local node data
+        UI.nodes.update({
+            id: conceptId,
+            notes: notes
+        });
+
+    } catch (error) {
+        log('Error saving notes:', error);
+        throw error;
+    }
+}
+
+// Add CSS for continue button
+const style = document.createElement('style');
+style.textContent = `
+    .continue-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        background: rgba(33, 150, 243, 0.2);
+        border: 1px solid rgba(33, 150, 243, 0.3);
+        border-radius: 8px;
+        color: #fff;
+        cursor: pointer;
+        font-size: 1em;
+        transition: all 0.2s ease;
+        margin: 12px auto;
+    }
+
+    .continue-btn:hover {
+        background: rgba(33, 150, 243, 0.3);
+        transform: translateY(-1px);
+    }
+
+    .continue-btn .material-icons {
+        font-size: 20px;
+    }
+`;
+document.head.appendChild(style);
 
 // Initialize everything when the DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {

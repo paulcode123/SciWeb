@@ -6,13 +6,14 @@
     right: 10px;
     bottom: 10px;
     width: 50px;
-    background-color: var(--surface-color);
+    background-color: rgba(30, 30, 30, 0.95);
     color: var(--text-color);
     border-radius: 25px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     z-index: 1000;
     transition: all 0.3s ease;
     overflow: hidden;
+    backdrop-filter: blur(8px);
 }
 
 .ai-sidebar.expanded {
@@ -21,6 +22,7 @@
     height: 400px;
     display: flex;
     flex-direction: column;
+    background-color: rgba(30, 30, 30, 0.95);
 }
 
 /* Add media query to hide sidebar on mobile */
@@ -48,11 +50,14 @@
 .chat-area {
     display: none;
     padding: 10px;
-    background: var(--surface-color);
+    background: rgba(30, 30, 30, 0.95);
     flex: 1;
     flex-direction: column;
     opacity: 0;
     transition: opacity 0.3s ease;
+    height: calc(100% - 50px); /* Subtract the toggle logo height */
+    overflow: hidden;
+    backdrop-filter: blur(8px);
 }
 
 .ai-sidebar.expanded .chat-area {
@@ -65,6 +70,25 @@
     overflow-y: auto;
     margin-bottom: 10px;
     padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: calc(100% - 60px); /* Leave space for input area */
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-color) var(--surface-color);
+}
+
+.chat-log::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-log::-webkit-scrollbar-track {
+    background: var(--surface-color);
+}
+
+.chat-log::-webkit-scrollbar-thumb {
+    background-color: var(--primary-color);
+    border-radius: 3px;
 }
 
 .chat-input-area {
@@ -72,6 +96,8 @@
     gap: 8px;
     padding: 10px;
     border-top: 1px solid var(--border-color);
+    min-height: 60px;
+    max-height: 60px;
 }
 
 #user-input {
@@ -90,10 +116,10 @@
 
 .user-message {
     text-align: right;
-    color: var(--primary-color);
+    color: #ffffff;
     margin: 5px 0;
     padding: 8px 12px;
-    background: var(--surface-color-alt);
+    background: rgba(70, 130, 180, 0.9);
     border-radius: 12px 12px 2px 12px;
     max-width: 80%;
     margin-left: auto;
@@ -101,8 +127,10 @@
 
 .ai-message {
     text-align: left;
-    color: var(--text-color);
+    color: #ffffff;
     margin: 5px 0;
     padding: 8px 12px;
-    background: var(--primary-color);
-    border-radius: 12px 12px 12px 
+    background: rgba(50, 50, 50, 0.9);
+    border-radius: 12px 12px 12px 2px;
+    max-width: 80%;
+} 

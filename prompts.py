@@ -1,4 +1,6 @@
-from langchain.prompts import ChatPromptTemplate
+from langchain.prompts import ChatPromptTemplate, PromptTemplate
+from langchain.output_parsers import PydanticOutputParser
+from models import *
 
 # Derive
 DERIVE_PROMPT = ChatPromptTemplate.from_messages([
@@ -197,25 +199,31 @@ Requirements:
 4. Questions should be applied and practical, requiring reasoning and appropriate number of steps for the level""")
 ])
 
-LEVELS_EVAL_PROMPT = ChatPromptTemplate.from_messages([
-        ("system", """You are an expert at evaluating student responses based on difficulty level.
-                     You must respond with ONLY a JSON object. Do not include markdown formatting."""),
-        ("human", """For this {level}-level question ({level} = single step for Rookie, multi-step for Challenger, AP level for Scholar, hard AP level for Master, college level for Samurai): {question}
-                     Evaluate this answer: {answer}. 
-                     And consider how to modify this Study guide to mitigate any error: {guide}
-                     
-                     Return this exact JSON structure:
-                     {{
-                         "correct": true/false,
-                         "feedback": "Detailed feedback evaluating the answer",
-                        (if correct==true, the following fields are all n/a)
-                         "correct_answer": "The complete correct answer",
-                         "error_step": "The number/letter of the step in the guide that the student made an error on, ex. A1",
-                         "new_step": "The rewritten step text",
-                         "subpoints": ["How-to style subpoint 1", "How-to style subpoint 2", "..."],
-                         "mistake": "The mistake the student made on that step"
-                     }}""")
-    ])
+# Evaluation prompt for student responses
+LEVELS_EVAL_PROMPT = PromptTemplate.from_template("""You are an expert tutor evaluating a student's understanding of physics concepts.
+
+Context:
+- Problem: {problem}
+- Student's Answer: {answer}
+- Student's Explanation: {explanation}
+- Unit: {unit}
+- Related Concept Map: {concept_map}
+
+Evaluate the student's response and provide:
+1. A score between 0 and 1 indicating their level of understanding
+2. List of correctly understood concepts
+3. List of any misconceptions or areas needing improvement
+4. Specific suggestions for improvement
+
+Format your response as a JSON object with the following structure:
+{
+    "score": float,
+    "correct_concepts": [str],
+    "misconceptions": [str],
+    "suggestions": [str]
+}
+
+Response:""")
 
 # Evaluate
 EVALUATE_PROMPT = ChatPromptTemplate.from_messages([
@@ -251,5 +259,21 @@ EVALUATE_EVAL_PROMPT = ChatPromptTemplate.from_messages([
                      "composite_score": integer score,
                      "predicted_success": "Predicted success level"
                  }}""")
+])
+
+CONCEPT_EXPLANATION_PROMPT = ChatPromptTemplate.from_messages([
+    ("system", """You are an expert at explaining scientific concepts clearly and comprehensively.
+                 Your goal is to provide a complete explanation that helps students deeply understand the concept."""),
+    ("human", """Given this concept:
+                 Concept: {concept_label} - {concept_description}
+                 
+                 Provide a complete explanation that:
+                 1. Explains both the what and the why
+                 2. Uses clear examples and analogies
+                 3. Connects to real-world applications
+                 4. Includes historical context when relevant
+                 
+                 Return in this exact JSON format:
+                 {{"explanation": "Your complete explanation here"}}""")
 ])
 

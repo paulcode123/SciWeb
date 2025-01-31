@@ -7,6 +7,7 @@
 {% block css %}
 <link rel="stylesheet" href="https://unpkg.com/vis-network/styles/vis-network.min.css">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <link rel="stylesheet" href="{{ url_for('static', filename='derive.css') }}">
 {% endblock %}
 
@@ -40,13 +41,37 @@
         <div class="chat-header">
             <div class="chat-title">
                 <h2>Derive Concepts</h2>
-                <span class="subtitle">Let's discover mathematics together</span>
+                <span class="subtitle">Let's discover science together</span>
             </div>
         </div>
         <div class="chat-container">
             <div id="chat-messages" class="chat-messages">
                 <div class="message system">
                     Select a unit to begin deriving concepts. We'll start with the foundational concepts and work our way up.
+                </div>
+            </div>
+            <!-- Reinforcement Panel -->
+            <div id="reinforcement-panel" class="reinforcement-panel" style="display: none;">
+                <div class="reinforcement-header">
+                    <h3>Concept Reinforcement</h3>
+                    <button class="close-reinforcement">
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
+                <div class="video-container">
+                    <div id="youtube-player"></div>
+                </div>
+                <div class="explanation-container">
+                    <h4>Complete Explanation</h4>
+                    <div id="concept-explanation" class="concept-explanation"></div>
+                </div>
+                <div class="notes-container">
+                    <h4>Your Notes</h4>
+                    <textarea id="concept-notes" placeholder="Type your notes here..."></textarea>
+                    <button id="save-notes" class="save-notes-btn">
+                        <span class="material-icons">save</span>
+                        Save Notes
+                    </button>
                 </div>
             </div>
             <div class="chat-input-container">
@@ -95,5 +120,18 @@
 
 {% block js %}
 <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script>
+    // Initialize YouTube API first
+    let youtubeAPIReady = false;
+    window.onYouTubeIframeAPIReady = function() {
+        console.log('YouTube API Ready');
+        youtubeAPIReady = true;
+        if (window.initYouTubePlayer) {
+            window.initYouTubePlayer();
+        }
+    };
+</script>
+<script src="https://www.youtube.com/iframe_api"></script>
 <script src="{{ url_for('static', filename='derive.js') }}"></script>
 {% endblock %} 
