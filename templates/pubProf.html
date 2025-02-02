@@ -12,31 +12,46 @@
 {% block content %}
 <div class="profile-container">
     <div class="profile-header">
+        {% if profile and profile['ProfPic'] %}
         <img class="profile-avatar" alt="Profile Picture">
+        {% else %}
+        <div class="profile-avatar default-avatar">
+            <i class="fas fa-user"></i>
+        </div>
+        {% endif %}
+        
         <h1 class="profile-name">{{ user_data[0] }} {{ user_data[1] }}</h1>
+        <p class="profile-grade">Grade {{ user_data[2] }}</p>
         
         <button id="invite-friend" onclick="inviteFriend()">
             <i class="fas fa-user-plus"></i> Add Friend
         </button>
     </div>
 
+    {% if profile %}
     <div class="profile-sections">
+        {% if profile['AboutMe'] %}
         <div class="profile-section">
             <h3><i class="fas fa-user"></i> About Me</h3>
             <p>{{ profile['AboutMe'] }}</p>
         </div>
+        {% endif %}
 
+        {% if profile['HobClub'] %}
         <div class="profile-section">
             <h3><i class="fas fa-star"></i> Interests & Activities</h3>
             <p>{{ profile['HobClub'] }}</p>
         </div>
+        {% endif %}
 
+        {% if profile['Goals'] %}
         <div class="profile-section">
             <h3><i class="fas fa-bullseye"></i> Goals</h3>
             <p>{{ profile['Goals'] }}</p>
         </div>
+        {% endif %}
 
-        {% if profile['showClasses'] %}
+        {% if profile['showClasses'] and classes %}
         <div class="profile-section">
             <h3><i class="fas fa-graduation-cap"></i> Classes</h3>
             <div class="classes-grid">
@@ -50,6 +65,14 @@
         </div>
         {% endif %}
     </div>
+    {% else %}
+    <div class="profile-sections">
+        <div class="profile-section no-profile">
+            <h3><i class="fas fa-info-circle"></i> Profile Not Set Up</h3>
+            <p>This user hasn't set up their profile yet.</p>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
 
@@ -57,7 +80,7 @@
 <script>
     // Pass the profile data to JavaScript
     const profileData = {
-        fileId: "{{ profile['ProfPic'] }}"
+        fileId: "{{ profile['ProfPic'] if profile and profile['ProfPic'] else '' }}"
     };
 </script>
 <script src="/static/pubProf.js"></script>

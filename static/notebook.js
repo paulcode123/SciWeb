@@ -39,7 +39,7 @@ async function loadContext() {
         });
     }
     
-    fetchRequest('/data', { data: 'Classes, Notebooks, Name' })
+    fetchRequest('/data', { data: 'Classes, Notebooks, Name, CMaps' })
     .then(data => {
         notebookData = data;
         loadClasses();
@@ -173,9 +173,11 @@ function loadUnitWorksheets(classId, unitName) {
                 <button id="refresh-unit" class="refresh-button" title="Refresh Unit">
                     <i class="fas fa-mobile-alt"></i><i class="fas fa-sync"></i>
                 </button>
-                <button id="synthesize-unit" class="synthesize-button" title="Synthesize Unit for StudyBot">
-                    <i class="fas fa-robot"></i>
-                </button>
+                ${hasConceptMap(classId, unitName) ? 
+                    `<button id="map-problems" class="map-button" title="Map Problems to Concepts">
+                        <i class="fas fa-project-diagram"></i>
+                    </button>` : 
+                    ''}
             </div>
         </div>
     `;
@@ -189,10 +191,13 @@ function loadUnitWorksheets(classId, unitName) {
         window.location.href = `?class=${classId}&unit=${encodedUnit}&upload=false`;
     });
     
-    // Add event listener for synthesis
-    document.getElementById('synthesize-unit').addEventListener('click', () => {
-        synthesizeUnit(classId, unitName);
-    });
+    // Add event listener for problem mapping if button exists
+    const mapButton = document.getElementById('map-problems');
+    if (mapButton) {
+        mapButton.addEventListener('click', () => {
+            mapProblems(classId, unitName);
+        });
+    }
     
     worksheets.forEach(worksheet => {
         const worksheetElement = createWorksheetElement(worksheet);
@@ -200,38 +205,71 @@ function loadUnitWorksheets(classId, unitName) {
     });
 }
 
-async function synthesizeUnit(classId, unitName) {
+function hasConceptMap(classId, unitName) {
+    // Check if CMaps data exists in notebookData
+    console.log('in hasConceptMap');
+    if (!notebookData.CMaps) {
+        console.log('No CMaps data found');
+        return false;
+    }
+    console.log('notebookData.CMaps', notebookData.CMaps, 'classId', classId, 'unitName', unitName);
+    maps = notebookData.CMaps.some(map => 
+        parseInt(map.classID) == parseInt(classId) && map.unit === unitName
+    );
+    console.log('maps', maps);
+    return maps;
+}
+
+async function mapProblems(classId, unitName) {
     try {
         startLoading();
         
-        // Get notebooks for this unit
-        const unitNotebooks = notebookData.Notebooks.filter(
-            notebook => notebook.classID === classId && notebook.unit === unitName
+        // Get problems and concept map data first
+        const data = await fetchRequest('/data', { data: 'Classes, CMaps, Problems' });
+        
+        // Find the concept map for this class/unit
+        const conceptMap = data.CMaps.find(map => 
+            parseInt(map.classID) == parseInt(classId) && map.unit === unitName
         );
         
-        const response = await fetch('/synthesize_unit', {
+        if (!conceptMap) {
+            throw new Error('No concept map found for this unit');
+        }
+        
+        // Filter problems for this class/unit
+        const problems = data.Problems.filter(prob => 
+            parseInt(prob.classID) == parseInt(classId) && prob.unit === unitName
+        );
+        
+        if (!problems || problems.length === 0) {
+            console.log('classId', classId, 'unitName', unitName, 'problems', data.Problems);
+            throw new Error('No problems found for this unit');
+        }
+        
+        console.log('sending to backend');
+        // Send the filtered data to the backend
+        const response = await fetch('/map_problems', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                notebook: unitNotebooks,
-                classID: classId,
-                unit: unitName
+                conceptMap: conceptMap,
+                problems: problems
             })
         });
         
-        const data = await response.json();
+        const responseData = await response.json();
         
-        if (data.message === 'success') {
-            alert('Unit successfully synthesized for StudyBot!');
-            // clear NbS sheet from local storage
-            localStorage.removeItem('NbS');
+        if (responseData.message === 'success') {
+            alert('Problems successfully mapped to concepts!');
+            // clear Problems sheet from local storage
+            localStorage.removeItem('Problems');
         } else {
-            throw new Error('Synthesis failed');
+            throw new Error(responseData.error || 'Problem mapping failed');
         }
         
     } catch (error) {
-        console.error('Error synthesizing unit:', error);
-        alert('Failed to synthesize unit. Please try again.');
+        console.error('Error mapping problems:', error);
+        alert(error.message || 'Failed to map problems. Please try again.');
     }
     endLoading();
 }
@@ -291,10 +329,26 @@ function createWorksheetElement(worksheet) {
     `;
 
     // Process LaTeX in notes and questions
-    const processLatex = () => {
-        if (window.MathJax) {
-            const elements = worksheetDiv.querySelectorAll('.note-text, .question-text');
-            MathJax.typesetPromise(Array.from(elements));
+    const processLatex = async () => {
+        // Wait for MathJax to be fully loaded
+        if (typeof MathJax === 'undefined') {
+            await new Promise(resolve => {
+                const checkMathJax = setInterval(() => {
+                    if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+                        clearInterval(checkMathJax);
+                        resolve();
+                    }
+                }, 100);
+            });
+        }
+        
+        try {
+            const elements = document.querySelectorAll('.note-text, .question-text');
+            if (elements.length > 0) {
+                await MathJax.typesetPromise(Array.from(elements));
+            }
+        } catch (error) {
+            console.error('Error processing LaTeX:', error);
         }
     };
     

@@ -1,0 +1,12 @@
+For new html pages, always extend darkThemeTemplate.html
+All html files go in templates folder, all js/css files go directly into static folder
+
+In Javascript, always use the fetchRequest function when communicating with the backend
+When interacting with the database, only use the routes: /data, {'data', 'SheetA, SheetB'}(to get data), /post_data, {'sheet': 'SheetA', 'data': {...}}, /update_data, {'sheet': 'SheetA', 'data': {...}, 'row_name': 'example rowname', 'row_value': 'example value'}, /delete_data, {'sheet': 'SheetA', 'data': {...}, 'row_name': 'example rowname', 'row_value': 'example value'}
+
+All GET/POST routes go in main.py in their corresponding section(first page inits, then everything else, finally the if __name__ == '__main__' section)
+For AI functions, all prompts go in prompts.py, pydantic models go in models.py, call model in study.py, and use output processor in output_processors.py if needed. Routes go in main.py.
+
+When making large changes, start by making an excellent frontend that looks sleek and modern. Define but leave comments for nonessential JS functions. Dont do the backend at first.
+The complete database structure including sheets, field names, datatypes, and purposes can be found in database_layout.txt
+

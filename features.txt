@@ -47,10 +47,23 @@
     c. The AI will update the existing study guide for the unit, which can be viewed in a panel on the page
 
 8. Derive
-    a. Users can select a class and unit, and the AI will generate 20-40 theorems/statements about the unit, and a question that should lead to the user deriving the theorem/statement
-    b. It will ask the questions one at a time, and if it's close enough to the statement, it will rephrase the expected answer to be more condusive to the user's answer
-    c. If not, it will ask a simpler question to help the user arrive at the statement
-   
+    a. Interactive concept map visualization showing relationships between concepts
+    b. Real-time concept status tracking (pending, in-progress, derived)
+    c. AI-guided derivation through interactive chat interface
+    d. Personal notes section for each concept being derived
+    e. Zoom and navigation controls for concept map exploration
+    f. Progress persistence across sessions
+    g. Prerequisites-based learning path through concept map
+    h. Adaptive questioning based on user responses
+    i. Visual feedback on derivation progress (color-coded nodes)
+    j. Ability to revisit and review previously derived concepts
+    k. Customizable concept map layout and organization
+    l. Integration with study guides and notebook content
+    m. Support for multiple units and classes
+    n. Real-time saving of notes and progress
+    o. Help system with contextual AI assistance
+    p. Visual indication of dependencies between concepts
+
 8. Battle(in progress)
     a. Users can select a class and unit, and a game mode, and a join code will be generated, or enter a join code to join a battle
     b. Users are redirected to the game page, where they play the game involving answering questions related to the unit
@@ -116,3 +129,17 @@
     a. Users can create leagues, select members, and select shared metrics
     b. On the league page, users can view their friends share metrics/leaderboard
 
+
+
+the derive(/derive) feature, where the user is guided towards discovering
+ the concepts and deriving the formulas. Here they use inductive reasoning
+to gain a conceptual understanding of the content, which is represented in
+a concept map(/Maps). Next is the Levels feature, which has the user
+employ the concepts they derived to solve a wide range of practice
+problems directly related to the concepts. This tests the user's
+adaptability and creative thinking. Progress is represented on the
+map, and error analysis is used to promote efficient and effective
+learning. Lastly is the Evaluate feature, which tests test-taking
+skills under time pressure with complex, wide ranging problems like
+ those on an exam. Users can modify the length, difficulty, and time
+  allotment, while never seeing the same question twice.

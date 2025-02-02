@@ -485,35 +485,64 @@ setTimeout(function(){
 }, comp_time*500);
 }
 
-async function animationGOTC(numTraces, traces){
-  const animationDuration = 3500; // 3.5 seconds for animation
+async function animationGOTC(numTraces, traces) {
+  const myPlot = document.getElementById('myGraph');
+  const currentLayout = myPlot.layout;
+  
+  // Store current layout properties we want to preserve
+  const preservedLayout = {
+    images: currentLayout.images || [],
+    xaxis: {
+      range: currentLayout.xaxis.range,
+      title: currentLayout.xaxis.title,
+      tickvals: currentLayout.xaxis.tickvals,
+      ticktext: currentLayout.xaxis.ticktext,
+      showgrid: false
+    },
+    yaxis: {
+      title: currentLayout.yaxis.title,
+      showgrid: false
+    },
+    title: currentLayout.title,
+    showlegend: false,
+    displayModeBar: false,
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: 'white' },
+    hovermode: 'closest'
+  };
 
+  // Perform the animation
   await Plotly.animate('myGraph', {
     data: traces,
     traces: numTraces,
-    layout: {}
+    layout: preservedLayout
   }, {
     transition: {
-      duration: animationDuration,
+      duration: 3500,
       easing: 'cubic-in-out'
     },
     frame: {
-      duration: animationDuration,
-      redraw: true  // Force complete redraw
+      duration: 3500,
+      redraw: true
     }
   });
 
-  // Wait for animation to complete before resizing
-  await new Promise(resolve => setTimeout(resolve, animationDuration));
-  
-  // Store current goals and images
-  const currentLayout = document.getElementById('myGraph').layout;
-  const currentGoals = currentLayout.images || [];
-  
-  // Perform relayout with preserved goals
+  // Wait for animation to complete
+  await new Promise(resolve => setTimeout(resolve, 3600));
+
+  // Calculate y-axis range based on data
+  let allYValues = traces.flatMap(trace => trace.y || []);
+  let yMin = Math.min(...allYValues) * 0.95; // Add 5% padding
+  let yMax = Math.max(...allYValues) * 1.05;
+
+  // Update layout with calculated ranges while preserving other properties
   await Plotly.relayout('myGraph', {
-    'yaxis.autorange': true,
-    images: currentGoals
+    ...preservedLayout,
+    yaxis: {
+      ...preservedLayout.yaxis,
+      range: [yMin, yMax]
+    }
   });
 }
 

@@ -61,6 +61,10 @@ async function getBase64(file) {
             sheetsToFetch = sheetsToFetch.filter(sheet => sheet !== 'Grades');
             response['Grades'] = [{'name': 'Please pull grades from Jupiter'}];
         }
+        // if classes not once of the keys in cachedSheets, add it to sheetsToFetch
+        if (!Object.keys(cachedSheets).includes('Classes')) {
+            sheetsToFetch.unshift('Classes');
+        }
         // Fetch any uncached sheets
         if (sheetsToFetch.length > 0) {
             console.log('Fetching sheets:', sheetsToFetch, "with prev_sheets", cachedSheets);

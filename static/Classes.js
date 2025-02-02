@@ -4,130 +4,207 @@ var classList = 0;
 
 
 //initialize html elements in join/create class form
-    const joinButton = document.getElementById('joinButton');
-    const classForm = document.getElementById('classForm');
-    const periodInput = document.getElementById('periodInput');
-    const teacherInput = document.getElementById('teacherInput');
-  const nameInput = document.getElementById('nameInput');
-    const classOptions = document.getElementById('classOptions');
-//when join/create class button is clicked, show form
-    joinButton.addEventListener('click', () => {
-      joinButton.style.display = 'none';
-      classForm.classList.remove('hidden');
-    });
+const joinButton = document.getElementById('joinButton');
+const modalOverlay = document.querySelector('.modal-overlay');
+const classForm = document.getElementById('classForm');
+const modalClose = document.querySelector('.modal-close');
+const confirmDialog = document.querySelector('.confirm-dialog');
+const confirmMessage = document.querySelector('.confirm-message');
+const periodInput = document.getElementById('periodInput');
+const teacherInput = document.getElementById('teacherInput');
+const nameInput = document.getElementById('nameInput');
+const classOptions = document.getElementById('classOptions');
+
+let selectedClassData = null;
+
+// Show modal
+joinButton.addEventListener('click', (e) => {
+    e.preventDefault();
+    modalOverlay.style.display = 'flex';
+    setTimeout(() => {
+        modalOverlay.classList.add('show');
+    }, 10);
+});
+
+// Close modal
+modalClose.addEventListener('click', () => {
+    closeModal();
+});
+
+// Close modal when clicking outside
+modalOverlay.addEventListener('click', (e) => {
+    if (e.target === modalOverlay) {
+        closeModal();
+    }
+});
+
+function closeModal() {
+    modalOverlay.classList.remove('show');
+    setTimeout(() => {
+        modalOverlay.style.display = 'none';
+        classForm.reset();
+    }, 300);
+}
+
 //add event listeners to input fields, so that class options are updated as the user types
-    periodInput.addEventListener('input', updateClassOptions);
-    teacherInput.addEventListener('input', updateClassOptions);
-    nameInput.addEventListener('input', updateClassOptions);
+periodInput.addEventListener('input', updateClassOptions);
+teacherInput.addEventListener('input', updateClassOptions);
+nameInput.addEventListener('input', updateClassOptions);
 
-    function updateClassOptions() {
-      // Get the variables for the current values of the input fields
-      const periodValue = periodInput.value;
-      const teacherValue = teacherInput.value.toLowerCase();
-      const nameValue = nameInput.value.toLowerCase();
-      // Filter the class list based on the input values
-      //get the period, teacher, and name of each class
-      const filteredOptions = classList.filter(classData => {
-        console.log(classData);
-        var { period, teacher, name} = classData;
-        console.log(period, teacher, name);
-        period = period.toString();
-        //return true if the period, teacher, and name of the class match the input values
-        return period.includes(periodValue) && teacher.toLowerCase().includes(teacherValue) && name.toLowerCase().includes(nameValue);
-      });
-      showOptions(classOptions, filteredOptions);
-    }
-//show class options
-    function showOptions(container, options) {
-      // Clear the current options
-      container.innerHTML = '';
-      // Create an option for each class
-      options.forEach(({ period, teacher, name}) => {
-        //set the text content of the option to the period, teacher, and name of the class
-        const option = document.createElement('li');
-        option.textContent = `${name} - ${teacher}`;
-        //add styles to the option
-        option.style.padding = '10px';
-option.style.borderRadius = '4px';
-option.style.backgroundColor = 'gray';
-option.style.transition = 'background-color 0.3s';
-//turn the option green when the user hovers over it
-option.addEventListener('mouseover', () => {
-  option.style.backgroundColor = '#4CAF50';
-});
-//turn the option gray when the user stops hovering over it
-option.addEventListener('mouseout', () => {
-  option.style.backgroundColor = 'gray';
-});
-//when the user clicks on the option, set the input values to the period, teacher, and name of the class
+function updateClassOptions() {
+  // Get the variables for the current values of the input fields
+  const periodValue = periodInput.value;
+  const teacherValue = teacherInput.value.toLowerCase();
+  const nameValue = nameInput.value.toLowerCase();
+  // Filter the class list based on the input values
+  //get the period, teacher, and name of each class
+  const filteredOptions = classList.filter(classData => {
+    console.log(classData);
+    var { period, teacher, name} = classData;
+    console.log(period, teacher, name);
+    period = period.toString();
+    //return true if the period, teacher, and name of the class match the input values
+    return period.includes(periodValue) && teacher.toLowerCase().includes(teacherValue) && name.toLowerCase().includes(nameValue);
+  });
+  showOptions(classOptions, filteredOptions);
+}
+
+// Enhanced class options display
+function showOptions(container, options) {
+    container.innerHTML = '';
+    options.forEach(({ period, teacher, name }) => {
+        const option = document.createElement('div');
+        option.className = 'class-option';
+        option.innerHTML = `
+            <div class="class-option-name">${name}</div>
+            <div class="class-option-details">Period ${period} - ${teacher}</div>
+        `;
+        
         option.addEventListener('click', () => {
-          periodInput.value = period;
-          teacherInput.value = teacher;
-          nameInput.value = name;
-          container.innerHTML = '';
+            periodInput.value = period;
+            teacherInput.value = teacher;
+            nameInput.value = name;
+            selectedClassData = { period, teacher, name };
+            showConfirmDialog();
         });
-        // Add the option to the container, which stores the list of options
+        
         container.appendChild(option);
-      });
+    });
+}
+
+// Show confirmation dialog
+function showConfirmDialog() {
+    const { period, teacher, name } = selectedClassData;
+    const existingClass = classList.find(c => 
+        c.period.toString() === period.toString() && 
+        c.teacher.toLowerCase() === teacher.toLowerCase()
+    );
+
+    confirmDialog.style.display = 'block';
+    
+    // Get button elements
+    const joinBtn = document.querySelector('.confirm-btn.join');
+    const createBtn = document.querySelector('.confirm-btn.create');
+    
+    if (existingClass) {
+        // Show only join button for existing class
+        confirmMessage.textContent = `Join existing class "${name}" with ${teacher}?`;
+        joinBtn.style.display = 'block';
+        createBtn.style.display = 'none';
+    } else {
+        // Show only create button for new class
+        confirmMessage.textContent = `Create new class "${name}" with ${teacher}?`;
+        joinBtn.style.display = 'none';
+        createBtn.style.display = 'block';
     }
-
-
-//when the user submits the form, get the input values and create a class object
-classForm.addEventListener('submit', function(event) {
-  event.preventDefault(); // Prevent the form from submitting and refreshing the page
-
-  // Get the input values
-  const periodInput = document.getElementById('periodInput').value;
-  const teacherInput = document.getElementById('teacherInput').value;
-  const nameInput = document.getElementById('nameInput').value;
-  const categories = document.getElementById('categories').value;
-  var update = 0;
-  //for each class in the existing class list, if the period, class, and teacher match the input values, add the user's osis to the class's osis
-for (var i = 0; i < classList.length; i++) {
-  if ((classList[i].period).toString() === periodInput && classList[i].teacher === teacherInput) {
-    classList[i].OSIS = classList[i].OSIS + ", " + osis;
-    update = classList[i].id; 
-    post_classes(classList[i], update);
-    break;
-  }
+    
+    setTimeout(() => confirmDialog.classList.add('show'), 10);
 }
-//if the class already exists, the user has been added to the class, so reset the form, hide it, and end the function
-if (update != 0){
-  classForm.reset();
-  classForm.style.display = 'none';
-  return;
-}
-//continues to here if the class does not yet exist
 
-// parse categories string
-const parts = categories.split(/,\s+/);
-
-// Initialize an empty result array
-const result = [];
-
-// Iterate over the parts and extract the name and percentage
-parts.forEach(part => {
-  const [name, percentage] = part.split(': ');
-  result.push(name, parseInt(percentage));
-});
-  // Create an object with the captured values
-  const classData = {
-    period: parseInt(periodInput),
-    teacher: teacherInput,
-    name: nameInput,
-    OSIS: osis,
-    id: (Math.floor(Math.random() * 9000)+1000).toString(), // Generate a random ID between 1000 and 9999
-    categories: result
-  };
-
-  // Reset the form inputs
-  classForm.reset();
-  classForm.style.display = 'none';
-  
-  post_classes(classData, update);
-  
+// Handle confirmation buttons
+document.querySelector('.confirm-btn.join').addEventListener('click', () => {
+    handleClassAction('join');
 });
 
+document.querySelector('.confirm-btn.create').addEventListener('click', () => {
+    handleClassAction('create');
+});
+
+document.querySelector('.confirm-btn.cancel').addEventListener('click', () => {
+    closeConfirmDialog();
+});
+
+function closeConfirmDialog() {
+    confirmDialog.classList.remove('show');
+    setTimeout(() => {
+        confirmDialog.style.display = 'none';
+        selectedClassData = null;
+    }, 300);
+}
+
+async function handleClassAction(action) {
+    const formData = {
+        period: periodInput.value,
+        teacher: teacherInput.value,
+        name: nameInput.value,
+        categories: document.getElementById('categories').value
+    };
+
+    try {
+        let response;
+        if (action === 'join') {
+            // Handle joining existing class
+            const existingClass = classList.find(c => 
+                c.period.toString() === formData.period && 
+                c.teacher === formData.teacher
+            );
+            if (existingClass) {
+                existingClass.OSIS = existingClass.OSIS + ", " + osis;
+                response = await fetchRequest('/update_data', {
+                    sheet: 'Classes',
+                    data: existingClass,
+                    row_name: 'id',
+                    row_value: existingClass.id
+                });
+            }
+        } else {
+            // Handle creating new class
+            const newClass = {
+                ...formData,
+                OSIS: osis,
+                id: (Math.floor(Math.random() * 9000) + 1000).toString(),
+                categories: parseCategories(formData.categories)
+            };
+            response = await fetchRequest('/post_data', {
+                sheet: 'Classes',
+                data: newClass
+            });
+        }
+
+        if (response.success) {
+            showNotification(`Class ${action}ed successfully!`, 'success');
+            closeConfirmDialog();
+            closeModal();
+            location.reload();
+        } else {
+            showNotification(`Error ${action}ing class`, 'error');
+        }
+    } catch (error) {
+        showNotification(`Error ${action}ing class`, 'error');
+        console.error('Error:', error);
+    }
+}
+
+function parseCategories(categoriesString) {
+    if (!categoriesString) return [];
+    const parts = categoriesString.split(/,\s+/);
+    const result = [];
+    parts.forEach(part => {
+        const [name, percentage] = part.split(': ');
+        result.push(name, parseInt(percentage));
+    });
+    return result;
+}
 
 //display the classes that the user is a member of
 function display_classes(classList, user_data){
@@ -190,13 +267,155 @@ async function post_classes(data, update){
   
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-  const joinButton = document.getElementById('joinButton');
-  const classForm = document.getElementById('classForm');
+// Initialize particles.js
+particlesJS('particles-js', {
+    particles: {
+        number: { value: 80, density: { enable: true, value_area: 800 } },
+        color: { value: '#4a90e2' },
+        shape: { type: 'circle' },
+        opacity: {
+            value: 0.5,
+            random: false,
+            animation: { enable: true, speed: 1, minimumValue: 0.1, sync: false }
+        },
+        size: {
+            value: 3,
+            random: true,
+            animation: { enable: true, speed: 2, minimumValue: 0.1, sync: false }
+        },
+        line_linked: {
+            enable: true,
+            distance: 150,
+            color: '#4a90e2',
+            opacity: 0.4,
+            width: 1
+        },
+        move: {
+            enable: true,
+            speed: 1,
+            direction: 'none',
+            random: false,
+            straight: false,
+            outModes: { default: 'bounce' },
+            attract: { enable: false, rotateX: 600, rotateY: 1200 }
+        }
+    },
+    interactivity: {
+        detectsOn: 'canvas',
+        events: {
+            onhover: { enable: true, mode: 'repulse' },
+            onclick: { enable: true, mode: 'push' },
+            resize: true
+        },
+        modes: {
+            repulse: { distance: 100, duration: 0.4 },
+            push: { particles_nb: 4 }
+        }
+    },
+    retina_detect: true
+});
 
+// Show notification function
+function showNotification(message, type = 'info') {
+    const notification = document.getElementById('notification');
+    notification.textContent = message;
+    notification.className = `notification show ${type}`;
+    setTimeout(() => {
+        notification.className = 'notification';
+    }, 3000);
+}
 
-  joinButton.addEventListener('click', function(e) {
-      e.preventDefault();
-      classForm.style.display = classForm.style.display === 'none' ? 'block' : 'none';
-  });
+// Enhanced class item creation
+function createClassElement(classData) {
+    const classItem = document.createElement('div');
+    classItem.className = 'class-item';
+    
+    const progress = Math.floor(Math.random() * 100); // Replace with actual progress calculation
+    
+    classItem.innerHTML = `
+        <h3>${classData.name}</h3>
+        <p>Period ${classData.period} - ${classData.teacher}</p>
+        <div class="progress-container">
+            <div class="progress-bar" style="width: ${progress}%"></div>
+        </div>
+        <p class="progress-text">${progress}% Complete</p>
+    `;
+    
+    // Add hover animation
+    classItem.addEventListener('mouseenter', () => {
+        classItem.style.transform = 'translateY(-5px) scale(1.02)';
+    });
+    
+    classItem.addEventListener('mouseleave', () => {
+        classItem.style.transform = 'translateY(0) scale(1)';
+    });
+    
+    return classItem;
+}
+
+// Enhanced form handling
+document.getElementById('joinButton').addEventListener('click', () => {
+    const form = document.getElementById('classForm');
+    form.style.display = 'block';
+    setTimeout(() => form.classList.add('show'), 10);
+});
+
+// Form submission with animation
+document.getElementById('classForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = {
+        period: document.getElementById('periodInput').value,
+        teacher: document.getElementById('teacherInput').value,
+        name: document.getElementById('nameInput').value,
+        categories: document.getElementById('categories').value
+    };
+    
+    try {
+        const response = await fetchRequest('/post_data', {
+            sheet: 'Classes',
+            data: formData
+        });
+        
+        if (response.success) {
+            const classElement = createClassElement(formData);
+            document.getElementById('classList').appendChild(classElement);
+            showNotification('Class added successfully!', 'success');
+            
+            // Reset and hide form with animation
+            e.target.reset();
+            const form = document.getElementById('classForm');
+            form.classList.remove('show');
+            setTimeout(() => form.style.display = 'none', 300);
+        } else {
+            showNotification('Error adding class', 'error');
+        }
+    } catch (error) {
+        showNotification('Error adding class', 'error');
+        console.error('Error:', error);
+    }
+});
+
+// Load existing classes with animation
+async function loadClasses() {
+    try {
+        const response = await fetchRequest('/data', {data: 'Classes'});
+        const classList = document.getElementById('classList');
+        
+        if (response.success && response.data.Classes) {
+            response.data.Classes.forEach((classData, index) => {
+                const classElement = createClassElement(classData);
+                classElement.style.animationDelay = `${index * 0.1}s`;
+                classList.appendChild(classElement);
+            });
+        }
+    } catch (error) {
+        showNotification('Error loading classes', 'error');
+        console.error('Error:', error);
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    loadClasses();
 });

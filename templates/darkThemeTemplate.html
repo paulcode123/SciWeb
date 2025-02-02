@@ -23,9 +23,11 @@
     {% if request.path != '/' %}
     <div id="ai-counselor-sidebar" class="ai-sidebar">
       <img id="toggle-sidebar" class="toggle-logo" src="/static/media/favicon.png"/>
-      <div id="chat-area" class="chat-area" style="display: none;">
+      <div id="chat-area" class="chat-area">
           <div id="chat-log" class="chat-log"></div>
-          <input type="text" id="user-input" placeholder="Type your message..." />
+          <div class="chat-input-area">
+              <textarea id="user-input" placeholder="Type your message..." rows="1"></textarea>
+          </div>
       </div>
     </div>
     {% endif %}

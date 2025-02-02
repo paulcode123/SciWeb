@@ -36,92 +36,66 @@ async function pullfromJupiter(){
   const addclasses = document.getElementById('addclasses').checked;
   const updateLeagues = document.getElementById('updateLeagues').checked;
   
-
-  // First make POST request with credentials
-  const response = await fetchRequest('/jupiter_auth', {
+  try {
+    // First authenticate
+    statusDiv.innerHTML = '<p>Authenticating...</p>';
+    const authResponse = await fetchRequest('/jupiter_auth', {
       "osis": osis,
       "password": password,
       "addclasses": addclasses,
       "updateLeagues": updateLeagues
     });
-  
 
-  if (!response.status) {
-    alert('Authentication failed');
-    endLoading();
-    return;
-  }
-
-  // Then create EventSource for streaming
-  const evtSource = new EventSource('/jupiter');
-  
-  evtSource.onmessage = function(event) {
-    try {
-        console.log("Received SSE message:", event.data.substring(0, 30));
-        const data = JSON.parse(event.data);
-        
-        if(data.error) {
-            console.error("SSE error:", data.error);
-            evtSource.close();
-            statusDiv.remove();
-            alert(data.error);
-            endLoading();
-            return;
-        }
-        
-        if(data.status === 'complete') {
-            evtSource.close();
-            statusDiv.remove();
-            
-            // Create completion animation
-            const checkDiv = document.createElement('div');
-            checkDiv.className = 'completion-check';
-            const checkIcon = document.createElement('div');
-            checkIcon.className = 'check-icon';
-            checkDiv.appendChild(checkIcon);
-            document.body.appendChild(checkDiv);
-            
-            // Remove animation and show grades after delay
-            setTimeout(() => {
-                checkDiv.classList.add('fade-out');
-                setTimeout(() => {
-                    checkDiv.remove();
-                    createGradesTable(data.grades);
-                }, 300);
-            }, 1200);
-            
-            // set Grades in cache
-            localStorage.setItem('Grades', JSON.stringify({
-              data: data.grades,
-              timestamp: Date.now()
-            }));
-            console.log("Grades set in cache", localStorage.getItem('Grades').substring(0, 30));
-
-            endLoading();
-        } else {
-            console.log("Updating status:", data.message);
-            statusDiv.innerHTML = `<p>${data.message}</p>`;
-        }
-    } catch (error) {
-        console.error('Error parsing SSE data:', error, 'Raw data:', event.data);
-        evtSource.close();
-        statusDiv.remove();
-        alert('Error processing server response');
-        endLoading();
+    if (!authResponse || authResponse.error) {
+      throw new Error(authResponse?.error || 'Authentication failed');
     }
-  };
 
-  evtSource.onopen = function() {
-    console.log("SSE connection opened");
-  };
+    // Process classes
+    statusDiv.innerHTML = '<p>Getting classes and tokens data...</p>';
+    const classesResponse = await fetchRequest('/jupiter_process_classes', {});
+    if (!classesResponse || classesResponse.error) {
+      throw new Error(classesResponse?.error || 'Failed to process classes');
+    }
 
-  evtSource.onerror = function(err) {
-    console.error("SSE error:", err);
-    evtSource.close();
+    // Process grades
+    statusDiv.innerHTML = '<p>Processing grades...</p>';
+    const gradesResponse = await fetchRequest('/jupiter_process_grades', {
+      classes: classesResponse.classes
+    });
+    if (!gradesResponse || gradesResponse.error) {
+      throw new Error(gradesResponse?.error || 'Failed to process grades');
+    }
+
+    // Success - show completion animation and update grades table
     statusDiv.remove();
-    alert('Error occurred while fetching grades');
+    const checkDiv = document.createElement('div');
+    checkDiv.className = 'completion-check';
+    const checkIcon = document.createElement('div');
+    checkIcon.className = 'check-icon';
+    checkDiv.appendChild(checkIcon);
+    document.body.appendChild(checkDiv);
+    
+    setTimeout(() => {
+      checkDiv.classList.add('fade-out');
+      setTimeout(() => {
+        checkDiv.remove();
+        createGradesTable(gradesResponse.grades);
+      }, 300);
+    }, 1200);
+
+    // Set grades in cache
+    localStorage.setItem('Grades', JSON.stringify({
+      data: gradesResponse.grades,
+      timestamp: Date.now()
+    }));
+
+  } catch (error) {
+    console.error('Error:', error);
+    statusDiv.remove();
+    alert(error.message || 'An error occurred while fetching grades');
+  } finally {
     endLoading();
-  };
+  }
 }
 
 //When the user selects a class, update the category dropdown with the categories for that class

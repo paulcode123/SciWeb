@@ -8,43 +8,94 @@
 <!-- css block -->
 {% block css %}
 <link rel="stylesheet" href="/static/LoginPage.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 {% endblock %}
 
 <!-- content block -->
 {% block content %}
-  <div id="logged-in-popup" style="display: none;" class="popup">
-    <p>You're already logged in!</p>
-    <a href="/" class="button primary">Go to Dashboard</a>
-  </div>
-
-  <form id="login-form">
-    <div id="toggleSlider" class="slider" onclick="toggleSlider()">
-      <span id="sliderText" class="slider-text">Log-In</span>
+<div class="login-container">
+  <!-- Features Section -->
+  <div class="features-section">
+    <div class="features-content">
+      <h1>Welcome to SciWeb</h1>
+      <p class="tagline">Your Gateway to Scientific Excellence</p>
+      
+      <div class="feature-cards">
+        <div class="feature-card">
+          <i class="fas fa-brain"></i>
+          <h3>AI-Powered Learning</h3>
+          <p>Personalized study paths and intelligent problem-solving assistance</p>
+        </div>
+        
+        <div class="feature-card">
+          <i class="fas fa-chart-line"></i>
+          <h3>Track Progress</h3>
+          <p>Monitor your growth with detailed analytics and insights</p>
+        </div>
+        
+        <div class="feature-card">
+          <i class="fas fa-users"></i>
+          <h3>Collaborative Learning</h3>
+          <p>Join a community of science enthusiasts and learn together</p>
+        </div>
+      </div>
     </div>
-    <br>
-
-    <label for="fname">First Name</label>
-    <input type="text" id="fname" name="fname" placeholder="Enter your first name" autocomplete="given-name" required>
-
-    <label for="lname" id="lnamelabel" style="display: none;">Last Name</label>
-    <input type="text" id="lname" name="lname" placeholder="Enter your last name" autocomplete="family-name" style="display: none;">
-
-    <label for="password">Password</label>
-    <input type="password" id="password" name="password" placeholder="Enter your password" autocomplete="current-password" required>
-
-    <label for="grade" id="gradelabel" style="display: none;">Grade</label>
-    <input type="number" id="grade" name="grade" placeholder="Enter your grade" style="display: none;">
-
-    <label for="email" id="emaillabel" style="display: none;">Email</label>
-    <input type="email" id="email" name="email" placeholder="Enter your email" style="display: none;">
-    <br>
-    <div id="button-wrapper">
-    <input type="submit" value="Log In" id="submit">
   </div>
-  </form>
-  <p style="text-align: center;">By creating an account, you agree to our <a target="_blank" href="/Terms">Terms and Conditions</a></p>
-  <hr />
-  <h3>If you're just giving SciWeb a try, you can also <button onclick="demo()" class="button primary">Try Demo Account</button></h3>
+
+  <!-- Login Form Section -->
+  <div class="form-section">
+    <div id="logged-in-popup" style="display: none;" class="popup">
+      <p>You're already logged in!</p>
+      <a href="/" class="button primary">Go to Dashboard</a>
+    </div>
+
+    <div class="form-container">
+      <div class="toggle-container">
+        <div id="toggleSlider" class="mode-toggle" onclick="toggleSlider()">
+          <span class="toggle-option active" data-mode="login">Login</span>
+          <span class="toggle-option" data-mode="signup">Sign Up</span>
+          <div class="toggle-slider"></div>
+        </div>
+      </div>
+
+      <form id="login-form">
+        <div class="input-group">
+          <label for="fname">First Name</label>
+          <input type="text" id="fname" name="fname" placeholder="Enter your first name" autocomplete="given-name" required>
+        </div>
+
+        <div class="input-group signup-field" style="display: none;">
+          <label for="lname">Last Name</label>
+          <input type="text" id="lname" name="lname" placeholder="Enter your last name" autocomplete="family-name">
+        </div>
+
+        <div class="input-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" placeholder="Enter your password" autocomplete="current-password" required>
+        </div>
+
+        <div class="input-group signup-field" style="display: none;">
+          <label for="grade">Grade</label>
+          <input type="number" id="grade" name="grade" placeholder="Enter your grade">
+        </div>
+
+        <div class="input-group signup-field" style="display: none;">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="Enter your email">
+        </div>
+
+        <button type="submit" id="submit" class="submit-btn">Log In</button>
+      </form>
+
+      <div class="form-footer">
+        <p>By creating an account, you agree to our <a target="_blank" href="/Terms">Terms and Conditions</a></p>
+        <div class="demo-section">
+          <p>Want to try it out first?</p>
+          <button onclick="demo()" class="demo-btn">Try Demo Account</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}
 

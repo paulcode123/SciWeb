@@ -1,0 +1,56 @@
+{% extends "SimulationBase.html" %}
+
+{% block simulation_title %}Spring Force Simulation{% endblock %}
+
+{% block simulation_controls %}
+<div class="control-group">
+    <label for="springConstant">Spring Constant (k):</label>
+    <input type="range" id="springConstant" min="1" max="100" value="50">
+    <span id="springConstantValue">50 N/m</span>
+</div>
+<div class="control-group">
+    <label for="restLength">Rest Length:</label>
+    <input type="range" id="restLength" min="50" max="200" value="100">
+    <span id="restLengthValue">100 px</span>
+</div>
+<button id="resetSimulation">Reset</button>
+{% endblock %}
+
+{% block simulation_info %}
+<div class="graphs-container">
+    <div class="graph-wrapper">
+        <h3>Force vs. Position</h3>
+        <canvas id="forceGraph"></canvas>
+    </div>
+    <div class="graph-wrapper">
+        <h3>Potential Energy vs. Position</h3>
+        <canvas id="energyGraph"></canvas>
+    </div>
+</div>
+
+<div class="info-panel">
+    <div class="info-item">
+        <label>Current Force:</label>
+        <span id="currentForce">0 N</span>
+    </div>
+    <div class="info-item">
+        <label>Potential Energy:</label>
+        <span id="potentialEnergy">0 J</span>
+    </div>
+    <div class="info-item">
+        <label>Extension:</label>
+        <span id="extension">0 m</span>
+    </div>
+</div>
+<div class="instructions">
+    <h3>How to Use:</h3>
+    <p>1. Adjust the spring constant (k) to change the spring's stiffness</p>
+    <p>2. Set the natural length of the spring</p>
+    <p>3. Click and drag the mass to compress or stretch the spring</p>
+    <p>4. Observe how the force and potential energy change</p>
+</div>
+{% endblock %}
+
+{% block simulation_specific_js %}
+<script src="{{ url_for('static', filename='springs.js') }}"></script>
+{% endblock %} 

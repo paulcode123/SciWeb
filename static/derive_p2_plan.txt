@@ -1,0 +1,11 @@
+1. Add set map structure button on /Maps page that saves the position of the nodes and edges in the map to the CMaps sheet in the database
+2. Load that map structure in /Levels, /derive, and /Maps pages
+3. In /Maps, allow the user to select a confidence level for a given node(1-5), and represent that as different border colors for the node
+4. In /derive, add a reinforcement stage for every concept after the user has derived it. 
+    a. Add a youtube field in each concept in CMaps that has [youtube link, time range]
+    b. Upon deriving a concept, add a reinforce button
+    c. Onclick, play the youtube video for that concept, and AI generate a complete explanation of the concept
+    d. Add a notes field where the user can type in their own notes and save them in the notes field of the concept in UMaps
+
+
+
