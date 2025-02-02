@@ -1,0 +1,159 @@
+.map-builder-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 60px);
+    padding: 20px;
+    gap: 20px;
+}
+
+.toolbar {
+    display: flex;
+    gap: 15px;
+    padding: 10px;
+    background: var(--secondary-bg);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toolbar select,
+.toolbar input,
+.toolbar button {
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    background: var(--primary-bg);
+    color: var(--text-color);
+}
+
+.toolbar button {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.toolbar button:hover {
+    background: var(--accent-hover);
+}
+
+.main-content {
+    display: flex;
+    flex: 1;
+    gap: 20px;
+    min-height: 0;
+}
+
+#networkContainer {
+    flex: 2;
+    background: var(--secondary-bg);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.node-editor {
+    flex: 1;
+    background: var(--secondary-bg);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+}
+
+.editor-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.editor-form input,
+.editor-form textarea {
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    background: var(--primary-bg);
+    color: var(--text-color);
+}
+
+.editor-form textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.youtube-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#youtubeList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.youtube-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    background: var(--primary-bg);
+    border-radius: 4px;
+}
+
+.youtube-item button {
+    padding: 4px 8px;
+    background: var(--error-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.prerequisites-section {
+    border-top: 1px solid var(--border-color);
+    padding-top: 15px;
+}
+
+#prerequisitesList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.prerequisite-item {
+    background: var(--primary-bg);
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.prerequisite-item button {
+    background: none;
+    border: none;
+    color: var(--error-color);
+    cursor: pointer;
+    padding: 0;
+    font-size: 16px;
+}
+
+#updateNodeBtn,
+#deleteNodeBtn {
+    padding: 10px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+#updateNodeBtn {
+    background: var(--accent-color);
+    color: white;
+}
+
+#deleteNodeBtn {
+    background: var(--error-color);
+    color: white;
+} 

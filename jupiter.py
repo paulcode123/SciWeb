@@ -59,54 +59,118 @@ def jupapi_output_to_grades(data):
   
   # Get grade corrections for the current user
   corrections = get_user_data("GradeCorrections")
-  print("Found corrections:", corrections)  # Debug print
+  print("Found corrections:", corrections)
+  
+  # Get the user's actual class names from the database for validation
+  user_classes = get_user_data("Classes")
+  if not user_classes:
+    print("Warning: No classes found in database for user")
+    return []
+    
+  # Create case-insensitive mapping of class names
+  valid_class_names = {c['name'].lower(): c['name'] for c in user_classes if 'name' in c}
+  print(f"Valid class names from database: {list(valid_class_names.values())}")
   
   for c in classes:
-    assignments = c["assignments"]
-    for a in assignments:
-      # generate 4 digit random number
-      id = random.randint(1000, 9999)
-      date = a["due"]
-      date = convert_date(date)
-      # if score is None, make it 'null'
-      score = a["score"] if a["score"] != None else "null"
-      value = a["points"]
-      # if there are quotes in name, remove them
-      a["name"] = a["name"].replace('"', '').strip()
+    try:
+      assignments = c["assignments"]
+      class_name = c["name"]
       
-      # Check if there's a correction for this assignment (case-insensitive)
-      correction = next((corr for corr in corrections 
-                        if corr['assignment'].lower().strip() == a['name'].lower().strip() 
-                        and corr['class'].lower().strip() == c['name'].lower().strip()
-                        and str(corr['OSIS']) == str(session['user_data']['osis'])), None)
-      
-      if correction:
-        print(f"Found correction for {a['name']} in {c['name']}: {correction}")  # Debug print
-        # Apply all possible corrections
-        score = float(correction['score'])
-        value = float(correction['value'])
+      # Validate class exists in database
+      if class_name.lower() not in valid_class_names:
+        print(f"Warning: Class '{class_name}' from Jupiter not found in user's classes. Skipping.")
+        continue
         
-        # Apply optional corrections if present
-        if 'date' in correction:
-          date = correction['date']
-          
-        if 'new_name' in correction:
-          a['name'] = correction['new_name']
+      # Use exact class name from database
+      normalized_class_name = valid_class_names[class_name.lower()]
       
-      grades.append({
-        "name": a["name"],
-        "date": date,
-        "score": score,
-        "value": value,
-        "class": c["name"],
-        "category": a["category"],
-        "OSIS": session['user_data']['osis'],
-        "id": id
-      })
+      for a in assignments:
+        try:
+          # generate 4 digit random number
+          id = random.randint(1000, 9999)
+          
+          # Validate and convert date
+          try:
+            date = convert_date(a["due"])
+            if not date:
+              print(f"Warning: Invalid date format for assignment {a['name']} in {class_name}")
+              continue
+          except Exception as e:
+            print(f"Error converting date for assignment {a['name']} in {class_name}: {e}")
+            continue
+            
+          # Validate score and value
+          score = a["score"] if a["score"] is not None else "null"
+          value = a["points"]
+          
+          try:
+            if score != "null":
+              float(score)
+            float(value)
+          except (ValueError, TypeError):
+            print(f"Warning: Invalid score/value format for assignment {a['name']} in {class_name}")
+            continue
+            
+          # Clean assignment name
+          a["name"] = a["name"].replace('"', '').strip()
+          
+          # Check for grade correction
+          correction = next((corr for corr in corrections 
+                          if corr['assignment'].lower().strip() == a['name'].lower().strip() 
+                          and corr['class'].lower().strip() == normalized_class_name.lower().strip()
+                          and str(corr['OSIS']) == str(session['user_data']['osis'])), None)
+          
+          if correction:
+            print(f"Applying correction for {a['name']} in {normalized_class_name}: {correction}")
+            try:
+              score = float(correction['score'])
+              value = float(correction['value'])
+              
+              # Apply optional corrections
+              if 'date' in correction:
+                date = correction['date']
+                
+              if 'new_name' in correction:
+                a['name'] = correction['new_name']
+            except (ValueError, TypeError) as e:
+              print(f"Error applying correction for {a['name']}: {e}")
+              continue
+          
+          # Create grade entry
+          grade_entry = {
+            "name": a["name"],
+            "date": date,
+            "score": score,
+            "value": value,
+            "class": normalized_class_name,
+            "category": a["category"],
+            "OSIS": session['user_data']['osis'],
+            "id": id
+          }
+          
+          # Validate all required fields are present and non-empty
+          if all(grade_entry[field] for field in ["name", "date", "class", "category"]):
+            grades.append(grade_entry)
+          else:
+            print(f"Warning: Missing required fields in grade entry: {grade_entry}")
+            
+        except Exception as e:
+          print(f"Error processing assignment {a.get('name', 'unknown')} in {class_name}: {e}")
+          continue
+          
+    except Exception as e:
+      print(f"Error processing class {c.get('name', 'unknown')}: {e}")
+      continue
   
   # filter out grades where grade["score"] = 'null' or grade["date"] = '' but keep numeric scores
-  grades = [grade for grade in grades if (grade['score'] != 'null' and grade['score'] is not None and grade['date'] != '') or isinstance(grade['score'], (int, float))]
-  return grades
+  filtered_grades = [grade for grade in grades if (grade['score'] != 'null' and grade['score'] is not None and grade['date'] != '') or isinstance(grade['score'], (int, float))]
+  
+  if len(filtered_grades) == 0:
+    print("Warning: No valid grades found after filtering")
+  else:
+    print(f"Successfully processed {len(filtered_grades)} grades")
+    
+  return filtered_grades
 
 
 

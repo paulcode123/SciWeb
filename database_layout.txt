@@ -290,6 +290,12 @@ Sheet name: CMaps (Class-Specific Concept Maps and Starter Prompts)
             youtube: [str, str]  // Array of [youtube link, time range(06:00-07:00)]
         }
     structure(JSON): Object containing the structure of the concept map
+        nodes: [
+            concept_id(int):{
+                x: int,
+                y: int
+            }
+        ]
     created_on (DATE): Date when the concept map was added
     updated_on (DATE): Last modification date
 

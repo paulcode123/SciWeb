@@ -17,7 +17,8 @@ const UI = {
     currentNode: null,
     currentMap: null,
     youtubePlayer: null,
-    reinforcementPanel: null
+    reinforcementPanel: null,
+    calculator: null
 };
 
 // Network configuration (same as maps.js)
@@ -418,6 +419,21 @@ async function selectNode(nodeId) {
     startDerivation(node);
 }
 
+// Add this helper function
+function extractDesmosExpressions(prompt) {
+    const desmosMatch = prompt.match(/DESMOS(.+)$/);
+    if (desmosMatch) {
+        return {
+            expressions: desmosMatch[1].trim(),
+            cleanPrompt: prompt.replace(/DESMOS.+$/, '').trim()
+        };
+    }
+    return {
+        expressions: null,
+        cleanPrompt: prompt
+    };
+}
+
 /**
  * Start a new derivation conversation
  * Sends initial message based on the selected concept
@@ -441,7 +457,18 @@ function startDerivation(concept) {
         // Add system message with starter prompt if available
         if (concept.starter_prompt) {
             log('Using starter prompt:', concept.starter_prompt);
-            addMessage('system', concept.starter_prompt);
+            // Extract and handle Desmos expressions if present
+            const { expressions, cleanPrompt } = extractDesmosExpressions(concept.starter_prompt);
+            
+            if (expressions && UI.calculator) {
+                log('Loading Desmos expressions:', expressions);
+                loadCalculatorExpressions(UI.calculator, expressions);
+                // Show calculator if expressions are present
+                document.getElementById('calculator-panel').style.display = 'block';
+                UI.calculator.resize();
+            }
+            
+            addMessage('system', cleanPrompt);
         } else {
             log('No starter prompt, using default');
             addMessage('system', `Let's derive the concept of ${concept.label}. I'll guide you through the historical development and reasoning behind this concept.`);
@@ -482,6 +509,9 @@ function initializeUIElements() {
 
     // Initialize YouTube player
     initYouTubePlayer();
+
+    // Initialize calculator
+    initCalculator();
 }
 
 /**
@@ -792,6 +822,8 @@ async function sendMessage() {
             
             if (response.derived) {
                 log('Concept derived successfully');
+                // remove UMaps from cache
+                clearCache('UMaps');
                 updateNodeStatus(UI.currentNode.id, 'completed');
                 celebrateDerivation(UI.currentNode.id);
                 
@@ -1252,3 +1284,146 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     UI.startTime = new Date(); // Track session start time
 });
+
+// Initialize calculator functionality
+function initCalculator() {
+    const calculator = Desmos.GraphingCalculator(document.getElementById('calculator'), {
+        keypad: true,
+        expressions: true,
+        settingsMenu: true,
+        zoomButtons: true,
+        expressionsTopbar: true,
+        border: false
+    });
+    UI.calculator = calculator;
+    
+    // Set up calculator toggle button
+    const toggleButton = document.getElementById('toggle-calculator');
+    const calculatorPanel = document.getElementById('calculator-panel');
+    const closeButton = document.querySelector('.close-calculator');
+    const fullscreenButton = document.querySelector('.fullscreen-calculator');
+    
+    // Make calculator draggable
+    const header = calculatorPanel.querySelector('.calculator-header');
+    let isDragging = false;
+    let currentX;
+    let currentY;
+    let initialX;
+    let initialY;
+    let xOffset = 0;
+    let yOffset = 0;
+
+    function dragStart(e) {
+        if (calculatorPanel.classList.contains('fullscreen')) return;
+        
+        if (e.type === "touchstart") {
+            initialX = e.touches[0].clientX - xOffset;
+            initialY = e.touches[0].clientY - yOffset;
+        } else {
+            initialX = e.clientX - xOffset;
+            initialY = e.clientY - yOffset;
+        }
+        
+        if (e.target === header || e.target.parentNode === header) {
+            isDragging = true;
+        }
+    }
+
+    function dragEnd() {
+        isDragging = false;
+    }
+
+    function drag(e) {
+        if (isDragging && !calculatorPanel.classList.contains('fullscreen')) {
+            e.preventDefault();
+            
+            if (e.type === "touchmove") {
+                currentX = e.touches[0].clientX - initialX;
+                currentY = e.touches[0].clientY - initialY;
+            } else {
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
+            }
+
+            xOffset = currentX;
+            yOffset = currentY;
+
+            setTranslate(currentX, currentY, calculatorPanel);
+        }
+    }
+
+    function setTranslate(xPos, yPos, el) {
+        el.style.transform = `translate(${xPos}px, ${yPos}px)`;
+    }
+
+    // Toggle fullscreen
+    fullscreenButton.addEventListener('click', () => {
+        calculatorPanel.classList.toggle('fullscreen');
+        const isFullscreen = calculatorPanel.classList.contains('fullscreen');
+        fullscreenButton.querySelector('.material-icons').textContent = 
+            isFullscreen ? 'fullscreen_exit' : 'fullscreen';
+        
+        // Reset transform when entering fullscreen
+        if (isFullscreen) {
+            calculatorPanel.style.transform = 'none';
+            xOffset = 0;
+            yOffset = 0;
+        }
+        
+        calculator.resize();
+    });
+
+    header.addEventListener("touchstart", dragStart, false);
+    header.addEventListener("touchend", dragEnd, false);
+    header.addEventListener("touchmove", drag, false);
+    header.addEventListener("mousedown", dragStart, false);
+    document.addEventListener("mousemove", drag, false);
+    document.addEventListener("mouseup", dragEnd, false);
+    
+    toggleButton.addEventListener('click', () => {
+        const isVisible = calculatorPanel.style.display === 'block';
+        calculatorPanel.style.display = isVisible ? 'none' : 'block';
+        if (!isVisible) {
+            calculator.resize();
+        }
+    });
+    
+    closeButton.addEventListener('click', () => {
+        calculatorPanel.style.display = 'none';
+        // Exit fullscreen when closing
+        calculatorPanel.classList.remove('fullscreen');
+        fullscreenButton.querySelector('.material-icons').textContent = 'fullscreen';
+    });
+
+    // Log the current state of expressions
+    const state = calculator.getState();
+    log('Calculator expressions state:', state.expressions.list);
+}
+
+function loadCalculatorExpressions(calculator, expressionsString) {
+    // Convert \n to semicolons for Desmos and filter out empty lines
+    const expressions = expressionsString
+        .replace(/\\n/g, ';')
+        .replace(/\\\\/g, '\\')
+        .split(';')
+        .filter(expr => expr.trim());
+        
+    expressions.forEach((expr, index) => {
+        // Check if this is a text field (starts with TEXT:)
+        if (expr.startsWith('TEXT:')) {
+            calculator.setExpression({
+                id: 'preset_' + index,
+                type: 'text',
+                text: expr.substring(5).trim(),
+                hidden: true
+            });
+        } else {
+            calculator.setExpression({
+                id: 'preset_' + index,
+                type: 'expression',
+                latex: expr,
+                hidden: true
+            });
+        }
+    });
+}
