@@ -1,18 +1,18 @@
 :root {
-    --primary-color: #2196F3;
-    --secondary-color: #1976D2;
-    --background-dark: #1E1E1E;
-    --background-light: #2D2D2D;
+    --primary-color: #7C4DFF;  /* Vibrant purple */
+    --secondary-color: #651FFF; /* Darker purple */
+    --background-dark: #121212; /* Darker background */
+    --background-light: #1E1E1E; /* Slightly lighter background */
     --text-color: #FFFFFF;
-    --border-color: #404040;
-    --hover-color: #3B3B3B;
-    --success-color: #4CAF50;
-    --warning-color: #FFC107;
-    --danger-color: #F44336;
-    --assignment-color: #4285f4;
-    --study-color: #ea4335;
-    --aspiration-color: #34a853;
-    --task-color: #fbbc05;
+    --border-color: #2D2D2D; /* Subtle borders */
+    --hover-color: #2A2A2A; /* Hover state */
+    --success-color: #00C853; /* Bright green */
+    --warning-color: #FFD600; /* Bright yellow */
+    --danger-color: #FF1744;  /* Bright red */
+    --assignment-color: #7C4DFF; /* Purple */
+    --study-color: #00C853;   /* Green */
+    --aspiration-color: #2196F3; /* Blue */
+    --task-color: #FF4081;    /* Pink */
 }
 
 .schedule-container {
