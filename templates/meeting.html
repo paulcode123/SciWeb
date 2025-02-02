@@ -1,0 +1,146 @@
+{% extends "darkThemeTemplate.html" %}
+
+{% block title %}
+<title>SciWeb | Meeting Room</title>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="/static/meeting.css">
+{% endblock %}
+
+{% block content %}
+<div class="meeting-container">
+    <!-- Meeting Controls -->
+    <div class="meeting-header">
+        <div class="meeting-info">
+            <h2 id="roomName">Meeting Room</h2>
+            <span id="participantCount" class="participant-count">0 participants</span>
+        </div>
+        <div class="meeting-controls">
+            <button id="startMeeting" class="button primary">
+                <i class="fas fa-video"></i> Start/Join Meeting
+            </button>
+            <button id="scheduleMeeting" class="button secondary">
+                <i class="fas fa-calendar-plus"></i> Schedule Meeting
+            </button>
+        </div>
+    </div>
+
+    <div class="meeting-content">
+        <!-- Video Conference Area -->
+        <div class="video-container">
+            <div id="meet"></div>
+            <div class="meeting-toolbar">
+                <button class="tool-btn" id="toggleAudio" title="Mute/Unmute">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <button class="tool-btn" id="toggleVideo" title="Turn Camera On/Off">
+                    <i class="fas fa-video"></i>
+                </button>
+                <button class="tool-btn" id="toggleScreen" title="Share Screen">
+                    <i class="fas fa-desktop"></i>
+                </button>
+                <button class="tool-btn" id="toggleChat" title="Open Chat">
+                    <i class="fas fa-comments"></i>
+                </button>
+                <button class="tool-btn" id="toggleWhiteboard" title="Open Whiteboard">
+                    <i class="fas fa-chalkboard"></i>
+                </button>
+                <button class="tool-btn danger" id="endCall" title="End Call">
+                    <i class="fas fa-phone-slash"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Side Panel (Notes & Chat) -->
+        <div class="side-panel">
+            <div class="panel-tabs">
+                <button class="tab-btn active" data-tab="notes">
+                    <i class="fas fa-sticky-note"></i> Notes
+                </button>
+                <button class="tab-btn" data-tab="chat">
+                    <i class="fas fa-comments"></i> Chat
+                </button>
+                <button class="tab-btn" data-tab="participants">
+                    <i class="fas fa-users"></i> Participants
+                </button>
+            </div>
+
+            <!-- Notes Panel -->
+            <div class="tab-content active" id="notes-panel">
+                <div class="notes-toolbar">
+                    <button class="tool-btn" id="saveNotes">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                    <button class="tool-btn" id="shareNotes">
+                        <i class="fas fa-share"></i> Share
+                    </button>
+                </div>
+                <div class="notes-editor" contenteditable="true">
+                    <!-- Notes content will go here -->
+                </div>
+            </div>
+
+            <!-- Chat Panel -->
+            <div class="tab-content" id="chat-panel">
+                <div class="chat-messages">
+                    <!-- Chat messages will go here -->
+                </div>
+                <div class="chat-input">
+                    <input type="text" placeholder="Type a message...">
+                    <button class="send-btn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Participants Panel -->
+            <div class="tab-content" id="participants-panel">
+                <div class="participants-list">
+                    <!-- Participant list will go here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Meeting Modal -->
+<div class="modal" id="scheduleModal">
+    <div class="modal-content">
+        <h3>Schedule Meeting</h3>
+        <form id="scheduleForm">
+            <div class="form-group">
+                <label>Meeting Title</label>
+                <input type="text" id="meetingTitle" required>
+            </div>
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="meetingDate" required>
+            </div>
+            <div class="form-group">
+                <label>Time</label>
+                <input type="time" id="meetingTime" required>
+            </div>
+            <div class="form-group">
+                <label>Duration (minutes)</label>
+                <input type="number" id="meetingDuration" min="15" step="15" value="30" required>
+            </div>
+            <div class="form-group">
+                <label>Participants</label>
+                <select id="meetingParticipants" multiple>
+                    <!-- Will be populated with class members -->
+                </select>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="button primary">Schedule</button>
+                <button type="button" class="button secondary" id="cancelSchedule">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script src='https://meet.jit.si/external_api.js'></script>
+<script src="/static/meeting.js"></script>
+{% endblock %} 

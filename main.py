@@ -239,6 +239,10 @@ def derive():
 def maps():
     return render_template('Maps.html')
 
+@app.route('/Meeting')
+def meeting():
+    return render_template('meeting.html')
+
 # @app.route('/Features/AI')
 # def ai_features():
 #   return render_template('About/AI.html')

@@ -15,9 +15,11 @@
     padding: 30px;
     background-color: var(--background-dark);
     color: var(--text-color);
-    min-height: calc(100vh - 100px);
-    max-width: 1800px;
+    min-height: calc(100vh - 60px);
+    max-width: 2000px;
     margin: 0 auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .meeting-header {
@@ -29,6 +31,7 @@
     background-color: var(--background-light);
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    flex-shrink: 0;
 }
 
 .meeting-info h2 {
@@ -77,7 +80,8 @@
 .meeting-content {
     display: flex;
     gap: 25px;
-    height: calc(100vh - 220px);
+    flex: 1;
+    min-height: calc(100vh - 180px);
     margin-top: 20px;
 }
 
@@ -88,11 +92,13 @@
     overflow: hidden;
     position: relative;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
 }
 
 #meet {
-    width: 100%;
-    height: calc(100% - 60px);
+    flex: 1;
+    min-height: 600px;
     background-color: var(--background-dark);
 }
 
@@ -144,6 +150,8 @@
     display: flex;
     flex-direction: column;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    max-height: calc(100vh - 180px);
+    overflow: hidden;
 }
 
 .panel-tabs {
