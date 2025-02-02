@@ -75,19 +75,27 @@
 .time-column {
     width: 100px;
     background-color: var(--background-dark);
-    padding: 10px;
     border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
 }
 
 .period {
-    height: 50px;
+    height: 45px;
+    min-height: 45px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-bottom: 1px solid var(--border-color);
     font-weight: bold;
-    padding: 5px;
     text-align: center;
+    margin: 0;
+    padding: 0;
+}
+
+.period.header {
+    background-color: var(--background-dark);
+    border-bottom: 2px solid var(--border-color);
 }
 
 .days-grid {
@@ -100,29 +108,40 @@
     display: flex;
     background-color: var(--background-dark);
     border-bottom: 2px solid var(--border-color);
+    height: 45px;
+    min-height: 45px;
 }
 
 .day-header {
     flex: 1;
-    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
     font-weight: bold;
     border-left: 1px solid var(--border-color);
+    margin: 0;
+    padding: 0;
 }
 
 .schedule-content {
     flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .period-row {
     display: flex;
-    height: 50px;
+    height: 45px;
+    min-height: 45px;
     border-bottom: 1px solid var(--border-color);
+    margin: 0;
+    padding: 0;
 }
 
 .class-slot {
     flex: 1;
-    padding: 5px;
+    padding: 3px;
     border-left: 1px solid var(--border-color);
 }
 
@@ -133,7 +152,7 @@
     color: var(--text-color);
     border: 1px solid var(--border-color);
     border-radius: 4px;
-    padding: 5px;
+    padding: 2px 5px;
     cursor: pointer;
     font-size: 0.9em;
 }
