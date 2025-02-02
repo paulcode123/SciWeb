@@ -297,13 +297,25 @@ function createWorksheetElement(worksheet) {
         <div class="practice-section">
             <h4><i class="fas fa-tasks"></i> Practice Questions:</h4>
             <ol class="practice-list">
-                ${worksheet.practice_questions.map(question => 
+                ${worksheet.practice_questions.map((question, index) => 
                     `<li>
                         <i class="fas fa-question-circle"></i>
                         <span class="question-text">${question}</span>
+                        <button class="solve-question" data-index="${index}" title="Solve Question">
+                            <i class="fas fa-lightbulb"></i>
+                        </button>
+                        <div class="solution-display" style="display: none;"></div>
                     </li>`
                 ).join('')}
             </ol>
+            <div class="practice-actions">
+                <button class="more-like-this" title="Show More Similar Problems">
+                    <i class="fas fa-plus-circle"></i> More Like This
+                </button>
+                <div class="additional-problems" style="display: none;">
+                    <ol class="practice-list more-problems"></ol>
+                </div>
+            </div>
             <div class="add-button-container" data-tooltip="Add Practice Question">
                 <button class="add-question"><i class="fas fa-plus"></i></button>
             </div>
@@ -380,6 +392,154 @@ function createWorksheetElement(worksheet) {
         const question = worksheetDiv.querySelector('textarea').value.trim();
         if (question) {
             await askWorksheetQuestion(worksheet.image, question, worksheetDiv);
+        }
+    });
+
+    // Add event listeners for solve buttons
+    worksheetDiv.querySelectorAll('.solve-question').forEach(button => {
+        button.addEventListener('click', async () => {
+            const questionIndex = button.dataset.index;
+            const questionText = worksheet.practice_questions[questionIndex];
+            const solutionDisplay = button.parentElement.querySelector('.solution-display');
+            
+            try {
+                startLoading();
+                const response = await fetch('/solve-question', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        file: worksheet.image,
+                        question: questionText,
+                        fileType: 'image/png'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                // Format and display the solution
+                solutionDisplay.innerHTML = `
+                    <div class="solution-box">
+                        <h4>Solution:</h4>
+                        <p style="white-space: pre-line;">${data.solution}</p>
+                    </div>
+                `;
+                solutionDisplay.style.display = 'block';
+                
+                // Process LaTeX in the solution if needed
+                if (window.MathJax) {
+                    MathJax.typesetPromise([solutionDisplay]);
+                }
+                
+            } catch (error) {
+                console.error('Error solving question:', error);
+                alert('Failed to get solution. Please try again.');
+            }
+            endLoading();
+        });
+    });
+
+    // Add event listener for More Like This button
+    worksheetDiv.querySelector('.more-like-this').addEventListener('click', async () => {
+        const additionalProblems = worksheetDiv.querySelector('.additional-problems');
+        const moreProblemsContainer = worksheetDiv.querySelector('.more-problems');
+        
+        startLoading();
+        try {
+            // Get all problems for this worksheet
+            const response = await fetchRequest('/data', { data: 'Problems' });
+            const problems = response.Problems.filter(p => 
+                p.classID === worksheet.classID && 
+                p.unit === currentUnitName &&
+                p.worksheetID === worksheet.id &&
+                !worksheet.practice_questions.includes(p.problem)
+            );
+            
+            // Randomly select up to 5 problems
+            const selectedProblems = problems
+                .sort(() => 0.5 - Math.random())
+                .slice(0, 5);
+            
+            if (selectedProblems.length === 0) {
+                endLoading();
+                alert('No additional problems available for this worksheet.');
+                return;
+            }
+            
+            // Display the problems
+            moreProblemsContainer.innerHTML = selectedProblems.map((problem, index) => `
+                <li>
+                    <i class="fas fa-question-circle"></i>
+                    <span class="question-text">${problem.problem}</span>
+                    <button class="solve-question" data-index="${worksheet.practice_questions.length + index}" title="Solve Question">
+                        <i class="fas fa-lightbulb"></i>
+                    </button>
+                    <div class="solution-display" style="display: none;"></div>
+                </li>
+            `).join('');
+            
+            // Add event listeners for new solve buttons
+            moreProblemsContainer.querySelectorAll('.solve-question').forEach(button => {
+                button.addEventListener('click', async () => {
+                    const questionIndex = parseInt(button.dataset.index);
+                    const questionText = selectedProblems[questionIndex - worksheet.practice_questions.length].problem;
+                    const solutionDisplay = button.parentElement.querySelector('.solution-display');
+                    
+                    startLoading();
+                    try {
+                        const response = await fetch('/solve-question', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                file: worksheet.image,
+                                question: questionText,
+                                fileType: 'image/png'
+                            })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.error) {
+                            throw new Error(data.error);
+                        }
+                        
+                        solutionDisplay.innerHTML = `
+                            <div class="solution-box">
+                                <h4>Solution:</h4>
+                                <p style="white-space: pre-line;">${data.solution}</p>
+                            </div>
+                        `;
+                        solutionDisplay.style.display = 'block';
+                        
+                        if (window.MathJax) {
+                            await MathJax.typesetPromise([solutionDisplay]);
+                        }
+                        
+                    } catch (error) {
+                        console.error('Error solving question:', error);
+                        alert('Failed to get solution. Please try again.');
+                    } finally {
+                        endLoading();
+                    }
+                });
+            });
+            
+            // Show the additional problems
+            additionalProblems.style.display = 'block';
+            
+            // Process LaTeX in new problems if needed
+            if (window.MathJax) {
+                await MathJax.typesetPromise([moreProblemsContainer]);
+            }
+            
+        } catch (error) {
+            console.error('Error fetching additional problems:', error);
+            alert('Failed to fetch additional problems. Please try again.');
+        } finally {
+            endLoading();
         }
     });
 
@@ -758,6 +918,38 @@ style.textContent = `
         padding: 10px 20px;
         border-radius: 4px;
         cursor: pointer;
+    }
+    
+    .solve-question {
+        background: none;
+        border: none;
+        color: #4CAF50;
+        cursor: pointer;
+        padding: 5px;
+        margin-left: 10px;
+        transition: color 0.3s;
+    }
+    
+    .solve-question:hover {
+        color: #45a049;
+    }
+    
+    .solution-box {
+        background: #2d2d2d;
+        border-radius: 5px;
+        padding: 15px;
+        margin-top: 10px;
+        border-left: 3px solid #4CAF50;
+    }
+    
+    .solution-box h4 {
+        color: #4CAF50;
+        margin: 0 0 10px 0;
+    }
+    
+    .solution-display {
+        margin-top: 10px;
+        margin-left: 25px;
     }
 `;
 document.head.appendChild(style);

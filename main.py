@@ -243,6 +243,10 @@ def maps():
 def map_builder():
     return render_template('MapBuilder.html')
 
+@app.route('/TodoTree')
+def todo_tree():
+    return render_template('TodoTree.html')
+
 # @app.route('/Features/AI')
 # def ai_features():
 #   return render_template('About/AI.html')
@@ -638,7 +642,26 @@ def ask_question():
         data['question']
     )
     
-    return json.dumps({"answer": answer})
+    return jsonify({"answer": answer})
+
+@app.route('/solve-question', methods=['POST'])
+def solve_question():
+    data = request.json
+    # Get the file from the bucket
+    base64_content = download_file("sciweb-files", data['file'])
+    
+    # Process the question
+    solution = answer_worksheet_question(
+        vars['vision_llm'],
+        base64_content,
+        data['fileType'],
+        f"Please solve and explain this practice question step by step: {data['question']}"
+    )
+    
+    return jsonify({"solution": solution})
+
+
+
 
 #function to generate insights and return them to the Grade Analysis page
 @app.route('/GAsetup', methods=['POST'])
@@ -830,13 +853,14 @@ def process_notebook_file():
 
         # Convert Pydantic model to dict
         insights_dict = insights.model_dump()
-        
+        worksheet_id = random.randint(0, 1000000)
         # Store all practice questions in Problems sheet
         for question in insights_dict["practice_questions"]:
             question_id = ''.join([str(random.randint(0, 9)) for _ in range(6)])
             post_data("Problems", {
                 "id": question_id,
                 "classID": class_id,
+                "worksheetID": worksheet_id,
                 "unit": unit,
                 "problem": question["question"],
                 "difficulty": question["difficulty"]
@@ -853,7 +877,8 @@ def process_notebook_file():
         # add to the Notebooks sheet
         post_data("Notebooks", {
             "classID": class_id, 
-            "unit": unit, 
+            "unit": unit,
+            "id": worksheet_id,
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
             "image": blob_id, 
             "topic": insights_dict["topic"], 

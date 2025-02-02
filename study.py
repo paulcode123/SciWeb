@@ -347,7 +347,24 @@ def answer_worksheet_question(llm, image_content: str, file_type: str, question:
     padding = len(image_content) % 4
     if padding:
         image_content += '=' * (4 - padding)
-    response = WORKSHEET_ANSWER_PROMPT.invoke({"image_content": image_content, "file_type": file_type, "question": question})
+
+    # Format the image URL
+    image_url = f"data:{file_type};base64,{image_content}"
+    
+    messages = [
+        SystemMessage(content="You are an expert tutor helping students understand educational content. Number your steps and provide clear explanations."),
+        HumanMessage(content=[
+            {"type": "text", "text": f"Please answer this question about the worksheet: {question}"},
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": image_url
+                }
+            }
+        ])
+    ]
+    
+    response = llm.invoke(messages)
     return response.content
 
 def map_problems(problems_data, concept_map, llm):

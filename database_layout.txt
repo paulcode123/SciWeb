@@ -81,6 +81,7 @@ Sheet name: Notebooks
 
     classID(id of the class)
     unit(name of the unit)
+    id(id of the worksheet)
     timestamp(yyyy-mm-dd hh:mm:ss)
     topic(topic of the worksheet)
     subtopics(list of notes on the worksheet)
@@ -326,6 +327,7 @@ Sheet name: Problems:
     id(str of 6 digit number)
     classID(id of the class)
     unit(name of the unit)
+    worksheetID(id of the worksheet)
     problem(problem statement)
     difficulty(difficulty of the problem)
     concepts(id of the concepts the problem requires) // added separately by problem mapping
