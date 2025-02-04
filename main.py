@@ -250,6 +250,10 @@ def map_builder():
 def todo_tree():
     return render_template('TodoTree.html')
 
+@app.route('/Tutoring')
+def tutoring():
+    return render_template('tutoring.html')
+
 # @app.route('/Features/AI')
 # def ai_features():
 #   return render_template('About/AI.html')

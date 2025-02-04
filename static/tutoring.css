@@ -1,0 +1,264 @@
+:root {
+    --primary-color: #7C4DFF;
+    --secondary-color: #651FFF;
+    --background-dark: #121212;
+    --background-light: #1E1E1E;
+    --text-color: #FFFFFF;
+    --border-color: #2D2D2D;
+    --hover-color: #2A2A2A;
+    --success-color: #00C853;
+    --warning-color: #FFD600;
+    --danger-color: #FF1744;
+}
+
+.tutoring-container {
+    padding: 30px;
+    max-width: 1400px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    min-height: calc(100vh - 60px);
+}
+
+/* Request Section Styles */
+.request-section {
+    background: var(--background-light);
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.request-section h2,
+.tutor-section h2 {
+    color: var(--text-color);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    background: var(--background-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-color);
+    font-size: 14px;
+}
+
+.form-group textarea {
+    height: 120px;
+    resize: vertical;
+}
+
+/* Tutor Section Styles */
+.tutor-section {
+    background: var(--background-light);
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.tutor-controls {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+/* Calendar Styles */
+.calendar-container {
+    background: var(--background-dark);
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.weekly-schedule {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.day-column {
+    text-align: center;
+}
+
+.day-header {
+    padding: 10px;
+    background: var(--primary-color);
+    border-radius: 6px;
+    margin-bottom: 10px;
+}
+
+.time-slot {
+    padding: 8px;
+    margin: 4px 0;
+    background: var(--background-light);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.time-slot:hover {
+    background: var(--hover-color);
+}
+
+.time-slot.selected {
+    background: var(--primary-color);
+}
+
+/* Requests Grid Styles */
+.requests-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.request-card {
+    background: var(--background-dark);
+    padding: 15px;
+    border-radius: 8px;
+    transition: transform 0.3s ease;
+}
+
+.request-card:hover {
+    transform: translateY(-2px);
+}
+
+.request-card h4 {
+    margin: 0 0 10px 0;
+    color: var(--primary-color);
+}
+
+.request-info {
+    font-size: 0.9em;
+    margin-bottom: 15px;
+}
+
+.request-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* Button Styles */
+.primary-btn,
+.secondary-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.primary-btn {
+    background: var(--primary-color);
+    color: white;
+}
+
+.secondary-btn {
+    background: var(--background-dark);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+.primary-btn:hover {
+    background: var(--secondary-color);
+    transform: translateY(-1px);
+}
+
+.secondary-btn:hover {
+    background: var(--hover-color);
+    transform: translateY(-1px);
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--background-light);
+    padding: 25px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .tutoring-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .tutoring-container {
+        padding: 15px;
+    }
+
+    .weekly-schedule {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Status Indicators */
+.status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 500;
+}
+
+.status-pending {
+    background: var(--warning-color);
+    color: var(--background-dark);
+}
+
+.status-accepted {
+    background: var(--success-color);
+    color: var(--background-dark);
+}
+
+.status-declined {
+    background: var(--danger-color);
+    color: white;
+} 
