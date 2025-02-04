@@ -242,6 +242,13 @@ def maps():
 @app.route('/Meeting')
 def meeting():
     return render_template('meeting.html')
+@app.route('/MapBuilder')
+def map_builder():
+    return render_template('MapBuilder.html')
+
+@app.route('/TodoTree')
+def todo_tree():
+    return render_template('TodoTree.html')
 
 # @app.route('/Features/AI')
 # def ai_features():
@@ -638,173 +645,185 @@ def ask_question():
         data['question']
     )
     
-    return json.dumps({"answer": answer})
+    return jsonify({"answer": answer})
+
+@app.route('/solve-question', methods=['POST'])
+def solve_question():
+    data = request.json
+    # Get the file from the bucket
+    base64_content = download_file("sciweb-files", data['file'])
+    
+    # Process the question
+    solution = answer_worksheet_question(
+        vars['vision_llm'],
+        base64_content,
+        data['fileType'],
+        f"Please solve and explain this practice question step by step: {data['question']}"
+    )
+    
+    return jsonify({"solution": solution})
+
+
+
 
 #function to generate insights and return them to the Grade Analysis page
-@app.route('/insights', methods=['POST'])
-def get_insights_ga():
-  classes_data = get_user_data("Classes")
-  user_data = get_name()
-  grades = 'temporarily unavailable'
-  grade_spreads = {}
-
-  grade_spreads["All"] = process_grades(grades, user_data, classes_data)
-  # If the user is graphing all of their classes, allow insights to be generated for each class and category individually by getting the user's grades for each class to pass to the AI
-  weights = get_weights(classes_data, user_data['osis'])
-  
-  for className in weights:
-    for category in weights[className]:
-    # Get the user's grades for the class and category
-      fgrades = filter_grades(grades, user_data, [className.lower(), category.lower()])
-      t, g = process_grades(fgrades, user_data, classes_data, extend_to_goals=False)
-      # If the user has grades for the class, add the class and the grades to the list of grade spreads
-      if type(t)!='int':
-        grade_spreads[className+" "+category] = g
-    # do it for the class as a whole
-    fgrades = filter_grades(grades, user_data, [className.lower(), "All"])
-    t, g = process_grades(fgrades, user_data, classes_data, extend_to_goals=False)
-    grade_spreads[className] = g
-    
-  # Generate the insights
-  prompt = [{"role":"system", "content": "You are an advisor to a high school student, and your job is to curate 5 insightful and specific areas for the student to focus on. You will get lists of the student's grades for a given class/category at 10 sequential times during the year. Write a numbered list and nothing else."},
-            {"role": "user", "content": str(grade_spreads)}]
-  
-  insights = get_insights(prompt)
-  return json.dumps(insights)
-
-class assignment_obj(BaseModel):
-  classID: int
-  class_name: str
-  assignment_name: str
-  assignment_date: str
-
-
-class GC_assignments(BaseModel):
-  assignments: list[assignment_obj]
-
-# Google Classroom screenshot Assignment Upload Route
-@app.route('/upload_assignments', methods=['POST'])
-def upload_assignments():
-  data = request.json
-  classes = get_user_data("Classes")
-  # filter classes for the user's osis and include only the id and name columns
-  classes = [{"id": item["id"], "name": item["name"]} for item in classes if str(session['user_data']['osis']) in str(item['OSIS'])]
-  # call get_insights with the image file, data['image']
-  base64_img = data['image']
-  # set the date, in the format "Monday, 1/2/2024"
-  date = datetime.now().strftime('%A, %m/%d/%Y')
-
-  prompts = [
-        {"role": "system", "content": "You're role is to extract the name, due date(yyyy-mm-dd), and class of assignments from a Google Classroom assignment screenshot. You will be given the image, a list of all of the class names and ids that the user is i, and today's date. Return the class name that most closely matches the class in the image."},
-        {"role": "user", "content": [
-            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_img}"}},
-            {"type": "text", "text": f"Classes: {classes}"},
-            {"type": "text", "text": f"Today's date: {date}"}
-        ]}
-    ]
-  # print("prompts", prompts)
-  response = get_insights(prompts, GC_assignments)
-  #convert response from string to dictionary
-  response = json.loads(response)
-  print("response", str(response))
-  
-  # add the assignments to the Assignments sheet with post_data
-  for assignment in response['assignments']:
-    rand_id = ''.join([str(random.randint(0, 9)) for _ in range(4)])
-    post_data("Assignments", {"class": int(assignment['classID']), "name": assignment['assignment_name'], "due_date": assignment['assignment_date'], "class_name": assignment['class_name'], "id": rand_id})
-  return json.dumps({"data": "success"})
-
 @app.route('/GAsetup', methods=['POST'])
 def GA_setup():
-  data = request.json
-  # get the user's grades and classes
-  classes = data['Classes']
-  weights = get_weights(classes, session['user_data']['osis'])
-  grades = data['Grades']
-  user_data = get_name()
-  goals = data['Goals']
-  distributions = data['Distributions']
-  # filter goals for the user's osis
-  goals = [item for item in goals if str(session['user_data']['osis']) in str(item['OSIS'])]
-
-  # if there are no grades, return an error
-  # if grades is a dictionary with a key 'class' and the value is 'No grades entered', return an error
-  if 'class' in grades and grades['class'] == 'No grades entered':
-    print("No grades found in GA_setup")
-    return json.dumps({"error": "Enter your grades before analyzing them"})
-  
-  if grades == []:
-    print("Key prefix mismatch in GA_setup")
-    return json.dumps({"error": "Grade Access not authenticated. Try reloading the page, then repulling your grades."})
-  #filter classes for the user's osis
-  classes = [item for item in classes if str(session['user_data']['osis']) in str(item['OSIS'])]
   try:
-    stats = get_stats(grades, classes)
-    compliments = get_compliments(grades, classes)
-    # convert dates of grades(m/d/yyyy) to ordinal dates
-    ordinal_dated_grades = []
-    for grade in grades:
-      ordinal_dated_grades.append({"date": datetime.strptime(grade['date'], "%m/%d/%Y").toordinal(), "value": grade['value'], "class": grade['class'], "category": grade['category'], "score": grade['score'], "name": grade['name']})
-
-    # run get_grade_impact for each grade, and add cat_impact, class_impact, GPA_impact to each grade dictionary
-    for grade in ordinal_dated_grades:
-      grade_impact = get_grade_impact(grade, grades, weights)
-      grade['cat_impact'] = grade_impact[0]
-      grade['class_impact'] = grade_impact[1]
-      grade['GPA_impact'] = grade_impact[2]
-
-    grade_spreads = {}
-    cat_value_sums = {}
-    categories = []
-    # calculate min and max dates across all grades in form m/d/yyyy
-    times = [datetime.strptime(grade['date'], "%m/%d/%Y").toordinal() for grade in grades]
-    # Convert back to dates for min and max
-    min_date = datetime.fromordinal(min(times))
-    max_date = datetime.fromordinal(max(times))
-    # calculate 10 times(in ordinal form) between min and max date
-    times = [(min_date + timedelta(days=i*(max_date-min_date).days/10)).toordinal() for i in range(11)]
-    # For each category in each class, filter the grades for it
-    for c in weights:
-      grade_spreads[c] = {}
-      cat_value_sums[c] = {}
-      for category in weights[c]:
-        if category not in categories:
-          categories.append(category)
-        g = process_grades(grades, c, category, times)
-        if g:
-          grade_spreads[c][category] = g
-   
-    # Get the goals that the user has set, and create objects to overlay on the graph
-    # goals, set_coords, max_date = get_goals(classes, user_data, grades, times, grade_spread)
-
+    data = request.json
+    if not data:
+      return json.dumps({"error": "No data provided"})
+      
+    # Validate required data is present
+    required_fields = ['Classes', 'Grades', 'Goals', 'Distributions']
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+      return json.dumps({"error": f"Missing required fields: {missing_fields}"})
+    
+    # get the user's grades and classes
+    classes = data['Classes']
+    if not classes:
+      return json.dumps({"error": "No classes data provided"})
+      
+    user_data = get_name()
+    if not user_data:
+      return json.dumps({"error": "Could not get user data"})
+      
+    # Get weights first to validate class setup
+    weights = get_weights(classes, session['user_data']['osis'])
+    if not weights:
+      return json.dumps({"error": "No valid class weights found. Please check your class grading categories."})
+    
+    grades = data['Grades']
+    goals = data['Goals']
+    distributions = data['Distributions']
+    
+    # Validate grades data
+    if isinstance(grades, dict) and grades.get('class') == 'No grades entered':
+      print("No grades found in GA_setup")
+      return json.dumps({"error": "Enter your grades before analyzing them"})
+    
+    if not grades:
+      print("Key prefix mismatch in GA_setup")
+      return json.dumps({"error": "Grade Access not authenticated. Try reloading the page, then repulling your grades."})
+      
+    # filter goals for the user's osis
+    goals = [item for item in goals if str(session['user_data']['osis']) in str(item['OSIS'])]
+    
+    #filter classes for the user's osis
+    classes = [item for item in classes if str(session['user_data']['osis']) in str(item['OSIS'])]
+    if not classes:
+      return json.dumps({"error": "No classes found for user"})
+    
+    try:
+      # Get stats and compliments
+      stats = get_stats(grades, classes)
+      if not stats:
+        return json.dumps({"error": "Could not calculate grade statistics"})
+        
+      compliments = get_compliments(grades, classes)
+      
+      # Process grades
+      ordinal_dated_grades = []
+      for grade in grades:
+        try:
+          ordinal_dated_grades.append({
+            "date": datetime.strptime(grade['date'], "%m/%d/%Y").toordinal(),
+            "value": grade['value'],
+            "class": grade['class'],
+            "category": grade['category'],
+            "score": grade['score'],
+            "name": grade['name']
+          })
+        except Exception as e:
+          print(f"Error processing grade for ordinal date: {grade}")
+          print(f"Error details: {str(e)}")
+          continue
+      
+      if not ordinal_dated_grades:
+        return json.dumps({"error": "No valid grades found after date conversion"})
+      
+      # Calculate grade impacts
+      for grade in ordinal_dated_grades:
+        try:
+          grade_impact = get_grade_impact(grade, grades, weights)
+          grade['cat_impact'] = grade_impact[0]
+          grade['class_impact'] = grade_impact[1]
+          grade['GPA_impact'] = grade_impact[2]
+        except Exception as e:
+          print(f"Error calculating grade impact: {grade}")
+          print(f"Error details: {str(e)}")
+          continue
+      
+      # Setup grade spreads
+      grade_spreads = {}
+      cat_value_sums = {}
+      categories = []
+      
+      # Calculate time range
+      try:
+        times = [datetime.strptime(grade['date'], "%m/%d/%Y").toordinal() for grade in grades]
+        if not times:
+          return json.dumps({"error": "No valid dates found in grades"})
+          
+        min_date = datetime.fromordinal(min(times))
+        max_date = datetime.fromordinal(max(times))
+        times = [(min_date + timedelta(days=i*(max_date-min_date).days/10)).toordinal() for i in range(11)]
+      except Exception as e:
+        print(f"Error calculating time range: {str(e)}")
+        return json.dumps({"error": "Could not calculate grade time range"})
+      
+      # Process grades for each class and category
+      for c in weights:
+        grade_spreads[c] = {}
+        cat_value_sums[c] = {}
+        for category in weights[c]:
+          if category not in categories:
+            categories.append(category)
+          g = process_grades(grades, c, category, times)
+          if g:
+            grade_spreads[c][category] = g
+      
+      if not any(grade_spreads.values()):
+        return json.dumps({"error": "No valid grade spreads could be calculated"})
+      
+      # Create response data
+      response_data = {
+        "times": times,
+        "grade_spreads": grade_spreads,
+        "grades": ordinal_dated_grades,
+        "Weights": weights,
+        "categories": categories,
+        "stats": stats,
+        "compliments": compliments,
+        "cat_value_sums": cat_value_sums,
+        "goals": goals,
+        "distributions": distributions
+      }
+      
+      return json.dumps(response_data)
+      
+    except Exception as e:
+      error_message = traceback.format_exc()
+      print("Error in grade analysis:", error_message)
+      # post error message to Errors sheet in the database
+      post_data("Errors", {
+        "error": f"Error in grade analysis: {error_message}",
+        "OSIS": user_data['osis'],
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+      })
+      return json.dumps({
+        "error": "An error occurred while analyzing your grades. Please try again or contact support if the problem persists.",
+        "details": str(e)
+      })
+      
   except Exception as e:
-    # get detailed error message
     error_message = traceback.format_exc()
-    print("Error in post_ga_grades:", error_message)
-    # post error message to Errors sheet in the database
-    e = "Error in post_ga_grades: "+error_message
-    post_data("Errors", {"error": e, "OSIS": user_data['osis']})
-    return json.dumps({"error": "You have encountered an error :( Please contact pauln30@nycstudents.net with this text:    "+error_message})
-  # Create a dictionary to return the calculated data to the frontend
-  response_data = {
-    "times": times,
-    "grade_spreads": grade_spreads,
-    # "goals": goals,
-    # "goal_set_coords": set_coords,
-    "grades": ordinal_dated_grades,
-    # "max_date": max_date,
-    "Weights": weights,
-    "categories": categories,
-    "stats": stats,
-    "compliments": compliments,
-    "cat_value_sums": cat_value_sums,
-    "goals": goals,
-    "distributions": distributions
-  }
-
-
-
-  return json.dumps(response_data)
+    print("Error in GA_setup:", error_message)
+    return json.dumps({
+      "error": "An unexpected error occurred. Please try again or contact support if the problem persists.",
+      "details": str(e)
+    })
 
 @app.route('/get-gclasses', methods=['POST'])
 def get_gclasses():
@@ -837,13 +856,14 @@ def process_notebook_file():
 
         # Convert Pydantic model to dict
         insights_dict = insights.model_dump()
-        
+        worksheet_id = random.randint(0, 1000000)
         # Store all practice questions in Problems sheet
         for question in insights_dict["practice_questions"]:
             question_id = ''.join([str(random.randint(0, 9)) for _ in range(6)])
             post_data("Problems", {
                 "id": question_id,
                 "classID": class_id,
+                "worksheetID": worksheet_id,
                 "unit": unit,
                 "problem": question["question"],
                 "difficulty": question["difficulty"]
@@ -860,7 +880,8 @@ def process_notebook_file():
         # add to the Notebooks sheet
         post_data("Notebooks", {
             "classID": class_id, 
-            "unit": unit, 
+            "unit": unit,
+            "id": worksheet_id,
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
             "image": blob_id, 
             "topic": insights_dict["topic"], 
@@ -1471,5 +1492,7 @@ vars = init()
 
 if __name__ == '__main__':
   app.run(host='localhost', port=8080)
+
+
 
 

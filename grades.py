@@ -71,32 +71,68 @@ def get_weights(classes_data, osis):
   #convert grading categories in classes data to weights
   weights = {}
 
+  if not classes_data:
+    print("Warning: No classes data provided to get_weights")
+    return weights
+
   for class_info in classes_data:
     # if osis does not match user data, continue
     if not str(osis) in str(class_info['OSIS']):
       continue
-    name = class_info['name'].lower()
-    # Get the categories for the class, lowercase
     
-    
-    # if categories is a string, convert to json
-    if type(class_info['categories']) == str:
-      categories_str = class_info['categories'].lower()
-      categories = json.loads(categories_str)
-    else:
-      categories = [str(category).lower() for category in class_info['categories']]
+    if 'name' not in class_info:
+      print(f"Warning: Class info missing name field: {class_info}")
+      continue
       
-    # Create a dictionary to store weights
-    weight_dict = {}
+    name = class_info['name']
     
-    # Iterate over the list in pairs (category, weight)
-    for i in range(0, len(categories), 2):
-        category = categories[i]
-        weight = float(categories[i + 1]) / 100.0  # Convert the percentage to a decimal
+    if 'categories' not in class_info or not class_info['categories']:
+      print(f"Warning: No categories found for class {name}")
+      continue
+
+    # Get the categories for the class, lowercase
+    try:
+      # if categories is a string, convert to json
+      if type(class_info['categories']) == str:
+        categories_str = class_info['categories'].lower()
+        categories = json.loads(categories_str)
+      else:
+        categories = [str(category).lower() for category in class_info['categories']]
         
-        weight_dict[category.lower()] = weight
+      # Create a dictionary to store weights
+      weight_dict = {}
+      
+      # Validate categories list has pairs
+      if len(categories) % 2 != 0:
+        print(f"Warning: Invalid categories format for {name}. Categories must be in pairs of [name, weight]")
+        continue
+        
+      # Iterate over the list in pairs (category, weight)
+      weight_sum = 0
+      for i in range(0, len(categories), 2):
+          category = categories[i]
+          try:
+              weight = float(categories[i + 1]) / 100.0  # Convert the percentage to a decimal
+              weight_sum += weight
+              weight_dict[category.lower()] = weight
+          except (ValueError, TypeError) as e:
+              print(f"Warning: Invalid weight value for category {category} in class {name}: {e}")
+              continue
+      
+      # Validate weights sum to approximately 1
+      if not 0.99 <= weight_sum <= 1.01:
+          print(f"Warning: Weights for class {name} sum to {weight_sum}, should sum to 1.0")
+      
+      weights[name.lower()] = weight_dict
+      print(f"Successfully loaded weights for {name}: {weight_dict}")
+      
+    except Exception as e:
+      print(f"Error processing categories for class {name}: {e}")
+      continue
+
+  if not weights:
+    print("Warning: No valid weights could be generated from classes data")
     
-    weights[name.lower()] = weight_dict
   return weights
 
 # make a process_grades function that takes in grades, weights, class, category, and times and returns a list that is the user's grade for the given class and category at the given time
@@ -124,46 +160,127 @@ def process_grades(grades, class_name, category, times):
 def get_category_grade(grades):
   if len(grades) == 0:
     return False
+    
   try:
+    # Validate all grades have valid score and value
+    valid_grades = []
+    for grade in grades:
+      try:
+        score = float(grade['score'])
+        value = float(grade['value'])
+        if value <= 0:
+          print(f"Warning: Invalid grade value of {value} in grade: {grade}")
+          continue
+        valid_grades.append(grade)
+      except (ValueError, TypeError) as e:
+        print(f"Warning: Invalid score/value in grade: {grade}")
+        continue
+        
+    if not valid_grades:
+      print(f"Warning: No valid grades found in category")
+      return False
+      
     # get the weighted average of the grades
-    grade = sum([float(grade['score']) for grade in grades])/sum([float(grade['value']) for grade in grades])*100
+    total_score = sum(float(grade['score']) for grade in valid_grades)
+    total_value = sum(float(grade['value']) for grade in valid_grades)
+    grade = (total_score / total_value) * 100
+    
+    # Validate grade is reasonable
+    if not 0 <= grade <= 110:  # Allow slightly over 100 for extra credit
+      print(f"Warning: Calculated grade {grade} seems unreasonable")
+      return False
+      
     return grade
-  except (ValueError, TypeError, KeyError):
-    print(f"Error processing grades: {grades}")
+    
+  except Exception as e:
+    print(f"Error calculating category grade: {str(e)}")
     return False
 
 # make a calculate_grade function that takes in grades, weights, and time and returns the user's grade for the given time
 def calculate_grade(grades, weights, time, return_class_grades=False):
   print("in calculate_grade")
+  
+  if not grades:
+    print("Warning: No grades provided to calculate_grade")
+    return (100, {}) if return_class_grades else 100
+    
+  if not weights:
+    print("Warning: No weights provided to calculate_grade")
+    return (100, {}) if return_class_grades else 100
+
+  # Print available classes and weights for debugging
+  print(f"Available classes in weights: {list(weights.keys())}")
+  
   # sort grades into class/category groups
   class_category_groups = {}
   class_grades = {}
+  
   for grade in grades:
-    # filter for grades with a date less than or equal to the given time
-    if datetime.datetime.strptime(grade['date'], '%m/%d/%Y').date() > time:
+    try:
+      # Validate required grade fields
+      required_fields = ['class', 'category', 'date', 'score', 'value']
+      missing_fields = [field for field in required_fields if field not in grade]
+      if missing_fields:
+        print(f"Warning: Grade missing required fields {missing_fields}: {grade}")
+        continue
+        
+      # filter for grades with a date less than or equal to the given time
+      if datetime.datetime.strptime(grade['date'], '%m/%d/%Y').date() > time:
+        continue
+        
+      class_name = grade['class']
+      category = grade['category']
+      
+      if class_name not in class_category_groups:
+        class_category_groups[class_name] = {}
+      if category not in class_category_groups[class_name]:
+        class_category_groups[class_name][category] = []
+      class_category_groups[class_name][category].append(grade)
+      
+    except Exception as e:
+      print(f"Error processing grade: {grade}")
+      print(f"Error details: {str(e)}")
       continue
-    if grade['class'] not in class_category_groups:
-      class_category_groups[grade['class']] = {}
-    if grade['category'] not in class_category_groups[grade['class']]:
-      class_category_groups[grade['class']][grade['category']] = []
-    class_category_groups[grade['class']][grade['category']].append(grade)
   
   # loop through each class/category group and get the grade for the given time
   for class_name, category_groups in class_category_groups.items():
-    weight_sum = 0
-    class_total = 0
-    for category, grades in category_groups.items():
-      grade = get_category_grade(grades)
-      if grade:
-        weight = weights[class_name.lower()][category.lower()]
-        weight_sum += weight
-        class_total += grade * weight
-    
-    # get the grade for the class
-    if weight_sum > 0:
-      class_grades[class_name] = class_total/weight_sum
+    try:
+      weight_sum = 0
+      class_total = 0
+      
+      # Find matching class name case-insensitively
+      matching_class = next((c for c in weights.keys() if c.lower() == class_name.lower()), None)
+      if matching_class is None:
+        print(f"Warning: Class '{class_name}' not found in weights. Available classes: {list(weights.keys())}")
+        continue
+        
+      for category, grades in category_groups.items():
+        grade = get_category_grade(grades)
+        if grade is not False:  # Check explicitly since grade could be 0
+          # Find matching category case-insensitively
+          matching_category = next((c for c in weights[matching_class].keys() if c.lower() == category.lower()), None)
+          if matching_category is None:
+            print(f"Warning: Category '{category}' not found in weights for class '{class_name}'. Available categories: {list(weights[matching_class].keys())}")
+            continue
+            
+          weight = weights[matching_class][matching_category]
+          weight_sum += weight
+          class_total += grade * weight
+        else:
+          print(f"Warning: Could not calculate grade for category '{category}' in class '{class_name}'")
+      
+      # get the grade for the class
+      if weight_sum > 0:
+        class_grades[class_name] = class_total/weight_sum
+      else:
+        print(f"Warning: No valid weighted grades found for class '{class_name}'")
+        
+    except Exception as e:
+      print(f"Error calculating grade for class {class_name}: {str(e)}")
+      continue
   
   if len(class_grades) == 0:
+    print("Warning: No valid class grades could be calculated")
     return (100, {}) if return_class_grades else 100
   
   total_grade = sum(class_grades.values())/len(class_grades)

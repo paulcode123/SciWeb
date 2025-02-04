@@ -43,6 +43,9 @@
                 <h2>Derive Concepts</h2>
                 <span class="subtitle">Let's discover science together</span>
             </div>
+            <button id="toggle-calculator" class="calculator-toggle" title="Toggle Calculator">
+                <span class="material-icons">functions</span>
+            </button>
         </div>
         <div class="chat-container">
             <div id="chat-messages" class="chat-messages">
@@ -74,8 +77,26 @@
                     </button>
                 </div>
             </div>
+            <!-- Calculator Panel -->
+            <div id="calculator-panel" class="calculator-panel" style="display: none;">
+                <div class="calculator-header">
+                    <h3>Graphing Calculator</h3>
+                    <div class="calculator-controls">
+                        <button class="fullscreen-calculator" title="Toggle Fullscreen">
+                            <span class="material-icons">fullscreen</span>
+                        </button>
+                        <button class="close-calculator" title="Close">
+                            <span class="material-icons">close</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="calculator" class="calculator-container"></div>
+            </div>
             <div class="chat-input-container">
                 <textarea id="derive-user-input" placeholder="Type your message..." rows="1"></textarea>
+                <button id="include-desmos" class="include-desmos-btn" title="Include Desmos State">
+                    <span class="material-icons">functions</span>
+                </button>
                 <button id="send-message" class="send-button">
                     <span class="material-icons">send</span>
                 </button>
@@ -121,6 +142,7 @@
 {% block js %}
 <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://www.desmos.com/api/v1.10/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
 <script>
     // Initialize YouTube API first
     let youtubeAPIReady = false;

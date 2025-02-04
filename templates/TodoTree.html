@@ -1,0 +1,178 @@
+{% extends "darkThemeTemplate.html" %}
+
+{% block title %}
+<title>Task Tree - LLM Enhanced Planning</title>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="/static/todotree.css">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="controls">
+    <button id="addNodeBtn" class="control-btn">Add Node</button>
+    <button id="addEdgeBtn" class="control-btn">Add Edge</button>
+    <button id="cancelEdgeBtn" class="control-btn" style="display: none;">Cancel Edge</button>
+    <button id="deleteBtn" class="control-btn">Delete Mode</button>
+</div>
+<div class="infinite-container" id="infiniteContainer">
+    <canvas id="edgeCanvas"></canvas>
+    <div class="circle" data-id="1" data-type="Task" draggable="true">
+        <span>Task 1</span>
+    </div>
+    <div class="circle" data-id="2" data-type="Task" draggable="true">
+        <span>Task 2</span>
+    </div>
+    <div class="circle" data-id="3" data-type="Task" draggable="true">
+        <span>Task 3</span>
+    </div>
+    <div class="circle" data-id="4" data-type="Task" draggable="true">
+        <span>Task 4</span>
+    </div>
+    <div class="circle" data-id="5" data-type="Task" draggable="true">
+        <span>Task 5</span>
+    </div>
+    <div class="circle" data-id="6" data-type="Task" draggable="true">
+        <span>Task 6</span>
+    </div>
+    <div class="circle" data-id="7" data-type="Task" draggable="true">
+        <span>Task 7</span>
+    </div>
+    <div class="circle" data-id="8" data-type="Task" draggable="true">
+        <span>Task 8</span>
+    </div>
+    <div class="circle" data-id="9" data-type="Task" draggable="true">
+        <span>Task 9</span>
+    </div>
+    <div class="circle" data-id="10" data-type="Task" draggable="true">
+        <span>Task 10</span>
+    </div>
+</div>
+
+<div class="context-menu" id="contextMenu">
+    <div class="menu-item" id="deleteNode">Delete Node</div>
+    <div class="menu-item" id="deleteEdges">Delete Connected Edges</div>
+</div>
+
+<div class="modal" id="nodeModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Edit Node</h2>
+            <button class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="node-edit-panel">
+                <div class="form-group compact">
+                    <label for="nodeName">Name:</label>
+                    <input type="text" id="nodeName" class="form-input">
+                </div>
+                <div class="form-group type-selector">
+                    <label>Type:</label>
+                    <div class="type-options">
+                        <div class="type-option" data-type="Motivator">
+                            <div class="type-icon">
+                                <span class="material-icons">stars</span>
+                            </div>
+                            <span class="type-label">Motivator</span>
+                        </div>
+                        <div class="type-option" data-type="Goal">
+                            <div class="type-icon">
+                                <span class="material-icons">track_changes</span>
+                            </div>
+                            <span class="type-label">Goal</span>
+                        </div>
+                        <div class="type-option" data-type="Task">
+                            <div class="type-icon">
+                                <span class="material-icons">assignment</span>
+                            </div>
+                            <span class="type-label">Task</span>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="nodeType" value="Task">
+
+                <div class="date-notification-section" id="dateNotificationSection">
+                    <div class="form-group compact">
+                        <label for="deadline">Deadline:</label>
+                        <input type="datetime-local" id="deadline" class="form-input">
+                    </div>
+                    <div class="form-group compact">
+                        <label for="targetDate">Target Date:</label>
+                        <input type="datetime-local" id="targetDate" class="form-input">
+                    </div>
+                    <div class="form-group compact">
+                        <label for="notificationText">Notification Text:</label>
+                        <input type="text" id="notificationText" class="form-input" placeholder="Enter notification message">
+                    </div>
+                    <div class="form-group compact notification-times">
+                        <label>Notification Times:</label>
+                        <div class="notification-time-list" id="notificationTimeList">
+                            <!-- Notification times will be added here -->
+                        </div>
+                        <button type="button" class="add-time-btn" id="addNotificationTime">
+                            <span class="material-icons">add</span>
+                            Add Time
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="node-content">
+                <div class="chat-container">
+                    <div class="chat-history" id="chatHistory">
+                        <!-- Chat messages will be added here -->
+                    </div>
+                    <div class="chat-input-container">
+                        <textarea id="chatInput" class="chat-input" placeholder="Type your message..."></textarea>
+                        <button id="sendMessage" class="send-message-btn">
+                            <span class="material-icons">send</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="control-btn" id="saveNodeBtn">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Time Template (hidden) -->
+<template id="notificationTimeTemplate">
+    <div class="notification-time-item">
+        <input type="datetime-local" class="form-input notification-time">
+        <button type="button" class="remove-time-btn">
+            <span class="material-icons">close</span>
+        </button>
+    </div>
+</template>
+
+<!-- Chat Message Templates -->
+<template id="userMessageTemplate">
+    <div class="chat-message user-message">
+        <div class="message-content">
+            <div class="message-text"></div>
+            <div class="message-time"></div>
+        </div>
+        <div class="message-avatar">
+            <span class="material-icons">person</span>
+        </div>
+    </div>
+</template>
+
+<template id="aiMessageTemplate">
+    <div class="chat-message ai-message">
+        <div class="message-avatar">
+            <span class="material-icons">smart_toy</span>
+        </div>
+        <div class="message-content">
+            <div class="message-text"></div>
+            <div class="message-time"></div>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block js %}
+<script src="/static/todotree.js"></script>
+{% endblock %} 

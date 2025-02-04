@@ -1,0 +1,9 @@
+Make an LLM todolist page that creates an omnidirectional scrollable div with a treelike structure. 
+Every node is either a motivator, Goal, or Task. Each node has it's own LLM conversation in it,
+that opens into fullscreen mode on node click. Each subnode breaks off of it's parent node add
+a given message in the parent node's conversation. Each node takes as context the entire
+conversation in that node, plus the conversation prior to the breakoff point in it's parent,
+and it's parent's parent, etc. As an example, set getting into college as a motivator, and
+beneath that Grades and Extracurriculars as motivators. Then add Goals and tasks in a tree
+like structure expanding in width below those. Style it nicely and intuitively. No backend
+needed for now

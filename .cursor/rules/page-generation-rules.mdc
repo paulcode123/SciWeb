@@ -1,0 +1,7 @@
+---
+description: Generating new pages, features, or large code blocks
+globs: 
+---
+
+When making large changes, start by making an excellent frontend that looks sleek and modern. Define but leave comments for nonessential JS functions. Dont do the backend at first.
+The complete database structure including sheets, field names, datatypes, and purposes can be found in [database_layout.txt](mdc:database_layout.txt)

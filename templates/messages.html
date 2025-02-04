@@ -16,18 +16,60 @@
 
 <div class="messages-container">
     <div class="sidebar">
+        <!-- Search and Filter Section -->
+        <div class="search-section">
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" id="message-search" placeholder="Search messages...">
+            </div>
+            <div class="filter-options">
+                <select id="date-filter">
+                    <option value="all">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                </select>
+                <button id="create-folder" class="icon-btn">
+                    <i class="fas fa-folder-plus"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Folders Section -->
+        <div class="folders-section">
+            <h3 class="sidebar-title" onclick="toggleSection('folders')">
+                <i class="fas fa-folder"></i> Folders
+            </h3>
+            <div id="folders-list" class="sidebar-list">
+                <button class="folder-item active" data-folder="all">
+                    <i class="fas fa-inbox"></i> All Messages
+                </button>
+                <button class="folder-item" data-folder="unread">
+                    <i class="fas fa-envelope"></i> Unread
+                    <span class="badge">0</span>
+                </button>
+                <button class="folder-item" data-folder="starred">
+                    <i class="fas fa-star"></i> Starred
+                </button>
+            </div>
+        </div>
+
+        <!-- Contacts Sections -->
         <div class="sidebar-section">
             <h3 class="sidebar-title" onclick="toggleSection('friends')">
                 <i class="fas fa-user-friends"></i> Friends
+                <span class="online-indicator">3 online</span>
             </h3>
             <div id="friends-list" class="sidebar-list"></div>
         </div>
+        
         <div class="sidebar-section">
             <h3 class="sidebar-title" onclick="toggleSection('classes')">
                 <i class="fas fa-graduation-cap"></i> Classes
             </h3>
             <div id="classes-list" class="sidebar-list"></div>
         </div>
+        
         <div class="sidebar-section">
             <h3 class="sidebar-title" onclick="toggleSection('leagues')">
                 <i class="fas fa-trophy"></i> Leagues
@@ -35,19 +77,83 @@
             <div id="leagues-list" class="sidebar-list"></div>
         </div>
     </div>
+
     <div class="chat-area">
+        <!-- Chat Header -->
+        <div class="chat-header">
+            <div class="chat-info">
+                <h2 id="current-chat-name">Select a conversation</h2>
+                <span id="chat-status"></span>
+            </div>
+            <div class="chat-actions">
+                <button class="icon-btn" id="thread-view" title="Thread View">
+                    <i class="fas fa-comments"></i>
+                </button>
+                <button class="icon-btn" id="star-chat" title="Star Conversation">
+                    <i class="far fa-star"></i>
+                </button>
+                <button class="icon-btn" id="move-to-folder" title="Move to Folder">
+                    <i class="fas fa-folder-open"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Message Thread View -->
+        <div class="thread-container" style="display: none;">
+            <div class="thread-header">
+                <button class="back-to-chat">
+                    <i class="fas fa-arrow-left"></i> Back to Chat
+                </button>
+                <h3>Thread</h3>
+            </div>
+            <ul class="thread-messages"></ul>
+        </div>
+
+        <!-- Main Chat Messages -->
         <ul id="message-list"></ul>
         <div id="image-container"></div>
+
+        <!-- Message Input Area -->
         <div class="input-group">
-            <input type="text" id="message-input" placeholder="Type something fun..." />
-            <label for="upload" class="upload-label">
+            <button class="tool-btn" id="emoji-btn" title="Add Emoji">
+                <i class="far fa-smile"></i>
+            </button>
+            <input type="text" id="message-input" placeholder="Type a message..." />
+            <label for="upload" class="upload-label" title="Attach File">
                 <i class="fas fa-paperclip"></i>
                 <input type="file" id="upload" accept="image/*,application/pdf" hidden />
             </label>
-            <button id="send-button"><i class="fas fa-paper-plane"></i> Send</button>
-            <button id="clear"><i class="fas fa-eraser"></i> Clear</button>
-            <button id="refresh-chat"><i class="fas fa-sync-alt"></i> Refresh</button>
+            <button id="send-button" title="Send Message">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+            <button id="clear" title="Clear Input">
+                <i class="fas fa-eraser"></i>
+            </button>
+            <button id="refresh-chat" title="Refresh Chat">
+                <i class="fas fa-sync-alt"></i>
+            </button>
         </div>
+    </div>
+</div>
+
+<!-- Create Folder Modal -->
+<div class="modal" id="folder-modal">
+    <div class="modal-content">
+        <h3>Create New Folder</h3>
+        <form id="folder-form">
+            <div class="form-group">
+                <label for="folder-name">Folder Name</label>
+                <input type="text" id="folder-name" required>
+            </div>
+            <div class="form-group">
+                <label for="folder-color">Color</label>
+                <input type="color" id="folder-color" value="#7C4DFF">
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="button primary">Create</button>
+                <button type="button" class="button secondary" id="cancel-folder">Cancel</button>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}

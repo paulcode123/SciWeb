@@ -1,0 +1,14 @@
+---
+description: fetchRequest and Loading Icon
+globs: .js
+---
+
+In Javascript, always use the fetchRequest function when communicating with the backend
+When interacting with the database, only use the routes: /data, {'data', 'SheetA, SheetB'}(to get data), /post_data, {'sheet': 'SheetA', 'data': {...}}, /update_data, {'sheet': 'SheetA', 'data': {...}, 'row_name': 'example rowname', 'row_value': 'example value'}, /delete_data, {'sheet': 'SheetA', 'data': {...}, 'row_name': 'example rowname', 'row_value': 'example value'}
+Looks like:
+data = fetchRequest('/data', {"data": "Classes, Assignments, Grades"});
+let a = data.Assignments;
+let c = data.Classes;
+let g = data.Grades;
+
+use startLoading() and endLoading() to toggle the loading icon while waiting on backend processes
