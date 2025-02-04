@@ -92,6 +92,22 @@
                 </div>
                 <input type="hidden" id="nodeType" value="Task">
 
+                <div class="grade-goal-section" id="gradeGoalSection">
+                    <button type="button" class="grade-goal-btn" id="addGradeGoalBtn">
+                        <span class="material-icons">add</span>
+                        Add Grade Goal
+                    </button>
+                    <div class="grade-goal-form" id="gradeGoalForm" style="display: none;">
+                        <select id="gradeGoalClass" class="form-input">
+                            <option value="">Select Class</option>
+                        </select>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="number" id="gradeGoalTarget" class="form-input" min="0" max="100" step="1" placeholder="Target %">
+                            <span>%</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="date-notification-section" id="dateNotificationSection">
                     <div class="form-group compact">
                         <label for="deadline">Deadline:</label>
