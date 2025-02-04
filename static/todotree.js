@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let editingNode = null;
     let isDragging = false;
     let dragStartTime = 0;
+    let currentTreeId = null;
 
     // Set canvas size
     function resizeCanvas() {
@@ -77,6 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
             circle.addEventListener('mousedown', startDragging);
             circle.addEventListener('touchstart', startDragging, { passive: false });
             circle.addEventListener('contextmenu', showContextMenu);
+            circle.addEventListener('click', handleNodeClick);
         });
     }
 
@@ -158,6 +160,9 @@ document.addEventListener('DOMContentLoaded', function() {
             openNodeEditor.call(activeCircle, e);
         }
 
+        if (isDragging) {
+            scheduleAutoSave();
+        }
         activeCircle = null;
         isDragging = false;
         drawEdges();
@@ -194,12 +199,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 ctx.moveTo(fromX, fromY);
                 ctx.lineTo(toX, toY);
                 ctx.stroke();
+
+                // Draw grade goal indicator if node has one
+                if (fromNode.dataset.gradeGoalClass) {
+                    const centerX = fromX;
+                    const centerY = fromY - fromRect.height/2 - 10;
+                    
+                    ctx.fillStyle = '#4CAF50';
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
             }
         });
     }
 
+    // Add this function at the top level
+    function generateUniqueNodeId() {
+        const existingIds = Array.from(document.querySelectorAll('.circle')).map(node => node.dataset.id);
+        let newId;
+        do {
+            // Generate a random 8-digit number
+            newId = Math.floor(10000000 + Math.random() * 90000000).toString();
+        } while (existingIds.includes(newId));
+        return newId;
+    }
+
     function addNewNode() {
-        const nodeId = nextNodeId++;
+        const nodeId = generateUniqueNodeId();
         const circle = document.createElement('div');
         circle.className = 'circle';
         circle.draggable = true;
@@ -207,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function() {
         circle.dataset.type = 'Task';
 
         const span = document.createElement('span');
-        span.textContent = `Task ${nodeId}`;
+        span.textContent = `Task ${nodeId.slice(-4)}`; // Use last 4 digits for display
         circle.appendChild(span);
 
         // Add orbital dots container
@@ -272,6 +299,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error loading notification times:', e);
             }
         }
+
+        // Initialize grade goal section
+        updateGradeGoalSection(type);
 
         // Load chat history if it exists
         const chatHistory = document.getElementById('chatHistory');
@@ -341,8 +371,25 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (newType !== 'Goal' && orbitalDots) {
                 orbitalDots.remove();
             }
+
+            // Save grade goal data if it's a Goal
+            if (newType === 'Goal') {
+                const gradeGoalClass = document.getElementById('gradeGoalClass').value;
+                const gradeGoalTarget = document.getElementById('gradeGoalTarget').value;
+                if (gradeGoalClass && gradeGoalTarget) {
+                    editingNode.dataset.gradeGoalClass = gradeGoalClass;
+                    editingNode.dataset.gradeGoalTarget = gradeGoalTarget;
+                } else {
+                    delete editingNode.dataset.gradeGoalClass;
+                    delete editingNode.dataset.gradeGoalTarget;
+                }
+            } else {
+                delete editingNode.dataset.gradeGoalClass;
+                delete editingNode.dataset.gradeGoalTarget;
+            }
         }
 
+        scheduleAutoSave();
         closeModal();
     }
 
@@ -371,21 +418,28 @@ document.addEventListener('DOMContentLoaded', function() {
             circle.classList.toggle('delete-mode');
         });
 
+        container.style.cursor = isDeleteMode ? 'crosshair' : 'default';
+
         if (!isDeleteMode) {
             hoveredEdge = null;
             drawEdges();
         }
+        
+        console.log(`Delete mode ${isDeleteMode ? 'enabled' : 'disabled'}`);
     }
 
     function handleNodeClick(e) {
         if (isDeleteMode) {
             e.preventDefault();
+            e.stopPropagation();
             deleteNode(this.dataset.id);
             return;
         }
         
         if (!isAddingEdge) {
-            openNodeEditor.call(this, e);
+            if (!isDragging) {
+                openNodeEditor.call(this, e);
+            }
             return;
         }
         
@@ -400,6 +454,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (fromId !== clickedId) {
                 edges.push({ from: fromId, to: clickedId });
                 drawEdges();
+                scheduleAutoSave();
             }
             cancelAddingEdge();
         }
@@ -438,11 +493,23 @@ document.addEventListener('DOMContentLoaded', function() {
             deleteConnectedEdges(nodeId);
             node.remove();
             drawEdges();
+            scheduleAutoSave();
+            
+            if (isDeleteMode) {
+                toggleDeleteMode();
+            }
+            
+            console.log(`Node ${nodeId} deleted successfully`);
         }
     }
 
     function deleteConnectedEdges(nodeId) {
+        const originalLength = edges.length;
         edges = edges.filter(edge => edge.from !== nodeId && edge.to !== nodeId);
+        
+        const removedCount = originalLength - edges.length;
+        console.log(`Removed ${removedCount} edges connected to node ${nodeId}`);
+        
         drawEdges();
     }
 
@@ -509,6 +576,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Toggle date notification section
             const dateNotificationSection = document.getElementById('dateNotificationSection');
             dateNotificationSection.classList.toggle('show', this.dataset.type !== 'Motivator');
+
+            // Update grade goal section visibility
+            updateGradeGoalSection(this.dataset.type);
         });
     });
 
@@ -548,11 +618,83 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show typing indicator
             showTypingIndicator();
 
-            // Simulate AI response after a delay
-            setTimeout(() => {
+            // Get node context for AI
+            const nodeContext = {
+                type: editingNode.dataset.type,
+                name: editingNode.querySelector('span').textContent,
+                deadline: editingNode.dataset.deadline || null,
+                targetDate: editingNode.dataset.targetDate || null,
+                notificationText: editingNode.dataset.notificationText || null,
+                notificationTimes: JSON.parse(editingNode.dataset.notificationTimes || '[]')
+            };
+
+            // Prepare messages for AI
+            const messages = [
+                {
+                    role: "system",
+                    content: `You are an AI assistant helping with a ${nodeContext.type} node named "${nodeContext.name}" in a TodoTree task management system. 
+                    ${nodeContext.deadline ? `The deadline is ${nodeContext.deadline}.` : ''}
+                    ${nodeContext.targetDate ? `The target date is ${nodeContext.targetDate}.` : ''}
+                    ${nodeContext.notificationText ? `The notification text is: ${nodeContext.notificationText}` : ''}
+                    ${nodeContext.notificationTimes.length > 0 ? `Notification times: ${nodeContext.notificationTimes.join(', ')}` : ''}
+                    
+                    For Tasks and Goals:
+                    - Help break down complex tasks into smaller steps
+                    - Suggest time management strategies
+                    - Provide motivation and accountability tips
+                    - Help set realistic deadlines and milestones
+                    
+                    For Motivators:
+                    - Help clarify the motivation
+                    - Suggest ways to stay inspired
+                    - Connect the motivation to concrete actions
+                    - Provide encouragement and perspective
+                    
+                    Be concise, practical, and encouraging in your responses.`
+                },
+                {
+                    role: "user",
+                    content: message
+                }
+            ];
+
+            // Get chat history
+            try {
+                const history = JSON.parse(editingNode.dataset.chatHistory || '[]');
+                // Add relevant history (last 5 messages)
+                const recentHistory = history.slice(-10);
+                recentHistory.forEach(msg => {
+                    messages.splice(1, 0, {
+                        role: msg.type === 'user' ? 'user' : 'assistant',
+                        content: msg.text
+                    });
+                });
+            } catch (e) {
+                console.error('Error parsing chat history:', e);
+            }
+
+            // Send to backend
+            fetchRequest('/AI', {
+                data: messages
+            }).then(response => {
                 hideTypingIndicator();
-                addChatMessage('This is a simulated AI response to: ' + message, 'ai');
-            }, 1500);
+                addChatMessage(response, 'ai');
+                
+                // Save chat history
+                try {
+                    const history = JSON.parse(editingNode.dataset.chatHistory || '[]');
+                    history.push({ text: message, type: 'user', timestamp: new Date().toISOString() });
+                    history.push({ text: response, type: 'ai', timestamp: new Date().toISOString() });
+                    editingNode.dataset.chatHistory = JSON.stringify(history);
+                    scheduleAutoSave();
+                } catch (e) {
+                    console.error('Error saving chat history:', e);
+                }
+            }).catch(error => {
+                hideTypingIndicator();
+                addChatMessage('Sorry, I encountered an error. Please try again.', 'ai');
+                console.error('Error getting AI response:', error);
+            });
         }
 
         sendButton.addEventListener('click', sendMessage);
@@ -574,12 +716,163 @@ document.addEventListener('DOMContentLoaded', function() {
         const chatHistory = document.getElementById('chatHistory');
         const template = document.getElementById(type === 'user' ? 'userMessageTemplate' : 'aiMessageTemplate');
         const clone = template.content.cloneNode(true);
+        const messageText = clone.querySelector('.message-text');
 
-        clone.querySelector('.message-text').textContent = text;
+        // Process markdown-style formatting in AI messages
+        if (type === 'ai') {
+            // Find all child nodes that were broken off from this text
+            const childNodes = Array.from(document.querySelectorAll('.circle')).filter(node => {
+                const breakOffText = node.dataset.breakOffText;
+                return breakOffText && text.includes(breakOffText);
+            });
+
+            // Add markers for each break-off point
+            childNodes.forEach(childNode => {
+                const breakOffText = childNode.dataset.breakOffText;
+                const markerHtml = `<span class="break-off-marker" data-node-id="${childNode.dataset.id}">
+                    <span class="break-off-text">${breakOffText}</span>
+                    <span class="material-icons break-off-icon" title="View broken-off task">call_split</span>
+                </span>`;
+                text = text.replace(breakOffText, markerHtml);
+            });
+
+            // Convert code blocks
+            text = text.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+                return `<div class="code-block${lang ? ' ' + lang : ''}">
+                    <div class="code-header">
+                        <span class="code-lang">${lang || 'plaintext'}</span>
+                        <button class="copy-code" onclick="copyCode(this)">
+                            <span class="material-icons">content_copy</span>
+                        </button>
+                    </div>
+                    <pre><code>${escapeHtml(code.trim())}</code></pre>
+                </div>`;
+            });
+
+            // Convert inline code
+            text = text.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+
+            // Convert bold text
+            text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+            // Convert italic text
+            text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+            // Convert bullet points
+            text = text.replace(/^- (.+)$/gm, '<li>$1</li>');
+            text = text.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+
+            // Convert numbered lists
+            text = text.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+            text = text.replace(/(<li>.*<\/li>)/s, '<ol>$1</ol>');
+        }
+
+        messageText.innerHTML = text;
         clone.querySelector('.message-time').textContent = new Date().toLocaleTimeString();
+
+        // Add selection handling for AI messages
+        if (type === 'ai') {
+            messageText.addEventListener('mouseup', handleAIMessageSelection);
+            messageText.addEventListener('mousedown', () => {
+                // Remove any existing break task buttons when starting a new selection
+                removeBreakTaskButton();
+            });
+
+            // Add click handlers for break-off markers
+            messageText.querySelectorAll('.break-off-marker').forEach(marker => {
+                marker.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const nodeId = marker.dataset.nodeId;
+                    const childNode = document.querySelector(`.circle[data-id="${nodeId}"]`);
+                    if (childNode) {
+                        // Close current modal
+                        closeModal();
+                        // Open child node's modal
+                        setTimeout(() => {
+                            openNodeEditor.call(childNode);
+                        }, 300); // Wait for current modal to close
+                    }
+                });
+            });
+        }
 
         chatHistory.appendChild(clone);
         chatHistory.scrollTop = chatHistory.scrollHeight;
+
+        // Initialize code copy buttons
+        document.querySelectorAll('.copy-code').forEach(button => {
+            button.addEventListener('click', function() {
+                const codeBlock = this.closest('.code-block').querySelector('code');
+                navigator.clipboard.writeText(codeBlock.textContent);
+                
+                // Show copied indicator
+                const originalText = this.innerHTML;
+                this.innerHTML = '<span class="material-icons">check</span>';
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                }, 2000);
+            });
+        });
+    }
+
+    function handleAIMessageSelection(e) {
+        const selection = window.getSelection();
+        const selectedText = selection.toString().trim();
+        
+        // Remove any existing break task buttons
+        removeBreakTaskButton();
+        
+        if (selectedText) {
+            const range = selection.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            
+            // Create button
+            const button = document.createElement('button');
+            button.className = 'break-task-button';
+            button.innerHTML = '<span class="material-icons">call_split</span> Break off task';
+            
+            // Position the button near the selection
+            button.style.position = 'fixed';
+            button.style.left = `${rect.right + 10}px`;
+            button.style.top = `${rect.top}px`;
+            
+            // Add click event listener
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                createBreakOffTask(selectedText);
+                removeBreakTaskButton();
+                selection.removeAllRanges();
+            });
+            
+            document.body.appendChild(button);
+            
+            // Add global click listener to remove button when clicking elsewhere
+            setTimeout(() => {
+                document.addEventListener('click', handleGlobalClick);
+            }, 0);
+        }
+    }
+
+    function handleGlobalClick(e) {
+        if (!e.target.closest('.break-task-button')) {
+            removeBreakTaskButton();
+            document.removeEventListener('click', handleGlobalClick);
+        }
+    }
+
+    function removeBreakTaskButton() {
+        const existingButton = document.querySelector('.break-task-button');
+        if (existingButton) {
+            existingButton.remove();
+        }
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     function showTypingIndicator() {
@@ -602,6 +895,593 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Add auto-save functionality
+    let saveTimeout;
+    function scheduleAutoSave() {
+        if (saveTimeout) clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(saveToDatabase, 2000); // Save 2 seconds after last change
+    }
+
+    // Add these functions at the top level of the DOMContentLoaded callback
+    function showSavingToast() {
+        let toast = document.getElementById('savingToast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'savingToast';
+            toast.innerHTML = `
+                <div class="saving-spinner"></div>
+                <span>Saving...</span>
+            `;
+            document.body.appendChild(toast);
+        }
+        toast.classList.add('show');
+    }
+
+    function hideSavingToast() {
+        const toast = document.getElementById('savingToast');
+        if (toast) {
+            toast.classList.remove('show');
+        }
+    }
+
+    async function saveToDatabase() {
+        showSavingToast();
+        
+        // Collect all node data
+        const nodes = Array.from(document.querySelectorAll('.circle')).map(node => {
+            const rect = node.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            
+            // Calculate absolute position
+            const x = parseFloat(node.style.left) || (rect.left - containerRect.left + container.scrollLeft);
+            const y = parseFloat(node.style.top) || (rect.top - containerRect.top + container.scrollTop);
+            
+            // Build node data object
+            const nodeData = {
+                id: node.dataset.id,
+                type: node.dataset.type,
+                name: node.querySelector('span').textContent,
+                position: { x, y }
+            };
+
+            // Add optional data if present
+            if (node.dataset.deadline) nodeData.deadline = node.dataset.deadline;
+            if (node.dataset.targetDate) nodeData.targetDate = node.dataset.targetDate;
+            if (node.dataset.notificationText) nodeData.notificationText = node.dataset.notificationText;
+            if (node.dataset.notificationTimes) nodeData.notificationTimes = JSON.parse(node.dataset.notificationTimes);
+            if (node.dataset.chatHistory) nodeData.chatHistory = JSON.parse(node.dataset.chatHistory);
+            if (node.dataset.context) nodeData.context = node.dataset.context;
+            if (node.dataset.breakOffText) nodeData.breakOffText = node.dataset.breakOffText;
+
+            // Add grade goal data if present
+            if (node.dataset.gradeGoalClass) {
+                nodeData.gradeGoalClass = node.dataset.gradeGoalClass;
+                nodeData.gradeGoalTarget = node.dataset.gradeGoalTarget;
+            }
+
+            return nodeData;
+        });
+
+        const treeData = {
+            name: 'Task Tree',
+            OSIS: osis,
+            nodes: nodes,
+            edges: edges,
+            lastModified: new Date().toISOString()
+        };
+
+        try {
+            if (currentTreeId) {
+                // Update existing tree
+                treeData.id = currentTreeId;
+                await fetchRequest('/update_data', {
+                    sheet: 'TodoTrees',
+                    data: treeData,
+                    row_name: 'id',
+                    row_value: currentTreeId
+                });
+                console.log('Tree updated successfully');
+            } else {
+                // Create new tree
+                treeData.id = Math.floor(10000 + Math.random() * 90000);
+                currentTreeId = treeData.id;
+                await fetchRequest('/post_data', {
+                    sheet: 'TodoTrees',
+                    data: treeData
+                });
+                console.log('New tree created successfully');
+            }
+        } catch (error) {
+            console.error('Error saving tree:', error);
+        }
+        
+        hideSavingToast();
+    }
+
+    async function loadFromDatabase() {
+        startLoading();
+        
+        try {
+            const data = await fetchRequest('/data', {
+                data: 'TodoTrees'
+            });
+            console.log(data);
+            if (!data.TodoTrees || !data.TodoTrees[0].nodes) {
+                console.log('No saved tree found');
+                endLoading();
+                return;
+            }
+
+            // Store the tree ID
+            currentTreeId = data.TodoTrees[0].id;
+
+            // Clear existing nodes and edges
+            container.querySelectorAll('.circle').forEach(node => node.remove());
+            edges = [];
+
+            // Create nodes
+            data.TodoTrees[0].nodes.forEach(nodeData => {
+                const circle = document.createElement('div');
+                circle.className = 'circle';
+                circle.draggable = true;
+                circle.dataset.id = nodeData.id;
+                circle.dataset.type = nodeData.type;
+
+                // Position the node
+                circle.style.left = `${nodeData.position.x}px`;
+                circle.style.top = `${nodeData.position.y}px`;
+
+                // Add name span
+                const span = document.createElement('span');
+                span.textContent = nodeData.name;
+                circle.appendChild(span);
+
+                // Add orbital dots if it's a Goal
+                if (nodeData.type === 'Goal') {
+                    const orbitalDots = document.createElement('div');
+                    orbitalDots.className = 'orbital-dots';
+                    for (let i = 0; i < 4; i++) {
+                        const dot = document.createElement('div');
+                        dot.className = 'orbital-dot';
+                        orbitalDots.appendChild(dot);
+                    }
+                    circle.appendChild(orbitalDots);
+                }
+
+                // Restore optional data
+                if (nodeData.deadline) circle.dataset.deadline = nodeData.deadline;
+                if (nodeData.targetDate) circle.dataset.targetDate = nodeData.targetDate;
+                if (nodeData.notificationText) circle.dataset.notificationText = nodeData.notificationText;
+                if (nodeData.notificationTimes) circle.dataset.notificationTimes = JSON.stringify(nodeData.notificationTimes);
+                if (nodeData.chatHistory) circle.dataset.chatHistory = JSON.stringify(nodeData.chatHistory);
+                if (nodeData.context) circle.dataset.context = nodeData.context;
+                if (nodeData.breakOffText) circle.dataset.breakOffText = nodeData.breakOffText;
+
+                // Restore grade goal data if present
+                if (nodeData.gradeGoalClass) {
+                    circle.dataset.gradeGoalClass = nodeData.gradeGoalClass;
+                    circle.dataset.gradeGoalTarget = nodeData.gradeGoalTarget;
+                }
+
+                container.appendChild(circle);
+            });
+
+            // Restore edges
+            edges = data.TodoTrees[0].edges;
+
+            // Reinitialize everything
+            initializeCircles();
+            drawEdges();
+            
+            console.log('Tree loaded successfully');
+        } catch (error) {
+            console.error('Error loading tree:', error);
+        }
+        
+        endLoading();
+    }
+
+    // Load data when page loads
+    loadFromDatabase();
+
     drawEdges();
     container.addEventListener('scroll', drawEdges);
+
+    // Add this to your existing CSS or create a new style tag
+    const style = document.createElement('style');
+    style.textContent = `
+        .chat-message {
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 0.5rem;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .user-message {
+            background: #343541;
+            color: #ECECF1;
+        }
+
+        .ai-message {
+            background: #444654;
+            color: #D1D5DB;
+            line-height: 1.6;
+        }
+
+        .message-text {
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+        }
+
+        .message-text ul, .message-text ol {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .message-text li {
+            margin: 0.25rem 0;
+        }
+
+        .code-block {
+            background: #1E1E1E;
+            border-radius: 0.375rem;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background: #2D2D2D;
+            border-bottom: 1px solid #404040;
+        }
+
+        .code-lang {
+            color: #A9A9A9;
+            font-size: 0.875rem;
+        }
+
+        .copy-code {
+            background: transparent;
+            border: none;
+            color: #A9A9A9;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            transition: background-color 0.2s;
+        }
+
+        .copy-code:hover {
+            background: #404040;
+        }
+
+        .code-block pre {
+            margin: 0;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+
+        .code-block code {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+
+        .inline-code {
+            background: #2D2D2D;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.875em;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-text {
+            position: relative;
+        }
+
+        .break-task-button {
+            position: fixed;
+            background: #4a5568;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            z-index: 10000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: opacity 0.2s;
+        }
+
+        .break-task-button:hover {
+            background: #606b7d;
+        }
+
+        .break-task-button .material-icons {
+            font-size: 14px;
+        }
+
+        ::selection {
+            background: #4a5568;
+            color: white;
+        }
+
+        .break-off-marker {
+            position: relative;
+            display: inline;
+            background: rgba(74, 85, 104, 0.2);
+            border-radius: 4px;
+            padding: 2px 4px;
+            margin: 0 2px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .break-off-marker:hover {
+            background: rgba(74, 85, 104, 0.3);
+        }
+
+        .break-off-icon {
+            font-size: 14px !important;
+            color: #718096;
+            vertical-align: middle;
+            margin-left: 4px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .break-off-marker:hover .break-off-icon {
+            opacity: 1;
+        }
+
+        .break-off-text {
+            text-decoration: underline;
+            text-decoration-style: dotted;
+            text-decoration-thickness: 1px;
+            text-underline-offset: 2px;
+        }
+
+        .grade-goal-section {
+            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0.5rem;
+        }
+
+        .grade-goal-section.show {
+            display: block;
+        }
+
+        .grade-goal-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #4a5568;
+            color: white;
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+
+        .grade-goal-btn:hover {
+            background: #606b7d;
+        }
+
+        .grade-goal-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .grade-goal-form select,
+        .grade-goal-form input {
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            border: 1px solid #4a5568;
+            background: #2d3748;
+            color: white;
+        }
+
+        .grade-goal-form input[type="number"] {
+            width: 100px;
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Add the styles for the saving toast
+    const savingStyles = document.createElement('style');
+    savingStyles.textContent = `
+        #savingToast {
+            position: fixed;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            transition: top 0.3s ease-in-out;
+            z-index: 10000;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #savingToast.show {
+            top: 16px;
+        }
+
+        .saving-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(savingStyles);
+
+    async function createBreakOffTask(selectedText) {
+        if (!editingNode) {
+            console.error('No editing node found');
+            return;
+        }
+
+        showSavingToast();
+        
+        try {
+            // Get parent node's conversation history and context
+            const parentHistory = JSON.parse(editingNode.dataset.chatHistory || '[]');
+            const recentHistory = parentHistory.slice(-15);
+            const parentContext = editingNode.dataset.context || '';
+
+            // Generate context synthesis for the new task
+            const messages = [
+                {
+                    role: "system",
+                    content: "You are a context synthesizer. Create a concise 40-word summary of how the conversation history relates to this broken-off task. Focus on key points and requirements that are relevant to the selected text."
+                },
+                {
+                    role: "user",
+                    content: `Parent context: ${parentContext}\n\nSelected text to break off: ${selectedText}\n\nConversation history:\n${recentHistory.map(msg => `${msg.type}: ${msg.text}`).join('\n')}\n\nWrite a 40-word synthesis of how this context and history relates to the broken-off task.`
+                }
+            ];
+
+            console.log('Generating context synthesis...');
+            const contextSynthesis = await fetchRequest('/AI', { data: messages });
+            console.log('Context synthesis:', contextSynthesis);
+
+            // Create new node with unique ID
+            const nodeId = generateUniqueNodeId();
+            const circle = document.createElement('div');
+            circle.className = 'circle';
+            circle.draggable = true;
+            circle.dataset.id = nodeId;
+            circle.dataset.type = 'Task';
+            circle.dataset.context = contextSynthesis;
+            circle.dataset.breakOffText = selectedText;
+            circle.dataset.parentId = editingNode.dataset.id;
+
+            // Initialize chat history with the selected text as first AI message
+            const initialChat = [{
+                text: `This task was broken off from "${editingNode.querySelector('span').textContent}". Here's the relevant excerpt:\n\n${selectedText}`,
+                type: 'ai',
+                timestamp: new Date().toISOString()
+            }];
+            circle.dataset.chatHistory = JSON.stringify(initialChat);
+
+            // Add name span
+            const span = document.createElement('span');
+            span.textContent = selectedText.slice(0, 30) + (selectedText.length > 30 ? '...' : '');
+            circle.appendChild(span);
+
+            // Add orbital dots container
+            const orbitalDots = document.createElement('div');
+            orbitalDots.className = 'orbital-dots';
+            for (let i = 0; i < 4; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'orbital-dot';
+                orbitalDots.appendChild(dot);
+            }
+            circle.appendChild(orbitalDots);
+
+            // Position slightly offset from parent
+            const parentRect = editingNode.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            const x = (parentRect.left - containerRect.left + container.scrollLeft) + 100;
+            const y = (parentRect.top - containerRect.top + container.scrollTop) + 100;
+            circle.style.left = `${x}px`;
+            circle.style.top = `${y}px`;
+
+            // Add to container
+            container.appendChild(circle);
+
+            // Create edge from parent to new node
+            const newEdge = { from: editingNode.dataset.id, to: nodeId };
+            edges.push(newEdge);
+            console.log('Added edge:', newEdge);
+
+            // Initialize new node and redraw edges
+            initializeCircles();
+            drawEdges();
+
+            // Save to database immediately to ensure edge is persisted
+            await saveToDatabase();
+            
+            // Open editor for the new node
+            openNodeEditor.call(circle);
+            
+            console.log('Break-off task created successfully');
+        } catch (error) {
+            console.error('Error creating break-off task:', error);
+        } finally {
+            hideSavingToast();
+        }
+    }
+
+    // Update the updateGradeGoalSection function
+    function updateGradeGoalSection(type) {
+        const gradeGoalSection = document.getElementById('gradeGoalSection');
+        const addGradeGoalBtn = document.getElementById('addGradeGoalBtn');
+        const gradeGoalForm = document.getElementById('gradeGoalForm');
+        const gradeGoalClass = document.getElementById('gradeGoalClass');
+        
+        if (type === 'Goal') {
+            gradeGoalSection.classList.add('show');
+            
+            // Load classes and restore grade goal data
+            fetchRequest('/data', { data: 'Classes' }).then(data => {
+                const classes = data.Classes || [];
+                gradeGoalClass.innerHTML = '<option value="">Select Class</option>';
+                classes.forEach(cls => {
+                    const option = document.createElement('option');
+                    option.value = cls.id;
+                    option.textContent = cls.name;
+                    gradeGoalClass.appendChild(option);
+                });
+
+                // Set values if node has grade goal
+                if (editingNode.dataset.gradeGoalClass) {
+                    gradeGoalForm.style.display = 'flex';
+                    gradeGoalClass.value = editingNode.dataset.gradeGoalClass;
+                    document.getElementById('gradeGoalTarget').value = editingNode.dataset.gradeGoalTarget;
+                    addGradeGoalBtn.innerHTML = '<span class="material-icons">edit</span> Edit Grade Goal';
+                } else {
+                    gradeGoalForm.style.display = 'none';
+                    addGradeGoalBtn.innerHTML = '<span class="material-icons">add</span> Add Grade Goal';
+                }
+            });
+        } else {
+            gradeGoalSection.classList.remove('show');
+            gradeGoalForm.style.display = 'none';
+        }
+    }
+
+    // Add event listeners for grade goal functionality
+    document.getElementById('addGradeGoalBtn').addEventListener('click', function() {
+        const form = document.getElementById('gradeGoalForm');
+        form.style.display = form.style.display === 'none' ? 'flex' : 'none';
+    });
 });

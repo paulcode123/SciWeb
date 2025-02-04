@@ -331,3 +331,37 @@ Sheet name: Problems:
     problem(problem statement)
     difficulty(difficulty of the problem)
     concepts(id of the concepts the problem requires) // added separately by problem mapping
+
+Sheet name: TodoTrees
+
+    OSIS(7 digit number)
+    id(5 digit number)
+    name(str: name of the tree)
+    nodes(array of objects containing:
+        {
+            id: str,
+            type: str (Motivator/Goal/Task),
+            name: str,
+            position: {x: number, y: number},
+            deadline: str (optional),
+            targetDate: str (optional),
+            gradeGoalClass: str (optional),
+            gradeGoalTarget: float (optional),
+            notificationText: str (optional),
+            notificationTimes: [str] (optional),
+            context: str (optional, 40-word synthesis of parent conversation),
+            breakOffText: str (optional, text in parent conversation that this task was broken off from),
+            chatHistory: [{
+                text: str,
+                type: str (user/ai),
+                timestamp: str
+            }]
+        }
+    )
+    edges(array of objects containing:
+        {
+            from: str,
+            to: str
+        }
+    )
+    lastModified(ISO timestamp)
