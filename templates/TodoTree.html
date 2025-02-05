@@ -7,6 +7,85 @@
 {% block css %}
 <link rel="stylesheet" href="/static/todotree.css">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+    .infinite-container {
+        position: relative;
+        width: 100%;
+        height: calc(100vh - 60px);
+        overflow: auto;
+        background: #1a202c;
+    }
+
+    .infinite-content {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 3000px;
+        height: 3000px;
+        min-width: 100%;
+        min-height: 100%;
+        z-index: 0;
+    }
+
+    #edgeCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .delete-mode #edgeCanvas {
+        pointer-events: auto;
+        cursor: crosshair;
+    }
+
+    .delete-mode #edgeCanvas.edge-hover {
+        cursor: pointer;
+    }
+
+    .circle {
+        position: absolute;
+        width: 120px;
+        height: 120px;
+        background: #2d3748;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 0.2s;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        z-index: 2;
+    }
+
+    .circle span {
+        text-align: center;
+        color: white;
+        padding: 10px;
+        word-break: break-word;
+    }
+
+    .circle:hover {
+        background: #4a5568;
+    }
+
+    .circle.selected {
+        background: #68d391;
+    }
+
+    .circle.delete-mode:hover {
+        background: #f56565;
+    }
+
+    .circle.dragging {
+        opacity: 0.8;
+        z-index: 3;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -15,38 +94,41 @@
     <button id="addEdgeBtn" class="control-btn">Add Edge</button>
     <button id="cancelEdgeBtn" class="control-btn" style="display: none;">Cancel Edge</button>
     <button id="deleteBtn" class="control-btn">Delete Mode</button>
+    <button id="dragModeBtn" class="control-btn">Drag Mode</button>
 </div>
 <div class="infinite-container" id="infiniteContainer">
-    <canvas id="edgeCanvas"></canvas>
-    <div class="circle" data-id="1" data-type="Task" draggable="true">
-        <span>Task 1</span>
-    </div>
-    <div class="circle" data-id="2" data-type="Task" draggable="true">
-        <span>Task 2</span>
-    </div>
-    <div class="circle" data-id="3" data-type="Task" draggable="true">
-        <span>Task 3</span>
-    </div>
-    <div class="circle" data-id="4" data-type="Task" draggable="true">
-        <span>Task 4</span>
-    </div>
-    <div class="circle" data-id="5" data-type="Task" draggable="true">
-        <span>Task 5</span>
-    </div>
-    <div class="circle" data-id="6" data-type="Task" draggable="true">
-        <span>Task 6</span>
-    </div>
-    <div class="circle" data-id="7" data-type="Task" draggable="true">
-        <span>Task 7</span>
-    </div>
-    <div class="circle" data-id="8" data-type="Task" draggable="true">
-        <span>Task 8</span>
-    </div>
-    <div class="circle" data-id="9" data-type="Task" draggable="true">
-        <span>Task 9</span>
-    </div>
-    <div class="circle" data-id="10" data-type="Task" draggable="true">
-        <span>Task 10</span>
+    <div class="infinite-content">
+        <canvas id="edgeCanvas"></canvas>
+        <div class="circle" data-id="1" data-type="Task" draggable="true">
+            <span>Task 1</span>
+        </div>
+        <div class="circle" data-id="2" data-type="Task" draggable="true">
+            <span>Task 2</span>
+        </div>
+        <div class="circle" data-id="3" data-type="Task" draggable="true">
+            <span>Task 3</span>
+        </div>
+        <div class="circle" data-id="4" data-type="Task" draggable="true">
+            <span>Task 4</span>
+        </div>
+        <div class="circle" data-id="5" data-type="Task" draggable="true">
+            <span>Task 5</span>
+        </div>
+        <div class="circle" data-id="6" data-type="Task" draggable="true">
+            <span>Task 6</span>
+        </div>
+        <div class="circle" data-id="7" data-type="Task" draggable="true">
+            <span>Task 7</span>
+        </div>
+        <div class="circle" data-id="8" data-type="Task" draggable="true">
+            <span>Task 8</span>
+        </div>
+        <div class="circle" data-id="9" data-type="Task" draggable="true">
+            <span>Task 9</span>
+        </div>
+        <div class="circle" data-id="10" data-type="Task" draggable="true">
+            <span>Task 10</span>
+        </div>
     </div>
 </div>
 
@@ -66,6 +148,10 @@
                 <div class="form-group compact">
                     <label for="nodeName">Name:</label>
                     <input type="text" id="nodeName" class="form-input">
+                </div>
+                <div class="form-group compact">
+                    <label for="nodeDescription">Description:</label>
+                    <textarea id="nodeDescription" class="form-input" rows="3" placeholder="Enter a detailed description..."></textarea>
                 </div>
                 <div class="form-group type-selector">
                     <label>Type:</label>

@@ -342,6 +342,7 @@ Sheet name: TodoTrees
             id: str,
             type: str (Motivator/Goal/Task),
             name: str,
+            description: str (optional, detailed description of the node),
             position: {x: number, y: number},
             deadline: str (optional),
             targetDate: str (optional),

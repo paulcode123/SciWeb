@@ -8,17 +8,41 @@ async function getBase64(file) {
   }
 
   async function fetchRequest(route, reqbody) {
-    // console.log(reqbody);
-    
-    // Clear cache when modifying data
-    if (route == '/post_data' || route == '/update_data' || route == '/delete_data') {
-        const sheetToInvalidate = reqbody.sheet;
-        if (sheetToInvalidate) {
-            console.log('Invalidating cache for:', sheetToInvalidate);
-            localStorage.removeItem(sheetToInvalidate);
+    // Update cache when modifying data
+    if (route === '/post_data' || route === '/update_data' || route === '/delete_data') {
+        const sheetToUpdate = reqbody.sheet;
+        if (sheetToUpdate) {
+            const cachedItem = localStorage.getItem(sheetToUpdate);
+            if (cachedItem) {
+                const { data: cachedData, timestamp } = JSON.parse(cachedItem);
+                
+                if (route === '/post_data') {
+                    // Add new item to cached data
+                    cachedData.push(reqbody.data);
+                    localStorage.setItem(sheetToUpdate, JSON.stringify({
+                        data: cachedData,
+                        timestamp: Date.now()
+                    }));
+                } else if (route === '/update_data') {
+                    // Update existing item in cached data
+                    const updatedData = cachedData.map(item => 
+                        item.id === reqbody.data.id ? reqbody.data : item
+                    );
+                    localStorage.setItem(sheetToUpdate, JSON.stringify({
+                        data: updatedData,
+                        timestamp: Date.now()
+                    }));
+                } else if (route === '/delete_data') {
+                    // Remove item from cached data
+                    const filteredData = cachedData.filter(item => item.id !== reqbody.data.id);
+                    localStorage.setItem(sheetToUpdate, JSON.stringify({
+                        data: filteredData,
+                        timestamp: Date.now()
+                    }));
+                }
+            }
         }
     }
-    console.log('route', route, route == '/post_data', route === '/post_data');
     
     // Only apply caching for /data route
     if (route === '/data') {
@@ -26,6 +50,12 @@ async function getBase64(file) {
         let response = {};
         let sheetsToFetch = [];
         let cachedSheets = {};  // Store cached sheets to pass as prev_sheets
+        
+        // Check if Classes is needed but not requested
+        const needsClasses = !requestedSheets.includes('Classes');
+        if (needsClasses) {
+            requestedSheets.push('Classes');
+        }
         
         // First, check cache for each sheet
         for (const sheet of requestedSheets) {
@@ -37,9 +67,11 @@ async function getBase64(file) {
             
             // Check cache in localStorage
             const cachedItem = localStorage.getItem(sheet);
+            // console.log('cachedItem', sheet, cachedItem);
             if (cachedItem) {
                 const { data, timestamp } = JSON.parse(cachedItem);
                 
+
                 // Check if cache is still valid (less than 15 minutes old)
                 if (Date.now() - timestamp < 15 * 60 * 1000 || sheet === 'Grades') {
                     console.log('Using cached data for:', sheet);
@@ -60,10 +92,6 @@ async function getBase64(file) {
         if (sheetsToFetch.includes('Grades')) {
             sheetsToFetch = sheetsToFetch.filter(sheet => sheet !== 'Grades');
             response['Grades'] = [{'name': 'Please pull grades from Jupiter'}];
-        }
-        // if classes not once of the keys in cachedSheets and it's not in sheetsToFetch, add it to sheetsToFetch
-        if (!Object.keys(cachedSheets).includes('Classes') && !sheetsToFetch.includes('Classes')) {
-            sheetsToFetch.unshift('Classes');
         }
 
         // Fetch any uncached sheets

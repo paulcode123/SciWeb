@@ -38,12 +38,13 @@ import io
 
 
 # Get functions from other files
-from database import get_data, post_data, update_data, delete_data, download_file, upload_file, init_firebase, get_user_data, send_notification, send_welcome_email
-from classroom import init_oauth, oauth2callback, list_courses
-from grades import get_grade_points, process_grades, get_weights, calculate_grade, filter_grades, get_stats, update_leagues, get_compliments, get_grade_impact
-from jupiter import run_puppeteer_script, jupapi_output_to_grades, jupapi_output_to_classes, confirm_category_match, check_new_grades, notify_new_member
+from database import *
+from classroom import *
+from grades import *
+from jupiter import *
 from study import *
-from prompts import DERIVE_HELP_PROMPT
+from prompts import *
+
 #get api keys from static/api_keys.json file
 keys = json.load(open('api_keys.json'))  
 
@@ -567,6 +568,64 @@ def send_notification_route():
   for token in tokens:
     send_notification(token['token'], data['title'], data['body'], data['url'])
   return json.dumps({"message": "success"})
+
+
+@app.route('/schedule_notification', methods=['POST'])
+def schedule_notification_route():
+    data = request.json
+    data=data['data']
+    print("Received data:", data)
+    
+    # Validate required fields
+    required_fields = ['OSIS', 'title', 'body', 'scheduled_time']
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        error_msg = f"Missing required fields: {', '.join(missing_fields)}"
+        print(error_msg)
+        return json.dumps({"error": error_msg}), 400
+        
+    try:
+        # Validate scheduled_time format
+        try:
+            # Convert to datetime to validate format
+            scheduled_time = datetime.fromisoformat(data['scheduled_time'].replace('Z', '+00:00'))
+            # Convert back to ISO format string
+            data['scheduled_time'] = scheduled_time.isoformat()
+        except ValueError as e:
+            error_msg = f"Invalid scheduled_time format. Expected ISO format (e.g. '2024-03-20T15:00:00Z'). Error: {str(e)}"
+            print(error_msg)
+            return json.dumps({"error": error_msg}), 400
+            
+        # Get tokens for the target OSIS
+        tokens = get_data("Tokens", row_name="OSIS", row_val=data['OSIS'], operator="in")
+        if not tokens:
+            error_msg = f"No FCM tokens found for OSIS: {data['OSIS']}"
+            print(error_msg)
+            return json.dumps({"error": error_msg}), 404
+            
+        print(f"Found {len(tokens)} tokens for OSIS {data['OSIS']}")
+        
+        # Schedule notification for each token
+        success_count = 0
+        for token in tokens:
+            if schedule_delayed_notification(
+                token['token'],
+                data['title'],
+                data['body'],
+                data['scheduled_time']
+            ):
+                success_count += 1
+        
+        if success_count == 0:
+            return json.dumps({"error": "Failed to schedule notifications for all tokens"}), 500
+        
+        return json.dumps({
+            "message": f"Successfully scheduled notifications for {success_count}/{len(tokens)} tokens"
+        })
+    except Exception as e:
+        error_msg = f"Error scheduling notification: {str(e)}\n{traceback.format_exc()}"
+        print(error_msg)
+        return json.dumps({"error": error_msg}), 500
 
 @app.route('/check-meeting/<room_name>', methods=['GET'])
 def check_meeting(room_name):
