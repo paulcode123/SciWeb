@@ -1,3 +1,64 @@
+// Class Data Manager Definition
+const ClassDataManager = {
+    // Fetch all classes
+    async fetchAllClasses() {
+        try {
+            const data = await fetchRequest('/data', { data: 'Classes' });
+            return data.Classes || [];
+        } catch (error) {
+            console.error('Error fetching classes:', error);
+            throw error;
+        }
+    },
+
+    // Fetch user's classes
+    async fetchUserClasses(userOsis) {
+        try {
+            const classes = await this.fetchAllClasses();
+            return classes.filter(cls => cls.OSIS.toString().includes(userOsis));
+        } catch (error) {
+            console.error('Error fetching user classes:', error);
+            throw error;
+        }
+    },
+
+    // Get unique subjects from classes
+    getUniqueSubjects(classes) {
+        const subjectMap = {
+            'Math': 'mathematics',
+            'Physics': 'physics',
+            'Chemistry': 'chemistry',
+            'Biology': 'biology',
+            'Computer Science': 'computer-science'
+        };
+
+        const subjects = new Set();
+        classes.forEach(cls => {
+            const className = cls.name.toLowerCase();
+            for (const [subject, value] of Object.entries(subjectMap)) {
+                if (className.includes(subject.toLowerCase())) {
+                    subjects.add({ name: subject, value: value });
+                }
+            }
+        });
+        return Array.from(subjects);
+    },
+
+    // Get class categories
+    getClassCategories(classData) {
+        try {
+            if (!classData.categories) return [];
+            const categories = typeof classData.categories === 'string' 
+                ? JSON.parse(classData.categories) 
+                : classData.categories;
+            return categories.filter((_, index) => index % 2 === 0); // Filter out weights
+        } catch (error) {
+            console.error('Error parsing categories:', error);
+            return [];
+        }
+    }
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeTutoring();
 });
@@ -20,16 +81,23 @@ let tutorStats = {
 };
 
 async function initializeTutoring() {
-    // Initialize event listeners
-    document.getElementById('tutoring-request-form').addEventListener('submit', handleTutoringRequest);
-    document.getElementById('toggle-availability').addEventListener('click', toggleAvailabilityCalendar);
-    document.getElementById('view-requests').addEventListener('click', loadTutoringRequests);
-    document.getElementById('save-availability').addEventListener('click', saveAvailability);
-    document.getElementById('close-modal').addEventListener('click', closeModal);
+    // Initialize event listeners - only if elements exist
+    const requestForm = document.getElementById('tutoring-request-form');
+    if (requestForm) {
+        requestForm.addEventListener('submit', handleTutoringRequest);
+    }
+
+    // Remove these event listeners as they don't have corresponding elements
+    // document.getElementById('toggle-availability').addEventListener('click', toggleAvailabilityCalendar);
+    // document.getElementById('view-requests').addEventListener('click', loadTutoringRequests);
+    // document.getElementById('save-availability').addEventListener('click', saveAvailability);
+    // document.getElementById('close-modal').addEventListener('click', closeModal);
     
-    // Set minimum date for request form
+    // Set minimum date for request form if it exists
     const dateInput = document.getElementById('preferred-date');
-    dateInput.min = new Date().toISOString().split('T')[0];
+    if (dateInput) {
+        dateInput.min = new Date().toISOString().split('T')[0];
+    }
     
     // Load initial data
     await Promise.all([
@@ -38,9 +106,11 @@ async function initializeTutoring() {
     ]);
 
     if (userRole === 'tutor') {
-        loadTutorDashboard();
-        initializeStatsRefresh();
-        initializeTutorSection();
+        const tutorSection = document.getElementById('tutorSection');
+        if (tutorSection) {
+            tutorSection.style.display = 'block';
+            initializeTutorSection();
+        }
     }
 
     // Initialize subject-specific topics
@@ -243,10 +313,16 @@ async function loadUserRole() {
             const currentUser = userData.Users.find(user => user.osis === osis);
             if (currentUser && currentUser.nhs_member) {
                 userRole = 'tutor';
-                document.querySelector('.tutor-section').style.display = 'block';
-                loadTutorStats();
+                const tutorSection = document.querySelector('.tutor-section');
+                if (tutorSection) {
+                    tutorSection.style.display = 'block';
+                    loadTutorStats();
+                }
             } else {
-                document.querySelector('.tutor-section').style.display = 'none';
+                const tutorSection = document.querySelector('.tutor-section');
+                if (tutorSection) {
+                    tutorSection.style.display = 'none';
+                }
             }
         }
     } catch (error) {
@@ -325,87 +401,109 @@ function initializeStatsRefresh() {
 
 async function handleTutoringRequest(event) {
     event.preventDefault();
-    
-    const requestData = {
+
+    // Get form data
+    const formData = {
+        id: generateRequestId(),
+        student_osis: osis, // Global variable from user session
         subject: document.getElementById('subject').value,
         topic: document.getElementById('topic').value,
-        date: document.getElementById('preferred-date').value,
-        time: document.getElementById('preferred-time').value,
-        duration: document.getElementById('duration').value,
+        preferred_date: document.getElementById('preferred-date').value,
+        preferred_time: document.getElementById('preferred-time').value,
+        duration: parseInt(document.getElementById('duration').value),
         description: document.getElementById('description').value,
         status: 'pending',
-        studentOSIS: osis,
-        timestamp: new Date().toISOString(),
-        id: generateRequestId()
+        tutor_osis: null,
+        created_at: new Date().toISOString(),
+        last_updated: new Date().toISOString()
     };
-    
+
+    // Validate request timing
+    if (!isValidRequestTiming(formData)) {
+        showNotification('Please select a future date and time within school hours (8 AM - 6 PM)', 'error');
+        return;
+    }
+
     try {
-        // Validate request timing
-        if (!isValidRequestTiming(requestData)) {
-            showNotification('Please select a future date and time', 'warning');
-            return;
+        // Post the tutoring request to the database
+        const response = await fetchRequest('/post_data', {
+            sheet: 'TutoringRequests',
+            data: formData
+        });
+
+        if (response.error) {
+            throw new Error(response.error);
         }
 
-        // Save request to database
-        await fetchRequest('/post_data', {
-            sheet: 'TutoringRequests',
-            data: requestData
-        });
+        // Find available tutors for the subject
+        const availableTutors = await findAvailableTutors(formData);
         
-        // Find available tutors
-        const availableTutors = await findAvailableTutors(requestData);
-        
+        // Notify available tutors
         if (availableTutors.length > 0) {
-            await notifyTutors(availableTutors, requestData);
-            showNotification('Request submitted successfully! Tutors will be notified.', 'success');
-        } else {
-            showNotification('Request submitted, but no tutors are currently available. Please try a different time slot.', 'warning');
+            await notifyTutors(availableTutors, formData);
         }
+
+        // Show success message
+        showNotification('Tutoring request submitted successfully!', 'success');
         
+        // Reset form
         event.target.reset();
         
+        // Update any UI elements showing pending requests
+        await loadTutoringRequests();
+
     } catch (error) {
         console.error('Error submitting tutoring request:', error);
-        showNotification('Error submitting request. Please try again.', 'error');
+        showNotification('Error submitting tutoring request. Please try again.', 'error');
     }
 }
 
-function isValidRequestTiming(requestData) {
-    const requestDateTime = new Date(`${requestData.date}T${requestData.time}`);
-    const now = new Date();
-    return requestDateTime > now;
+function generateRequestId() {
+    // Generate a random 5-digit number
+    return Math.floor(10000 + Math.random() * 90000).toString();
 }
 
-function generateRequestId() {
-    return 'req_' + Math.random().toString(36).substr(2, 9);
+function isValidRequestTiming({ preferred_date, preferred_time }) {
+    const requestDateTime = new Date(`${preferred_date}T${preferred_time}`);
+    const now = new Date();
+    
+    // Check if date is in the future
+    if (requestDateTime <= now) {
+        return false;
+    }
+
+    // Check if time is within school hours (8 AM - 6 PM)
+    const hour = requestDateTime.getHours();
+    if (hour < 8 || hour >= 18) {
+        return false;
+    }
+
+    return true;
 }
 
 async function findAvailableTutors(requestData) {
     try {
-        const [tutorData, subjects] = await Promise.all([
-            fetchRequest('/data', { data: 'TutorAvailability' }),
-            fetchRequest('/data', { data: 'TutorSubjects' })
-        ]);
+        // Fetch all tutor availability records
+        const response = await fetchRequest('/data', { data: 'TutorAvailability' });
+        if (!response.TutorAvailability) return [];
 
-        const requestDateTime = new Date(`${requestData.date}T${requestData.time}`);
-        const requestDay = requestDateTime.getDay();
-        
-        return tutorData.TutorAvailability.filter(tutor => {
-            // Check subject expertise
-            const tutorSubjects = subjects.TutorSubjects.find(s => s.OSIS === tutor.OSIS);
-            if (!tutorSubjects || !tutorSubjects.subjects.includes(requestData.subject)) {
-                return false;
-            }
+        const dayOfWeek = new Date(requestData.preferred_date)
+            .toLocaleDateString('en-US', { weekday: 'lowercase' });
+        const requestTime = requestData.preferred_time;
 
-            // Check availability
-            if (!tutor.availability || !tutor.availability[requestDay]) return false;
+        // Filter tutors who are:
+        // 1. Active
+        // 2. Can tutor the subject
+        // 3. Available at the requested time
+        return response.TutorAvailability.filter(tutor => {
+            if (!tutor.active) return false;
+            if (!tutor.subjects.includes(requestData.subject)) return false;
             
-            const timeSlots = tutor.availability[requestDay];
-            return timeSlots.some(slot => {
-                const [start, end] = slot.split('-');
-                const slotStart = new Date(`${requestData.date}T${start}`);
-                const slotEnd = new Date(`${requestData.date}T${end}`);
-                return requestDateTime >= slotStart && requestDateTime <= slotEnd;
+            // Check if tutor is available at the requested time
+            const daySchedule = tutor.schedule[dayOfWeek] || [];
+            return daySchedule.some(timeSlot => {
+                const [start, end] = timeSlot.split('-');
+                return requestTime >= start && requestTime <= end;
             });
         });
     } catch (error) {
@@ -415,18 +513,20 @@ async function findAvailableTutors(requestData) {
 }
 
 async function notifyTutors(tutors, requestData) {
-    const notificationData = {
-        title: 'New Tutoring Request',
-        body: `Subject: ${requestData.subject} - ${requestData.topic}\nDate: ${new Date(requestData.date).toLocaleDateString()}`,
-        url: '/Tutoring',
-        OSIS: tutors.map(tutor => tutor.OSIS)
-    };
-    
     try {
-        await fetchRequest('/send_notification', notificationData);
+        // Send notifications to all available tutors
+        const notifications = tutors.map(tutor => 
+            fetchRequest('/send_notification', {
+                OSIS: tutor.osis,
+                title: 'New Tutoring Request',
+                body: `New request for ${requestData.subject}: ${requestData.topic}`,
+                url: '/Tutoring'
+            })
+        );
+
+        await Promise.all(notifications);
     } catch (error) {
         console.error('Error notifying tutors:', error);
-        showNotification('Error notifying tutors', 'error');
     }
 }
 

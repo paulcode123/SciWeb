@@ -160,21 +160,101 @@ body {
 .form-group textarea {
     width: 100%;
     padding: 12px;
-    background: rgba(20, 20, 20, 0.6);
-    border: 1px solid rgba(124, 77, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
     color: var(--text-color);
-    font-size: 14px;
+    font-size: 16px;
     transition: all 0.3s ease;
-    backdrop-filter: blur(5px);
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-    border-color: rgba(124, 77, 255, 0.5);
-    box-shadow: 0 0 10px rgba(124, 77, 255, 0.2);
     outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 10px rgba(0, 200, 83, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.form-group input:hover,
+.form-group select:hover,
+.form-group textarea:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.form-group select {
+    cursor: pointer;
+    appearance: none;
+    padding-right: 30px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* Make sure inputs aren't disabled or readonly */
+.form-group input:not([type="submit"]):not([type="button"]):not([type="reset"]),
+.form-group select,
+.form-group textarea {
+    pointer-events: auto;
+    -webkit-user-select: auto;
+    user-select: auto;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* Style the time input specifically */
+input[type="time"] {
+    padding-right: 8px;
+}
+
+/* Style the date input specifically */
+input[type="date"] {
+    padding-right: 8px;
+}
+
+/* Style form text helper */
+.form-text {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.875em;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Style submit button */
+.primary-btn {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.primary-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 200, 83, 0.3);
+}
+
+/* Add focus styles for accessibility */
+.primary-btn:focus,
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.3);
 }
 
 /* Tutor Section Styles */
@@ -450,36 +530,23 @@ body {
 }
 
 .primary-btn {
-    background: linear-gradient(135deg,
-        rgba(124, 77, 255, 0.9),
-        rgba(101, 31, 255, 0.9)
-    );
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     color: white;
-    box-shadow: 0 4px 12px rgba(124, 77, 255, 0.3);
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
-    position: relative;
-    overflow: hidden;
-}
-
-.primary-btn::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(
-        circle at center,
-        rgba(255, 255, 255, 0.2),
-        transparent 70%
-    );
-    animation: rotateBG 10s linear infinite;
-    z-index: 0;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
 }
 
 .primary-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(124, 77, 255, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 200, 83, 0.3);
 }
 
 .secondary-btn {

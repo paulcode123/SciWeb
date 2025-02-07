@@ -366,3 +366,35 @@ Sheet name: TodoTrees
         }
     )
     lastModified(ISO timestamp)
+
+Sheet name: TutoringRequests
+
+    id(5 digit number)
+    student_osis(7 digit number of the student requesting tutoring)
+    subject(str: subject/class name)
+    topic(str: specific topic needing help with)
+    preferred_date(YYYY-MM-DD)
+    preferred_time(HH:MM in 24hr format)
+    duration(int: duration in minutes)
+    description(str: detailed description of help needed)
+    status(str: pending/accepted/declined)
+    tutor_osis(7 digit number of assigned tutor, null if pending)
+    created_at(ISO timestamp)
+    last_updated(ISO timestamp)
+
+Sheet name: TutorAvailability
+
+    osis(7 digit number of the tutor)
+    subjects(array of subjects the tutor can help with)
+    schedule(object mapping days to available times:
+        {
+            "monday": ["09:00-10:00", "14:00-15:00"],
+            "tuesday": ["11:00-12:00"],
+            // ... etc for each weekday
+        }
+    )
+    last_updated(ISO timestamp)
+    active(boolean: whether the tutor is currently active)
+    rating(float: average rating from 1-5)
+    sessions_completed(int: number of completed tutoring sessions)
+    total_hours(float: total hours spent tutoring)
