@@ -419,3 +419,139 @@ async function loadClasses() {
 document.addEventListener('DOMContentLoaded', () => {
     loadClasses();
 });
+
+// Utility functions for class data management
+const ClassDataManager = {
+    // Fetch all classes
+    async fetchAllClasses() {
+        try {
+            const data = await fetchRequest('/data', { data: 'Classes' });
+            return data.Classes || [];
+        } catch (error) {
+            console.error('Error fetching classes:', error);
+            throw error;
+        }
+    },
+
+    // Fetch user's classes
+    async fetchUserClasses(userOsis) {
+        try {
+            const classes = await this.fetchAllClasses();
+            return classes.filter(cls => cls.OSIS.toString().includes(userOsis));
+        } catch (error) {
+            console.error('Error fetching user classes:', error);
+            throw error;
+        }
+    },
+
+    // Get unique subjects from classes
+    getUniqueSubjects(classes) {
+        const subjectMap = {
+            'Math': 'mathematics',
+            'Physics': 'physics',
+            'Chemistry': 'chemistry',
+            'Biology': 'biology',
+            'Computer Science': 'computer-science'
+        };
+
+        const subjects = new Set();
+        classes.forEach(cls => {
+            const className = cls.name.toLowerCase();
+            for (const [subject, value] of Object.entries(subjectMap)) {
+                if (className.includes(subject.toLowerCase())) {
+                    subjects.add({ name: subject, value: value });
+                }
+            }
+        });
+        return Array.from(subjects);
+    },
+
+    // Populate a select element with class options
+    populateClassSelect(selectElement, classes, includeDefault = true) {
+        // Clear existing options
+        selectElement.innerHTML = '';
+        
+        // Add default option if requested
+        if (includeDefault) {
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Select a class';
+            defaultOption.disabled = true;
+            defaultOption.selected = true;
+            selectElement.appendChild(defaultOption);
+        }
+
+        // Add class options
+        classes.forEach(cls => {
+            const option = document.createElement('option');
+            option.value = cls.id;
+            option.textContent = cls.name;
+            selectElement.appendChild(option);
+        });
+    },
+
+    // Populate a select element with subject options
+    populateSubjectSelect(selectElement, subjects, includeDefault = true) {
+        // Clear existing options
+        selectElement.innerHTML = '';
+        
+        // Add default option if requested
+        if (includeDefault) {
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Select a subject';
+            defaultOption.disabled = true;
+            defaultOption.selected = true;
+            selectElement.appendChild(defaultOption);
+        }
+
+        // Add subject options
+        subjects.forEach(subject => {
+            const option = document.createElement('option');
+            option.value = subject.value;
+            option.textContent = subject.name;
+            selectElement.appendChild(option);
+        });
+    },
+
+    // Get class categories
+    getClassCategories(classData) {
+        try {
+            if (!classData.categories) return [];
+            const categories = typeof classData.categories === 'string' 
+                ? JSON.parse(classData.categories) 
+                : classData.categories;
+            return categories.filter((_, index) => index % 2 === 0); // Filter out weights
+        } catch (error) {
+            console.error('Error parsing categories:', error);
+            return [];
+        }
+    },
+
+    // Populate a select element with category options
+    populateCategorySelect(selectElement, categories, includeDefault = true) {
+        // Clear existing options
+        selectElement.innerHTML = '';
+        
+        // Add default option if requested
+        if (includeDefault) {
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Select a category';
+            defaultOption.disabled = true;
+            defaultOption.selected = true;
+            selectElement.appendChild(defaultOption);
+        }
+
+        // Add category options
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category;
+            option.textContent = category;
+            selectElement.appendChild(option);
+        });
+    }
+};
+
+// Export the ClassDataManager for use in other files
+window.ClassDataManager = ClassDataManager;

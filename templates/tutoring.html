@@ -1,10 +1,10 @@
 {% extends "darkThemeTemplate.html" %}
 
 {% block title %}
-<title>SciWeb | NHS Tutoring</title>
+<title>SciWeb - Tutoring</title>
 {% endblock %}
 
-{% block css %}
+{% block head %}
 <link rel="stylesheet" href="/static/tutoring.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 {% endblock %}
@@ -12,13 +12,13 @@
 {% block content %}
 <div class="tutoring-container">
     <!-- Student Request Section -->
-    <div class="request-section">
+    <section class="request-section">
         <h2><i class="fas fa-chalkboard-teacher"></i> Request Tutoring</h2>
         <form id="tutoring-request-form">
             <div class="form-group">
-                <label for="subject">Subject</label>
-                <select id="subject" required>
-                    <option value="">Select a subject...</option>
+                <label for="subject"><i class="fas fa-book"></i> Subject</label>
+                <select id="subject" name="subject" required>
+                    <option value="" disabled selected>Select a subject</option>
                     <option value="math">Mathematics</option>
                     <option value="physics">Physics</option>
                     <option value="chemistry">Chemistry</option>
@@ -26,95 +26,82 @@
                     <option value="computer-science">Computer Science</option>
                 </select>
             </div>
+
             <div class="form-group">
-                <label for="topic">Specific Topic</label>
-                <input type="text" id="topic" placeholder="e.g., Calculus - Derivatives" required>
+                <label for="topic"><i class="fas fa-tag"></i> Specific Topic</label>
+                <input type="text" id="topic" name="topic" required placeholder="e.g., Calculus - Derivatives">
             </div>
+
             <div class="form-group">
-                <label for="preferred-date">Preferred Date</label>
-                <input type="date" id="preferred-date" required>
+                <label for="preferred-date"><i class="fas fa-calendar"></i> Preferred Date</label>
+                <input type="date" id="preferred-date" name="preferred-date" required>
             </div>
+
             <div class="form-group">
-                <label for="preferred-time">Preferred Time</label>
-                <input type="time" id="preferred-time" required>
+                <label for="preferred-time"><i class="fas fa-clock"></i> Preferred Time</label>
+                <input type="time" id="preferred-time" name="preferred-time" required min="08:00" max="18:00">
+                <small class="form-text">Available hours: 8:00 AM - 6:00 PM</small>
             </div>
+
             <div class="form-group">
-                <label for="duration">Duration (minutes)</label>
-                <select id="duration" required>
+                <label for="duration"><i class="fas fa-hourglass-half"></i> Duration (minutes)</label>
+                <select id="duration" name="duration" required>
                     <option value="30">30 minutes</option>
                     <option value="45">45 minutes</option>
-                    <option value="60">1 hour</option>
+                    <option value="60" selected>1 hour</option>
                     <option value="90">1.5 hours</option>
+                    <option value="120">2 hours</option>
                 </select>
             </div>
+
             <div class="form-group">
-                <label for="description">Description of Help Needed</label>
-                <textarea id="description" placeholder="Describe what you need help with..." required></textarea>
+                <label for="description"><i class="fas fa-align-left"></i> Description of Help Needed</label>
+                <textarea id="description" name="description" rows="4" required 
+                    placeholder="Please describe what you need help with and any specific questions you have..."></textarea>
             </div>
-            <button type="submit" class="primary-btn">Submit Request</button>
+
+            <button type="submit" class="primary-btn">
+                <i class="fas fa-paper-plane"></i> Submit Request
+            </button>
         </form>
-    </div>
+    </section>
 
     <!-- Tutor Section -->
-    <div class="tutor-section">
+    <section class="tutor-section" style="display: none;">
         <h2><i class="fas fa-user-graduate"></i> Tutor Dashboard</h2>
+        
         <div class="tutor-controls">
-            <button id="toggle-availability" class="secondary-btn">
-                <i class="fas fa-clock"></i> Set Availability
+            <button id="toggle-availability" class="primary-btn">
+                <i class="fas fa-calendar-alt"></i> Set Availability
             </button>
             <button id="view-requests" class="secondary-btn">
                 <i class="fas fa-list"></i> View Requests
             </button>
         </div>
 
-        <!-- Availability Calendar -->
+        <!-- Calendar Section -->
         <div id="availability-calendar" class="calendar-container" style="display: none;">
-            <h3>Set Your Available Hours</h3>
+            <h3><i class="fas fa-calendar-week"></i> Weekly Schedule</h3>
             <div class="weekly-schedule">
                 <!-- Will be populated by JavaScript -->
             </div>
-            <button id="save-availability" class="primary-btn">Save Availability</button>
+            <button id="save-availability" class="primary-btn">
+                <i class="fas fa-save"></i> Save Availability
+            </button>
         </div>
 
-        <!-- Tutoring Requests List -->
-        <div id="requests-list" class="requests-container">
-            <h3>Active Requests</h3>
+        <!-- Requests Section -->
+        <div class="requests-container">
+            <h3><i class="fas fa-inbox"></i> Active Requests</h3>
             <div class="requests-grid">
                 <!-- Will be populated by JavaScript -->
             </div>
         </div>
-    </div>
+    </section>
 </div>
 
-<!-- Availability Modal -->
-<div id="availability-modal" class="modal">
-    <div class="modal-content">
-        <h3>Set Weekly Availability</h3>
-        <div class="time-slots">
-            <!-- Will be populated by JavaScript -->
-        </div>
-        <div class="modal-actions">
-            <button class="primary-btn" id="save-slots">Save</button>
-            <button class="secondary-btn" id="close-modal">Cancel</button>
-        </div>
-    </div>
-</div>
+<!-- Notification Container -->
+<div id="notification-container"></div>
 
-<!-- Session Details Modal -->
-<div id="session-modal" class="modal">
-    <div class="modal-content">
-        <h3>Session Details</h3>
-        <div class="session-info">
-            <!-- Will be populated by JavaScript -->
-        </div>
-        <div class="modal-actions">
-            <button class="primary-btn" id="accept-session">Accept</button>
-            <button class="secondary-btn" id="decline-session">Decline</button>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block js %}
 <script src="/static/tutoring.js"></script>
 {% endblock %} 
