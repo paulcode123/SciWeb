@@ -3,7 +3,14 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 let userRole = 'student';
-let availabilityData = {};
+let availabilityData = {
+    monday: [],
+    tuesday: [],
+    wednesday: [],
+    thursday: [],
+    friday: []
+};
+let selectedSubjects = new Set();
 let activeRequests = [];
 let tutorStats = {
     completedSessions: 0,
@@ -33,10 +40,166 @@ async function initializeTutoring() {
     if (userRole === 'tutor') {
         loadTutorDashboard();
         initializeStatsRefresh();
+        initializeTutorSection();
     }
 
     // Initialize subject-specific topics
     initializeSubjectTopics();
+}
+
+function initializeTutorSection() {
+    const tutorSection = document.getElementById('tutorSection');
+    if (tutorSection) {
+        tutorSection.style.display = 'block';
+        initializeTimeSlots();
+        initializeDayButtons();
+        loadSavedAvailability();
+        
+        // Add event listeners for availability actions
+        document.getElementById('saveAvailability').addEventListener('click', saveAvailability);
+        document.getElementById('clearAvailability').addEventListener('click', clearAvailability);
+    }
+}
+
+function initializeTimeSlots() {
+    const timeSlotsContainer = document.querySelector('.time-slots');
+    const startHour = 8; // 8 AM
+    const endHour = 18; // 6 PM
+
+    for (let hour = startHour; hour < endHour; hour++) {
+        for (let minute of ['00', '30']) {
+            const timeSlot = document.createElement('div');
+            timeSlot.className = 'time-slot';
+            const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+            timeSlot.textContent = time;
+            timeSlot.dataset.time = time;
+            
+            timeSlot.addEventListener('click', () => toggleTimeSlot(timeSlot));
+            timeSlotsContainer.appendChild(timeSlot);
+        }
+    }
+}
+
+function initializeDayButtons() {
+    document.querySelectorAll('.day-btn').forEach(button => {
+        button.addEventListener('click', () => toggleDayButton(button));
+    });
+}
+
+function toggleDayButton(button) {
+    button.classList.toggle('selected');
+    updateAvailabilityDisplay();
+}
+
+function toggleTimeSlot(slot) {
+    slot.classList.toggle('selected');
+    updateAvailabilityDisplay();
+}
+
+function updateAvailabilityDisplay() {
+    const selectedDay = document.querySelector('.day-btn.selected');
+    if (!selectedDay) return;
+
+    const day = selectedDay.dataset.day;
+    availabilityData[day] = Array.from(document.querySelectorAll('.time-slot.selected'))
+        .map(slot => slot.dataset.time)
+        .sort();
+
+    displayCurrentSchedule();
+}
+
+function displayCurrentSchedule() {
+    const scheduleGrid = document.querySelector('.schedule-grid');
+    scheduleGrid.innerHTML = '';
+
+    Object.entries(availabilityData).forEach(([day, times]) => {
+        if (times.length > 0) {
+            const dayElement = document.createElement('div');
+            dayElement.className = 'schedule-day';
+            dayElement.innerHTML = `
+                <h4><i class="fas fa-calendar-day"></i> ${capitalizeFirstLetter(day)}</h4>
+                <div class="schedule-times">
+                    ${times.map(time => `
+                        <div class="schedule-time">
+                            <i class="fas fa-clock"></i> ${time}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            scheduleGrid.appendChild(dayElement);
+        }
+    });
+}
+
+async function loadSavedAvailability() {
+    try {
+        const response = await fetchRequest('/data', { data: 'TutorAvailability' });
+        const tutorAvailability = response.TutorAvailability.find(a => a.OSIS === osis);
+        
+        if (tutorAvailability) {
+            availabilityData = tutorAvailability.availability;
+            displayCurrentSchedule();
+            
+            // Restore selected subjects
+            if (tutorAvailability.subjects) {
+                selectedSubjects = new Set(tutorAvailability.subjects);
+                updateSubjectCheckboxes();
+            }
+        }
+    } catch (error) {
+        console.error('Error loading saved availability:', error);
+        showNotification('Error loading saved availability', 'error');
+    }
+}
+
+async function saveAvailability() {
+    try {
+        const availabilityToSave = {
+            OSIS: osis,
+            availability: availabilityData,
+            subjects: Array.from(selectedSubjects),
+            lastUpdated: new Date().toISOString()
+        };
+
+        await fetchRequest('/post_data', {
+            sheet: 'TutorAvailability',
+            data: availabilityToSave
+        });
+
+        showNotification('Availability saved successfully!', 'success');
+    } catch (error) {
+        console.error('Error saving availability:', error);
+        showNotification('Error saving availability', 'error');
+    }
+}
+
+function clearAvailability() {
+    availabilityData = {
+        monday: [],
+        tuesday: [],
+        wednesday: [],
+        thursday: [],
+        friday: []
+    };
+    selectedSubjects.clear();
+    
+    // Clear visual selections
+    document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('selected'));
+    document.querySelectorAll('.time-slot').forEach(slot => slot.classList.remove('selected'));
+    document.querySelectorAll('.subject-checkbox input').forEach(checkbox => checkbox.checked = false);
+    
+    displayCurrentSchedule();
+    showNotification('Availability cleared', 'info');
+}
+
+function updateSubjectCheckboxes() {
+    document.querySelectorAll('.subject-checkbox input').forEach(checkbox => {
+        checkbox.checked = selectedSubjects.has(checkbox.value);
+    });
+}
+
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
 function initializeSubjectTopics() {
@@ -323,41 +486,6 @@ function generateTimeSlots() {
     return slots;
 }
 
-function toggleTimeSlot(slot) {
-    slot.classList.toggle('selected');
-    const day = parseInt(slot.dataset.day);
-    const time = slot.dataset.time;
-    
-    if (!availabilityData[day]) {
-        availabilityData[day] = [];
-    }
-    
-    const index = availabilityData[day].indexOf(time);
-    if (index === -1) {
-        availabilityData[day].push(time);
-        availabilityData[day].sort();
-    } else {
-        availabilityData[day].splice(index, 1);
-    }
-}
-
-async function saveAvailability() {
-    try {
-        await fetchRequest('/post_data', {
-            sheet: 'TutorAvailability',
-            data: {
-                OSIS: osis,
-                availability: availabilityData,
-                lastUpdated: new Date().toISOString()
-            }
-        });
-        showNotification('Availability saved successfully!', 'success');
-    } catch (error) {
-        console.error('Error saving availability:', error);
-        showNotification('Error saving availability. Please try again.', 'error');
-    }
-}
-
 async function loadTutoringRequests() {
     try {
         const data = await fetchRequest('/data', { data: 'TutoringRequests' });
@@ -528,10 +656,14 @@ async function loadClassData() {
     try {
         const userClasses = await ClassDataManager.fetchUserClasses(osis);
         const subjectSelect = document.getElementById('subject');
+        const subjectCheckboxes = document.querySelector('.subject-checkboxes');
         
-        // Clear existing options except the default one
+        // Clear existing options and checkboxes
         while (subjectSelect.options.length > 1) {
             subjectSelect.remove(1);
+        }
+        if (subjectCheckboxes) {
+            subjectCheckboxes.innerHTML = '';
         }
 
         // Group classes by subject
@@ -556,16 +688,36 @@ async function loadClassData() {
             }
         });
 
-        // Create option groups for each subject
+        // Create option groups and checkboxes for each subject
         Object.entries(subjectGroups).forEach(([subject, classes]) => {
+            // Create option group for request form
             const optgroup = document.createElement('optgroup');
             optgroup.label = subject.charAt(0).toUpperCase() + subject.slice(1).replace('-', ' ');
             
             classes.forEach(cls => {
+                // Add option to request form
                 const option = document.createElement('option');
                 option.value = `${subject}:${cls.id}`;
                 option.textContent = cls.name;
                 optgroup.appendChild(option);
+
+                // Add checkbox to tutor availability section
+                if (subjectCheckboxes) {
+                    const checkbox = document.createElement('label');
+                    checkbox.className = 'subject-checkbox';
+                    checkbox.innerHTML = `
+                        <input type="checkbox" value="${cls.id}">
+                        <span>${cls.name}</span>
+                    `;
+                    checkbox.querySelector('input').addEventListener('change', (e) => {
+                        if (e.target.checked) {
+                            selectedSubjects.add(cls.id);
+                        } else {
+                            selectedSubjects.delete(cls.id);
+                        }
+                    });
+                    subjectCheckboxes.appendChild(checkbox);
+                }
             });
 
             subjectSelect.appendChild(optgroup);

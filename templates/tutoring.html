@@ -61,42 +61,66 @@
         </form>
     </section>
 
-    <!-- Tutor Section -->
-    <section class="tutor-section" style="display: none;">
-        <h2><i class="fas fa-user-graduate"></i> Tutor Dashboard</h2>
-        
-        <div class="tutor-controls">
-            <button id="toggle-availability" class="primary-btn">
-                <i class="fas fa-calendar-alt"></i> Set Availability
-            </button>
-            <button id="view-requests" class="secondary-btn">
-                <i class="fas fa-list"></i> View Requests
-            </button>
+    <!-- Tutor Availability Section -->
+    <section class="availability-section" id="tutorSection">
+        <h2><i class="fas fa-user-clock"></i> Set Your Tutoring Availability</h2>
+        <div class="availability-grid">
+            <div class="weekday-selector">
+                <div class="form-group">
+                    <label><i class="fas fa-calendar-week"></i> Select Days</label>
+                    <div class="weekday-buttons">
+                        <button type="button" class="day-btn" data-day="monday">Mon</button>
+                        <button type="button" class="day-btn" data-day="tuesday">Tue</button>
+                        <button type="button" class="day-btn" data-day="wednesday">Wed</button>
+                        <button type="button" class="day-btn" data-day="thursday">Thu</button>
+                        <button type="button" class="day-btn" data-day="friday">Fri</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="time-selector">
+                <div class="form-group">
+                    <label><i class="fas fa-clock"></i> Available Times</label>
+                    <div class="time-slots">
+                        <!-- Time slots will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="subjects-selector">
+                <div class="form-group">
+                    <label><i class="fas fa-book"></i> Subjects You Can Tutor</label>
+                    <div class="subject-checkboxes">
+                        <!-- Will be populated with user's classes -->
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Calendar Section -->
-        <div id="availability-calendar" class="calendar-container" style="display: none;">
-            <h3><i class="fas fa-calendar-week"></i> Weekly Schedule</h3>
-            <div class="weekly-schedule">
-                <!-- Will be populated by JavaScript -->
-            </div>
-            <button id="save-availability" class="primary-btn">
+        <div class="availability-actions">
+            <button type="button" class="primary-btn" id="saveAvailability">
                 <i class="fas fa-save"></i> Save Availability
             </button>
+            <button type="button" class="secondary-btn" id="clearAvailability">
+                <i class="fas fa-trash-alt"></i> Clear All
+            </button>
         </div>
 
-        <!-- Requests Section -->
-        <div class="requests-container">
-            <h3><i class="fas fa-inbox"></i> Active Requests</h3>
-            <div class="requests-grid">
-                <!-- Will be populated by JavaScript -->
+        <!-- Current Schedule Display -->
+        <div class="current-schedule">
+            <h3><i class="fas fa-calendar-alt"></i> Your Current Schedule</h3>
+            <div class="schedule-grid">
+                <!-- Will be populated with current availability -->
             </div>
         </div>
     </section>
+
+    <!-- Notification Container -->
+    <div id="notification-container"></div>
 </div>
 
-<!-- Notification Container -->
-<div id="notification-container"></div>
+{% endblock %}
 
+{% block js %}
 <script src="/static/tutoring.js"></script>
 {% endblock %} 
