@@ -527,11 +527,99 @@ function closeModal() {
 async function loadClassData() {
     try {
         const userClasses = await ClassDataManager.fetchUserClasses(osis);
-        const subjects = ClassDataManager.getUniqueSubjects(userClasses);
         const subjectSelect = document.getElementById('subject');
-        ClassDataManager.populateSubjectSelect(subjectSelect, subjects);
+        
+        // Clear existing options except the default one
+        while (subjectSelect.options.length > 1) {
+            subjectSelect.remove(1);
+        }
+
+        // Group classes by subject
+        const subjectGroups = {};
+        userClasses.forEach(cls => {
+            const className = cls.name.toLowerCase();
+            if (className.includes('math')) {
+                if (!subjectGroups.mathematics) subjectGroups.mathematics = [];
+                subjectGroups.mathematics.push(cls);
+            } else if (className.includes('physics')) {
+                if (!subjectGroups.physics) subjectGroups.physics = [];
+                subjectGroups.physics.push(cls);
+            } else if (className.includes('chemistry')) {
+                if (!subjectGroups.chemistry) subjectGroups.chemistry = [];
+                subjectGroups.chemistry.push(cls);
+            } else if (className.includes('biology')) {
+                if (!subjectGroups.biology) subjectGroups.biology = [];
+                subjectGroups.biology.push(cls);
+            } else if (className.includes('computer')) {
+                if (!subjectGroups['computer-science']) subjectGroups['computer-science'] = [];
+                subjectGroups['computer-science'].push(cls);
+            }
+        });
+
+        // Create option groups for each subject
+        Object.entries(subjectGroups).forEach(([subject, classes]) => {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = subject.charAt(0).toUpperCase() + subject.slice(1).replace('-', ' ');
+            
+            classes.forEach(cls => {
+                const option = document.createElement('option');
+                option.value = `${subject}:${cls.id}`;
+                option.textContent = cls.name;
+                optgroup.appendChild(option);
+            });
+
+            subjectSelect.appendChild(optgroup);
+        });
+
+        // Update topic suggestions based on selected class
+        subjectSelect.addEventListener('change', (e) => {
+            const [subject, classId] = e.target.value.split(':');
+            const selectedClass = userClasses.find(cls => cls.id === classId);
+            updateTopicSuggestions(subject, selectedClass);
+        });
+
     } catch (error) {
         console.error('Error loading class data:', error);
         showNotification('Error loading classes. Please try again.', 'error');
     }
+}
+
+function updateTopicSuggestions(subject, classData) {
+    const topicInput = document.getElementById('topic');
+    const topicsBySubject = {
+        mathematics: ['Algebra', 'Geometry', 'Calculus - Derivatives', 'Calculus - Integrals', 'Statistics', 'Trigonometry'],
+        physics: ['Mechanics', 'Electricity & Magnetism', 'Waves & Optics', 'Thermodynamics', 'Modern Physics'],
+        chemistry: ['Organic Chemistry', 'Inorganic Chemistry', 'Physical Chemistry', 'Biochemistry'],
+        biology: ['Cell Biology', 'Genetics', 'Ecology', 'Evolution', 'Physiology'],
+        'computer-science': ['Programming Basics', 'Data Structures', 'Algorithms', 'Web Development', 'Database Design']
+    };
+
+    // Create or update datalist
+    let datalist = document.getElementById('topic-suggestions');
+    if (!datalist) {
+        datalist = document.createElement('datalist');
+        datalist.id = 'topic-suggestions';
+        document.body.appendChild(datalist);
+    }
+    datalist.innerHTML = '';
+
+    // Add subject-specific topics
+    const topics = topicsBySubject[subject] || [];
+    topics.forEach(topic => {
+        const option = document.createElement('option');
+        option.value = `${classData.name} - ${topic}`;
+        datalist.appendChild(option);
+    });
+
+    // Add class categories if available
+    if (classData.categories) {
+        const categories = ClassDataManager.getClassCategories(classData);
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = `${classData.name} - ${category}`;
+            datalist.appendChild(option);
+        });
+    }
+
+    topicInput.setAttribute('list', 'topic-suggestions');
 } 

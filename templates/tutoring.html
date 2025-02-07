@@ -4,7 +4,7 @@
 <title>SciWeb - Tutoring</title>
 {% endblock %}
 
-{% block head %}
+{% block css %}
 <link rel="stylesheet" href="/static/tutoring.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 {% endblock %}
@@ -18,12 +18,7 @@
             <div class="form-group">
                 <label for="subject"><i class="fas fa-book"></i> Subject</label>
                 <select id="subject" name="subject" required>
-                    <option value="" disabled selected>Select a subject</option>
-                    <option value="math">Mathematics</option>
-                    <option value="physics">Physics</option>
-                    <option value="chemistry">Chemistry</option>
-                    <option value="biology">Biology</option>
-                    <option value="computer-science">Computer Science</option>
+                    <option value="" disabled selected>Select a class</option>
                 </select>
             </div>
 
