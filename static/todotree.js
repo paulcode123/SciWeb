@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('infiniteContainer');
+    const content = container.querySelector('.infinite-content');
     const canvas = document.getElementById('edgeCanvas');
     const ctx = canvas.getContext('2d');
     const contextMenu = document.getElementById('contextMenu');
@@ -23,11 +24,139 @@ document.addEventListener('DOMContentLoaded', function() {
     let isDragging = false;
     let dragStartTime = 0;
     let currentTreeId = null;
+    let isDragMode = false;
+
+    // Add new variables for container management
+    const EXPANSION_THRESHOLD = 50; // pixels from edge before expanding
+    const EXPANSION_AMOUNT = 200; // pixels to expand by
+    let containerWidth = 3000;
+    let containerHeight = 3000;
+
+    // Initialize container position
+    function initializeContainer() {
+        // Set initial content dimensions
+        content.style.width = `${containerWidth}px`;
+        content.style.height = `${containerHeight}px`;
+        canvas.width = containerWidth;
+        canvas.height = containerHeight;
+
+        // Center the viewport
+        container.scrollLeft = (containerWidth - container.clientWidth) / 2;
+        container.scrollTop = (containerHeight - container.clientHeight) / 2;
+
+        // Position initial nodes in the center if they don't have positions set
+        circles.forEach(circle => {
+            if (!circle.style.left || !circle.style.top) {
+                const centerX = containerWidth / 2;
+                const centerY = containerHeight / 2;
+                
+                // Calculate offset based on node's data-id to create a nice spread
+                const id = parseInt(circle.dataset.id);
+                const angle = (id - 1) * (2 * Math.PI / 10); // Spread 10 nodes in a circle
+                const radius = 200; // Increased radius for better spacing
+                
+                const x = centerX + radius * Math.cos(angle) - 60;
+                const y = centerY + radius * Math.sin(angle) - 60;
+                
+                circle.style.left = `${x}px`;
+                circle.style.top = `${y}px`;
+            }
+        });
+
+        // Initial edge drawing
+        drawEdges();
+    }
+
+    // Call on load
+    initializeContainer();
+
+    // Function to check and expand container if needed
+    function checkAndExpandContainer() {
+        let needsExpansion = false;
+        let expandRight = false;
+        let expandBottom = false;
+        let expandLeft = false;
+        let expandTop = false;
+
+        // Check active node position if dragging
+        if (activeCircle) {
+            const rect = activeCircle.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            
+            // Calculate absolute position relative to container
+            const absoluteX = parseFloat(activeCircle.style.left) || 0;
+            const absoluteY = parseFloat(activeCircle.style.top) || 0;
+
+            // Check if too close to edges
+            if (containerWidth - absoluteX < EXPANSION_THRESHOLD + 120) { // Add node width
+                expandRight = true;
+                needsExpansion = true;
+            }
+            if (containerHeight - absoluteY < EXPANSION_THRESHOLD + 120) { // Add node height
+                expandBottom = true;
+                needsExpansion = true;
+            }
+            if (absoluteX < EXPANSION_THRESHOLD) {
+                expandLeft = true;
+                needsExpansion = true;
+            }
+            if (absoluteY < EXPANSION_THRESHOLD) {
+                expandTop = true;
+                needsExpansion = true;
+            }
+        }
+
+        if (needsExpansion) {
+            expandContainer(expandRight, expandBottom, expandLeft, expandTop);
+        }
+    }
+
+    // Function to expand container
+    function expandContainer(right, bottom, left, top) {
+        const oldScrollLeft = container.scrollLeft;
+        const oldScrollTop = container.scrollTop;
+
+        if (right) {
+            containerWidth += EXPANSION_AMOUNT;
+        }
+        if (bottom) {
+            containerHeight += EXPANSION_AMOUNT;
+        }
+
+        // If expanding left or top, we need to adjust all node positions
+        if (left) {
+            containerWidth += EXPANSION_AMOUNT;
+            circles.forEach(circle => {
+                const currentLeft = parseInt(circle.style.left) || 0;
+                circle.style.left = `${currentLeft + EXPANSION_AMOUNT}px`;
+            });
+            container.scrollLeft = oldScrollLeft + EXPANSION_AMOUNT;
+        }
+        if (top) {
+            containerHeight += EXPANSION_AMOUNT;
+            circles.forEach(circle => {
+                const currentTop = parseInt(circle.style.top) || 0;
+                circle.style.top = `${currentTop + EXPANSION_AMOUNT}px`;
+            });
+            container.scrollTop = oldScrollTop + EXPANSION_AMOUNT;
+        }
+
+        // Update container and canvas dimensions
+        content.style.width = `${containerWidth}px`;
+        content.style.height = `${containerHeight}px`;
+        canvas.width = containerWidth;
+        canvas.height = containerHeight;
+
+        // Redraw edges with new dimensions
+        drawEdges();
+    }
 
     // Set canvas size
     function resizeCanvas() {
-        canvas.width = container.clientWidth;
-        canvas.height = container.clientHeight;
+        content.style.width = `${containerWidth}px`;
+        content.style.height = `${containerHeight}px`;
+        canvas.width = containerWidth;
+        canvas.height = containerHeight;
         drawEdges();
     }
     resizeCanvas();
@@ -41,6 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('addEdgeBtn').addEventListener('click', startAddingEdge);
     document.getElementById('cancelEdgeBtn').addEventListener('click', cancelAddingEdge);
     document.getElementById('deleteBtn').addEventListener('click', toggleDeleteMode);
+    document.getElementById('dragModeBtn').addEventListener('click', toggleDragMode);
 
     // Modal event listeners
     closeBtn.addEventListener('click', closeModal);
@@ -82,8 +212,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function toggleDragMode() {
+        isDragMode = !isDragMode;
+        const dragBtn = document.getElementById('dragModeBtn');
+        dragBtn.classList.toggle('active');
+        container.style.cursor = isDragMode ? 'move' : 'default';
+        
+        // Update all circles' cursor style
+        circles.forEach(circle => {
+            circle.style.cursor = isDragMode ? 'move' : 'pointer';
+        });
+        
+        console.log(`Drag mode ${isDragMode ? 'enabled' : 'disabled'}`);
+    }
+
     function startDragging(e) {
-        if (isAddingEdge || isDeleteMode) return;
+        if (!isDragMode || isAddingEdge || isDeleteMode) return;
         e.preventDefault();
         e.stopPropagation();
         
@@ -93,9 +237,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const event = e.type === 'mousedown' ? e : e.touches[0];
         const rect = activeCircle.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
         
-        initialX = event.clientX - rect.left;
-        initialY = event.clientY - rect.top;
+        // Calculate click offset relative to the container
+        initialX = event.clientX - containerRect.left - parseFloat(activeCircle.style.left || 0) + container.scrollLeft;
+        initialY = event.clientY - containerRect.top - parseFloat(activeCircle.style.top || 0) + container.scrollTop;
 
         if (e.type === 'mousedown') {
             window.addEventListener('mousemove', drag);
@@ -116,11 +262,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const event = e.type === 'mousemove' ? e : e.touches[0];
         const rect = container.getBoundingClientRect();
 
-        // If not yet dragging, check if we should start
         if (!isDragging) {
-            const moveThreshold = 5; // pixels
-            const deltaX = Math.abs(event.clientX - (initialX + activeCircle.getBoundingClientRect().left));
-            const deltaY = Math.abs(event.clientY - (initialY + activeCircle.getBoundingClientRect().top));
+            const moveThreshold = 5;
+            const deltaX = Math.abs(event.clientX - rect.left - parseFloat(activeCircle.style.left || 0));
+            const deltaY = Math.abs(event.clientY - rect.top - parseFloat(activeCircle.style.top || 0));
             
             if (deltaX > moveThreshold || deltaY > moveThreshold) {
                 isDragging = true;
@@ -128,19 +273,29 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (isDragging) {
-            const x = event.clientX - rect.left - initialX + container.scrollLeft;
-            const y = event.clientY - rect.top - initialY + container.scrollTop;
+            // Calculate new position relative to container
+            const x = event.clientX - rect.left + container.scrollLeft - initialX;
+            const y = event.clientY - rect.top + container.scrollTop - initialY;
+
+            // Store the previous position
+            const prevX = parseFloat(activeCircle.style.left) || 0;
+            const prevY = parseFloat(activeCircle.style.top) || 0;
 
             activeCircle.style.left = `${x}px`;
             activeCircle.style.top = `${y}px`;
 
-            // Throttle edge redrawing for better performance
-            if (!drag.throttled) {
-                drag.throttled = true;
-                requestAnimationFrame(() => {
-                    drawEdges();
-                    drag.throttled = false;
-                });
+            // Only check for expansion and redraw if position actually changed
+            if (x !== prevX || y !== prevY) {
+                checkAndExpandContainer();
+
+                // Throttle edge redrawing for better performance
+                if (!drag.throttled) {
+                    drag.throttled = true;
+                    requestAnimationFrame(() => {
+                        drawEdges();
+                        drag.throttled = false;
+                    });
+                }
             }
         }
     }
@@ -155,16 +310,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         activeCircle.classList.remove('dragging');
 
-        // Only trigger click if it wasn't a drag and it was a short interaction
-        if (!isDragging && Date.now() - dragStartTime < 200) {
-            openNodeEditor.call(activeCircle, e);
-        }
-
+        // Always schedule auto-save if we were dragging
         if (isDragging) {
             scheduleAutoSave();
         }
-        activeCircle = null;
+
         isDragging = false;
+        activeCircle = null;
         drawEdges();
     }
 
@@ -234,25 +386,10 @@ document.addEventListener('DOMContentLoaded', function() {
         circle.dataset.type = 'Task';
 
         const span = document.createElement('span');
-        span.textContent = `Task ${nodeId.slice(-4)}`; // Use last 4 digits for display
+        span.textContent = `Task ${nodeId.slice(-4)}`;
         circle.appendChild(span);
 
-        // Add orbital dots container
-        const orbitalDots = document.createElement('div');
-        orbitalDots.className = 'orbital-dots';
-        for (let i = 0; i < 4; i++) {
-            const dot = document.createElement('div');
-            dot.className = 'orbital-dot';
-            orbitalDots.appendChild(dot);
-        }
-        circle.appendChild(orbitalDots);
-
-        const x = (container.clientWidth / 2) - 60;
-        const y = (container.clientHeight / 2) - 60 + container.scrollTop;
-        circle.style.left = `${x}px`;
-        circle.style.top = `${y}px`;
-
-        container.appendChild(circle);
+        content.appendChild(circle);
         initializeCircles();
         drawEdges();
         
@@ -267,10 +404,12 @@ document.addEventListener('DOMContentLoaded', function() {
         editingNode = this;
         const name = this.querySelector('span').textContent;
         const type = this.dataset.type;
+        const description = this.dataset.description || '';
 
         // Update basic fields
         nodeNameInput.value = name;
         nodeTypeSelect.value = type;
+        document.getElementById('nodeDescription').value = description;
         
         // Update type selector UI
         document.querySelectorAll('.type-option').forEach(option => {
@@ -322,28 +461,148 @@ document.addEventListener('DOMContentLoaded', function() {
         editingNode = null;
     }
 
+    // Add validation function for notification times
+    function validateNotificationTime(timeInput) {
+        const selectedTime = new Date(timeInput.value);
+        const now = new Date();
+        const fourWeeksFromNow = new Date(now.getTime() + (28 * 24 * 60 * 60 * 1000));
+        
+        if (selectedTime < now) {
+            alert('Cannot set notifications in the past');
+            timeInput.value = '';
+            return false;
+        }
+        
+        if (selectedTime > fourWeeksFromNow) {
+            alert('Cannot set notifications more than 4 weeks in advance');
+            timeInput.value = '';
+            return false;
+        }
+        
+        return true;
+    }
+
+    // Update notification time item creation
+    function addNotificationTimeItem(value = '') {
+        const template = document.getElementById('notificationTimeTemplate');
+        const clone = template.content.cloneNode(true);
+        
+        const timeInput = clone.querySelector('.notification-time');
+        timeInput.value = value;
+        
+        // Add validation on change
+        timeInput.addEventListener('change', function() {
+            if (validateNotificationTime(this)) {
+                scheduleNotification(this.value, editingNode);
+            }
+        });
+        
+        const removeBtn = clone.querySelector('.remove-time-btn');
+        removeBtn.addEventListener('click', function() {
+            const timeValue = this.closest('.notification-time-item').querySelector('.notification-time').value;
+            if (timeValue) {
+                cancelNotification(timeValue, editingNode);
+            }
+            this.closest('.notification-time-item').remove();
+            scheduleAutoSave();
+        });
+        
+        document.getElementById('notificationTimeList').appendChild(clone);
+
+        // If a value was provided, validate and schedule it
+        if (value) {
+            if (validateNotificationTime(timeInput)) {
+                scheduleNotification(value, editingNode);
+            }
+        }
+    }
+
+    // Add FCM notification scheduling function
+    async function scheduleNotification(time, node) {
+        try {
+            const notificationData = {
+                nodeId: node.dataset.id,
+                scheduled_time: time,
+                notificationText: node.dataset.notificationText || `Reminder for: ${node.querySelector('span').textContent}`,
+                treeId: currentTreeId,
+                OSIS: osis,
+                title: `Reminder for: ${node.querySelector('span').textContent}`,
+                body: node.dataset.notificationText || `Reminder for: ${node.querySelector('span').textContent}`,
+
+            };
+
+            await fetchRequest('/schedule_notification', {
+                data: notificationData
+            });
+            
+            console.log('Notification scheduled successfully for:', time);
+        } catch (error) {
+            console.error('Error scheduling notification:', error);
+            alert('Failed to schedule notification. Please try again.');
+        }
+    }
+
+    // Add FCM notification cancellation function
+    async function cancelNotification(time, node) {
+        try {
+            await fetchRequest('/cancel_notification', {
+                data: {
+                    nodeId: node.dataset.id,
+                    scheduledTime: time,
+                    treeId: currentTreeId
+                }
+            });
+            
+            console.log('Notification cancelled successfully for:', time);
+        } catch (error) {
+            console.error('Error cancelling notification:', error);
+        }
+    }
+
+    // Update saveNodeChanges to handle notification changes
     function saveNodeChanges() {
         if (!editingNode) return;
 
         const newName = nodeNameInput.value.trim();
         const newType = nodeTypeSelect.value;
+        const description = document.getElementById('nodeDescription').value.trim();
 
         if (newName) {
             editingNode.querySelector('span').textContent = newName;
             editingNode.dataset.type = newType;
+            editingNode.dataset.description = description;
+            
+            // If this is a new node (no position set yet), position it at viewport center
+            if (!editingNode.style.left || !editingNode.style.top) {
+                const x = container.scrollLeft + (container.clientWidth / 2) - 60;
+                const y = container.scrollTop + (container.clientHeight / 2) - 60;
+                editingNode.style.left = `${x}px`;
+                editingNode.style.top = `${y}px`;
+            }
             
             // Save dates and notifications for Task and Goal types
             if (newType !== 'Motivator') {
+                const oldNotificationTimes = JSON.parse(editingNode.dataset.notificationTimes || '[]');
+                const newNotificationTimes = Array.from(document.querySelectorAll('.notification-time'))
+                    .map(input => input.value)
+                    .filter(time => time);
+
+                // Cancel removed notifications
+                oldNotificationTimes.forEach(time => {
+                    if (!newNotificationTimes.includes(time)) {
+                        cancelNotification(time, editingNode);
+                    }
+                });
+
                 editingNode.dataset.deadline = document.getElementById('deadline').value;
                 editingNode.dataset.targetDate = document.getElementById('targetDate').value;
                 editingNode.dataset.notificationText = document.getElementById('notificationText').value;
-                
-                // Save notification times
-                const times = Array.from(document.querySelectorAll('.notification-time'))
-                    .map(input => input.value)
-                    .filter(time => time);
-                editingNode.dataset.notificationTimes = JSON.stringify(times);
+                editingNode.dataset.notificationTimes = JSON.stringify(newNotificationTimes);
             } else {
+                // Cancel all notifications if type changed to Motivator
+                const oldTimes = JSON.parse(editingNode.dataset.notificationTimes || '[]');
+                oldTimes.forEach(time => cancelNotification(time, editingNode));
+                
                 delete editingNode.dataset.deadline;
                 delete editingNode.dataset.targetDate;
                 delete editingNode.dataset.notificationText;
@@ -418,10 +677,11 @@ document.addEventListener('DOMContentLoaded', function() {
             circle.classList.toggle('delete-mode');
         });
 
-        container.style.cursor = isDeleteMode ? 'crosshair' : 'default';
+        container.classList.toggle('delete-mode', isDeleteMode);
 
         if (!isDeleteMode) {
             hoveredEdge = null;
+            canvas.classList.remove('edge-hover');
             drawEdges();
         }
         
@@ -429,6 +689,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function handleNodeClick(e) {
+        if (isDragMode) return; // Prevent any click actions in drag mode
+        
         if (isDeleteMode) {
             e.preventDefault();
             e.stopPropagation();
@@ -513,9 +775,13 @@ document.addEventListener('DOMContentLoaded', function() {
         drawEdges();
     }
 
-    // Edge hover detection for delete mode
+    // Add edge hover detection for delete mode
     canvas.addEventListener('mousemove', function(e) {
-        if (!isDeleteMode) return;
+        if (!isDeleteMode) {
+            hoveredEdge = null;
+            canvas.classList.remove('edge-hover');
+            return;
+        }
 
         const rect = container.getBoundingClientRect();
         const mouseX = e.clientX - rect.left + container.scrollLeft;
@@ -537,28 +803,57 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (isPointNearLine(mouseX, mouseY, fromX, fromY, toX, toY)) {
                     hoveredEdge = edge;
+                    canvas.classList.add('edge-hover');
+                    return;
                 }
             }
         });
         
+        if (!hoveredEdge) {
+            canvas.classList.remove('edge-hover');
+        }
+        
         drawEdges();
     });
 
-    canvas.addEventListener('click', function(e) {
-        if (isDeleteMode && hoveredEdge) {
-            edges = edges.filter(edge => 
-                edge.from !== hoveredEdge.from || 
-                edge.to !== hoveredEdge.to
-            );
+    canvas.addEventListener('mouseleave', function() {
+        if (isDeleteMode) {
             hoveredEdge = null;
+            canvas.classList.remove('edge-hover');
             drawEdges();
         }
     });
 
+    canvas.addEventListener('click', function(e) {
+        if (isDeleteMode && hoveredEdge) {
+            deleteEdge(hoveredEdge);
+            hoveredEdge = null;
+            drawEdges();
+            scheduleAutoSave();
+        }
+    });
+
+    function deleteEdge(edge) {
+        edges = edges.filter(e => 
+            !(e.from === edge.from && e.to === edge.to)
+        );
+        console.log(`Edge deleted: ${edge.from} -> ${edge.to}`);
+    }
+
     function isPointNearLine(px, py, x1, y1, x2, y2) {
         const lineLength = Math.sqrt((x2-x1)**2 + (y2-y1)**2);
         const distance = Math.abs((y2-y1)*px - (x2-x1)*py + x2*y1 - y2*x1) / lineLength;
-        return distance < 5;
+        const threshold = 5;
+
+        // Also check if point is within the bounding box of the line
+        const minX = Math.min(x1, x2) - threshold;
+        const maxX = Math.max(x1, x2) + threshold;
+        const minY = Math.min(y1, y2) - threshold;
+        const maxY = Math.max(y1, y2) + threshold;
+
+        return distance < threshold && 
+               px >= minX && px <= maxX &&
+               py >= minY && py <= maxY;
     }
 
     // Initialize type selector with date/notification section toggle
@@ -580,26 +875,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update grade goal section visibility
             updateGradeGoalSection(this.dataset.type);
         });
-    });
-
-    // Initialize notification time functionality
-    function addNotificationTimeItem(value = '') {
-        const template = document.getElementById('notificationTimeTemplate');
-        const clone = template.content.cloneNode(true);
-        
-        const timeInput = clone.querySelector('.notification-time');
-        timeInput.value = value;
-        
-        const removeBtn = clone.querySelector('.remove-time-btn');
-        removeBtn.addEventListener('click', function() {
-            this.closest('.notification-time-item').remove();
-        });
-        
-        document.getElementById('notificationTimeList').appendChild(clone);
-    }
-
-    document.getElementById('addNotificationTime').addEventListener('click', () => {
-        addNotificationTimeItem();
     });
 
     // Initialize chat functionality
@@ -899,7 +1174,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let saveTimeout;
     function scheduleAutoSave() {
         if (saveTimeout) clearTimeout(saveTimeout);
-        saveTimeout = setTimeout(saveToDatabase, 2000); // Save 2 seconds after last change
+        showSavingToast(); // Show indicator immediately
+        saveTimeout = setTimeout(saveToDatabase, 5000); // Wait 5 seconds before saving
     }
 
     // Add these functions at the top level of the DOMContentLoaded callback
@@ -941,6 +1217,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 id: node.dataset.id,
                 type: node.dataset.type,
                 name: node.querySelector('span').textContent,
+                description: node.dataset.description || '',
                 position: { x, y }
             };
 
@@ -952,8 +1229,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (node.dataset.chatHistory) nodeData.chatHistory = JSON.parse(node.dataset.chatHistory);
             if (node.dataset.context) nodeData.context = node.dataset.context;
             if (node.dataset.breakOffText) nodeData.breakOffText = node.dataset.breakOffText;
-
-            // Add grade goal data if present
             if (node.dataset.gradeGoalClass) {
                 nodeData.gradeGoalClass = node.dataset.gradeGoalClass;
                 nodeData.gradeGoalTarget = node.dataset.gradeGoalTarget;
@@ -1016,10 +1291,10 @@ document.addEventListener('DOMContentLoaded', function() {
             currentTreeId = data.TodoTrees[0].id;
 
             // Clear existing nodes and edges
-            container.querySelectorAll('.circle').forEach(node => node.remove());
+            content.querySelectorAll('.circle').forEach(node => node.remove());
             edges = [];
 
-            // Create nodes
+            // Create nodes with their saved positions
             data.TodoTrees[0].nodes.forEach(nodeData => {
                 const circle = document.createElement('div');
                 circle.className = 'circle';
@@ -1027,28 +1302,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 circle.dataset.id = nodeData.id;
                 circle.dataset.type = nodeData.type;
 
-                // Position the node
-                circle.style.left = `${nodeData.position.x}px`;
-                circle.style.top = `${nodeData.position.y}px`;
+                // Set the exact position from saved data
+                if (nodeData.position) {
+                    circle.style.left = `${nodeData.position.x}px`;
+                    circle.style.top = `${nodeData.position.y}px`;
+                }
 
                 // Add name span
                 const span = document.createElement('span');
                 span.textContent = nodeData.name;
                 circle.appendChild(span);
 
-                // Add orbital dots if it's a Goal
-                if (nodeData.type === 'Goal') {
-                    const orbitalDots = document.createElement('div');
-                    orbitalDots.className = 'orbital-dots';
-                    for (let i = 0; i < 4; i++) {
-                        const dot = document.createElement('div');
-                        dot.className = 'orbital-dot';
-                        orbitalDots.appendChild(dot);
-                    }
-                    circle.appendChild(orbitalDots);
-                }
-
-                // Restore optional data
+                // Restore other data attributes
+                if (nodeData.description) circle.dataset.description = nodeData.description;
                 if (nodeData.deadline) circle.dataset.deadline = nodeData.deadline;
                 if (nodeData.targetDate) circle.dataset.targetDate = nodeData.targetDate;
                 if (nodeData.notificationText) circle.dataset.notificationText = nodeData.notificationText;
@@ -1057,21 +1323,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (nodeData.context) circle.dataset.context = nodeData.context;
                 if (nodeData.breakOffText) circle.dataset.breakOffText = nodeData.breakOffText;
 
-                // Restore grade goal data if present
-                if (nodeData.gradeGoalClass) {
-                    circle.dataset.gradeGoalClass = nodeData.gradeGoalClass;
-                    circle.dataset.gradeGoalTarget = nodeData.gradeGoalTarget;
-                }
-
-                container.appendChild(circle);
+                content.appendChild(circle);
             });
 
             // Restore edges
             edges = data.TodoTrees[0].edges;
 
-            // Reinitialize everything
+            // Initialize everything
             initializeCircles();
-            drawEdges();
+            
+            // Initialize container and center view
+            initializeContainer();
             
             console.log('Tree loaded successfully');
         } catch (error) {
@@ -1299,6 +1561,69 @@ document.addEventListener('DOMContentLoaded', function() {
         .grade-goal-form input[type="number"] {
             width: 100px;
         }
+
+        .control-btn {
+            padding: 8px 16px;
+            margin: 0 4px;
+            border: none;
+            border-radius: 4px;
+            background: #4a5568;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .control-btn:hover {
+            background: #606b7d;
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .control-btn.active {
+            background: #68d391;
+            color: #1a202c;
+        }
+
+        .control-btn.active:hover {
+            background: #9ae6b4;
+        }
+
+        .circle {
+            cursor: pointer;
+            transition: cursor 0.2s;
+        }
+
+        .circle.dragging {
+            opacity: 0.8;
+            cursor: move;
+        }
+
+        .form-group.compact {
+            margin-bottom: 1rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #4a5568;
+            border-radius: 0.25rem;
+            background: #2d3748;
+            color: white;
+            font-size: 0.875rem;
+        }
+
+        textarea.form-input {
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+
+        textarea.form-input:focus {
+            outline: none;
+            border-color: #68d391;
+        }
     `;
     document.head.appendChild(style);
 
@@ -1483,5 +1808,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('addGradeGoalBtn').addEventListener('click', function() {
         const form = document.getElementById('gradeGoalForm');
         form.style.display = form.style.display === 'none' ? 'flex' : 'none';
+    });
+
+    // Add event listener for Add Time button
+    document.getElementById('addNotificationTime').addEventListener('click', () => {
+        addNotificationTimeItem();
     });
 });

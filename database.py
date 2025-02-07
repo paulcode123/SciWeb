@@ -372,6 +372,47 @@ def send_notification(token, title, body, action):
         print(f'Error sending notification: {e}')
         return False
 
+def schedule_delayed_notification(token, title, body, scheduled_time):
+    """
+    Schedules a notification to be sent at a specific time using Firebase Cloud Messaging
+    
+    Args:
+        token (str): The FCM token of the target device
+        title (str): The notification title
+        body (str): The notification body
+        scheduled_time (str): ISO format timestamp for when to send the notification
+    """
+    try:
+        # Create the FCM message with scheduling
+        message = messaging.Message(
+            notification=messaging.Notification(
+                title=title,
+                body=body,
+            ),
+            android=messaging.AndroidConfig(
+                ttl=86400 * 28,  # Maximum TTL of 28 days
+                priority='normal',
+            ),
+            apns=messaging.APNSConfig(
+                headers={
+                    'apns-priority': '5',
+                    'apns-expiration': scheduled_time  # APNS timestamp
+                },
+            ),
+            token=token,
+            fcm_options=messaging.FCMOptions(
+                scheduled_time=scheduled_time,  # ISO format timestamp
+            )
+        )
+        
+        # Schedule the message
+        messaging.send(message)
+        print(f'Successfully scheduled notification for {token} at {scheduled_time}')
+        return True
+    except Exception as e:
+        print(f'Error scheduling notification: {e}')
+        return False
+
 def send_email(email_address, message):
     """
     Sends an email to the specified address
