@@ -44,7 +44,7 @@ def get_data_gsheet(sheet, row_name, row_val):
 # Function to post data to sheetdb
 def post_data_gsheet(sheet, data):
   # print(data)
-  from main import get_name, init
+  from main import init
   vars = init()
   user_data = get_name()
   if not isinstance(user_data, tuple) and sheet !="Users" and user_data['osis'] == '3428756' and not vars['allow_demo_change']:
@@ -470,3 +470,45 @@ def send_welcome_email(user_email, first_name):
     """
 
     send_email(user_email, body)
+
+
+#Function to get the user's name from Users data
+def get_name(ip=None, update=False):
+  from main import utility_function
+  global session
+
+  # If an IP address is passed in, store it in the session
+  if ip:
+    print("ip", ip)
+    session['ip_add'] = ip
+    
+  utility_function()
+  # If the user's data is already stored in the session, return it
+  if 'user_data' in session and not update:
+    print("user_data already defined in get_name()")
+    return session['user_data']
+  
+  # If the user's data is already stored in the session, return it
+  if 'user_data' in session and 'osis' in session['user_data']:
+    data = get_data("Users", row_name="osis", row_val=int(session['user_data']['osis']))
+    if data and len(data) > 0:
+      session['user_data'] = data[-1]
+      print("User's name from session", session['user_data']['first_name'])
+      return session['user_data']
+  
+  # If the user's data is not stored in the session, get it from the Users sheet
+  data = get_data("Users")
+  # If the user's IP address is in the Users data, return their name and other info
+  if 'ip_add' in session:
+    filtered_data = [entry for entry in data if str(session['ip_add']) in str(entry.get('IP'))]
+  else:
+    filtered_data = []
+  
+  
+  if filtered_data:
+    session['user_data'] = filtered_data[-1]
+    print("User's name from ip address", session['ip_add'], "is", session['user_data']['first_name'])
+    return session['user_data']
+  # If the user's IP address is not in the Users data, then don't do anything
+  return "Login", 404
+

@@ -15,10 +15,15 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain.schema import HumanMessage, SystemMessage, AIMessage
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Union, Any
+import logging
+import base64
 
 from models import *
 from output_processor import clean_llm_response, parse_json_response, create_llm_chain
 from prompts import *
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 def init_pydantic():
     """Initialize Pydantic output parsers for various response types"""
@@ -252,29 +257,103 @@ def process_pdf_content(llm, pdf_content: bytes) -> ResponseTypeNB:
         os.unlink(tmp_path)
 
 def process_image_content(llm, image_content: str, file_type: str) -> ResponseTypeNB:
-    padding = len(image_content) % 4
-    if padding:
-        image_content += '=' * (4 - padding)
+    """
+    Process image content to extract educational content and generate insights.
+    
+    Args:
+        llm: The language model instance to use for analysis
+        image_content: Base64 encoded image content
+        file_type: MIME type of the image
+        
+    Returns:
+        ResponseTypeNB: Structured response containing topic, notes, and practice questions
+        
+    Raises:
+        ValueError: If image content or file type is invalid
+        Exception: For other processing errors
+    """
+    try:
+        logger.info("Starting image content processing")
+        
+        # Validate inputs
+        if not image_content:
+            raise ValueError("Image content cannot be empty")
+        if not file_type or not file_type.startswith('image/'):
+            raise ValueError(f"Invalid file type: {file_type}")
+            
+        # Handle base64 padding
+        try:
+            padding = len(image_content) % 4
+            if padding:
+                logger.debug("Adding base64 padding")
+                image_content += '=' * (4 - padding)
+        except Exception as e:
+            logger.error(f"Error handling base64 padding: {str(e)}")
+            raise ValueError("Invalid base64 encoding in image content")
 
-    # Format the image URL
-    image_url = f"data:{file_type};base64,{image_content}"
-    
-    messages = [
-        SystemMessage(content="You are an expert at analyzing educational worksheets."),
-        HumanMessage(content=[
-            {"type": "text", "text": VISION_ANALYSIS_PROMPT},
-            {
-                "type": "image_url",
-                "image_url": {
-                    "url": image_url
-                }
-            }
-        ])
-    ]
-    
-    response = llm.invoke(messages)
-    print("Response from vision model:", response)
-    return parse_json_response(response, ResponseTypeNB)
+        # Format the image URL with proper error handling
+        try:
+            image_url = f"data:{file_type};base64,{image_content}"
+            
+            # Basic validation of the URL format
+            if not image_url.startswith('data:image/'):
+                raise ValueError("Invalid image URL format")
+        except Exception as e:
+            logger.error(f"Error formatting image URL: {str(e)}")
+            raise ValueError("Failed to format image URL")
+
+        # Prepare messages for the model
+        try:
+            messages = [
+                SystemMessage(content="You are an expert at analyzing educational worksheets."),
+                HumanMessage(content=[
+                    {"type": "text", "text": VISION_ANALYSIS_PROMPT},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": image_url
+                        }
+                    }
+                ])
+            ]
+        except Exception as e:
+            logger.error(f"Error preparing messages: {str(e)}")
+            raise Exception("Failed to prepare analysis messages")
+
+        # Get response from the model with error handling
+        try:
+            logger.info("Invoking vision model")
+            response = llm.invoke(messages)
+            logger.debug(f"Vision model response received: {response}")
+        except Exception as e:
+            logger.error(f"Error invoking vision model: {str(e)}")
+            raise Exception("Failed to process image with vision model")
+
+        # Parse the response
+        try:
+            logger.info("Parsing model response")
+            parsed_response = parse_json_response(response, ResponseTypeNB)
+            
+            # Validate parsed response
+            if not parsed_response.topic:
+                logger.warning("No topic extracted from response")
+            if not parsed_response.notes:
+                logger.warning("No notes extracted from response")
+            if not parsed_response.practice_questions:
+                logger.warning("No practice questions generated")
+                
+            return parsed_response
+            
+        except Exception as e:
+            logger.error(f"Error parsing model response: {str(e)}")
+            raise Exception("Failed to parse model response")
+
+    except ValueError as e:
+        logger.error(f"Validation error in process_image_content: {str(e)}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in process_image_content: {str(e)}")
+        raise Exception(f"Failed to process image content: {str(e)}")
 
 def generate_derive_questions(llm, notebook_synthesis: str) -> DeriveQuestions:
     chain = create_llm_chain(llm, DERIVE_PROMPT)

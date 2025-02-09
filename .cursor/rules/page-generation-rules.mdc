@@ -1,7 +1,7 @@
 ---
-description: Generating new pages, features, or large code blocks
+description: File, Route, and Function Organizational Rules
 globs: 
 ---
 
-When making large changes, start by making an excellent frontend that looks sleek and modern. Define but leave comments for nonessential JS functions. Dont do the backend at first.
-The complete database structure including sheets, field names, datatypes, and purposes can be found in [database_layout.txt](mdc:database_layout.txt)
+All html files go in templates folder, all js/css files go directly into static folder
+For AI functions, all prompts go in [prompts.py](mdc:prompts.py), pydantic models go in [models.py](mdc:models.py), call model in [study.py](mdc:study.py), and use output processor in [output_processor.py](mdc:output_processor.py) if needed.

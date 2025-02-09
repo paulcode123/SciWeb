@@ -531,10 +531,10 @@ async function animationGOTC(numTraces, traces) {
   // Wait for animation to complete
   await new Promise(resolve => setTimeout(resolve, 3600));
 
-  // Calculate y-axis range based on data
+  // Calculate y-axis range based on data with reduced margins (2% instead of 5%)
   let allYValues = traces.flatMap(trace => trace.y || []);
-  let yMin = Math.min(...allYValues) * 0.95; // Add 5% padding
-  let yMax = Math.max(...allYValues) * 1.05;
+  let yMin = Math.min(...allYValues) * 0.98; // Reduced from 0.95 to 0.98
+  let yMax = Math.max(...allYValues) * 1.02; // Reduced from 1.05 to 1.02
 
   // Update layout with calculated ranges while preserving other properties
   await Plotly.relayout('myGraph', {
@@ -634,65 +634,119 @@ async function addGoal(xData, yData) {
 function updateGoals(goals, categories) {
   // if goals does not exist, return
   if (!goals) {
+    console.log("No goals provided to updateGoals");
     return;
   }
+  console.log("Updating goals with:", { goals, categories });
+  
   // for each goal in goals where goal['categories'] matches categories, add a line on the graph
   graph = document.getElementById('myGraph');
+  if (!graph) {
+    console.error("Could not find myGraph element");
+    return;
+  }
+  console.log("Current graph layout:", graph.layout);
+  
   medals = [];
   lines = [];
   for (let i = 0; i < goals.length; i++) {
     let goal = goals[i];
-    console.log(goal['categories'], categories)
+    console.log(`Processing goal ${i}:`, goal);
+    
     if (goal['categories'].every(category => categories.includes(category))) {
-      // convert goal['date'] to serial date
-      let xgoal = dateToSerial(goal['date']);
-      let ygoal = goal['grade'];
-      let xinitdate = goal['date_set'];
-      let xinit = dateToSerial(xinitdate);
-      // get yinit by interpolating from combinedx and combinedy
-      let yinit = interpolate(xinit, combinedx, combinedy);
-
-      console.log("in updateGoals", xgoal, ygoal, xinit, yinit);
-      // create a line from (xinit, yinit) to (xgoal, ygoal) on the graph
-      let line = {
-        x: [xinit, xgoal],
-        y: [yinit, ygoal],
-        mode: 'lines',
-        line: {
-          color: 'rgba(255, 255, 255, 0.5)',
-          width: 1
-        },
-        name: 'Goal'
-      };
-      lines.push(line);
-      // add the image(/static/media/GoalMedal.png) of a medal, representing the goal, at (xgoal, ygoal)
-      sizex = (graph.layout.xaxis.range[1]-graph.layout.xaxis.range[0])/5;
-      sizey = (graph.layout.yaxis.range[1]-graph.layout.yaxis.range[0])/5;
+      // Normalize date formats
+      let goalDate = goal['date'];
+      if (goalDate.includes('-')) {
+        // Convert YYYY-MM-DD to MM/DD/YYYY
+        let [year, month, day] = goalDate.split('-');
+        goalDate = `${month}/${day}/${year}`;
+      }
       
-      let image = {
-        source: '/static/media/GoalMedal.png',
-        x: xgoal,
-        y: ygoal,
-        xref: 'x',
-        yref: 'y',
-        sizinf: 'contain',
-        sizex: 5,
-        sizey: 5,
-        xanchor: 'center',
-        yanchor: 'middle'
-      };
-      medals.push(image);
+      let dateSet = goal['date_set'];
+      if (dateSet.includes('-')) {
+        let [year, month, day] = dateSet.split('-');
+        dateSet = `${month}/${day}/${year}`;
+      }
+      
+      // convert goal['date'] to serial date
+      let xgoal = dateToSerial(goalDate);
+      let ygoal = goal['grade'];
+      let xinit = dateToSerial(dateSet);
+      
+      console.log("Goal coordinates:", {
+        xgoal,
+        ygoal,
+        xinit,
+        dateSet
+      });
+      
+      try {
+        // get yinit by interpolating from combinedx and combinedy
+        let yinit = interpolate(xinit, combinedx, combinedy);
+        console.log("Interpolated yinit:", yinit);
+
+        // create a line from (xinit, yinit) to (xgoal, ygoal) on the graph
+        let line = {
+          x: [xinit, xgoal],
+          y: [yinit, ygoal],
+          mode: 'lines',
+          line: {
+            color: 'rgba(255, 255, 255, 0.5)',
+            width: 1
+          },
+          name: 'Goal'
+        };
+        console.log("Created line trace:", line);
+        lines.push(line);
+        
+        // Add medal image with correct attributes
+        let image = {
+          source: '/static/media/GoalMedal.png',
+          x: xgoal,
+          y: ygoal,
+          xref: 'x',
+          yref: 'y',
+          sizing: 'contain',
+          sizex: 5,
+          sizey: 5,
+          xanchor: 'center',
+          yanchor: 'middle',
+          layer: 'above'
+        };
+        console.log("Created medal image:", image);
+        medals.push(image);
+      } catch (error) {
+        console.error("Error processing goal:", error);
+        console.error("Goal data:", { goal, xinit, combinedx, combinedy });
+      }
+    } else {
+      console.log("Goal categories don't match current categories, skipping");
     }
   }
-  console.log(medals)
-  Plotly.addTraces(graph, lines);
-  Plotly.relayout(graph, {
-    images: medals,
-    'images[0].xref': 'paper',
-    'images[0].yref': 'paper',
-    'images[0].sizex': 0.05,
-    'images[0].sizey': 0.05
-  });
+  
+  console.log("Final medals array:", medals);
+  console.log("Final lines array:", lines);
+  
+  try {
+    if (lines.length > 0) {
+      console.log("Adding traces to graph");
+      Plotly.addTraces(graph, lines);
+    }
+    
+    // Update layout with images
+    let currentLayout = graph.layout || {};
+    console.log("Current layout before update:", currentLayout);
+    
+    let newLayout = {
+      ...currentLayout,
+      images: medals
+    };
+    console.log("New layout to be applied:", newLayout);
+    
+    Plotly.relayout(graph, newLayout);
+  } catch (error) {
+    console.error("Error updating plot:", error);
+  }
 }
 
 function interpolate(x, xs, ys) {
@@ -831,6 +885,8 @@ document.getElementById('componentsHisto').addEventListener('change', function()
 }
 
 function animationHistogram(tracenums, traces){
+  // Resize immediately before animation
+  Plotly.relayout('myHisto', {'yaxis.autorange': true});
   
   Plotly.animate('myHisto', {
     data: traces,
@@ -845,10 +901,6 @@ function animationHistogram(tracenums, traces){
       duration: 3000
     }
   });
-  setTimeout(function(){
-    console.log('resizing')
-    Plotly.relayout('myHisto', {'yaxis.autorange': true});
-  }, 4000);
 }
 
 // create a function to call draw_histogram and draw_gotc with all of the necessary parameters
