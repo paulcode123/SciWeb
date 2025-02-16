@@ -71,7 +71,7 @@ def init():
       memory_key="chat_history",
       return_messages=True
   )
-  init_pydantic()
+
  
   
 
