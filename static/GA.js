@@ -16,6 +16,16 @@ var goals;
 var combinedx;
 var combinedy;
 
+// Add Shepherd.js for the tutorial
+const shepherdScript = document.createElement('script');
+shepherdScript.src = 'https://cdn.jsdelivr.net/npm/shepherd.js@11.1.1/dist/js/shepherd.min.js';
+document.head.appendChild(shepherdScript);
+
+const shepherdStyles = document.createElement('link');
+shepherdStyles.rel = 'stylesheet';
+shepherdStyles.href = 'https://cdn.jsdelivr.net/npm/shepherd.js@11.1.1/dist/css/shepherd.css';
+document.head.appendChild(shepherdStyles);
+
 async function main(){
   startLoading();
   // get all the data
@@ -67,6 +77,14 @@ async function main(){
 
     // Initialize modal after data is loaded
     initializeGoalModal();
+
+    // Check if we should start the tutorial
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('tutorial') === 'true') {
+      // Small delay to ensure everything is loaded
+      setTimeout(startAnalysisTutorial, 1000);
+    }
+
     endLoading();
 }
 
@@ -1743,5 +1761,115 @@ function formatDueDate(dateString) {
         year: 'numeric'
     };
     return date.toLocaleDateString('en-US', options);
+}
+
+function startAnalysisTutorial() {
+  console.log("Starting analysis tutorial");
+  
+  // Check if Shepherd is loaded
+  if (typeof Shepherd === 'undefined') {
+    console.log("Waiting for Shepherd to load...");
+    setTimeout(startAnalysisTutorial, 100);
+    return;
+  }
+
+  const tour = new Shepherd.Tour({
+    useModalOverlay: true,
+    defaultStepOptions: {
+      classes: 'shadow-md bg-purple-dark',
+      scrollTo: true,
+      cancelIcon: {
+        enabled: true
+      },
+      popperOptions: {
+        modifiers: [{ name: 'offset', options: { offset: [0, 12] } }]
+      }
+    }
+  });
+
+  // Overview Stats
+  tour.addStep({
+    id: 'stats-overview',
+    text: 'Here\'s a quick overview of your academic performance. You can see your GPA, average grades, and recent changes.',
+    attachTo: {
+      element: '.stats-container',
+      on: 'bottom'
+    },
+    buttons: [{
+      text: 'Next',
+      action: tour.next
+    }]
+  });
+
+  // Grade Over Time Graph
+  tour.addStep({
+    id: 'time-graph',
+    text: 'This graph shows how your grades have changed over time. You can toggle between combined view and individual components.',
+    attachTo: {
+      element: '#myGraph',
+      on: 'bottom'
+    },
+    buttons: [{
+      text: 'Next',
+      action: tour.next
+    }]
+  });
+
+  // Grade Distribution
+  tour.addStep({
+    id: 'distribution',
+    text: 'See how your grades are distributed and compare with class averages. Use the checkboxes to filter by class or category.',
+    attachTo: {
+      element: '#myHisto',
+      on: 'top'
+    },
+    buttons: [{
+      text: 'Next',
+      action: tour.next
+    }]
+  });
+
+  // Goals Section
+  tour.addStep({
+    id: 'goals',
+    text: 'Set and track your grade goals here. Click on the graph to set a target grade, or use the "Add Goal" button for manual entry.',
+    attachTo: {
+      element: '#goalTableBody',
+      on: 'top'
+    },
+    buttons: [{
+      text: 'Next',
+      action: tour.next
+    }]
+  });
+
+  // Class Selection
+  tour.addStep({
+    id: 'class-selection',
+    text: 'Filter your analysis by selecting specific classes or categories. The graphs will update automatically.',
+    attachTo: {
+      element: '#classes',
+      on: 'right'
+    },
+    buttons: [{
+      text: 'Next',
+      action: tour.next
+    }]
+  });
+
+  // Final Step
+  tour.addStep({
+    id: 'finish-analysis',
+    text: 'That\'s it! Use these tools to track your progress and set meaningful academic goals. Ready to check out your todo list?',
+    buttons: [{
+      text: 'Show Todo List',
+      action: () => {
+        window.location.href = '/TodoTree?tutorial=true';
+      }
+    }]
+  });
+
+  // Start the tour
+  tour.start();
 }
 

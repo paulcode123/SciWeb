@@ -1,0 +1,94 @@
+{% extends "darkThemeTemplate.html" %}
+
+{% block title %}
+<title>Todo List - Upcoming Tasks</title>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="/static/todolist.css">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="todo-container">
+    <div class="todo-header">
+        <h1>Upcoming Tasks</h1>
+        <div class="view-controls">
+            <button id="viewTreeBtn" class="control-btn">
+                <span class="material-icons">account_tree</span>
+                View Tree
+            </button>
+            <button id="toggleViewBtn" class="control-btn">
+                <span class="material-icons">view_agenda</span>
+                Toggle View
+            </button>
+        </div>
+    </div>
+    
+    <div class="todo-content">
+        <div id="timelineView" class="view-section active">
+            <div class="timeline-container">
+                <!-- Timeline items will be dynamically added here -->
+            </div>
+        </div>
+        
+        <div id="groupedView" class="view-section">
+            <div class="grouped-container">
+                <div class="group overdue">
+                    <h2>Overdue</h2>
+                    <div class="group-items"></div>
+                </div>
+                <div class="group today">
+                    <h2>Today</h2>
+                    <div class="group-items"></div>
+                </div>
+                <div class="group tomorrow">
+                    <h2>Tomorrow</h2>
+                    <div class="group-items"></div>
+                </div>
+                <div class="group upcoming">
+                    <h2>Upcoming</h2>
+                    <div class="group-items"></div>
+                </div>
+                <div class="group no-date">
+                    <h2>No Date Set</h2>
+                    <div class="group-items"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Task Item Template -->
+<template id="taskItemTemplate">
+    <div class="task-item">
+        <div class="task-icon">
+            <span class="material-icons"></span>
+        </div>
+        <div class="task-content">
+            <div class="task-header">
+                <h3 class="task-name"></h3>
+                <div class="task-meta">
+                    <span class="task-date"></span>
+                    <span class="task-type"></span>
+                </div>
+            </div>
+            <p class="task-description"></p>
+            <div class="task-footer">
+                <button class="complete-task-btn">
+                    <span class="material-icons">check_circle</span>
+                    Mark Complete
+                </button>
+                <button class="view-in-tree-btn">
+                    <span class="material-icons">account_tree</span>
+                    View in Tree
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block js %}
+<script src="/static/todolist.js"></script>
+{% endblock %} 

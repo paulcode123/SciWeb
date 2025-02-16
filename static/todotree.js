@@ -406,36 +406,102 @@ document.addEventListener('DOMContentLoaded', function() {
         const type = this.dataset.type;
         const description = this.dataset.description || '';
 
+        // Check if we came from the todo list
+        const todoListState = sessionStorage.getItem('todoList_state');
+        const showBackButton = todoListState && 
+            (Date.now() - JSON.parse(todoListState).timestamp < 300000); // State is less than 5 minutes old
+
+        // Update modal header to include back button if needed
+        const modalHeader = modal.querySelector('.modal-header');
+        if (!modalHeader) {
+            console.error('Modal header not found');
+            return;
+        }
+        
+        modalHeader.innerHTML = `
+            ${showBackButton ? `
+                <button class="back-to-list-btn">
+                    <span class="material-icons">arrow_back</span>
+                    Back to List
+                </button>
+            ` : ''}
+            <h2>Edit Node</h2>
+            <button class="close-btn">&times;</button>
+        `;
+
+        // Re-add event listeners after updating header HTML
+        const newCloseBtn = modalHeader.querySelector('.close-btn');
+        if (newCloseBtn) {
+            newCloseBtn.addEventListener('click', closeModal);
+        }
+
+        // Add back button event listener if present
+        if (showBackButton) {
+            const backBtn = modalHeader.querySelector('.back-to-list-btn');
+            if (backBtn) {
+                backBtn.addEventListener('click', () => {
+                    closeModal();
+                    window.location.href = '/TodoList';
+                });
+            }
+        }
+
         // Update basic fields
+        const nodeNameInput = document.getElementById('nodeName');
+        const nodeTypeSelect = document.getElementById('nodeType');
+        const nodeDescriptionInput = document.getElementById('nodeDescription');
+        
+        if (!nodeNameInput || !nodeTypeSelect || !nodeDescriptionInput) {
+            console.error('Required form elements not found');
+            return;
+        }
+
         nodeNameInput.value = name;
         nodeTypeSelect.value = type;
-        document.getElementById('nodeDescription').value = description;
+        nodeDescriptionInput.value = description;
         
         // Update type selector UI
-        document.querySelectorAll('.type-option').forEach(option => {
-            option.classList.toggle('selected', option.dataset.type === type);
-        });
+        const typeOptions = document.querySelectorAll('.type-option');
+        if (typeOptions.length > 0) {
+            typeOptions.forEach(option => {
+                option.classList.toggle('selected', option.dataset.type === type);
+            });
+        }
 
         // Show/hide date notification section based on type
         const dateNotificationSection = document.getElementById('dateNotificationSection');
-        dateNotificationSection.classList.toggle('show', type !== 'Motivator');
+        if (dateNotificationSection) {
+            dateNotificationSection.classList.toggle('show', type !== 'Motivator');
+        }
 
         // Load existing dates and notifications if any
         if (type !== 'Motivator') {
-            document.getElementById('deadline').value = editingNode.dataset.deadline || '';
-            document.getElementById('targetDate').value = editingNode.dataset.targetDate || '';
-            document.getElementById('notificationText').value = editingNode.dataset.notificationText || '';
+            const deadlineInput = document.getElementById('deadline');
+            const targetDateInput = document.getElementById('targetDate');
+            const notificationTextInput = document.getElementById('notificationText');
+            const timeList = document.getElementById('notificationTimeList');
+            
+            if (deadlineInput) {
+                deadlineInput.value = editingNode.dataset.deadline || '';
+            }
+            if (targetDateInput) {
+                targetDateInput.value = editingNode.dataset.targetDate || '';
+            }
+            if (notificationTextInput) {
+                notificationTextInput.value = editingNode.dataset.notificationText || '';
+            }
             
             // Clear existing notification times
-            const timeList = document.getElementById('notificationTimeList');
-            timeList.innerHTML = '';
-            
-            // Load saved notification times
-            try {
-                const times = JSON.parse(editingNode.dataset.notificationTimes || '[]');
-                times.forEach(time => addNotificationTimeItem(time));
-            } catch (e) {
-                console.error('Error loading notification times:', e);
+            if (timeList) {
+                timeList.innerHTML = '';
+                
+                // Load saved notification times
+                try {
+                    const times = JSON.parse(editingNode.dataset.notificationTimes || '[]');
+                    times.forEach(time => addNotificationTimeItem(time));
+                } catch (e) {
+                    console.error('Error loading notification times:', e);
+                }
             }
         }
 
@@ -444,12 +510,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Load chat history if it exists
         const chatHistory = document.getElementById('chatHistory');
-        chatHistory.innerHTML = '';
-        try {
-            const messages = JSON.parse(editingNode.dataset.chatHistory || '[]');
-            messages.forEach(msg => addChatMessage(msg.text, msg.type));
-        } catch (e) {
-            console.error('Error loading chat history:', e);
+        if (chatHistory) {
+            chatHistory.innerHTML = '';
+            try {
+                const messages = JSON.parse(editingNode.dataset.chatHistory || '[]');
+                messages.forEach(msg => addChatMessage(msg.text, msg.type));
+            } catch (e) {
+                console.error('Error loading chat history:', e);
+            }
         }
 
         modal.classList.add('show');
@@ -1335,6 +1403,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Initialize container and center view
             initializeContainer();
             
+            // Handle hash navigation after loading
+            handleHashNavigation();
+            
             console.log('Tree loaded successfully');
         } catch (error) {
             console.error('Error loading tree:', error);
@@ -1814,4 +1885,145 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('addNotificationTime').addEventListener('click', () => {
         addNotificationTimeItem();
     });
+
+    // Add these new functions after initializeContainer()
+    function handleHashNavigation() {
+        const hash = window.location.hash;
+        if (hash) {
+            const nodeId = hash.substring(1); // Remove the # symbol
+            const targetNode = document.querySelector(`.circle[data-id="${nodeId}"]`);
+            if (targetNode) {
+                // Wait for initial load and positioning
+                setTimeout(() => {
+                    scrollToNode(targetNode);
+                    highlightNode(targetNode);
+                    openNodeEditor.call(targetNode);
+                }, 500);
+            }
+        }
+    }
+
+    function scrollToNode(node) {
+        const rect = node.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+        
+        // Calculate the scroll position to center the node
+        const scrollX = rect.left - containerRect.left + container.scrollLeft - (container.clientWidth / 2) + (rect.width / 2);
+        const scrollY = rect.top - containerRect.top + container.scrollTop - (container.clientHeight / 2) + (rect.height / 2);
+        
+        // Smooth scroll to the node
+        container.scrollTo({
+            left: scrollX,
+            top: scrollY,
+            behavior: 'smooth'
+        });
+    }
+
+    function highlightNode(node) {
+        // Add highlight animation class
+        node.classList.add('highlight-pulse');
+        
+        // Remove the class after animation completes
+        setTimeout(() => {
+            node.classList.remove('highlight-pulse');
+        }, 2000);
+    }
+
+    // Add highlight-pulse animation to the existing styles
+    const highlightStyles = document.createElement('style');
+    highlightStyles.textContent = `
+        @keyframes highlightPulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7);
+            }
+            
+            50% {
+                transform: scale(1.1);
+                box-shadow: 0 0 0 10px rgba(52, 152, 219, 0);
+            }
+            
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(52, 152, 219, 0);
+            }
+        }
+
+        .highlight-pulse {
+            animation: highlightPulse 2s ease-out;
+        }
+    `;
+    document.head.appendChild(highlightStyles);
+
+    // Add styles for the back button
+    const backButtonStyles = document.createElement('style');
+    backButtonStyles.textContent = `
+        .back-to-list-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+            height: 36px;
+        }
+
+        .back-to-list-btn:hover {
+            background: #34495e;
+            transform: translateX(-2px);
+        }
+
+        .back-to-list-btn .material-icons {
+            font-size: 18px;
+            transition: transform 0.2s;
+        }
+
+        .back-to-list-btn:hover .material-icons {
+            transform: translateX(-2px);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: #1a202c;
+            border-bottom: 1px solid #2d3748;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .modal-header h2 {
+            flex: 1;
+            margin: 0;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .modal-header .close-btn {
+            background: transparent;
+            border: none;
+            color: #a0aec0;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+        }
+
+        .modal-header .close-btn:hover {
+            background: #2d3748;
+            color: white;
+        }
+    `;
+    document.head.appendChild(backButtonStyles);
 });

@@ -1,0 +1,201 @@
+.daily-checkin-container {
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+}
+
+.swipe-indicator {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 1000;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.dot.active {
+    background: white;
+    transform: scale(1.2);
+}
+
+.swipe-container {
+    display: flex;
+    width: 300%;
+    height: 100%;
+    transition: transform 0.3s ease;
+}
+
+.swipe-window {
+    width: 33.333%;
+    height: 100%;
+    padding: 60px 20px 20px;
+    overflow-y: auto;
+}
+
+h2 {
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+/* Assignments Window */
+.assignments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.assignment-item {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.assignment-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.assignment-name {
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+}
+
+.assignment-points {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Tasks Window */
+.task-item {
+    display: flex;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.task-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+.task-content {
+    flex: 1;
+}
+
+.task-meta {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Task Details Window */
+.task-details {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.task-description {
+    margin-bottom: 24px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.checkin-dates {
+    margin-bottom: 24px;
+}
+
+.dates-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0;
+}
+
+.chat-message {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+.message-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 8px;
+}
+
+/* Common Components */
+.add-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    width: 100%;
+    justify-content: center;
+}
+
+.add-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Desktop Optimizations */
+@media (min-width: 768px) {
+    .swipe-container {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        padding: 20px;
+        transition: none;
+    }
+
+    .swipe-window {
+        width: 100%;
+        padding: 40px;
+    }
+
+    .swipe-indicator {
+        display: none;
+    }
+
+    .task-details {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+} 

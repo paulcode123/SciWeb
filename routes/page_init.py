@@ -1,4 +1,5 @@
-from flask import render_template, redirect, Blueprint, send_from_directory
+from flask import render_template, redirect, Blueprint, send_from_directory, session, url_for, request
+from functools import wraps
 
 from database import *
 from classroom import *
@@ -9,33 +10,50 @@ from prompts import *
 
 page_init = Blueprint('page_init', __name__)
 
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_data' not in session:
+            # Store the requested URL for redirecting after login
+            next_url = request.url
+            # Only store redirect for non-exempt pages
+            return redirect(url_for('page_init.Login', redirect=next_url))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 #initialize the front end: all of the HTML/CCS/JS files
 @page_init.route('/')
+@login_required
 def index():
-  return render_template('index.html')
+    return render_template('index.html')
 
 
 @page_init.route('/GradeAnalysis')
+@login_required
 def Grade_analy():
   return render_template('GradeAnalysis.html')
 
 
 @page_init.route('/Login')
 def Login():
-  return render_template('login.html')
+    return render_template('login.html')
 
 
 @page_init.route('/EnterGrades')
+@login_required
 def EG():
   return render_template('EnterGrades.html')
 
 
 @page_init.route('/Goals')
+@login_required
 def Goals():
   return render_template('Goals.html')
 
 
 @page_init.route('/Profile')
+@login_required
 def profile():
   return render_template('Profile.html')
 
@@ -153,9 +171,18 @@ def map_builder():
 def todo_tree():
     return render_template('TodoTree.html')
 
+@page_init.route('/TodoList')
+def todo_list():
+    return render_template('TodoList.html')
+
 @page_init.route('/Tutoring')
 def tutoring():
     return render_template('tutoring.html')
+
+@page_init.route('/DailyCheckin')
+@login_required
+def daily_checkin():
+    return render_template('DailyCheckin.html')
 
 # @app.route('/Features/AI')
 # def ai_features():
@@ -184,6 +211,7 @@ def page_not_found(e):
 
 # The following routes are pages for specific classes and assignments
 @page_init.route('/class/<classid>')
+@login_required
 def class_page(classid):
     # Get class data using just the ID
     classes = get_user_data("Classes")
@@ -223,6 +251,7 @@ def class_page(classid):
 
 # League page, for specific leagues
 @page_init.route('/league/<leagueid>')
+@login_required
 def league_page(leagueid):
   leagues = get_user_data("Leagues")
   league_data = next(
@@ -233,6 +262,7 @@ def league_page(leagueid):
 
 # Assignment page, for specific assignments
 @page_init.route('/assignment/<assignmentid>')
+@login_required
 def assignment_page(assignmentid):
   classes_data = get_user_data("Classes")
   assignments_data = get_user_data("Assignments", {"Classes": classes_data})
@@ -295,3 +325,4 @@ def security():
 @page_init.route('/BetaTester')
 def beta_tester():
     return redirect('https://docs.google.com/forms/d/e/1FAIpQLScJG1bzeTOFa5dXEQUmCOJTAWMhtEWhSASPkQcRO4dwH2_o8Q/viewform?usp=dialog')
+

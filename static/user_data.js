@@ -140,22 +140,9 @@ function set_data(data){
   }
   else {
     logged_in = false;
-    // if the user is on the home page, redirect to the Pitch page
-    loc = window.location.pathname
-    if(loc == "/"){
-      window.location.href = "/Pitch"
-    }
-    else if(loc != "/Login" && 
-            loc != "/Pitch" && 
-            loc != "/GetStart" && 
-            loc != "/terms" && 
-            !loc.startsWith("/simulations/")) {
-      // if the user is not on an exempt page, redirect to login with the current URL as redirect parameter
-      const currentUrl = encodeURIComponent(window.location.pathname);
-      window.location.href = `/Login?redirect=${currentUrl}`;
-    }
   }
 }
+
 
 
 console.log(grade)

@@ -2,6 +2,15 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging.js"
 import { typeOutText, await_enter, AI_response } from './counselor.js';
 
+// Add Shepherd.js for the tutorial
+const shepherdScript = document.createElement('script');
+shepherdScript.src = 'https://cdn.jsdelivr.net/npm/shepherd.js@11.1.1/dist/js/shepherd.min.js';
+document.head.appendChild(shepherdScript);
+
+const shepherdStyles = document.createElement('link');
+shepherdStyles.rel = 'stylesheet';
+shepherdStyles.href = 'https://cdn.jsdelivr.net/npm/shepherd.js@11.1.1/dist/css/shepherd.css';
+document.head.appendChild(shepherdStyles);
 
 var notificationsEnabled = false;
 
@@ -182,12 +191,20 @@ function playFullScreenVideo() {
     unmuteButton.style.display = 'none';
   };
 
-  skipButton.onclick = () => {
+  // Function to clean up video and start tutorial
+  const endVideoAndStartTutorial = () => {
     document.body.removeChild(videoContainer);
+    console.log("Video ended");
+    // Start the tutorial after the video ends
+    setTimeout(startTutorial, 500); // Small delay to ensure smooth transition
+  };
+
+  skipButton.onclick = () => {
+    endVideoAndStartTutorial();
   };
 
   video.onended = () => {
-    document.body.removeChild(videoContainer);
+    endVideoAndStartTutorial();
   };
 
   buttonContainer.appendChild(unmuteButton);
@@ -260,10 +277,11 @@ async function getFCMToken(messaging) {
 async function saveTokenToServer(token) {
   const deviceName = navigator.userAgent;
   const currentTokens = await fetchRequest('/data', {data: "Name, Tokens"});
-  const userTokens = currentTokens['Tokens'].filter(t => t.OSIS === osis);
+  const userTokens = currentTokens['Tokens'].filter(t => parseInt(t.OSIS) == parseInt(osis));
+  console.log("userTokens", userTokens);
   const timeStamp = Date.now();
   
-  if (!userTokens.some(t => t.token === token) && !notificationsEnabled) {
+  if (userTokens.length == 0 && !notificationsEnabled) {
     await fetchRequest('/post_data', {
       data: {
         "token": token,
@@ -610,4 +628,159 @@ window.addEventListener('load', async () => {
     await initializeChat();
     await main();  // Move main() call here to ensure proper order
 });
+
+function startTutorial() {
+  console.log("Starting tutorial");
+  
+  // Check if Shepherd is loaded
+  if (typeof Shepherd === 'undefined') {
+    console.log("Waiting for Shepherd to load...");
+    setTimeout(startTutorial, 100);
+    return;
+  }
+  
+  const tour = new Shepherd.Tour({
+    useModalOverlay: true,
+    defaultStepOptions: {
+      classes: 'shadow-md bg-purple-dark',
+      scrollTo: true,
+      cancelIcon: {
+        enabled: true
+      },
+      popperOptions: {
+        modifiers: [{ name: 'offset', options: { offset: [0, 12] } }]
+      }
+    }
+  });
+
+  // Welcome step
+  tour.addStep({
+    id: 'welcome',
+    text: 'Welcome to SciWeb! Let\'s take a quick tour to help you get started.',
+    buttons: [{
+      text: 'Let\'s go!',
+      action: tour.next
+    }]
+  });
+
+  // AI Counselor
+  tour.addStep({
+    id: 'ai-counselor',
+    text: 'Meet your AI counselor! You can ask them anything about your assignments, grades, or get help with your academic journey.',
+    attachTo: {
+      element: '.ai-section',
+      on: 'bottom'
+    },
+    buttons: [{
+      text: 'Next',
+      action: tour.next
+    }]
+  });
+
+  // Features Section
+  tour.addStep({
+    id: 'features',
+    text: 'These are your main features. You can swipe through different paths to access various tools.',
+    attachTo: {
+      element: '.features-section',
+      on: 'bottom'
+    },
+    buttons: [{
+      text: 'Next',
+      action: tour.next
+    }]
+  });
+
+  // Dashboard Overview
+  tour.addStep({
+    id: 'dashboard',
+    text: 'Your dashboard gives you a quick overview of everything important: recent messages, upcoming assignments, and your latest grades.',
+    attachTo: {
+      element: '#dashboard',
+      on: 'top'
+    },
+    buttons: [{
+      text: 'Let\'s check grades',
+      action: () => {
+        // Find and click the Enter Grades feature box or navigate directly
+        const gradeBox = Array.from(document.querySelectorAll('.feature-box'))
+          .find(box => box.querySelector('h3').textContent === 'Enter Grades');
+        if (gradeBox) {
+          window.location.href = '/EnterGrades?tutorial=true';
+        } else {
+          window.location.href = '/EnterGrades?tutorial=true';
+        }
+      }
+    }]
+  });
+
+  // TodoList (will navigate to TodoTree page)
+  tour.addStep({
+    id: 'todo',
+    text: 'Next, let\'s check out the Todo List where you can organize your tasks and track your progress.',
+    attachTo: {
+      element: '.feature-box[data-href="/TodoTree"]',
+      on: 'bottom'
+    },
+    buttons: [{
+      text: 'Show me the Todo List',
+      action: () => {
+        window.location.href = '/TodoTree';
+      }
+    }]
+  });
+
+  // Profile (will be shown when they return)
+  tour.addStep({
+    id: 'profile',
+    text: 'Don\'t forget to set up your profile and notification preferences!',
+    attachTo: {
+      element: '#notificationsIcon',
+      on: 'bottom'
+    },
+    buttons: [{
+      text: 'Next',
+      action: tour.next
+    }]
+  });
+
+  // Messages
+  tour.addStep({
+    id: 'messages',
+    text: 'Finally, check out Messages to connect with your classmates and join class discussions.',
+    attachTo: {
+      element: '#recent_messages',
+      on: 'left'
+    },
+    buttons: [{
+      text: 'Try sending a message',
+      action: () => {
+        // Find and click the Messages feature box
+        const messageBox = Array.from(document.querySelectorAll('.feature-box'))
+          .find(box => box.querySelector('h3').textContent === 'Messages');
+        if (messageBox) {
+          messageBox.click();
+        }
+      }
+    }]
+  });
+
+  // Final step
+  tour.addStep({
+    id: 'finish',
+    text: 'That\'s it! You\'re all set to start using SciWeb. Remember, your AI counselor is always here to help!',
+    buttons: [{
+      text: 'Start Using SciWeb',
+      action: tour.complete
+    }]
+  });
+
+  // Handle tour completion
+  tour.on('complete', () => {
+    localStorage.setItem('tutorialCompleted', 'true');
+  });
+
+  // Start the tour
+  tour.start();
+}
 

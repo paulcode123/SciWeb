@@ -134,3 +134,131 @@
     border-radius: 12px 12px 12px 2px;
     max-width: 80%;
 } 
+
+
+/* Cache Info Button */
+.cache-info-button {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    z-index: 1000;
+    cursor: pointer;
+    font-size: 14px;
+    color: #888;
+    transition: color 0.3s;
+    display: none; /* Hidden by default, shown only on desktop */
+    opacity: 0.6;
+    padding: 5px;
+  }
+
+  @media (min-width: 1024px) {
+    .cache-info-button {
+      display: block;
+    }
+  }
+
+  .cache-info-button:hover {
+    color: #4a98e2;
+    opacity: 1;
+  }
+
+  .fetch-bubble {
+    position: absolute;
+    left: 30px;
+    bottom: 0;
+    background: rgba(30, 30, 30, 0.95);
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    white-space: nowrap;
+    display: none;
+    align-items: center;
+    gap: 5px;
+    animation: slideIn 0.3s ease-out;
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(-10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .fetch-bubble .spinner {
+    width: 8px;
+    height: 8px;
+    border: 2px solid #4a98e2;
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    display: inline-block;
+    animation: rotation 1s linear infinite;
+  }
+
+  @keyframes rotation {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .cache-info-content {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 5px);
+    left: 0;
+    background: rgba(30, 30, 30, 0.95);
+    padding: 8px;
+    border-radius: 4px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    min-width: 160px;
+    font-size: 11px;
+  }
+
+  .cache-info-content::after {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 0;
+    right: 0;
+    height: 15px;
+    background: transparent;
+  }
+
+  .cache-info-button:hover .cache-info-content {
+    display: block;
+  }
+
+  .cache-info-content h4 {
+    margin: 0 0 5px 0;
+    color: #fff;
+    font-size: 12px;
+  }
+
+  .cached-sheet-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 0;
+    color: #fff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .cached-sheet-item:last-child {
+    border-bottom: none;
+  }
+
+  .cached-sheet-item .delete-cache {
+    color: #ff4444;
+    cursor: pointer;
+    padding: 1px 4px;
+    border-radius: 2px;
+    font-size: 10px;
+    margin-left: 5px;
+  }
+
+  .cached-sheet-item .delete-cache:hover {
+    background: rgba(255, 68, 68, 0.2);
+  }

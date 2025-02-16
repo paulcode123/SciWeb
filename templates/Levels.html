@@ -68,13 +68,20 @@
                 <div id="explanation-section" class="explanation-section hidden">
                     <div class="explanation-prompt">
                         <p>Now, explain your reasoning:</p>
-                        <button id="record-button" class="record-button">
-                            <span class="material-icons">mic</span>
-                        </button>
+                        <div class="explanation-input-container">
+                            <textarea id="explanation-input" placeholder="Type your explanation here..." rows="3"></textarea>
+                            <button id="record-button" class="record-button">
+                                <span class="material-icons">mic</span>
+                            </button>
+                        </div>
                     </div>
                     <div id="transcription" class="transcription hidden">
                         <h4>Your Explanation:</h4>
                         <p id="transcription-text"></p>
+                        <button id="evaluate-button" class="evaluate-button" disabled>
+                            <span class="material-icons">analytics</span>
+                            Evaluate Understanding
+                        </button>
                     </div>
                 </div>
 

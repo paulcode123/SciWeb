@@ -1,0 +1,13 @@
+---
+description: Services, deployments, and cloud functions
+globs: 
+---
+SciWeb is run on Google Cloud. 
+Our database in firestore(https://console.cloud.google.com/firestore/databases/-default-/data/panel/Goals?project=sturdy-analyzer-381018)
+Our file storage system is Cloud Storage(https://console.cloud.google.com/storage/browser/sciweb-files)
+The site is deployed on Google App Run(https://console.cloud.google.com/appengine?project=sturdy-analyzer-381018&serviceId=default)
+Cloud Run(https://console.cloud.google.com/run?referrer=search&project=sturdy-analyzer-381018) is used to call the jupiter api and for time-delayed notifications in conjunction with Cloud Scheduler
+Firebase is used for notifications
+
+When js/css edits are made, just reload the localhost page to see changes
+If py/html edits are made, Crl+C in the terminal, rerun main.py, and the reload the localhost page

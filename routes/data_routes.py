@@ -194,19 +194,20 @@ def schedule_notification_route():
             error_msg = f"No FCM tokens found for OSIS: {data['OSIS']}"
             print(error_msg)
             return json.dumps({"error": error_msg}), 404
-            
-        print(f"Found {len(tokens)} tokens for OSIS {data['OSIS']}")
+        # only keep token objects which have unique token['token'] values
+        token = tokens[0]['token']
         
+
         # Schedule notification for each token
         success_count = 0
-        for token in tokens:
-            if schedule_delayed_notification(
-                token['token'],
-                data['title'],
-                data['body'],
-                data['scheduled_time']
-            ):
-                success_count += 1
+        
+        if schedule_delayed_notification(
+            token,
+            data['title'],
+            data['body'],
+            data['scheduled_time']
+        ):
+            success_count += 1
         
         if success_count == 0:
             return json.dumps({"error": "Failed to schedule notifications for all tokens"}), 500

@@ -562,32 +562,69 @@ def derive_concept(llm, concept, user_message, chat_history, prerequisites_compl
 def evaluate_student_response(llm, context: Dict[str, Any]) -> Dict[str, Any]:
     """Evaluate student response using LLM with Langchain"""
     try:
-        # Format context for prompt
+        # Format context for prompt, only including essential information
         formatted_context = {
-            "problem": context['problem']['problem'],
+            "problem": context['problem'],
             "answer": context['student_answer'],
             "explanation": context['student_explanation'],
-            "unit": context['unit'],
-            "concept_map": str(context['concept_map'])
+            "unit": context['unit']
         }
         
-        # Get response from LLM using the template
-        chain = LEVELS_EVAL_PROMPT | llm
-        response = chain.invoke(formatted_context)
+        # Create messages for evaluation
+        messages = [
+            SystemMessage(content="You are an expert at evaluating student understanding of physics concepts."),
+            HumanMessage(content="""Please evaluate this student's response:
+            
+Problem: {problem}
+Student Answer: {answer}
+Student Explanation: {explanation}
+Unit: {unit}
+
+Evaluate the student's understanding and provide:
+1. A score between 0 and 1
+2. List of correctly understood concepts
+3. List of misconceptions
+4. Suggestions for improvement
+
+Format your response as a JSON object with these fields:
+{{
+    "score": 0.0,
+    "correct_concepts": [],
+    "misconceptions": [],
+    "suggestions": []
+}}""".format(**formatted_context))
+        ]
         
-        # Parse response into structured format using Pydantic
-        evaluation = EvaluationResponse.model_validate(response)
+        # Get response from LLM
+        response = llm.invoke(messages)
         
-        # Convert to dictionary format
-        return {
-            'score': evaluation.score,
-            'correct_concepts': evaluation.correct_concepts,
-            'misconceptions': evaluation.misconceptions,
-            'suggestions': evaluation.suggestions
-        }
+        # Parse response into structured format
+        try:
+            # Clean the response content to ensure it's valid JSON
+            response_text = response.content.strip()
+            if response_text.startswith('```json'):
+                response_text = response_text[7:-3]
+            elif response_text.startswith('```'):
+                response_text = response_text[3:-3]
+            
+            # Parse the JSON response
+            evaluation_dict = json.loads(response_text)
+            evaluation = EvaluationResponse(**evaluation_dict)
+            
+            return {
+                'score': evaluation.score,
+                'correct_concepts': evaluation.correct_concepts,
+                'misconceptions': evaluation.misconceptions,
+                'suggestions': evaluation.suggestions
+            }
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON response: {str(e)}")
+            logger.error(f"Response content: {response.content}")
+            raise ValueError("Invalid response format from LLM")
         
     except Exception as e:
-        print(f"Error in evaluate_student_response: {str(e)}")
+        logger.error(f"Error in evaluate_student_response: {str(e)}")
         raise
 
 def generate_concept_explanation(llm, concept_label: str, concept_description: str) -> dict:

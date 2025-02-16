@@ -4,6 +4,8 @@ import traceback
 from datetime import datetime
 import random
 import json
+import io
+import speech_recognition as sr
 
 from database import *
 from classroom import *
@@ -354,16 +356,55 @@ def generate_followup():
     )
     return jsonify({"followup": followup})
 
-@ai_routes.route('/evaluate-understanding', methods=['POST'])
+@ai_routes.route('/evaluate_understanding', methods=['POST'])
 def evaluate_understanding():
-    data = request.json
+    """Evaluate student's understanding based on their answer and explanation"""
+    try:
+        # Initialize vars to get LLM
+        from main import init
+        vars = init()
+        
+        data = request.get_json()
+        
+        # Get the problem from the problems list
+        problem = next((p for p in data.get('problems', []) 
+                       if p['id'] == data['problem_id']), None)
+        
+        if not problem:
+            return jsonify({
+                'success': False,
+                'error': 'Problem not found'
+            }), 404
 
-    evaluation = generate_final_evaluation(
-        vars['llm'],
-        data['questionContext'],
-        data['history']
-    )
-    return jsonify({"evaluation": evaluation})
+        # Prepare evaluation context
+        evaluation_context = {
+            'problem': problem['problem'],
+            'student_answer': data.get('answer', ''),
+            'student_explanation': data.get('explanation', ''),
+            'unit': data.get('unit', '')
+        }
+
+        # Get evaluation from LLM
+        evaluation = evaluate_student_response(vars['llm'], evaluation_context)
+        
+        # Calculate mastery based on score
+        mastery = 'mastered' if evaluation['score'] >= 0.8 else 'derived'
+        
+        return jsonify({
+            'success': True,
+            'score': evaluation['score'],
+            'correct_concepts': evaluation['correct_concepts'],
+            'misconceptions': evaluation['misconceptions'],
+            'suggestions': evaluation['suggestions'],
+            'mastery': mastery
+        })
+
+    except Exception as e:
+        logger.error(f"Error evaluating understanding: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 # Levels routes

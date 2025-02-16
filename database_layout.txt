@@ -309,15 +309,33 @@ Sheet name: UMaps (User-Specific Progress and Notes)
         {
             "node_id": {
                 date_derived: "YYYY-MM-DD" | null,
+                mastery_level: float,  // 0.0 to 1.0 representing overall mastery
                 chat_history: [str],  // Array of chat messages
                 user_notes: str,
-                question_history: [
+                evaluation_history: [
                     {
                         date: "YYYY-MM-DD",
-                        error: str | null(if correct),
-                        question_id: str
+                        score: float,  // 0.0 to 1.0 for this specific evaluation
+                        problem_id: str,
+                        time_spent: int,  // seconds spent on problem
+                        attempts: int,  // number of attempts for this problem
+                        strengths: [str],  // specific aspects done well
+                        weaknesses: [str]  // areas needing improvement
                     }
-                ]
+                ],
+                last_practice: "YYYY-MM-DD",  // for decay system
+                achievements: [
+                    {
+                        type: str,  // "perfect_score", "quick_learner", "consistent", etc.
+                        earned_date: "YYYY-MM-DD",
+                        active: boolean  // false if decayed/lost
+                    }
+                ],
+                visual_state: {
+                    halo_color: str,  // hex color for current mastery level
+                    halo_intensity: float,  // 0.0 to 1.0 for glow intensity
+                    effects: [str]  // array of active visual effects
+                }
             }
         }
     last_accessed (DATE): Most recent session date for the unit
@@ -348,8 +366,7 @@ Sheet name: TodoTrees
             targetDate: str (optional),
             gradeGoalClass: str (optional),
             gradeGoalTarget: float (optional),
-            notificationText: str (optional),
-            notificationTimes: [str] (optional),
+            checkIn dates: [str] (optional),
             context: str (optional, 40-word synthesis of parent conversation),
             breakOffText: str (optional, text in parent conversation that this task was broken off from),
             chatHistory: [{

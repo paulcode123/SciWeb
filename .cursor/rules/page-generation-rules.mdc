@@ -4,4 +4,4 @@ globs:
 ---
 
 All html files go in templates folder, all js/css files go directly into static folder
-For AI functions, all prompts go in [prompts.py](mdc:prompts.py), pydantic models go in [models.py](mdc:models.py), call model in [study.py](mdc:study.py), and use output processor in [output_processor.py](mdc:output_processor.py) if needed.
+Add routes to [page_init.py](mdc:routes/page_init.py)

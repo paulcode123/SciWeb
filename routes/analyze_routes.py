@@ -103,7 +103,7 @@ def inspire_handler():
 #function to generate insights and return them to the Grade Analysis page
 @analyze_routes.route('/GAsetup', methods=['POST'])
 def GA_setup():
-  from main import get_name
+  from database import get_name
   try:
     data = request.json
 

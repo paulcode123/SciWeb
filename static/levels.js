@@ -360,27 +360,30 @@ async function loadConceptMap(unitData) {
         const umap = unitData.umaps?.[0]?.node_progress || {};
         log('Node progress data:', umap);
 
-        if (Object.keys(umap).length === 0) {
-            log('Warning: No node progress data found in UMaps');
-        }
-
-        // Add nodes with styling based on UMaps data
+        // Add nodes with enhanced styling based on UMaps data
         const styledNodes = unitData.cmap.nodes.map(node => {
-            const nodeId = node.id.toString(); // Ensure string comparison
+            const nodeId = node.id.toString();
             const nodeProgress = umap[nodeId] || {};
-            log(`Node ${nodeId} progress:`, nodeProgress);
             
-            // Determine status based on derivation status only
-            const status = nodeProgress.date_derived ? 'completed' : 'pending';
-            log(`Node ${nodeId} status: ${status}, date_derived: ${nodeProgress.date_derived}`);
+            // Get node styling based on progress
+            const haloConfig = getHaloConfig(nodeProgress);
             
             const nodeData = {
                 id: nodeId,
                 label: node.label,
-                status: status,
-                color: getNodeColor(status),
-                borderWidth: 2,
-                borderColor: getBorderColor(status),
+                status: nodeProgress.date_derived ? 'completed' : 'pending',
+                color: {
+                    background: haloConfig.color,
+                    border: getBorderColor(nodeProgress.date_derived ? 'completed' : 'pending')
+                },
+                shadow: {
+                    enabled: true,
+                    color: haloConfig.color,
+                    size: 15,
+                    x: 0,
+                    y: 0
+                },
+                opacity: haloConfig.intensity,
                 widthConstraint: {
                     minimum: 120,
                     maximum: 200
@@ -389,11 +392,12 @@ async function loadConceptMap(unitData) {
                 shape: 'box',
                 font: {
                     size: 16,
-                    color: '#fff'
+                    color: '#fff',
+                    bold: true,
+                    strokeWidth: 2,
+                    strokeColor: '#000'
                 },
-                title: `${node.label}\n${status === 'completed' ? 
-                    `Derived on: ${nodeProgress.date_derived}` : 
-                    'Not yet derived'}`,
+                title: generateNodeTooltip(node, nodeProgress),
                 prerequisites: node.prerequisites || [],
                 problems: unitData.problems.filter(p => p.concept_id === nodeId)
             };
@@ -544,23 +548,36 @@ function findNextConcept() {
     if (!UI.currentMap || !UI.currentMap.nodes) return null;
 
     const nodes = UI.nodes.get();
-    const completedNodeIds = nodes
-        .filter(node => node.status === 'completed')
-        .map(node => node.id);
+    
+    // Get current UMap to check completed problems
+    const currentUmap = DataState.umaps.find(u => 
+        u.unit === DataState.currentUnit && 
+        parseInt(u.classID) === parseInt(DataState.currentClass)
+    );
 
-    // Find nodes where all prerequisites are completed
+    // Find nodes that have uncompleted problems
     const availableNodes = nodes.filter(node => {
-        // Skip if already completed
-        if (node.status !== 'pending') return false;
+        // Get the node's evaluation history
+        const nodeProgress = currentUmap?.node_progress?.[node.id] || {};
+        const completedProblemIds = new Set(
+            (nodeProgress.evaluation_history || [])
+                .map(entry => entry.problem_id)
+                .filter(id => id)
+        );
+        
+        // Check if this node has any uncompleted problems
+        const hasUncompletedProblems = DataState.problems.some(p => 
+            p.concepts && 
+            Array.isArray(p.concepts) && 
+            p.concepts.includes(node.id.toString()) &&
+            !completedProblemIds.has(p.id.toString())
+        );
 
-        // Check if all prerequisites are completed
-        return !node.prerequisites || 
-               node.prerequisites.length === 0 || 
-               node.prerequisites.every(prereq => completedNodeIds.includes(prereq));
+        return hasUncompletedProblems;
     });
 
-    // Return first node that has problems, or first available if none found
-    return findNextConceptWithProblems(availableNodes.map(n => n.id)) || availableNodes[0];
+    log('Available nodes with uncompleted problems:', availableNodes);
+    return availableNodes[0] || null;
 }
 
 /**
@@ -568,25 +585,32 @@ function findNextConcept() {
  */
 function findNextConceptWithProblems(excludeNodeIds = []) {
     const nodes = UI.nodes.get();
-    const completedNodeIds = nodes
-        .filter(node => node.status === 'completed')
-        .map(node => node.id);
+    
+    // Get current UMap to check completed problems
+    const currentUmap = DataState.umaps.find(u => 
+        u.unit === DataState.currentUnit && 
+        parseInt(u.classID) === parseInt(DataState.currentClass)
+    );
 
-    // Find nodes where all prerequisites are completed
+    // Find nodes that have uncompleted problems
     return nodes.find(node => {
-        // Skip if already checked or completed
-        if (excludeNodeIds.includes(node.id) || node.status !== 'pending') return false;
+        // Skip if already checked
+        if (excludeNodeIds.includes(node.id)) return false;
 
-        // // Check if all prerequisites are completed
-        // const prereqsCompleted = !node.prerequisites || 
-        //     node.prerequisites.length === 0 || 
-        //     node.prerequisites.every(prereq => completedNodeIds.includes(prereq));
-
-        // if (!prereqsCompleted) return false;
-
-        // Check if node has problems
+        // Get the node's evaluation history
+        const nodeProgress = currentUmap?.node_progress?.[node.id] || {};
+        const completedProblemIds = new Set(
+            (nodeProgress.evaluation_history || [])
+                .map(entry => entry.problem_id)
+                .filter(id => id)
+        );
+        
+        // Check if this node has any uncompleted problems
         return DataState.problems.some(p => 
-            p.concepts && Array.isArray(p.concepts) && p.concepts.includes(node.id.toString())
+            p.concepts && 
+            Array.isArray(p.concepts) && 
+            p.concepts.includes(node.id.toString()) &&
+            !completedProblemIds.has(p.id.toString())
         );
     });
 }
@@ -625,19 +649,113 @@ function displayProblems(node) {
 }
 
 /**
- * Get node color based on status
+ * Get node color based on mastery level
  */
-function getNodeColor(status) {
-    switch (status) {
-        case 'completed':
-            return '#2196F3';  // Mastered
-        case 'in_progress':
-            return '#4CAF50';  // Derived
-        case 'pending':
-            return '#FFA500';  // Not Started
-        default:
-            return '#999';
+function getNodeColor(status, mastery = 0) {
+    if (status === 'completed') {
+        return '#4CAF50';  // Green for mastered nodes
     }
+    
+    // Color gradient based on mastery level
+    if (mastery >= 0.9) return '#FFF';  // Bright white/gold for high mastery
+    if (mastery >= 0.7) return '#2196F3';  // Blue for good understanding
+    if (mastery >= 0.4) return '#FF9800';  // Orange for making progress
+    return '#795548';  // Brown for just starting
+}
+
+/**
+ * Get halo configuration based on mastery and achievements
+ */
+function getHaloConfig(nodeData) {
+    const mastery = nodeData.mastery_level || 0;
+    const achievements = nodeData.achievements || [];
+    const lastPractice = nodeData.last_practice ? new Date(nodeData.last_practice) : null;
+    
+    // Calculate decay factor
+    let decayFactor = 1;
+    if (lastPractice) {
+        const daysSinceLastPractice = (new Date() - lastPractice) / (1000 * 60 * 60 * 24);
+        decayFactor = Math.max(0.3, 1 - (daysSinceLastPractice / 30)); // Decay over 30 days to 30%
+    }
+    
+    // Base halo intensity on mastery and decay
+    const intensity = Math.max(0.2, mastery * decayFactor);
+    
+    // Get active achievements
+    const activeAchievements = achievements.filter(a => a.active);
+    
+    // Define special effects based on achievements
+    const effects = [];
+    activeAchievements.forEach(achievement => {
+        switch(achievement.type) {
+            case 'perfect_score':
+                effects.push('perfect-score-glow');
+                break;
+            case 'quick_learner':
+                effects.push('sparkle');
+                break;
+            case 'consistent':
+                effects.push('steady-pulse');
+                break;
+        }
+    });
+    
+    return {
+        color: getNodeColor(nodeData.status, mastery),
+        intensity: intensity,
+        effects: effects
+    };
+}
+
+/**
+ * Apply visual effects to node
+ */
+function applyNodeEffects(node, effects) {
+    // Remove existing effects
+    node.classList.remove('perfect-score-glow', 'sparkle', 'steady-pulse');
+    
+    // Apply new effects
+    effects.forEach(effect => {
+        node.classList.add(effect);
+    });
+}
+
+/**
+ * Update node styling based on progress
+ */
+function updateNodeStyling(nodeId, progress) {
+    const node = UI.nodes.get(nodeId);
+    if (!node) return;
+    
+    const haloConfig = getHaloConfig(progress);
+    
+    // Update node appearance
+    const updatedNode = {
+        ...node,
+        color: {
+            background: haloConfig.color,
+            border: getBorderColor(node.status)
+        },
+        shadow: {
+            enabled: true,
+            color: haloConfig.color,
+            size: 15,
+            x: 0,
+            y: 0
+        },
+        opacity: haloConfig.intensity,
+        title: generateNodeTooltip(node, progress)
+    };
+    
+    // Add custom effects if supported by vis.js
+    if (haloConfig.effects.length > 0) {
+        updatedNode.shapeProperties = {
+            ...updatedNode.shapeProperties,
+            useBorderWithShadow: true
+        };
+    }
+    
+    UI.nodes.update(updatedNode);
 }
 
 /**
@@ -646,11 +764,11 @@ function getNodeColor(status) {
 function getBorderColor(status) {
     switch (status) {
         case 'completed':
-            return '#1976D2';  // Mastered
+            return '#388E3C';  // Darker green for mastered
         case 'in_progress':
-            return '#388E3C';  // Derived
+            return '#1976D2';  // Darker blue for derived
         case 'pending':
-            return '#F57C00';  // Not Started
+            return '#E65100';  // Darker orange for not started
         default:
             return '#666';
     }
@@ -676,24 +794,40 @@ async function loadProblems(nodeId) {
         p.concepts && Array.isArray(p.concepts) && p.concepts.includes(nodeId.toString())
     );
     
+    // Get current UMap data for the user's current unit and class
+    const currentUMap = DataState.umaps.find(u => 
+        u.unit === DataState.currentUnit && 
+        parseInt(u.classID) === parseInt(DataState.currentClass)
+    );
+    
+    // Extract evaluation history from the node's progress data
+    const nodeProgress = currentUMap?.node_progress?.[nodeId] || {};
+    const evaluationHistory = nodeProgress.evaluation_history || [];
+    
+    // Create a Set of completed problem IDs from the evaluation history
+    const completedProblemIds = new Set(evaluationHistory.map(entry => entry.problem_id));
+    
+    // Filter out problems that have already been completed
+    const filteredProblems = conceptProblems.filter(p => !completedProblemIds.has(p.id));
+    
     // Sort by difficulty
-    conceptProblems.sort((a, b) => {
+    filteredProblems.sort((a, b) => {
         const difficultyOrder = { 'easy': 1, 'medium': 2, 'hard': 3 };
         return difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty];
     });
     
-    log('Found problems:', conceptProblems);
+    log('Found problems:', filteredProblems);
     
     // Store in problem state
-    ProblemState.problems = conceptProblems;
+    ProblemState.problems = filteredProblems;
     ProblemState.problemIndex = 0;
-    ProblemState.currentProblem = conceptProblems[0] || null;
+    ProblemState.currentProblem = filteredProblems[0] || null;
     
     // Display first problem
     if (ProblemState.currentProblem) {
         displayProblem(ProblemState.currentProblem);
     } else {
-        showMessage('No problems available for this concept.');
+        showMessage('No new problems available for this concept. Try another concept.');
     }
 }
 
@@ -769,16 +903,15 @@ async function handleAnswerSubmit() {
         submitButton.disabled = true;
     }
     
-    // Show explanation section
+    // Show explanation section and enable input
     const explanationSection = document.getElementById('explanation-section');
+    const explanationInput = document.getElementById('explanation-input');
     if (explanationSection) {
         explanationSection.classList.remove('hidden');
     }
-    
-    // Enable recording button
-    const recordButton = document.getElementById('record-button');
-    if (recordButton) {
-        recordButton.disabled = false;
+    if (explanationInput) {
+        explanationInput.disabled = false;
+        explanationInput.focus();
     }
 }
 
@@ -916,8 +1049,8 @@ function writeString(view, offset, string) {
  */
 async function processAudio(audioBlob) {
     log('Processing audio...');
-    const explanationText = document.getElementById('answer-input');
-    if (!explanationText) return;
+    const explanationInput = document.getElementById('explanation-input');
+    if (!explanationInput) return;
 
     try {
         // Create form data with audio blob
@@ -948,11 +1081,6 @@ async function processAudio(audioBlob) {
         formData.append('problem_id', ProblemState.currentProblem.id);
         formData.append('answer', ProblemState.currentAnswer);
 
-        // Log FormData contents
-        for (let [key, value] of formData.entries()) {
-            log('FormData:', key, value instanceof Blob ? 'Blob data' : value);
-        }
-
         // Send to backend for processing
         const response = await fetch('/process_audio', {
             method: 'POST',
@@ -966,82 +1094,90 @@ async function processAudio(audioBlob) {
 
         const result = await response.json();
         
-        // Display transcription
-        explanationText.value = result.transcription;
-        explanationText.disabled = false;
+        // Update explanation input and transcription
+        explanationInput.value = result.transcription;
+        explanationInput.dispatchEvent(new Event('input')); // Trigger input event to update UI
         
-        // Enable evaluation button
-        const evaluateButton = document.getElementById('evaluate-button');
-        if (evaluateButton) {
-            evaluateButton.disabled = false;
-        }
-
-        // Display transcription
-        const transcriptionSection = document.getElementById('transcription');
-        const transcriptionText = document.getElementById('transcription-text');
-        if (transcriptionSection && transcriptionText) {
-            transcriptionSection.classList.remove('hidden');
-            transcriptionText.textContent = result.transcription;
-        }
-
         log('Audio processed successfully');
     } catch (error) {
         log('Error processing audio:', error);
         showError('Failed to process audio. Please try again.');
         
         // Enable manual entry
-        explanationText.disabled = false;
-        explanationText.placeholder = 'Failed to transcribe audio. Please type your explanation here...';
+        explanationInput.disabled = false;
+        explanationInput.placeholder = 'Failed to transcribe audio. Please type your explanation here...';
     }
 }
 
 /**
- * Evaluate user's answer and explanation
- * Analyzes understanding and suggests improvements
+ * Evaluate student's understanding
+ * Sends answer and explanation to backend for evaluation
  */
-async function evaluateResponse() {
-    log('Evaluating response...');
-    const explanationText = document.getElementById('answer-input');
-    const evaluationSection = document.getElementById('evaluation-results');
+async function evaluateUnderstanding() {
+    log('Evaluating understanding...');
+    const evaluateButton = document.getElementById('evaluate-button');
+    const transcriptionText = document.getElementById('transcription-text');
     
-    if (!explanationText || !evaluationSection) return;
+    if (!evaluateButton || !transcriptionText || !ProblemState.currentProblem || !ProblemState.currentAnswer) {
+        showError('Missing required information for evaluation');
+        return;
+    }
     
     try {
-        // Show loading state
-        evaluationSection.classList.remove('hidden');
-        evaluationSection.innerHTML = '<div class="loading">Evaluating your response...</div>';
+        evaluateButton.disabled = true;
         
         // Prepare evaluation data
         const evaluationData = {
             problem_id: ProblemState.currentProblem.id,
             answer: ProblemState.currentAnswer,
-            explanation: explanationText.value,
+            explanation: transcriptionText.textContent,
             unit: DataState.currentUnit,
-            class_id: DataState.currentClass
+            class_id: DataState.currentClass,
+            problems: DataState.problems,
+            cmaps: DataState.cmaps,
+            umaps: DataState.umaps
         };
         
+        log('Sending evaluation data:', evaluationData);
+        
         // Send to backend for evaluation
-        const response = await fetchRequest('/evaluate-answer', {
+        const response = await fetch('/evaluate_understanding', {
             method: 'POST',
-            body: evaluationData
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(evaluationData)
         });
         
-        if (!response.success) {
-            throw new Error(response.error || 'Failed to evaluate response');
+        if (!response.ok) {
+            throw new Error('Failed to evaluate understanding');
         }
+        
+        const evaluation = await response.json();
+        log('Received evaluation response:', evaluation);
         
         // Display evaluation results
-        displayEvaluation(response);
+        displayEvaluation(evaluation);
         
-        // Update concept map if mastery achieved
-        if (response.mastery) {
-            await updateConceptMap(response.modifications);
-        }
+        // Create concept modifications from evaluation
+        const modifications = {
+            mastery_level: evaluation.score,
+            score: evaluation.score,
+            date_derived: new Date().toISOString(),
+            strengths: evaluation.correct_concepts,
+            weaknesses: evaluation.misconceptions
+        };
         
+        log('Created concept modifications:', modifications);
+        
+        // Update concept map with modifications
+        await updateConceptMap(modifications);
+        
+        log('Evaluation complete');
     } catch (error) {
-        log('Error evaluating response:', error);
-        showError('Failed to evaluate response. Please try again.');
-        evaluationSection.classList.add('hidden');
+        log('Error during evaluation:', error);
+        showError('Failed to evaluate understanding. Please try again.');
+        evaluateButton.disabled = false;
     }
 }
 
@@ -1053,6 +1189,9 @@ function displayEvaluation(evaluation) {
     log('Displaying evaluation:', evaluation);
     const evaluationSection = document.getElementById('evaluation-results');
     if (!evaluationSection) return;
+    
+    // Remove hidden class to show the evaluation section
+    evaluationSection.classList.remove('hidden');
     
     // Create evaluation display
     const content = document.createElement('div');
@@ -1117,6 +1256,9 @@ function displayEvaluation(evaluation) {
     if (nextButton) {
         nextButton.disabled = false;
     }
+    
+    // Scroll to evaluation results
+    evaluationSection.scrollIntoView({ behavior: 'smooth' });
 }
 
 /**
@@ -1139,38 +1281,77 @@ async function updateConceptMap(modifications) {
         
         // Update node progress
         const nodeId = UI.currentNode.id.toString();
-        const nodeProgress = currentUmap.node_progress[nodeId] || {};
+        log('Updating node:', nodeId);
+        
+        // Initialize node progress if it doesn't exist
+        if (!currentUmap.node_progress) {
+            currentUmap.node_progress = {};
+        }
+        if (!currentUmap.node_progress[nodeId]) {
+            currentUmap.node_progress[nodeId] = {};
+        }
+        
+        const nodeProgress = currentUmap.node_progress[nodeId];
+        
+        // Log current state
+        log('Current node progress:', nodeProgress);
+        log('Current node mastery level:', nodeProgress.mastery_level);
         
         // Update progress data
         nodeProgress.mastery_level = modifications.mastery_level;
         nodeProgress.last_evaluation = new Date().toISOString();
+        nodeProgress.date_derived = modifications.date_derived;
         nodeProgress.evaluation_history = [
             ...(nodeProgress.evaluation_history || []),
             {
                 date: new Date().toISOString(),
                 score: modifications.score,
-                problem_id: ProblemState.currentProblem.id
+                problem_id: ProblemState.currentProblem.id,
+                strengths: modifications.strengths,
+                weaknesses: modifications.weaknesses
             }
         ];
         
+        log('Updated node progress:', nodeProgress);
+        
+        // Update UMaps in DataState
+        DataState.umaps = DataState.umaps.map(umap => 
+            umap.unit === currentUmap.unit && 
+            parseInt(umap.classID) === parseInt(currentUmap.classID) ? 
+            currentUmap : umap
+        );
+        
         // Update UMaps in backend
         await fetchRequest('/update_data', {
-            method: 'POST',
-            body: {
-                sheet: 'UMaps',
-                row_name: 'OSIS',
-                row_value: currentUmap.OSIS,
-                data: currentUmap
-            }
+            sheet: 'UMaps',
+            row_name: 'id',
+            row_value: currentUmap.id,
+            data: currentUmap
         });
         
         // Update node styling
         const node = UI.nodes.get(nodeId);
         if (node) {
-            node.status = modifications.mastery_level >= 0.8 ? 'completed' : 'in_progress';
-            node.color = getNodeColor(node.status);
-            node.borderColor = getBorderColor(node.status);
-            UI.nodes.update(node);
+            log('Current node status:', node.status);
+            const newStatus = modifications.mastery_level >= 0.8 ? 'completed' : 'in_progress';
+            log('New node status:', newStatus);
+            
+            const updatedNode = {
+                ...node,
+                status: newStatus,
+                color: getNodeColor(newStatus, modifications.mastery_level),
+                borderColor: getBorderColor(newStatus),
+                title: generateNodeTooltip(node, nodeProgress)
+            };
+            
+            log('Updating node with:', updatedNode);
+            UI.nodes.update(updatedNode);
+            log('Node update complete');
+            
+            // Force a redraw of the network
+            UI.network.redraw();
+        } else {
+            log('Error: Node not found in network:', nodeId);
         }
         
         // Update progress stats
@@ -1179,6 +1360,7 @@ async function updateConceptMap(modifications) {
             umaps: DataState.umaps
         });
         
+        log('Concept map update complete');
     } catch (error) {
         log('Error updating concept map:', error);
         showError('Failed to update progress. Your explanation was recorded but progress may not be reflected.');
@@ -1229,6 +1411,42 @@ function updateNavigationButtons() {
     }
 }
 
+/**
+ * Generate tooltip content for node
+ */
+function generateNodeTooltip(node, progress) {
+    const mastery = progress.mastery_level || 0;
+    const lastPractice = progress.last_practice ? new Date(progress.last_practice) : null;
+    
+    let tooltip = `${node.label}\n\n`;
+    tooltip += `Mastery Level: ${(mastery * 100).toFixed(1)}%\n`;
+        
+    if (lastPractice) {
+        tooltip += `Last Practice: ${lastPractice.toLocaleDateString()}\n`;
+    }
+    
+    if (progress.evaluation_history?.length > 0) {
+        const recentStrengths = progress.evaluation_history[progress.evaluation_history.length - 1].strengths;
+        const recentWeaknesses = progress.evaluation_history[progress.evaluation_history.length - 1].weaknesses;
+        
+        if (recentStrengths?.length > 0) {
+            tooltip += `\nStrengths:\n${recentStrengths.join('\n')}\n`;
+        }
+        if (recentWeaknesses?.length > 0) {
+            tooltip += `\nAreas for Improvement:\n${recentWeaknesses.join('\n')}\n`;
+        }
+    }
+    
+    if (progress.achievements?.length > 0) {
+        const activeAchievements = progress.achievements.filter(a => a.active);
+        if (activeAchievements.length > 0) {
+            tooltip += `\nAchievements:\n${activeAchievements.map(a => a.type).join('\n')}`;
+        }
+    }
+    
+    return tooltip;
+}
+
 // Event Listeners
 document.addEventListener('DOMContentLoaded', function() {
     log('DOM loaded, initializing...');
@@ -1242,11 +1460,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const prevButton = document.getElementById('prev-problem');
     const nextButton = document.getElementById('next-problem');
     const answerInput = document.getElementById('answer-input');
+    const evaluateButton = document.getElementById('evaluate-button');
 
     if (submitButton) submitButton.addEventListener('click', handleAnswerSubmit);
     if (recordButton) recordButton.addEventListener('click', toggleRecording);
     if (prevButton) prevButton.addEventListener('click', () => navigateProblem('prev'));
     if (nextButton) nextButton.addEventListener('click', () => navigateProblem('next'));
+    if (evaluateButton) evaluateButton.addEventListener('click', evaluateUnderstanding);
     
     // Enable submit button when answer is entered
     if (answerInput) {
@@ -1304,6 +1524,25 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     `;
     document.head.appendChild(style);
+
+    // Add event listener for explanation input
+    const explanationInput = document.getElementById('explanation-input');
+    if (explanationInput) {
+        explanationInput.addEventListener('input', function() {
+            const transcriptionSection = document.getElementById('transcription');
+            const transcriptionText = document.getElementById('transcription-text');
+            const evaluateButton = document.getElementById('evaluate-button');
+            
+            if (this.value.trim()) {
+                transcriptionSection.classList.remove('hidden');
+                transcriptionText.textContent = this.value.trim();
+                evaluateButton.disabled = false;
+            } else {
+                transcriptionSection.classList.add('hidden');
+                evaluateButton.disabled = true;
+            }
+        });
+    }
 
     log('Initialization complete');
 });

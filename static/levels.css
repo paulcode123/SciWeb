@@ -679,6 +679,35 @@
     border: 1px solid rgba(33, 150, 243, 0.2);
 }
 
+.evaluate-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 12px 24px;
+    border-radius: 12px;
+    background: #2196F3;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.evaluate-button:hover:not(:disabled) {
+    background: #1976D2;
+    transform: translateY(-2px);
+}
+
+.evaluate-button:disabled {
+    background: rgba(33, 150, 243, 0.3);
+    cursor: not-allowed;
+}
+
+.evaluate-button .material-icons {
+    font-size: 20px;
+}
+
 /* Evaluation Results Styles */
 .evaluation-results {
     background: rgba(20, 23, 28, 0.6);
@@ -790,4 +819,28 @@
         transform: translateX(0);
         opacity: 1;
     }
+}
+
+.explanation-input-container {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    width: 100%;
+}
+
+#explanation-input {
+    flex: 1;
+    min-height: 80px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #fff;
+    font-family: inherit;
+    resize: vertical;
+}
+
+#explanation-input:focus {
+    outline: none;
+    border-color: rgba(33, 150, 243, 0.5);
 } 
