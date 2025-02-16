@@ -257,8 +257,11 @@ def delete_data(row_val, row_name, collection):
     return delete_data_gsheet(collection, row_val, row_name, session)
   return delete_data_firebase(row_val, row_name, collection)
 
+def get_name():
+    # Implementation of get_name function here
+    pass
+
 def get_user_data(sheet, prev_sheets=[]):
-  from main import get_name
   print("sheet", sheet)
   # if trying to get just the user's data, call the get_name function
   if sheet=="Name":

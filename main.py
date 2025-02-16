@@ -15,7 +15,7 @@ from langchain.memory import ConversationBufferMemory
 from langchain_openai import ChatOpenAI
 
 
-from database import init_firebase
+from database import init_firebase, get_name
 from routes.page_init import page_init
 from routes.analyze_routes import analyze_routes
 from routes.data_routes import data_routes
@@ -70,7 +70,7 @@ def init():
       memory_key="chat_history",
       return_messages=True
   )
-  init_pydantic()
+
  
   
 
