@@ -114,6 +114,62 @@ const DataState = {
 };
 
 /**
+ * State management for mastery tracking
+ */
+const MasteryState = {
+    // Track time spent per concept
+    timeTracking: {
+        startTime: null,
+        conceptTimes: {}, // {conceptId: totalMilliseconds}
+        lastUpdate: null
+    },
+    
+    // Achievement definitions
+    achievements: {
+        perfect_score: {
+            name: "Perfect Score",
+            description: "Achieve 100% on 3 consecutive problems",
+            check: (history) => history.slice(-3).every(h => h.score >= 0.95),
+            effect: "perfect-score-glow"
+        },
+        quick_learner: {
+            name: "Quick Learner",
+            description: "Master a concept in fewer than average attempts",
+            check: (history, avgAttempts) => history.length <= avgAttempts && history.slice(-1)[0].score >= 0.9,
+            effect: "sparkle"
+        },
+        consistent: {
+            name: "Consistent Performer",
+            description: "Maintain above 80% score for 5 consecutive problems",
+            check: (history) => history.slice(-5).every(h => h.score >= 0.8),
+            effect: "steady-pulse"
+        },
+        deep_understanding: {
+            name: "Deep Understanding",
+            description: "Provide excellent explanations for 3 consecutive problems",
+            check: (history) => history.slice(-3).every(h => h.explanation_quality >= 0.9),
+            effect: "rainbow-glow"
+        }
+    },
+    
+    // Decay configuration
+    decayRates: {
+        easy: 0.1,    // 10% decay per week
+        medium: 0.15,  // 15% decay per week
+        hard: 0.2     // 20% decay per week
+    },
+    
+    // Constants for mastery calculation
+    weights: {
+        recentPerformance: 0.4,
+        averageScore: 0.2,
+        explanationQuality: 0.2,
+        consistency: 0.1,
+        timeInvested: 0.1
+    }
+};
+
+/**
  * Initialize the network visualization
  */
 async function initNetwork() {
@@ -497,6 +553,9 @@ function selectNode(nodeId) {
     const node = UI.nodes.get(nodeId);
     if (!node) return;
 
+    // Update time tracking for previous node
+    updateConceptTime();
+    
     // Check if all prerequisites are completed
     const prerequisites = node.prerequisites || [];
     const completedPrereqs = prerequisites.every(prereqId => {
@@ -516,8 +575,9 @@ function selectNode(nodeId) {
         return;
     }
 
-    // Update current node
+    // Update current node and start timer
     UI.currentNode = node;
+    startConceptTimer();
     
     // Check if this node has problems
     const hasProblems = DataState.problems.some(p => 
@@ -526,14 +586,32 @@ function selectNode(nodeId) {
 
     if (!hasProblems) {
         log('No problems for node:', nodeId);
-        // Try to find next node with problems
-        const nextNodeWithProblems = findNextConceptWithProblems([nodeId]);
-        if (nextNodeWithProblems) {
-            log('Found next node with problems:', nextNodeWithProblems.id);
-            selectNode(nextNodeWithProblems.id);
-        } else {
-            showMessage('No problems available for any accessible concepts.');
+        showMessage('No questions for this concept yet.');
+        
+        // Update problem display area
+        const problemText = document.getElementById('problem-text');
+        const problemNumber = document.querySelector('.problem-number');
+        const problemDifficulty = document.querySelector('.problem-difficulty');
+        const answerInput = document.getElementById('answer-input');
+        const submitButton = document.getElementById('submit-answer');
+        
+        if (problemText) {
+            problemText.textContent = 'No questions available for this concept yet.';
         }
+        if (problemNumber) {
+            problemNumber.textContent = '';
+        }
+        if (problemDifficulty) {
+            problemDifficulty.textContent = '';
+        }
+        if (answerInput) {
+            answerInput.disabled = true;
+            answerInput.value = '';
+        }
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+        
         return;
     }
     
@@ -789,10 +867,28 @@ function showMessage(message) {
 async function loadProblems(nodeId) {
     log('Loading problems for node:', nodeId);
     
-    // Get problems for this concept from DataState
-    const conceptProblems = DataState.problems.filter(p => 
-        p.concepts && Array.isArray(p.concepts) && p.concepts.includes(nodeId.toString())
-    );
+    // Get problems that explicitly list this concept
+    const conceptProblems = DataState.problems.filter(p => {
+        // Ensure problem has a valid concepts array
+        if (!p.concepts || !Array.isArray(p.concepts)) {
+            log('Warning: Problem missing concepts array:', p.id);
+            return false;
+        }
+        
+        // Convert nodeId to string for comparison
+        const targetNodeId = nodeId.toString();
+        
+        // Check if this concept is explicitly listed in the problem's concepts
+        const isIncluded = p.concepts.some(c => c.toString() === targetNodeId);
+        
+        if (isIncluded) {
+            log('Found matching problem:', p.id, 'for concept:', targetNodeId);
+        }
+        
+        return isIncluded;
+    });
+    
+    log('Filtered problems for concept:', nodeId, 'Count:', conceptProblems.length);
     
     // Get current UMap data for the user's current unit and class
     const currentUMap = DataState.umaps.find(u => 
@@ -827,7 +923,7 @@ async function loadProblems(nodeId) {
     if (ProblemState.currentProblem) {
         displayProblem(ProblemState.currentProblem);
     } else {
-        showMessage('No new problems available for this concept. Try another concept.');
+        showMessage('No questions for this concept yet.');
     }
 }
 
@@ -844,6 +940,12 @@ function displayProblem(problem) {
     const problemText = document.getElementById('problem-text');
     const answerInput = document.getElementById('answer-input');
     const submitButton = document.getElementById('submit-answer');
+    const explanationSection = document.getElementById('explanation-section');
+    const explanationInput = document.getElementById('explanation-input');
+    const transcriptionSection = document.getElementById('transcription');
+    const recordButton = document.getElementById('record-button');
+    const evaluateButton = document.getElementById('evaluate-button');
+    const evaluationResults = document.getElementById('evaluation-results');
     
     if (problemNumber) {
         problemNumber.textContent = `Problem #${ProblemState.problemIndex + 1}`;
@@ -863,18 +965,40 @@ function displayProblem(problem) {
         answerInput.disabled = false;
     }
     
-    // Enable submit button
+    // Reset submit button
     if (submitButton) {
         submitButton.disabled = true;
     }
     
-    // Hide explanation and evaluation sections
-    const explanationSection = document.getElementById('explanation-section');
-    const evaluationResults = document.getElementById('evaluation-results');
-    
+    // Reset explanation section
     if (explanationSection) {
         explanationSection.classList.add('hidden');
     }
+    
+    // Reset explanation input
+    if (explanationInput) {
+        explanationInput.value = '';
+        explanationInput.disabled = false;
+    }
+    
+    // Reset transcription section
+    if (transcriptionSection) {
+        transcriptionSection.classList.add('hidden');
+    }
+    
+    // Reset record button
+    if (recordButton) {
+        recordButton.textContent = 'Record Explanation';
+        recordButton.classList.remove('recording');
+        recordButton.disabled = false;
+    }
+    
+    // Reset evaluate button
+    if (evaluateButton) {
+        evaluateButton.disabled = true;
+    }
+    
+    // Hide evaluation results
     if (evaluationResults) {
         evaluationResults.classList.add('hidden');
     }
@@ -1293,26 +1417,49 @@ async function updateConceptMap(modifications) {
         
         const nodeProgress = currentUmap.node_progress[nodeId];
         
-        // Log current state
-        log('Current node progress:', nodeProgress);
-        log('Current node mastery level:', nodeProgress.mastery_level);
+        // Update time tracking for final calculation
+        updateConceptTime();
+        const timeSpent = MasteryState.timeTracking.conceptTimes[nodeId] || 0;
+        
+        // Initialize or update evaluation history
+        if (!nodeProgress.evaluation_history) {
+            nodeProgress.evaluation_history = [];
+        }
+        
+        // Add new evaluation entry
+        const evaluationEntry = {
+            date: new Date().toISOString(),
+            score: modifications.score,
+            problem_id: ProblemState.currentProblem.id,
+            explanation_quality: modifications.explanation_quality || modifications.score,
+            strengths: modifications.strengths,
+            weaknesses: modifications.weaknesses,
+            time_spent: timeSpent
+        };
+        
+        nodeProgress.evaluation_history.push(evaluationEntry);
+        
+        // Calculate new mastery level using all factors
+        const newMasteryLevel = calculateMasteryLevel(nodeId, nodeProgress.evaluation_history, timeSpent);
+        
+        // Check for new achievements
+        const newAchievements = checkAchievements(nodeId, nodeProgress.evaluation_history);
+        if (newAchievements.length > 0) {
+            if (!nodeProgress.achievements) {
+                nodeProgress.achievements = [];
+            }
+            nodeProgress.achievements.push(...newAchievements);
+            
+            // Show achievement notifications
+            newAchievements.forEach(achievement => {
+                showMessage(`🏆 Achievement Unlocked: ${achievement.name} - ${achievement.description}`);
+            });
+        }
         
         // Update progress data
-        nodeProgress.mastery_level = modifications.mastery_level;
+        nodeProgress.mastery_level = newMasteryLevel;
         nodeProgress.last_evaluation = new Date().toISOString();
         nodeProgress.date_derived = modifications.date_derived;
-        nodeProgress.evaluation_history = [
-            ...(nodeProgress.evaluation_history || []),
-            {
-                date: new Date().toISOString(),
-                score: modifications.score,
-                problem_id: ProblemState.currentProblem.id,
-                strengths: modifications.strengths,
-                weaknesses: modifications.weaknesses
-            }
-        ];
-        
-        log('Updated node progress:', nodeProgress);
         
         // Update UMaps in DataState
         DataState.umaps = DataState.umaps.map(umap => 
@@ -1332,26 +1479,23 @@ async function updateConceptMap(modifications) {
         // Update node styling
         const node = UI.nodes.get(nodeId);
         if (node) {
-            log('Current node status:', node.status);
-            const newStatus = modifications.mastery_level >= 0.8 ? 'completed' : 'in_progress';
-            log('New node status:', newStatus);
+            const newStatus = newMasteryLevel >= 0.8 ? 'completed' : 'in_progress';
             
             const updatedNode = {
                 ...node,
                 status: newStatus,
-                color: getNodeColor(newStatus, modifications.mastery_level),
+                color: getNodeColor(newStatus, newMasteryLevel),
                 borderColor: getBorderColor(newStatus),
                 title: generateNodeTooltip(node, nodeProgress)
             };
             
-            log('Updating node with:', updatedNode);
             UI.nodes.update(updatedNode);
-            log('Node update complete');
+            
+            // Apply achievement effects
+            applyAchievementEffects(nodeId);
             
             // Force a redraw of the network
             UI.network.redraw();
-        } else {
-            log('Error: Node not found in network:', nodeId);
         }
         
         // Update progress stats
@@ -1389,8 +1533,19 @@ function navigateProblem(direction) {
         ProblemState.problemIndex - 1;
     
     if (newIndex >= 0 && newIndex < ProblemState.problems.length) {
+        // Reset problem state
         ProblemState.problemIndex = newIndex;
         ProblemState.currentProblem = ProblemState.problems[newIndex];
+        ProblemState.currentAnswer = null;
+        ProblemState.recording = false;
+        
+        // Reset audio state
+        if (ProblemState.mediaRecorder && ProblemState.mediaRecorder.state !== 'inactive') {
+            ProblemState.mediaRecorder.stop();
+        }
+        ProblemState.mediaRecorder = null;
+        ProblemState.audioChunks = [];
+        
         displayProblem(ProblemState.currentProblem);
     }
 }
@@ -1417,34 +1572,297 @@ function updateNavigationButtons() {
 function generateNodeTooltip(node, progress) {
     const mastery = progress.mastery_level || 0;
     const lastPractice = progress.last_practice ? new Date(progress.last_practice) : null;
+    const evaluationHistory = progress.evaluation_history || [];
     
     let tooltip = `${node.label}\n\n`;
-    tooltip += `Mastery Level: ${(mastery * 100).toFixed(1)}%\n`;
+    
+    // Show mastery level with color coding
+    const masteryPercent = (mastery * 100).toFixed(1);
+    let masteryColor;
+    if (mastery >= 0.9) masteryColor = '🟨'; // Gold
+    else if (mastery >= 0.7) masteryColor = '🟦'; // Blue
+    else if (mastery >= 0.4) masteryColor = '🟧'; // Orange
+    else masteryColor = '⬜'; // White/Gray
+    
+    tooltip += `${masteryColor} Mastery Level: ${masteryPercent}%\n`;
+    
+    // Add mastery breakdown if there's evaluation history
+    if (evaluationHistory.length > 0) {
+        const recentScores = evaluationHistory.slice(-3).map(h => h.score);
+        const avgScore = evaluationHistory.reduce((sum, h) => sum + h.score, 0) / evaluationHistory.length;
         
-    if (lastPractice) {
-        tooltip += `Last Practice: ${lastPractice.toLocaleDateString()}\n`;
+        tooltip += '\nMastery Breakdown:';
+        tooltip += `\n• Recent Performance: ${(recentScores.reduce((a, b) => a + b, 0) / recentScores.length * 100).toFixed(1)}%`;
+        tooltip += `\n• Overall Average: ${(avgScore * 100).toFixed(1)}%`;
+        
+        const explanationScores = evaluationHistory.filter(h => h.explanation_quality)
+            .map(h => h.explanation_quality);
+        if (explanationScores.length > 0) {
+            const avgExplanation = explanationScores.reduce((a, b) => a + b, 0) / explanationScores.length;
+            tooltip += `\n• Explanation Quality: ${(avgExplanation * 100).toFixed(1)}%`;
+        }
+        
+        // Show time investment
+        const totalTime = evaluationHistory.reduce((sum, h) => sum + (h.time_spent || 0), 0);
+        const avgTimePerProblem = totalTime / evaluationHistory.length;
+        tooltip += `\n• Average Time per Problem: ${Math.round(avgTimePerProblem / 1000)}s`;
+        
+        // Show practice frequency
+        if (lastPractice) {
+            const daysSinceLastPractice = Math.round((new Date() - lastPractice) / (1000 * 60 * 60 * 24));
+            tooltip += `\n• Last Practice: ${daysSinceLastPractice} day${daysSinceLastPractice === 1 ? '' : 's'} ago`;
+        }
     }
     
-    if (progress.evaluation_history?.length > 0) {
-        const recentStrengths = progress.evaluation_history[progress.evaluation_history.length - 1].strengths;
-        const recentWeaknesses = progress.evaluation_history[progress.evaluation_history.length - 1].weaknesses;
+    // Show recent performance details
+    if (evaluationHistory.length > 0) {
+        const lastEvaluation = evaluationHistory[evaluationHistory.length - 1];
         
-        if (recentStrengths?.length > 0) {
-            tooltip += `\nStrengths:\n${recentStrengths.join('\n')}\n`;
+        if (lastEvaluation.strengths?.length > 0) {
+            tooltip += '\n\nRecent Strengths:';
+            lastEvaluation.strengths.forEach(strength => {
+                tooltip += `\n✓ ${strength}`;
+            });
         }
-        if (recentWeaknesses?.length > 0) {
-            tooltip += `\nAreas for Improvement:\n${recentWeaknesses.join('\n')}\n`;
+        
+        if (lastEvaluation.weaknesses?.length > 0) {
+            tooltip += '\n\nAreas for Improvement:';
+            lastEvaluation.weaknesses.forEach(weakness => {
+                tooltip += `\n! ${weakness}`;
+            });
         }
     }
     
+    // Show achievements
     if (progress.achievements?.length > 0) {
         const activeAchievements = progress.achievements.filter(a => a.active);
         if (activeAchievements.length > 0) {
-            tooltip += `\nAchievements:\n${activeAchievements.map(a => a.type).join('\n')}`;
+            tooltip += '\n\n🏆 Achievements:';
+            activeAchievements.forEach(achievement => {
+                tooltip += `\n• ${achievement.name}`;
+            });
         }
     }
     
     return tooltip;
+}
+
+/**
+ * Calculate mastery level based on multiple factors
+ */
+function calculateMasteryLevel(nodeId, evaluationHistory, timeSpent) {
+    log('Calculating mastery level for node:', nodeId);
+    log('Time spent on node:', Math.round(timeSpent / 1000), 'seconds');
+    
+    if (!evaluationHistory || evaluationHistory.length === 0) {
+        log('No evaluation history, returning 0 mastery');
+        return 0;
+    }
+    
+    try {
+        // Calculate recent performance (last 3 attempts)
+        const recentScores = evaluationHistory.slice(-3).map(h => h.score);
+        const recentPerformance = recentScores.reduce((a, b) => a + b, 0) / recentScores.length;
+        log('Recent performance (last 3 attempts):', {
+            scores: recentScores,
+            average: recentPerformance.toFixed(3),
+            weight: MasteryState.weights.recentPerformance,
+            contribution: (recentPerformance * MasteryState.weights.recentPerformance).toFixed(3)
+        });
+        
+        // Calculate average score across all attempts
+        const averageScore = evaluationHistory.reduce((sum, h) => sum + h.score, 0) / evaluationHistory.length;
+        log('Average score (all attempts):', {
+            attempts: evaluationHistory.length,
+            average: averageScore.toFixed(3),
+            weight: MasteryState.weights.averageScore,
+            contribution: (averageScore * MasteryState.weights.averageScore).toFixed(3)
+        });
+        
+        // Calculate explanation quality (if available)
+        const explanationScores = evaluationHistory.filter(h => h.explanation_quality)
+            .map(h => h.explanation_quality);
+        const explanationQuality = explanationScores.length > 0 
+            ? explanationScores.reduce((a, b) => a + b, 0) / explanationScores.length
+            : averageScore; // Fallback to average score if no explanation quality data
+        log('Explanation quality:', {
+            scores: explanationScores,
+            average: explanationQuality.toFixed(3),
+            weight: MasteryState.weights.explanationQuality,
+            contribution: (explanationQuality * MasteryState.weights.explanationQuality).toFixed(3)
+        });
+        
+        // Calculate consistency (standard deviation of recent scores)
+        const consistency = recentScores.length >= 3 
+            ? 1 - calculateStandardDeviation(recentScores)
+            : 0.5; // Default consistency for few attempts
+        log('Consistency:', {
+            value: consistency.toFixed(3),
+            stdDev: calculateStandardDeviation(recentScores).toFixed(3),
+            weight: MasteryState.weights.consistency,
+            contribution: (consistency * MasteryState.weights.consistency).toFixed(3)
+        });
+        
+        // Calculate time investment factor
+        const avgTimePerProblem = 5 * 60 * 1000; // 5 minutes in milliseconds
+        const timeInvestment = Math.min(1, timeSpent / (avgTimePerProblem * evaluationHistory.length));
+        log('Time investment:', {
+            timeSpent: Math.round(timeSpent / 1000) + 's',
+            expectedTime: Math.round(avgTimePerProblem * evaluationHistory.length / 1000) + 's',
+            factor: timeInvestment.toFixed(3),
+            weight: MasteryState.weights.timeInvested,
+            contribution: (timeInvestment * MasteryState.weights.timeInvested).toFixed(3)
+        });
+        
+        // Apply weights to each factor
+        const mastery = (
+            recentPerformance * MasteryState.weights.recentPerformance +
+            averageScore * MasteryState.weights.averageScore +
+            explanationQuality * MasteryState.weights.explanationQuality +
+            consistency * MasteryState.weights.consistency +
+            timeInvestment * MasteryState.weights.timeInvested
+        );
+        
+        log('Raw mastery score:', mastery.toFixed(3));
+        
+        // Apply decay based on time since last practice
+        const lastPractice = new Date(evaluationHistory[evaluationHistory.length - 1].date);
+        const daysSinceLastPractice = (new Date() - lastPractice) / (1000 * 60 * 60 * 24);
+        const difficulty = ProblemState.currentProblem?.difficulty || 'medium';
+        const decayRate = MasteryState.decayRates[difficulty];
+        const decayFactor = Math.max(0.3, 1 - (daysSinceLastPractice * decayRate / 7)); // Decay per week
+        
+        log('Decay calculation:', {
+            daysSinceLastPractice: daysSinceLastPractice.toFixed(1),
+            difficulty: difficulty,
+            decayRate: decayRate,
+            decayFactor: decayFactor.toFixed(3)
+        });
+        
+        const finalMastery = Math.max(0, Math.min(1, mastery * decayFactor));
+        log('Final mastery level:', finalMastery.toFixed(3), `(${(finalMastery * 100).toFixed(1)}%)`);
+        
+        return finalMastery;
+    } catch (error) {
+        log('Error calculating mastery level:', error);
+        // Fallback to most recent score
+        const fallbackScore = evaluationHistory[evaluationHistory.length - 1].score;
+        log('Falling back to most recent score:', fallbackScore);
+        return fallbackScore;
+    }
+}
+
+/**
+ * Calculate standard deviation of an array of numbers
+ */
+function calculateStandardDeviation(numbers) {
+    const mean = numbers.reduce((a, b) => a + b, 0) / numbers.length;
+    const squareDiffs = numbers.map(n => Math.pow(n - mean, 2));
+    const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / squareDiffs.length;
+    return Math.sqrt(avgSquareDiff);
+}
+
+/**
+ * Start tracking time for current concept
+ */
+function startConceptTimer() {
+    MasteryState.timeTracking.startTime = new Date();
+    MasteryState.timeTracking.lastUpdate = new Date();
+}
+
+/**
+ * Update time tracking for current concept
+ */
+function updateConceptTime() {
+    if (!UI.currentNode || !MasteryState.timeTracking.startTime) return;
+    
+    const now = new Date();
+    const elapsed = now - MasteryState.timeTracking.lastUpdate;
+    const conceptId = UI.currentNode.id.toString();
+    
+    // Update concept time
+    MasteryState.timeTracking.conceptTimes[conceptId] = 
+        (MasteryState.timeTracking.conceptTimes[conceptId] || 0) + elapsed;
+    
+    MasteryState.timeTracking.lastUpdate = now;
+}
+
+/**
+ * Check and award achievements
+ */
+function checkAchievements(nodeId, evaluationHistory) {
+    log('Checking achievements for node:', nodeId);
+    
+    if (!evaluationHistory || evaluationHistory.length === 0) return [];
+    
+    const newAchievements = [];
+    const currentUmap = DataState.umaps.find(u => 
+        u.unit === DataState.currentUnit && 
+        parseInt(u.classID) === parseInt(DataState.currentClass)
+    );
+    
+    if (!currentUmap?.node_progress?.[nodeId]) return [];
+    
+    const nodeProgress = currentUmap.node_progress[nodeId];
+    const existingAchievements = new Set((nodeProgress.achievements || []).map(a => a.type));
+    
+    // Calculate average attempts across all nodes for quick_learner achievement
+    const allNodeAttempts = Object.values(currentUmap.node_progress)
+        .map(np => (np.evaluation_history || []).length)
+        .filter(len => len > 0);
+    const avgAttempts = allNodeAttempts.length > 0
+        ? allNodeAttempts.reduce((a, b) => a + b, 0) / allNodeAttempts.length
+        : 5; // Default if no data
+    
+    // Check each achievement
+    for (const [type, achievement] of Object.entries(MasteryState.achievements)) {
+        if (!existingAchievements.has(type) && achievement.check(evaluationHistory, avgAttempts)) {
+            newAchievements.push({
+                type,
+                name: achievement.name,
+                description: achievement.description,
+                date_earned: new Date().toISOString(),
+                active: true
+            });
+        }
+    }
+    
+    return newAchievements;
+}
+
+/**
+ * Apply achievement effects to node
+ */
+function applyAchievementEffects(nodeId) {
+    const currentUmap = DataState.umaps.find(u => 
+        u.unit === DataState.currentUnit && 
+        parseInt(u.classID) === parseInt(DataState.currentClass)
+    );
+    
+    if (!currentUmap?.node_progress?.[nodeId]?.achievements) return;
+    
+    const achievements = currentUmap.node_progress[nodeId].achievements;
+    const activeEffects = achievements
+        .filter(a => a.active)
+        .map(a => MasteryState.achievements[a.type]?.effect)
+        .filter(effect => effect);
+    
+    // Apply effects to node
+    const node = UI.nodes.get(nodeId);
+    if (node) {
+        const updatedNode = {
+            ...node,
+            shapeProperties: {
+                ...node.shapeProperties,
+                useBorderWithShadow: true
+            }
+        };
+        
+        // Add effect classes
+        updatedNode.className = activeEffects.join(' ');
+        
+        UI.nodes.update(updatedNode);
+    }
 }
 
 // Event Listeners

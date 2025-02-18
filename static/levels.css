@@ -843,4 +843,79 @@
 #explanation-input:focus {
     outline: none;
     border-color: rgba(33, 150, 243, 0.5);
+}
+
+/* Achievement Effects */
+.perfect-score-glow {
+    box-shadow: 0 0 20px #FFD700 !important;
+    animation: perfect-score-pulse 2s infinite;
+}
+
+.sparkle {
+    box-shadow: 0 0 15px #00FFFF !important;
+    animation: sparkle 1.5s infinite;
+}
+
+.steady-pulse {
+    box-shadow: 0 0 12px #4CAF50 !important;
+    animation: steady-pulse 3s infinite;
+}
+
+.rainbow-glow {
+    animation: rainbow-glow 4s infinite;
+}
+
+/* Achievement Animations */
+@keyframes perfect-score-pulse {
+    0% { box-shadow: 0 0 20px #FFD700; }
+    50% { box-shadow: 0 0 30px #FFA500; }
+    100% { box-shadow: 0 0 20px #FFD700; }
+}
+
+@keyframes sparkle {
+    0% { box-shadow: 0 0 15px #00FFFF; }
+    25% { box-shadow: 0 0 20px #00FFFF, 0 0 30px #00FFFF; }
+    50% { box-shadow: 0 0 15px #00FFFF; }
+    75% { box-shadow: 0 0 25px #00FFFF, 0 0 35px #00FFFF; }
+    100% { box-shadow: 0 0 15px #00FFFF; }
+}
+
+@keyframes steady-pulse {
+    0% { box-shadow: 0 0 12px #4CAF50; }
+    50% { box-shadow: 0 0 18px #4CAF50; }
+    100% { box-shadow: 0 0 12px #4CAF50; }
+}
+
+@keyframes rainbow-glow {
+    0% { box-shadow: 0 0 20px #FF0000; }
+    16.666% { box-shadow: 0 0 20px #FF7F00; }
+    33.333% { box-shadow: 0 0 20px #FFFF00; }
+    50% { box-shadow: 0 0 20px #00FF00; }
+    66.666% { box-shadow: 0 0 20px #0000FF; }
+    83.333% { box-shadow: 0 0 20px #4B0082; }
+    100% { box-shadow: 0 0 20px #8F00FF; }
+}
+
+/* Achievement Notification */
+.achievement-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.9);
+    color: #FFD700;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    z-index: 1000;
+    animation: slide-in 0.5s ease-out, fade-out 0.5s ease-in 4.5s forwards;
+}
+
+@keyframes slide-in {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
 } 

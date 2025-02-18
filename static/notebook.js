@@ -39,7 +39,7 @@ async function loadContext() {
         });
     }
     
-    fetchRequest('/data', { data: 'Classes, Notebooks, Name, CMaps' })
+    fetchRequest('/data', { data: 'Classes, Notebooks, Name, CMaps, Problems' })
     .then(data => {
         notebookData = data;
         loadClasses();
@@ -275,8 +275,22 @@ async function mapProblems(classId, unitName) {
 }
 
 function createWorksheetElement(worksheet) {
+    console.log('worksheet', worksheet);
     const worksheetDiv = document.createElement('div');
     worksheetDiv.className = 'worksheet-item';
+    
+    // Get problems for this worksheet - strict worksheetID matching
+    const problems = notebookData.Problems ? notebookData.Problems.filter(p => 
+        p.worksheetID && // ensure worksheetID exists
+        p.worksheetID === worksheet.id && 
+        parseInt(p.classID) === parseInt(worksheet.classID) && 
+        p.unit === worksheet.unit
+    ).sort((a, b) => a.id.localeCompare(b.id)) : []; // Sort by ID for consistent ordering
+    
+    // Split problems into initial and remaining
+    const initialProblems = problems.slice(0, 5);
+    const remainingProblems = problems.slice(5);
+    
     worksheetDiv.innerHTML = `
         <h3><i class="fas fa-book-open"></i> ${worksheet.topic}</h3>
         <p><i class="far fa-clock"></i> ${worksheet.timestamp}</p>
@@ -297,10 +311,10 @@ function createWorksheetElement(worksheet) {
         <div class="practice-section">
             <h4><i class="fas fa-tasks"></i> Practice Questions:</h4>
             <ol class="practice-list">
-                ${worksheet.practice_questions.map((question, index) => 
+                ${initialProblems.map((problem, index) => 
                     `<li>
                         <i class="fas fa-question-circle"></i>
-                        <span class="question-text">${question}</span>
+                        <span class="question-text">${problem.problem}</span>
                         <button class="solve-question" data-index="${index}" title="Solve Question">
                             <i class="fas fa-lightbulb"></i>
                         </button>
@@ -308,6 +322,27 @@ function createWorksheetElement(worksheet) {
                     </li>`
                 ).join('')}
             </ol>
+            ${remainingProblems.length > 0 ? `
+                <div class="show-more-container">
+                    <button class="show-more-problems" title="Show More Problems">
+                        <i class="fas fa-plus-circle"></i> Show ${remainingProblems.length} More
+                    </button>
+                    <div class="remaining-problems" style="display: none;">
+                        <ol class="practice-list" start="6">
+                            ${remainingProblems.map((problem, index) => 
+                                `<li>
+                                    <i class="fas fa-question-circle"></i>
+                                    <span class="question-text">${problem.problem}</span>
+                                    <button class="solve-question" data-index="${index + 5}" title="Solve Question">
+                                        <i class="fas fa-lightbulb"></i>
+                                    </button>
+                                    <div class="solution-display" style="display: none;"></div>
+                                </li>`
+                            ).join('')}
+                        </ol>
+                    </div>
+                </div>
+            ` : ''}
             <div class="practice-actions">
                 <button class="more-like-this" title="Show More Similar Problems">
                     <i class="fas fa-plus-circle"></i> More Like This
@@ -371,8 +406,97 @@ function createWorksheetElement(worksheet) {
         addNoteToWorksheet(worksheet.image, worksheetDiv);
     });
 
-    worksheetDiv.querySelector('.add-question').addEventListener('click', () => {
-        addQuestionToWorksheet(worksheet.image, worksheetDiv);
+    worksheetDiv.querySelector('.add-question').addEventListener('click', async () => {
+        const question = prompt("Enter your practice question (LaTeX supported using \\( ... \\) for inline and \\[ ... \\] for display):");
+        if (question) {
+            try {
+                startLoading();
+                const newProblem = {
+                    id: Math.floor(100000 + Math.random() * 900000).toString(), // Generate 6-digit ID
+                    classID: worksheet.classID,
+                    unit: worksheet.unit,
+                    worksheetID: worksheet.id,
+                    problem: question,
+                    difficulty: "medium", // Default difficulty
+                    concepts: [] // Empty concepts array, to be filled by problem mapping
+                };
+                
+                // Add to Problems sheet
+                await fetchRequest('/post_data', {
+                    sheet: 'Problems',
+                    data: newProblem
+                });
+                
+                // Add to local data
+                if (!notebookData.Problems) {
+                    notebookData.Problems = [];
+                }
+                notebookData.Problems.push(newProblem);
+                
+                // Add to UI
+                const questionsList = worksheetDiv.querySelector('.practice-list');
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <i class="fas fa-question-circle"></i>
+                    <span class="question-text">${question}</span>
+                    <button class="solve-question" data-index="${problems.length}" title="Solve Question">
+                        <i class="fas fa-lightbulb"></i>
+                    </button>
+                    <div class="solution-display" style="display: none;"></div>
+                `;
+                questionsList.appendChild(li);
+                
+                // Process LaTeX in the new question
+                if (window.MathJax) {
+                    MathJax.typesetPromise([li.querySelector('.question-text')]);
+                }
+                
+                // Add event listener for the new solve button
+                const solveButton = li.querySelector('.solve-question');
+                solveButton.addEventListener('click', async () => {
+                    const solutionDisplay = solveButton.parentElement.querySelector('.solution-display');
+                    try {
+                        startLoading();
+                        const response = await fetch('/solve-question', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                file: worksheet.image,
+                                question: question,
+                                fileType: 'image/png'
+                            })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.error) {
+                            throw new Error(data.error);
+                        }
+                        
+                        solutionDisplay.innerHTML = `
+                            <div class="solution-box">
+                                <h4>Solution:</h4>
+                                <p style="white-space: pre-line;">${data.solution}</p>
+                            </div>
+                        `;
+                        solutionDisplay.style.display = 'block';
+                        
+                        if (window.MathJax) {
+                            MathJax.typesetPromise([solutionDisplay]);
+                        }
+                    } catch (error) {
+                        console.error('Error solving question:', error);
+                        alert('Failed to get solution. Please try again.');
+                    }
+                    endLoading();
+                });
+                
+            } catch (error) {
+                console.error('Error adding question:', error);
+                alert('Failed to add question. Please try again.');
+            }
+            endLoading();
+        }
     });
 
     worksheetDiv.querySelector('.view-worksheet').addEventListener('click', (e) => {
@@ -396,10 +520,9 @@ function createWorksheetElement(worksheet) {
     });
 
     // Add event listeners for solve buttons
-    worksheetDiv.querySelectorAll('.solve-question').forEach(button => {
+    worksheetDiv.querySelectorAll('.solve-question').forEach((button, index) => {
         button.addEventListener('click', async () => {
-            const questionIndex = button.dataset.index;
-            const questionText = worksheet.practice_questions[questionIndex];
+            const problem = problems[index];
             const solutionDisplay = button.parentElement.querySelector('.solution-display');
             
             try {
@@ -409,7 +532,7 @@ function createWorksheetElement(worksheet) {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         file: worksheet.image,
-                        question: questionText,
+                        question: problem.problem,
                         fileType: 'image/png'
                     })
                 });
@@ -420,7 +543,6 @@ function createWorksheetElement(worksheet) {
                     throw new Error(data.error);
                 }
                 
-                // Format and display the solution
                 solutionDisplay.innerHTML = `
                     <div class="solution-box">
                         <h4>Solution:</h4>
@@ -429,7 +551,6 @@ function createWorksheetElement(worksheet) {
                 `;
                 solutionDisplay.style.display = 'block';
                 
-                // Process LaTeX in the solution if needed
                 if (window.MathJax) {
                     MathJax.typesetPromise([solutionDisplay]);
                 }
@@ -449,32 +570,60 @@ function createWorksheetElement(worksheet) {
         
         startLoading();
         try {
-            // Get all problems for this worksheet
-            const response = await fetchRequest('/data', { data: 'Problems' });
-            const problems = response.Problems.filter(p => 
-                p.classID === worksheet.classID && 
-                p.unit === currentUnitName &&
-                p.worksheetID === worksheet.id &&
-                !worksheet.practice_questions.includes(p.problem)
-            );
+            // Get the existing problems for context
+            const existingProblems = problems.map(p => p.problem);
             
-            // Randomly select up to 5 problems
-            const selectedProblems = problems
-                .sort(() => 0.5 - Math.random())
-                .slice(0, 5);
+            // Request AI-generated problems
+            const response = await fetch('/generate-problems', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    file: worksheet.image,
+                    existingProblems: existingProblems,
+                    count: 5,
+                    fileType: 'image/png'
+                })
+            });
             
-            if (selectedProblems.length === 0) {
-                endLoading();
-                alert('No additional problems available for this worksheet.');
-                return;
+            const data = await response.json();
+            
+            if (data.error) {
+                throw new Error(data.error);
             }
             
-            // Display the problems
-            moreProblemsContainer.innerHTML = selectedProblems.map((problem, index) => `
+            // Create new problem objects and add them to the Problems sheet
+            const newProblems = data.problems.map(problemData => ({
+                id: Math.floor(100000 + Math.random() * 900000).toString(), // Generate 6-digit ID
+                classID: worksheet.classID,
+                unit: worksheet.unit,
+                worksheetID: worksheet.id,
+                problem: problemData.problem,
+                difficulty: problemData.difficulty,
+                concepts: [] // Empty concepts array, to be filled by problem mapping
+            }));
+            console.log(newProblems);
+            // Add all new problems to the Problems sheet
+            for (const problem of newProblems) {
+                await fetchRequest('/post_data', {
+                    sheet: 'Problems',
+                    data: problem
+                });
+            }
+            // remove Problems from local storage
+            localStorage.removeItem('Problems');
+            
+            // Add to local data
+            if (!notebookData.Problems) {
+                notebookData.Problems = [];
+            }
+            notebookData.Problems.push(...newProblems);
+            
+            // Display the new problems
+            moreProblemsContainer.innerHTML = newProblems.map((problem, index) => `
                 <li>
                     <i class="fas fa-question-circle"></i>
                     <span class="question-text">${problem.problem}</span>
-                    <button class="solve-question" data-index="${worksheet.practice_questions.length + index}" title="Solve Question">
+                    <button class="solve-question" data-index="${problems.length + index}" title="Solve Question">
                         <i class="fas fa-lightbulb"></i>
                     </button>
                     <div class="solution-display" style="display: none;"></div>
@@ -482,10 +631,9 @@ function createWorksheetElement(worksheet) {
             `).join('');
             
             // Add event listeners for new solve buttons
-            moreProblemsContainer.querySelectorAll('.solve-question').forEach(button => {
+            moreProblemsContainer.querySelectorAll('.solve-question').forEach((button, index) => {
                 button.addEventListener('click', async () => {
-                    const questionIndex = parseInt(button.dataset.index);
-                    const questionText = selectedProblems[questionIndex - worksheet.practice_questions.length].problem;
+                    const problem = newProblems[index];
                     const solutionDisplay = button.parentElement.querySelector('.solution-display');
                     
                     startLoading();
@@ -495,7 +643,7 @@ function createWorksheetElement(worksheet) {
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 file: worksheet.image,
-                                question: questionText,
+                                question: problem.problem,
                                 fileType: 'image/png'
                             })
                         });
@@ -536,12 +684,31 @@ function createWorksheetElement(worksheet) {
             }
             
         } catch (error) {
-            console.error('Error fetching additional problems:', error);
-            alert('Failed to fetch additional problems. Please try again.');
+            console.error('Error generating additional problems:', error);
+            alert('Failed to generate additional problems. Please try again.');
         } finally {
             endLoading();
         }
     });
+
+    // Add event listener for show more problems button
+    const showMoreButton = worksheetDiv.querySelector('.show-more-problems');
+    if (showMoreButton) {
+        showMoreButton.addEventListener('click', async () => {
+            const remainingProblemsDiv = worksheetDiv.querySelector('.remaining-problems');
+            if (remainingProblemsDiv.style.display === 'none') {
+                remainingProblemsDiv.style.display = 'block';
+                showMoreButton.innerHTML = '<i class="fas fa-minus-circle"></i> Show Less';
+                // Process LaTeX in newly shown problems
+                if (window.MathJax) {
+                    await MathJax.typesetPromise([remainingProblemsDiv]);
+                }
+            } else {
+                remainingProblemsDiv.style.display = 'none';
+                showMoreButton.innerHTML = `<i class="fas fa-plus-circle"></i> Show ${remainingProblems.length} More`;
+            }
+        });
+    }
 
     return worksheetDiv;
 }
@@ -738,35 +905,6 @@ async function addNoteToWorksheet(worksheetId, worksheetDiv) {
         // Process LaTeX in the new note
         if (window.MathJax) {
             MathJax.typesetPromise([li.querySelector('.note-text')]);
-        }
-    }
-    endLoading();
-}
-
-async function addQuestionToWorksheet(worksheetId, worksheetDiv) {
-    const question = prompt("Enter your practice question (LaTeX supported using \\( ... \\) for inline and \\[ ... \\] for display):");
-    if (question) {
-        worksheet = notebookData.Notebooks.find(worksheet => worksheet.image === worksheetId);
-        worksheet.practice_questions.push(question);
-        startLoading();
-        await fetchRequest('/update_data', {
-            sheet: 'Notebooks',
-            row_name: 'image',
-            row_value: worksheetId,
-            data: worksheet
-        });
-        
-        const questionsList = worksheetDiv.querySelector('.practice-list');
-        const li = document.createElement('li');
-        li.innerHTML = `
-            <i class="fas fa-question-circle"></i>
-            <span class="question-text">${question}</span>
-        `;
-        questionsList.appendChild(li);
-        
-        // Process LaTeX in the new question
-        if (window.MathJax) {
-            MathJax.typesetPromise([li.querySelector('.question-text')]);
         }
     }
     endLoading();

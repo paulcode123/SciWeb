@@ -85,7 +85,7 @@ Sheet name: Notebooks
     timestamp(yyyy-mm-dd hh:mm:ss)
     topic(topic of the worksheet)
     subtopics(list of notes on the worksheet)
-    practice_questions(list of practice questions on the worksheet)
+    image(str, reference to the worksheet image in cloud storage)
 
 
 Sheet name: Profiles

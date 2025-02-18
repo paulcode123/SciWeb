@@ -6,6 +6,7 @@ import random
 import json
 import io
 import speech_recognition as sr
+import re
 
 from database import *
 from classroom import *
@@ -36,6 +37,8 @@ def get_AI_function_calling():
 
 @ai_routes.route('/ask-question', methods=['POST'])
 def ask_question():
+    from main import init
+    vars = init()
     data = request.json
 
     # Get the file from the bucket
@@ -53,6 +56,8 @@ def ask_question():
 
 @ai_routes.route('/solve-question', methods=['POST'])
 def solve_question():
+    from main import init
+    vars = init()
     data = request.json
 
     # Get the file from the bucket
@@ -149,6 +154,8 @@ def validate_file_content(file_content: str, file_type: str) -> bool:
 
 @ai_routes.route('/process-notebook-file', methods=['POST'])
 def process_notebook_file():
+    from main import init
+    vars = init()
     try:
         logger.info("Starting notebook file processing")
 
@@ -246,8 +253,7 @@ def process_notebook_file():
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
                 "image": blob_id, 
                 "topic": insights_dict["topic"], 
-                "subtopics": insights_dict["notes"], 
-                "practice_questions": insights_dict["practice_questions"]
+                "subtopics": insights_dict["notes"]
             })
         except Exception as e:
             logger.error(f"Failed to store notebook data: {str(e)}")
@@ -296,6 +302,8 @@ def get_units():
 
 @ai_routes.route('/generate-questions', methods=['POST'])
 def generate_questions():
+    from main import init
+    vars = init()
     data = request.json
 
     class_id = data['classId']
@@ -333,6 +341,8 @@ def generate_questions():
 
 @ai_routes.route('/evaluate-final', methods=['POST'])
 def evaluate_final():
+    from main import init
+    vars = init()
     data = request.json
 
     followup_history = data['followupHistory']
@@ -346,6 +356,8 @@ def evaluate_final():
 #Evaluate AI routes
 @ai_routes.route('/generate-followup', methods=['POST'])
 def generate_followup():
+    from main import init
+    vars = init()
     data = request.json
 
     followup = generate_followup_question(
@@ -410,6 +422,8 @@ def evaluate_understanding():
 # Levels routes
 @ai_routes.route('/generate-bloom-questions', methods=['POST'])
 def generate_bloom_questions_route():
+    from main import init
+    vars = init()
     data = request.json
 
     try:
@@ -426,6 +440,8 @@ def generate_bloom_questions_route():
 
 @ai_routes.route('/evaluate-answer', methods=['POST'])
 def evaluate_answer():
+    from main import init
+    vars = init()
     try:
 
         data = request.json
@@ -480,6 +496,8 @@ def evaluate_answer():
 
 @ai_routes.route('/make_explanation_cards', methods=['POST'])
 def make_explanation_cards_route():
+    from main import init
+    vars = init()
     data = request.json
 
     print(data)
@@ -494,6 +512,8 @@ def make_explanation_cards_route():
 
 @ai_routes.route('/map_problems', methods=['POST'])
 def map_problems_route():
+    from main import init
+    vars = init()
     data = request.json
 
     print("in map_problems_route")
@@ -514,6 +534,8 @@ def map_problems_route():
 
 @ai_routes.route('/save-guide', methods=['POST'])
 def save_guide():
+    from main import init
+    vars = init()
     data = request.json
 
     try:
@@ -529,6 +551,8 @@ def save_guide():
 
 @ai_routes.route('/generate-derive-questions', methods=['POST'])
 def generate_derive_questions_route():
+    from main import init
+    vars = init()
     data = request.json
 
     try:
@@ -549,6 +573,8 @@ def generate_derive_questions_route():
 
 @ai_routes.route('/evaluate-derive-answer', methods=['POST'])
 def evaluate_derive_answer_route():
+    from main import init
+    vars = init()
     data = request.json
 
     try:
@@ -567,6 +593,8 @@ def evaluate_derive_answer_route():
 
 @ai_routes.route('/derive-conversation', methods=['POST'])
 def derive_conversation():
+    from main import init
+    vars = init()
     data = request.json
 
     
@@ -632,6 +660,8 @@ def derive_conversation():
 
 @ai_routes.route('/get_concept_explanation', methods=['POST'])
 def get_concept_explanation():
+    from main import init
+    vars = init()
     data = request.json
     try:
 
@@ -715,3 +745,113 @@ def process_audio():
     except Exception as e:
         print(f"Error in process_audio: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@ai_routes.route('/generate-problems', methods=['POST'])
+def generate_problems():
+    from main import init
+    from output_processor import clean_llm_response, parse_json_response
+    vars = init()
+    try:
+        data = request.json
+        
+        # Get required data from request
+        file_reference = data['file']  # This is the reference ID in the bucket
+        existing_problems = data.get('existingProblems', [])
+        count = data.get('count', 5)  # Default to 5 problems
+        file_type = data.get('fileType', 'image/png')
+        
+        # Get the file from the bucket
+        base64_content = download_file("sciweb-files", file_reference)
+        
+        if not base64_content:
+            return jsonify({"error": "Failed to retrieve worksheet image"}), 404
+            
+        # Format the prompt to request JSON output
+        prompt = f"""Given these existing practice problems:
+        {existing_problems}
+        
+        Please generate {count} new, unique practice problems that:
+        1. Are similar in style and difficulty to the existing problems
+        2. Cover similar concepts but are not identical
+        3. Are appropriate for the same grade level
+        4. Include proper mathematical notation using LaTeX where appropriate
+        
+        Return the problems in this exact JSON format:
+        {{
+            "problems": [
+                {{
+                    "problem": "Problem text here",
+                    "difficulty": "easy|medium|hard"
+                }}
+            ]
+        }}
+        
+        Requirements:
+        - Each problem must have both a problem text and difficulty level
+        - Difficulty must be one of: easy, medium, hard
+        - Use proper LaTeX notation for mathematical expressions
+        - Generate exactly {count} problems"""
+        
+        # Generate problems using vision LLM
+        response = answer_worksheet_question(
+            vars['vision_llm'],
+            base64_content,
+            file_type,
+            prompt
+        )
+        
+        try:
+            # Clean and parse the response using output_processor functions
+            parsed_response = parse_json_response(response)
+            
+            # Validate the response format
+            if not isinstance(parsed_response, dict) or 'problems' not in parsed_response:
+                raise ValueError("Response missing 'problems' key")
+                
+            problems = parsed_response['problems']
+            
+            # Validate each problem
+            validated_problems = []
+            for prob in problems:
+                if not isinstance(prob, dict):
+                    continue
+                    
+                problem_text = prob.get('problem', '').strip()
+                difficulty = prob.get('difficulty', '').strip().lower()
+                
+                if not problem_text or not difficulty:
+                    continue
+                    
+                if difficulty not in ['easy', 'medium', 'hard']:
+                    difficulty = 'medium'
+                    
+                validated_problems.append({
+                    "problem": problem_text,
+                    "difficulty": difficulty
+                })
+            
+            # Take only the requested number of problems
+            validated_problems = validated_problems[:count]
+            
+            if not validated_problems:
+                return jsonify({"error": "No valid problems generated"}), 500
+                
+            return jsonify({"problems": validated_problems})
+            
+        except json.JSONDecodeError as je:
+            print("Failed to parse response as JSON:", response)
+            return jsonify({
+                "error": "Failed to parse generated problems",
+                "details": str(je)
+            }), 500
+        except Exception as e:
+            print("Error validating problems:", str(e))
+            return jsonify({
+                "error": "Failed to validate generated problems",
+                "details": str(e)
+            }), 500
+        
+    except Exception as e:
+        print(f"Error generating problems: {str(e)}")
+        traceback.print_exc()  # Print full traceback for debugging
+        return jsonify({"error": "Failed to generate problems"}), 500

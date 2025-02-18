@@ -92,19 +92,7 @@ app.register_blueprint(ai_routes)
 
 
 def utility_function():
-  # import requests
-  # url = "https://us-central1-sturdy-analyzer-381018.cloudfunctions.net/sendNotification"
-  # try:
-  #   response = requests.post(url)
-  #   response.raise_for_status()  # This will raise an exception for error status codes
-  #   print(f"Response status: {response.status_code}")
-  #   print(f"Response body: {response.text}")
-  # except requests.exceptions.RequestException as e:
-  #   print(f"Error making request: {str(e)}")
-  #   if hasattr(e.response, 'text'):
-  #       print(f"Error details: {e.response.text}")
   pass
-  
 
 
 

@@ -879,3 +879,68 @@ textarea {
         transform: translateY(0);
     }
 }
+
+.show-more-container {
+    margin: 15px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.show-more-problems {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9em;
+    transition: all 0.3s ease;
+    align-self: flex-start;
+    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+}
+
+.show-more-problems:hover {
+    background: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.4);
+}
+
+.show-more-problems i {
+    font-size: 1.1em;
+    transition: transform 0.3s ease;
+}
+
+.remaining-problems {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.remaining-problems .practice-list {
+    margin: 0;
+    padding: 0;
+}
+
+.remaining-problems li {
+    animation: fadeIn 0.5s ease-out;
+    animation-fill-mode: both;
+}
+
+.remaining-problems li:nth-child(1) { animation-delay: 0.1s; }
+.remaining-problems li:nth-child(2) { animation-delay: 0.2s; }
+.remaining-problems li:nth-child(3) { animation-delay: 0.3s; }
+.remaining-problems li:nth-child(4) { animation-delay: 0.4s; }
+.remaining-problems li:nth-child(5) { animation-delay: 0.5s; }
