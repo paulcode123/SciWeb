@@ -1,0 +1,39 @@
+{% extends "darkThemeTemplate.html" %}
+
+{% block title %}
+<title>Prompt Library</title>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="/static/promptlibrary.css">
+{% endblock %}
+
+{% block content %}
+<div class="prompt-library-container">
+    <h2>Prompt Library</h2>
+    <div class="prompt-categories">
+        <div class="category general-prompts">
+            <h3>General Academic Prompts</h3>
+            <div class="prompt-grid" id="general-prompts">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="category subject-prompts">
+            <h3>Subject-Specific Prompts</h3>
+            <div class="class-selector">
+                <select id="class-selector">
+                    <option value="">Select a class...</option>
+                </select>
+            </div>
+            <div class="prompt-grid" id="subject-prompts">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script src="/static/promptlibrary.js"></script>
+{% endblock %} 

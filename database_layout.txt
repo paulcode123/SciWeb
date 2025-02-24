@@ -85,7 +85,7 @@ Sheet name: Notebooks
     timestamp(yyyy-mm-dd hh:mm:ss)
     topic(topic of the worksheet)
     subtopics(list of notes on the worksheet)
-    practice_questions(list of practice questions on the worksheet)
+    image(str, reference to the worksheet image in cloud storage)
 
 
 Sheet name: Profiles
@@ -97,13 +97,7 @@ Sheet name: Profiles
     showClasses(true/false: whether the user wants to show their classes to other students)
     showFriends(true/false: whether the user wants to show their friends to other students)
 
-Sheet name: Study
 
-    OSIS(7 digit number)
-    class(name of the class this study session is in)
-    category(name of the category this study session is in)
-    Q&As(string of all questions and answers the user has given while studying for this category in this class. Format: "[question]///[answer]///[question]///[answer]///...")
-    
 Sheet name: Tokens
 
     OSIS(7 digit number)
@@ -145,46 +139,6 @@ Sheet name: Distributions
     class_name(name of class)
     value(total points possible)
 
-Sheet name: Explanations
-
-    classID(id of the class)
-    OSIS(7 digit number of the student)
-    explanations(list of dictionaries containing:
-        {
-            "question": str,
-            "level": str,
-            "correct_answer": str,
-            "explanations": [
-                {
-                    "style": str,
-                    "text": str,
-                    "score": int (0-10)
-                },
-                // ... 3 explanations per answer
-            ],
-            "timestamp": datetime
-        }
-    )
-
-Sheet name: Guides
-
-    OSIS(7 digit number)
-    classId(4 digit id of class)
-    id(5 digit id)
-    last_edit(YYYY-MM-DDTHH:MM:SS.sssZ)
-    sections(array of objects containing:
-        {
-            title: str,  // e.g. 'General', 'Continuity', 'Limits', etc.
-            points: array of objects
-                 {
-                    text: str,
-                    correct: [mm/dd/yyyy, mm/dd/yyyy, ...] // dates of the correct answers
-                    incorrect: [mm/dd/yyyy, mm/dd/yyyy, ...] // dates of the incorrect answers
-                    points: [] //array of objects like this one
-                 }
-        }
-    )
-    unit(name of the unit)
 
 Sheet name: GradeCorrections
 
@@ -309,15 +263,33 @@ Sheet name: UMaps (User-Specific Progress and Notes)
         {
             "node_id": {
                 date_derived: "YYYY-MM-DD" | null,
+                mastery_level: float,  // 0.0 to 1.0 representing overall mastery
                 chat_history: [str],  // Array of chat messages
                 user_notes: str,
-                question_history: [
+                evaluation_history: [
                     {
                         date: "YYYY-MM-DD",
-                        error: str | null(if correct),
-                        question_id: str
+                        score: float,  // 0.0 to 1.0 for this specific evaluation
+                        problem_id: str,
+                        time_spent: int,  // seconds spent on problem
+                        attempts: int,  // number of attempts for this problem
+                        strengths: [str],  // specific aspects done well
+                        weaknesses: [str]  // areas needing improvement
                     }
-                ]
+                ],
+                last_practice: "YYYY-MM-DD",  // for decay system
+                achievements: [
+                    {
+                        type: str,  // "perfect_score", "quick_learner", "consistent", etc.
+                        earned_date: "YYYY-MM-DD",
+                        active: boolean  // false if decayed/lost
+                    }
+                ],
+                visual_state: {
+                    halo_color: str,  // hex color for current mastery level
+                    halo_intensity: float,  // 0.0 to 1.0 for glow intensity
+                    effects: [str]  // array of active visual effects
+                }
             }
         }
     last_accessed (DATE): Most recent session date for the unit
@@ -329,7 +301,7 @@ Sheet name: Problems:
     unit(name of the unit)
     worksheetID(id of the worksheet)
     problem(problem statement)
-    difficulty(difficulty of the problem)
+    bloom_level("remember", "understand", "apply", "analyze", "create")
     concepts(id of the concepts the problem requires) // added separately by problem mapping
 
 Sheet name: TodoTrees
@@ -348,8 +320,7 @@ Sheet name: TodoTrees
             targetDate: str (optional),
             gradeGoalClass: str (optional),
             gradeGoalTarget: float (optional),
-            notificationText: str (optional),
-            notificationTimes: [str] (optional),
+            checkInDates: [str] (optional),
             context: str (optional, 40-word synthesis of parent conversation),
             breakOffText: str (optional, text in parent conversation that this task was broken off from),
             chatHistory: [{

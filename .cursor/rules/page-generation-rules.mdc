@@ -1,7 +1,7 @@
 ---
-description: Generating new pages, features, or large code blocks
+description: File, Route, and Function Organizational Rules
 globs: 
 ---
 
-When making large changes, start by making an excellent frontend that looks sleek and modern. Define but leave comments for nonessential JS functions. Dont do the backend at first.
-The complete database structure including sheets, field names, datatypes, and purposes can be found in [database_layout.txt](mdc:database_layout.txt)
+All html files go in templates folder, all js/css files go directly into static folder
+Add routes to [page_init.py](mdc:routes/page_init.py)

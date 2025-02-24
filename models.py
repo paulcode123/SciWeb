@@ -151,8 +151,19 @@ class ProblemMapping(BaseModel):
 class ProblemMappingResponse(BaseModel):
     problem_mappings: list[ProblemMapping] 
 
+class LogicalStep(BaseModel):
+    step_number: int = Field(..., description="The number of this step in the sequence")
+    description: str = Field(..., description="Description of what the student did")
+    is_correct: bool = Field(..., description="Whether the step was performed correctly")
+    correct_approach: Optional[str] = Field(None, description="The correct approach if the step was incorrect")
+
+class RemainingStep(BaseModel):
+    step_number: int = Field(..., description="The number of this step in the sequence")
+    description: str = Field(..., description="Description of what needs to be done")
+    hint: str = Field(..., description="A hint to help the student complete this step")
+
 class EvaluationResponse(BaseModel):
     score: float = Field(..., description="Score between 0 and 1 indicating level of understanding")
-    correct_concepts: List[str] = Field(..., description="List of correctly understood concepts")
-    misconceptions: List[str] = Field(..., description="List of misconceptions or areas needing improvement")
-    suggestions: List[str] = Field(..., description="Specific suggestions for improvement") 
+    logical_steps: List[LogicalStep] = Field(..., description="List of steps the student has attempted")
+    remaining_steps: List[RemainingStep] = Field(..., description="List of steps not yet attempted")
+    can_resubmit: bool = Field(..., description="Whether the student should try again") 

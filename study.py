@@ -15,10 +15,15 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain.schema import HumanMessage, SystemMessage, AIMessage
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Union, Any
+import logging
+import base64
 
 from models import *
 from output_processor import clean_llm_response, parse_json_response, create_llm_chain
 from prompts import *
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 def init_pydantic():
     """Initialize Pydantic output parsers for various response types"""
@@ -100,7 +105,7 @@ def chat_with_function_calling(prompt, grades=None):
                 "properties": {
                     "sheet": {
                         "type": "string",
-                        "description": "The name of the sheet to fetch data from: Grades, Classes, Assignments, Chat, Calendar, Distributions, or Guides",
+                        "description": "The name of the sheet to fetch data from: Classes, Assignments, Chat, Calendar, Distributions, or Guides",
                     },
                 },
                 "required": ["sheet"],
@@ -131,6 +136,7 @@ def chat_with_function_calling(prompt, grades=None):
             sheet = eval(arguments).get("sheet")
             function_response = get_user_data(sheet)
         elif function_name == "get_grades":
+            print("getting grades")
             function_response = grades
             
         follow_up_prompt = {"role": "function", "name": function_name, "content": str(function_response)}
@@ -252,29 +258,103 @@ def process_pdf_content(llm, pdf_content: bytes) -> ResponseTypeNB:
         os.unlink(tmp_path)
 
 def process_image_content(llm, image_content: str, file_type: str) -> ResponseTypeNB:
-    padding = len(image_content) % 4
-    if padding:
-        image_content += '=' * (4 - padding)
+    """
+    Process image content to extract educational content and generate insights.
+    
+    Args:
+        llm: The language model instance to use for analysis
+        image_content: Base64 encoded image content
+        file_type: MIME type of the image
+        
+    Returns:
+        ResponseTypeNB: Structured response containing topic, notes, and practice questions
+        
+    Raises:
+        ValueError: If image content or file type is invalid
+        Exception: For other processing errors
+    """
+    try:
+        logger.info("Starting image content processing")
+        
+        # Validate inputs
+        if not image_content:
+            raise ValueError("Image content cannot be empty")
+        if not file_type or not file_type.startswith('image/'):
+            raise ValueError(f"Invalid file type: {file_type}")
+            
+        # Handle base64 padding
+        try:
+            padding = len(image_content) % 4
+            if padding:
+                logger.debug("Adding base64 padding")
+                image_content += '=' * (4 - padding)
+        except Exception as e:
+            logger.error(f"Error handling base64 padding: {str(e)}")
+            raise ValueError("Invalid base64 encoding in image content")
 
-    # Format the image URL
-    image_url = f"data:{file_type};base64,{image_content}"
-    
-    messages = [
-        SystemMessage(content="You are an expert at analyzing educational worksheets."),
-        HumanMessage(content=[
-            {"type": "text", "text": VISION_ANALYSIS_PROMPT},
-            {
-                "type": "image_url",
-                "image_url": {
-                    "url": image_url
-                }
-            }
-        ])
-    ]
-    
-    response = llm.invoke(messages)
-    print("Response from vision model:", response)
-    return parse_json_response(response, ResponseTypeNB)
+        # Format the image URL with proper error handling
+        try:
+            image_url = f"data:{file_type};base64,{image_content}"
+            
+            # Basic validation of the URL format
+            if not image_url.startswith('data:image/'):
+                raise ValueError("Invalid image URL format")
+        except Exception as e:
+            logger.error(f"Error formatting image URL: {str(e)}")
+            raise ValueError("Failed to format image URL")
+
+        # Prepare messages for the model
+        try:
+            messages = [
+                SystemMessage(content="You are an expert at analyzing educational worksheets."),
+                HumanMessage(content=[
+                    {"type": "text", "text": VISION_ANALYSIS_PROMPT},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": image_url
+                        }
+                    }
+                ])
+            ]
+        except Exception as e:
+            logger.error(f"Error preparing messages: {str(e)}")
+            raise Exception("Failed to prepare analysis messages")
+
+        # Get response from the model with error handling
+        try:
+            logger.info("Invoking vision model")
+            response = llm.invoke(messages)
+            logger.debug(f"Vision model response received: {response}")
+        except Exception as e:
+            logger.error(f"Error invoking vision model: {str(e)}")
+            raise Exception("Failed to process image with vision model")
+
+        # Parse the response
+        try:
+            logger.info("Parsing model response")
+            parsed_response = parse_json_response(response, ResponseTypeNB)
+            
+            # Validate parsed response
+            if not parsed_response.topic:
+                logger.warning("No topic extracted from response")
+            if not parsed_response.notes:
+                logger.warning("No notes extracted from response")
+            if not parsed_response.practice_questions:
+                logger.warning("No practice questions generated")
+                
+            return parsed_response
+            
+        except Exception as e:
+            logger.error(f"Error parsing model response: {str(e)}")
+            raise Exception("Failed to parse model response")
+
+    except ValueError as e:
+        logger.error(f"Validation error in process_image_content: {str(e)}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in process_image_content: {str(e)}")
+        raise Exception(f"Failed to process image content: {str(e)}")
 
 def generate_derive_questions(llm, notebook_synthesis: str) -> DeriveQuestions:
     chain = create_llm_chain(llm, DERIVE_PROMPT)
@@ -483,32 +563,87 @@ def derive_concept(llm, concept, user_message, chat_history, prerequisites_compl
 def evaluate_student_response(llm, context: Dict[str, Any]) -> Dict[str, Any]:
     """Evaluate student response using LLM with Langchain"""
     try:
-        # Format context for prompt
+        # Format context for prompt, only including essential information
         formatted_context = {
-            "problem": context['problem']['problem'],
+            "problem": context['problem'],
             "answer": context['student_answer'],
             "explanation": context['student_explanation'],
             "unit": context['unit'],
-            "concept_map": str(context['concept_map'])
+            "attempt_number": context.get('attempt_number', 1),
+            "previous_steps": json.dumps(context.get('previous_steps', []))
         }
         
-        # Get response from LLM using the template
-        chain = LEVELS_EVAL_PROMPT | llm
-        response = chain.invoke(formatted_context)
+        # Create messages for evaluation
+        messages = [
+            SystemMessage(content="You are an expert at evaluating student understanding of physics concepts."),
+            HumanMessage(content="""Please evaluate this student's response:
+            
+Problem: {problem}
+Student Answer: {answer}
+Student Explanation: {explanation}
+Unit: {unit}
+Attempt Number: {attempt_number}
+Previous Steps: {previous_steps}
+
+Break down the problem into logical steps and evaluate the student's response. For each step:
+1. Identify what the student did
+2. Determine if it was correct
+3. Provide the correct approach if needed
+
+Also identify any remaining steps the student needs to complete.
+
+Format your response as a JSON object with the following structure:
+{{
+    "score": float,  // Overall score between 0 and 1
+    "logical_steps": [  // Steps the student has attempted
+        {{
+            "step_number": int,
+            "description": str,  // What the student did
+            "is_correct": bool,
+            "correct_approach": str  // Only if incorrect
+        }}
+    ],
+    "remaining_steps": [  // Steps not yet attempted
+        {{
+            "step_number": int,
+            "description": str,
+            "hint": str
+        }}
+    ],
+    "can_resubmit": bool  // Whether student should try again
+}}""".format(**formatted_context))
+        ]
         
-        # Parse response into structured format using Pydantic
-        evaluation = EvaluationResponse.model_validate(response)
+        # Get response from LLM
+        response = llm.invoke(messages)
         
-        # Convert to dictionary format
-        return {
-            'score': evaluation.score,
-            'correct_concepts': evaluation.correct_concepts,
-            'misconceptions': evaluation.misconceptions,
-            'suggestions': evaluation.suggestions
-        }
+        # Parse response into structured format
+        try:
+            # Clean the response content to ensure it's valid JSON
+            response_text = response.content.strip()
+            if response_text.startswith('```json'):
+                response_text = response_text[7:-3]
+            elif response_text.startswith('```'):
+                response_text = response_text[3:-3]
+            
+            # Parse the JSON response
+            evaluation_dict = json.loads(response_text)
+            evaluation = EvaluationResponse(**evaluation_dict)
+            
+            return {
+                'score': evaluation.score,
+                'logical_steps': [step.model_dump() for step in evaluation.logical_steps],
+                'remaining_steps': [step.model_dump() for step in evaluation.remaining_steps],
+                'can_resubmit': evaluation.can_resubmit
+            }
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON response: {str(e)}")
+            logger.error(f"Response content: {response.content}")
+            raise ValueError("Invalid response format from LLM")
         
     except Exception as e:
-        print(f"Error in evaluate_student_response: {str(e)}")
+        logger.error(f"Error in evaluate_student_response: {str(e)}")
         raise
 
 def generate_concept_explanation(llm, concept_label: str, concept_description: str) -> dict:

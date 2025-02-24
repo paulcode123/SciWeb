@@ -1,0 +1,144 @@
+{% extends "darkThemeTemplate.html" %}
+
+{% block title %}
+<title>Daily Check-in</title>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="/static/DailyCheckin.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="daily-checkin-container">
+    <div class="confetti-container"></div>
+    
+    <div class="swipe-indicator">
+        <div class="dot active"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+    </div>
+    
+    <div class="swipe-container">
+        <!-- Welcome Slide -->
+        <div class="swipe-window welcome-slide" id="welcome-window">
+            <div class="welcome-content">
+                <div class="welcome-avatar">
+                    <div class="avatar-circle">
+                        <span class="material-icons">sentiment_very_satisfied</span>
+                    </div>
+                </div>
+                <h1 class="welcome-title">Welcome Back!</h1>
+                <p class="welcome-message">Let's make today amazing! 🌟</p>
+                <div class="progress-summary">
+                    <div class="progress-item">
+                        <span class="material-icons">check_circle</span>
+                        <span class="progress-text">Tasks Completed</span>
+                        <span class="progress-count">0</span>
+                    </div>
+                    <div class="progress-item">
+                        <span class="material-icons">schedule</span>
+                        <span class="progress-text">Coming Up</span>
+                        <span class="progress-count">0</span>
+                    </div>
+                </div>
+                <div class="decoration-element wave-decoration"></div>
+            </div>
+        </div>
+
+        <!-- Assignments Window -->
+        <div class="swipe-window animated-window" id="assignments-window">
+            <div class="window-header">
+                <h2>📚 Upcoming Assignments</h2>
+                <div class="decoration-element sparkles"></div>
+            </div>
+            <div class="assignments-list"></div>
+            <button class="add-btn bounce-animation" id="add-assignment-btn">
+                <span class="material-icons">add</span>
+                Add Assignment
+            </button>
+        </div>
+
+        <!-- TodoTree Tasks Window -->
+        <div class="swipe-window animated-window" id="tasks-window">
+            <div class="window-header">
+                <h2>✨ Today's Check-ins</h2>
+                <div class="decoration-element stars"></div>
+            </div>
+            <div class="tasks-list"></div>
+        </div>
+
+        <!-- Task Details Window -->
+        <div class="swipe-window animated-window" id="task-details-window">
+            <div class="window-header">
+                <h2>🎯 Task Details</h2>
+                <div class="decoration-element circles"></div>
+            </div>
+            <div class="task-details">
+                <div class="task-header">
+                    <h3 class="task-name"></h3>
+                    <div class="task-type"></div>
+                </div>
+                <div class="task-description"></div>
+                <div class="checkin-dates">
+                    <h4>📅 Check-in Dates</h4>
+                    <div class="dates-list"></div>
+                    <button class="add-btn bounce-animation" id="add-checkin-date-btn">
+                        <span class="material-icons">event_add</span>
+                        Add Check-in Date
+                    </button>
+                </div>
+                <div class="conversation-history">
+                    <h4>💭 Conversation History</h4>
+                    <div class="chat-messages"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Templates -->
+<template id="assignment-template">
+    <div class="assignment-item">
+        <div class="assignment-header">
+            <span class="class-name"></span>
+            <span class="due-date"></span>
+        </div>
+        <div class="assignment-name"></div>
+        <div class="assignment-points"></div>
+    </div>
+</template>
+
+<template id="task-template">
+    <div class="task-item">
+        <div class="task-icon">
+            <span class="material-icons"></span>
+        </div>
+        <div class="task-content">
+            <div class="task-name"></div>
+            <div class="task-description"></div>
+        </div>
+        <div class="task-meta">
+            <div class="next-checkin"></div>
+            <div class="task-type"></div>
+        </div>
+    </div>
+</template>
+
+<template id="chat-message-template">
+    <div class="chat-message">
+        <div class="message-content"></div>
+        <div class="message-meta">
+            <span class="message-type"></span>
+            <span class="message-time"></span>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block js %}
+<script src="/static/util.js"></script>
+<script src="/static/DailyCheckin.js"></script>
+{% endblock %} 

@@ -259,11 +259,6 @@ async function loadConceptMap(mapData) {
         UI.nodes.clear();
         UI.edges.clear();
 
-        if (!mapData.nodes || !Array.isArray(mapData.nodes)) {
-            console.error('Invalid map data - nodes missing or not an array:', mapData);
-            return;
-        }
-
         // Fetch UMaps data for this unit
         const response = await fetchRequest('/data', { 
             data: 'Classes, UMaps',
@@ -271,10 +266,10 @@ async function loadConceptMap(mapData) {
             classID: mapData.classID
         });
         
-        // Find the UMap entry for the current unit and classID
+        // Find the correct UMap entry for this unit and class
         const currentUMap = response.UMaps?.find(umap => 
             umap.unit === mapData.unit && 
-            umap.classID === mapData.classID
+            parseInt(umap.classID) === parseInt(mapData.classID)
         );
         const umap = currentUMap?.node_progress || {};
 
@@ -358,7 +353,6 @@ async function loadConceptMap(mapData) {
         // Fit the network to view all nodes
         if (UI.network) {
             console.log('Fitting network view');
-            // Wait for next frame to ensure nodes are added
             requestAnimationFrame(() => {
                 UI.network.fit({
                     animation: {
@@ -367,7 +361,6 @@ async function loadConceptMap(mapData) {
                     }
                 });
                 
-                // Disable physics after stabilization
                 UI.network.once('stabilized', () => {
                     console.log('Network stabilized');
                     UI.network.setOptions({ physics: { enabled: false } });
@@ -434,6 +427,71 @@ function createChatHistory(chatHistory) {
     `;
 }
 
+// Function to view a worksheet
+async function viewWorksheet(worksheetId) {
+    console.log('Viewing worksheet:', worksheetId);
+    try {
+        startLoading();
+        // Use fetchRequest to get the file from the server
+        const response = await fetchRequest('/get_file', { file: worksheetId });
+        
+        if (!response || !response.file) {
+            throw new Error('Failed to retrieve file data');
+        }
+
+        // Create a new window/tab with the image
+        const imageWindow = window.open('', '_blank');
+        
+        // Check if window was successfully created (not blocked by popup blocker)
+        if (imageWindow === null) {
+            alert('Please allow popups to view the worksheet');
+            return;
+        }
+
+        // Wait a brief moment to ensure the window is ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        try {
+            imageWindow.document.write(`
+                <html>
+                    <head>
+                        <title>Worksheet View</title>
+                        <style>
+                            body {
+                                margin: 0;
+                                padding: 20px;
+                                background: #1e1e1e;
+                                display: flex;
+                                justify-content: center;
+                                align-items: start;
+                            }
+                            img {
+                                max-width: 100%;
+                                height: auto;
+                                box-shadow: 0 0 20px rgba(0,0,0,0.3);
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <img src="data:image/png;base64,${response.file}" alt="Worksheet">
+                    </body>
+                </html>
+            `);
+            imageWindow.document.close();
+        } catch (windowError) {
+            // If we can't write to the window (e.g., if it was closed immediately)
+            console.error('Error writing to popup window:', windowError);
+            alert('Unable to open worksheet view. Please ensure popups are allowed for this site.');
+        }
+        
+    } catch (error) {
+        console.error('Error viewing worksheet:', error);
+        alert('Failed to load the worksheet. Please try again.');
+    } finally {
+        endLoading();
+    }
+}
+
 // Select node and update UI
 async function selectNode(nodeId) {
     if (!UI.currentMap) return;
@@ -448,15 +506,20 @@ async function selectNode(nodeId) {
         unit: UI.currentMap.unit,
         classID: UI.currentMap.classID
     });
-    const umap = response.UMaps?.[0]?.node_progress || {};
-    const nodeProgress = umap[nodeId] || {};
+    
+    // Find the correct UMap entry for this unit and class
+    const currentUMap = response.UMaps?.find(umap => 
+        umap.unit === UI.currentMap.unit && 
+        parseInt(umap.classID) === parseInt(UI.currentMap.classID)
+    );
+    const nodeProgress = currentUMap?.node_progress?.[nodeId] || {};
 
     // Get tab elements
     const conceptTab = document.getElementById('concept-tab');
     const notesTab = document.getElementById('notes-tab');
     const practiceTab = document.getElementById('practice-tab');
 
-    // Update concept content
+    // Update concept content with proper status check
     conceptTab.innerHTML = `
         <div class="concept-content">
             <h2 class="concept-title">${selectedNode.label}</h2>
@@ -486,28 +549,192 @@ async function selectNode(nodeId) {
         </div>
     `;
 
-    // Fetch problems associated with this node
+    // Fetch problems and worksheets associated with this node
     try {
-        const problemsResponse = await fetchRequest('/data', { data: 'Classes, Problems' });
+        const [problemsResponse, notebooksResponse] = await Promise.all([
+            fetchRequest('/data', { data: 'Classes, Problems' }),
+            fetchRequest('/data', { data: 'Classes, Notebooks' })
+        ]);
+
         const problems = problemsResponse.Problems.filter(p => 
             p.concepts && p.concepts.includes(nodeId.toString())
         );
+
+        // Group problems by worksheet
+        const worksheetProblems = {};
+        problems.forEach(problem => {
+            if (problem.worksheetID) {
+                if (!worksheetProblems[problem.worksheetID]) {
+                    worksheetProblems[problem.worksheetID] = [];
+                }
+                worksheetProblems[problem.worksheetID].push(problem);
+            }
+        });
+
+        // Filter worksheets with 3+ problems
+        const relevantWorksheets = notebooksResponse.Notebooks.filter(worksheet => 
+            worksheetProblems[worksheet.id] && worksheetProblems[worksheet.id].length >= 2
+        );
+
+        // Get evaluation history for this node from nodeProgress
+        const evaluationHistory = nodeProgress.evaluation_history || [];
 
         // Update practice content
         practiceTab.innerHTML = `
             <div class="practice-section">
                 <div class="practice-questions">
                     ${problems.length > 0 ? 
-                        problems.map(problem => `
-                            <div class="practice-question">
-                                <p>${problem.problem}</p>
-                            </div>
-                        `).join('') : 
+                        problems.map(problem => {
+                            // Find the evaluation for this problem
+                            const evaluation = evaluationHistory.find(e => e.problem_id === problem.id);
+                            const scoreDisplay = evaluation ? 
+                                `<div class="problem-score">
+                                    <span class="score-value">${Math.round(evaluation.score * 100)}%</span>
+                                    <span class="score-date">Completed on: ${evaluation.date}</span>
+                                </div>` : 
+                                '<div class="problem-score not-attempted">Not attempted yet</div>';
+
+                            return `
+                                <div class="practice-question ${evaluation ? 'completed' : ''}">
+                                    <div class="question-content">
+                                        <p>${problem.problem}</p>
+                                        <div class="question-meta">
+                                            <span class="difficulty">Difficulty: ${problem.difficulty}</span>
+                                            ${scoreDisplay}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('') : 
                         '<p>No practice problems available for this concept yet.</p>'
                     }
                 </div>
+                ${relevantWorksheets.length > 0 ? `
+                    <div class="worksheets-section">
+                        <h3>Worksheets on this topic</h3>
+                        <div class="worksheets-list">
+                            ${relevantWorksheets.map(worksheet => `
+                                <div class="worksheet-item">
+                                    <span class="worksheet-name">${worksheet.topic}</span>
+                                    <button class="view-worksheet-btn" onclick="viewWorksheet('${worksheet.image}')">
+                                        <span class="material-icons">visibility</span>
+                                        View
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
             </div>
         `;
+
+        // Add CSS styles for the new elements
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = `
+            .practice-question {
+                background: rgba(30, 34, 42, 0.6);
+                border-radius: 12px;
+                padding: 16px;
+                margin-bottom: 16px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .practice-question.completed {
+                border-left: 4px solid #4CAF50;
+            }
+
+            .question-content {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .question-meta {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 0.9em;
+                color: rgba(255, 255, 255, 0.7);
+            }
+
+            .difficulty {
+                padding: 4px 8px;
+                border-radius: 4px;
+                background: rgba(255, 255, 255, 0.1);
+            }
+
+            .problem-score {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .score-value {
+                color: #4CAF50;
+                font-weight: 600;
+            }
+
+            .score-date {
+                color: rgba(255, 255, 255, 0.5);
+                font-size: 0.9em;
+            }
+
+            .not-attempted {
+                color: rgba(255, 255, 255, 0.5);
+                font-style: italic;
+            }
+
+            .worksheets-section {
+                margin-top: 24px;
+                padding-top: 24px;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .worksheets-list {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                margin-top: 16px;
+            }
+
+            .worksheet-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background: rgba(30, 34, 42, 0.6);
+                padding: 12px 16px;
+                border-radius: 8px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .worksheet-name {
+                font-weight: 500;
+                color: rgba(255, 255, 255, 0.9);
+            }
+
+            .view-worksheet-btn {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                padding: 6px 12px;
+                background: rgba(255, 255, 255, 0.1);
+                border: none;
+                border-radius: 4px;
+                color: #fff;
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+
+            .view-worksheet-btn:hover {
+                background: rgba(255, 255, 255, 0.2);
+            }
+
+            .view-worksheet-btn .material-icons {
+                font-size: 18px;
+            }
+        `;
+        document.head.appendChild(styleSheet);
+
     } catch (error) {
         console.error('Error fetching problems:', error);
         practiceTab.innerHTML = `
@@ -517,17 +744,20 @@ async function selectNode(nodeId) {
         `;
     }
 
-    // Update node status if needed
+    // Update node status based on UMaps data
     const node = UI.nodes.get(nodeId);
-    if (node.status === 'pending') {
-        UI.nodes.update({
-            id: nodeId,
-            status: 'in_progress',
-            color: {
-                background: getNodeColor('in_progress'),
-                border: getBorderColor('in_progress')
-            }
-        });
+    if (node) {
+        const newStatus = nodeProgress.date_derived ? 'completed' : 'pending';
+        if (node.status !== newStatus) {
+            UI.nodes.update({
+                id: nodeId,
+                status: newStatus,
+                color: {
+                    background: getNodeColor(newStatus),
+                    border: getBorderColor(newStatus)
+                }
+            });
+        }
     }
 }
 
