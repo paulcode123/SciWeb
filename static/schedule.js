@@ -4,6 +4,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load initial data
     loadData();
 
+    // Initialize split toggles
+    initializeSplitToggles();
+
     async function loadData() {
         try {
             // Get existing schedule if available
@@ -17,32 +20,120 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function initializeSplitToggles() {
+        document.querySelectorAll('.split-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const periodRow = this.closest('.period-row');
+                const splitSlots = periodRow.querySelector('.split-slots');
+                const mainSelect = periodRow.querySelector('.main-select');
+                
+                splitSlots.classList.toggle('hidden', !this.checked);
+                mainSelect.disabled = this.checked;
+
+                if (this.checked) {
+                    // When splitting, copy the main class to all split slots
+                    const selectedClass = mainSelect.value;
+                    periodRow.querySelectorAll('.split-select').forEach(select => {
+                        select.value = selectedClass;
+                    });
+
+                    // Add animation class to split slots
+                    splitSlots.classList.add('fade-in');
+                    setTimeout(() => splitSlots.classList.remove('fade-in'), 300);
+                } else {
+                    // When combining, use the first non-empty split class for main
+                    const splitSelects = periodRow.querySelectorAll('.split-select');
+                    const firstClass = Array.from(splitSelects).find(select => select.value)?.value || '';
+                    mainSelect.value = firstClass;
+                }
+
+                updateScheduleData(periodRow);
+            });
+        });
+    }
+
     function handleClassChange(event) {
         const select = event.target;
-        const period = select.dataset.period;
-        const day = select.dataset.day;
+        const periodRow = select.closest('.period-row');
         
-        // Update the schedule object
+        if (select.classList.contains('main-select')) {
+            // If changing main select, update all split selects if they're not split
+            const splitCheckbox = periodRow.querySelector('.split-checkbox');
+            if (!splitCheckbox.checked) {
+                periodRow.querySelectorAll('.split-select').forEach(splitSelect => {
+                    splitSelect.value = select.value;
+                });
+            }
+        }
+
+        updateScheduleData(periodRow);
+    }
+
+    function updateScheduleData(periodRow) {
+        const period = periodRow.dataset.period;
+        const mainSelect = periodRow.querySelector('.main-select');
+        const splitCheckbox = periodRow.querySelector('.split-checkbox');
+        
         if (!schedule.classes) {
             schedule.classes = {};
         }
-        if (!schedule.classes[day]) {
-            schedule.classes[day] = {};
+
+        if (!splitCheckbox.checked) {
+            // Use main select value for all days
+            const className = mainSelect.value;
+            ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].forEach(day => {
+                if (!schedule.classes[day]) {
+                    schedule.classes[day] = {};
+                }
+                schedule.classes[day][period] = className;
+            });
+        } else {
+            // Use individual split select values
+            periodRow.querySelectorAll('.split-select').forEach(select => {
+                const day = select.dataset.day;
+                if (!schedule.classes[day]) {
+                    schedule.classes[day] = {};
+                }
+                schedule.classes[day][period] = select.value;
+            });
         }
-        
-        schedule.classes[day][period] = select.value;
     }
 
     function loadExistingSchedule() {
         if (!schedule.classes) return;
 
-        Object.entries(schedule.classes).forEach(([day, periods]) => {
-            Object.entries(periods).forEach(([period, className]) => {
-                const select = document.querySelector(`.class-select[data-period="${period}"][data-day="${day}"]`);
-                if (select) {
-                    select.value = className;
-                }
-            });
+        document.querySelectorAll('.period-row').forEach(periodRow => {
+            const period = periodRow.dataset.period;
+            const mainSelect = periodRow.querySelector('.main-select');
+            const splitCheckbox = periodRow.querySelector('.split-checkbox');
+            const splitSlots = periodRow.querySelector('.split-slots');
+            const splitSelects = periodRow.querySelectorAll('.split-select');
+            
+            // Check if period has split schedule
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+            const classes = days.map(day => schedule.classes[day]?.[period]);
+            const uniqueClasses = new Set(classes.filter(Boolean));
+
+            if (uniqueClasses.size <= 1) {
+                // All days have same class or no class
+                mainSelect.value = classes[0] || '';
+                splitSlots.classList.add('hidden');
+                splitCheckbox.checked = false;
+                splitSelects.forEach(select => {
+                    select.value = classes[0] || '';
+                });
+            } else {
+                // Days have different classes
+                splitCheckbox.checked = true;
+                splitSlots.classList.remove('hidden');
+                mainSelect.disabled = true;
+                
+                // Set individual day values
+                splitSelects.forEach(select => {
+                    const day = select.dataset.day;
+                    select.value = schedule.classes[day]?.[period] || '';
+                });
+            }
         });
     }
 
@@ -69,10 +160,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 data: scheduleData
             });
 
-            alert('Schedule saved successfully!');
+            showNotification('Schedule saved successfully!', 'success');
         } catch (error) {
             console.error('Error saving schedule:', error);
-            alert('Failed to save schedule. Please try again.');
+            showNotification('Failed to save schedule. Please try again.', 'error');
         }
     });
 
@@ -104,4 +195,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial load of friend schedules
     loadFriendSchedules();
-}); 
+});
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+} 

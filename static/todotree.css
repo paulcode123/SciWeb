@@ -59,18 +59,18 @@
 /* Node type colors and animations */
 @keyframes motivatorPulse {
     0% {
-        box-shadow: 0 0 20px 5px rgba(255, 223, 0, 0.3),
-                    0 0 40px 10px rgba(255, 223, 0, 0.1);
+        box-shadow: 0 0 20px 5px rgba(212, 175, 55, 0.3),
+                    0 0 40px 10px rgba(212, 175, 55, 0.1);
         transform: scale(1);
     }
     50% {
-        box-shadow: 0 0 30px 10px rgba(255, 223, 0, 0.4),
-                    0 0 60px 15px rgba(255, 223, 0, 0.2);
+        box-shadow: 0 0 30px 10px rgba(212, 175, 55, 0.4),
+                    0 0 60px 15px rgba(212, 175, 55, 0.2);
         transform: scale(1.02);
     }
     100% {
-        box-shadow: 0 0 20px 5px rgba(255, 223, 0, 0.3),
-                    0 0 40px 10px rgba(255, 223, 0, 0.1);
+        box-shadow: 0 0 20px 5px rgba(212, 175, 55, 0.3),
+                    0 0 40px 10px rgba(212, 175, 55, 0.1);
         transform: scale(1);
     }
 }
@@ -109,7 +109,7 @@
 }
 
 .circle[data-type="Motivator"] {
-    background: #FFD700;
+    background: #D4AF37;
     animation: motivatorPulse 3s infinite ease-in-out,
                motivatorGlow 3s infinite ease-in-out;
     z-index: 10;
@@ -118,8 +118,8 @@
 .circle[data-type="Motivator"]:hover {
     animation: none;
     transform: scale(1.05);
-    box-shadow: 0 0 30px 10px rgba(255, 223, 0, 0.5),
-                0 0 60px 15px rgba(255, 223, 0, 0.3);
+    box-shadow: 0 0 30px 10px rgba(212, 175, 55, 0.5),
+                0 0 60px 15px rgba(212, 175, 55, 0.3);
     filter: brightness(1.2);
 }
 
@@ -519,7 +519,7 @@
 
 /* Type-specific colors */
 .type-option[data-type="Motivator"] .material-icons {
-    color: #FFD700;
+    color: #D4AF37;
 }
 
 .type-option[data-type="Goal"] .material-icons {
@@ -531,8 +531,8 @@
 }
 
 .type-option[data-type="Motivator"].selected {
-    background: rgba(255, 215, 0, 0.1);
-    border-color: #FFD700;
+    background: rgba(212, 175, 55, 0.1);
+    border-color: #D4AF37;
 }
 
 .type-option[data-type="Goal"].selected {

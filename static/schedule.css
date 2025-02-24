@@ -139,10 +139,134 @@
     padding: 0;
 }
 
-.class-slot {
+.class-slot-group {
     flex: 1;
     padding: 3px;
     border-left: 1px solid var(--border-color);
+}
+
+.class-slot-header {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.main-select {
+    flex: 1;
+}
+
+.schedule-type-toggle {
+    position: relative;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: var(--background-dark);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.toggle-label:hover {
+    background: var(--hover-color);
+    border-color: var(--primary-color);
+}
+
+.split-checkbox {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.toggle-text {
+    font-size: 0.85em;
+    color: var(--text-color);
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+.toggle-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 12px;
+    background: var(--background-dark);
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.split-checkbox:checked + .toggle-text + .toggle-icon {
+    background: var(--primary-color);
+    transform: rotate(180deg);
+}
+
+.split-checkbox:checked + .toggle-text {
+    opacity: 1;
+}
+
+.split-checkbox:checked ~ .toggle-label {
+    border-color: var(--primary-color);
+    background: var(--hover-color);
+}
+
+.split-slots {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    padding: 12px;
+    background: var(--background-dark);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    margin-top: 8px;
+    transition: all 0.3s ease;
+}
+
+.split-slots.hidden {
+    display: none;
+}
+
+.day-slot {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.day-label {
+    font-size: 0.8em;
+    color: var(--text-color);
+    opacity: 0.7;
+    text-align: center;
+    margin-bottom: 2px;
+}
+
+.split-select {
+    width: 100%;
+    padding: 6px;
+    font-size: 0.9em;
+    background: var(--background-light);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-color);
+    transition: all 0.2s ease;
+}
+
+.split-select:hover {
+    border-color: var(--primary-color);
+}
+
+.split-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(124, 77, 255, 0.2);
 }
 
 .class-select {

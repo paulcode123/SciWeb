@@ -6,6 +6,7 @@
 
 {% block css %}
 <link rel="stylesheet" href="/static/schedule.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 {% endblock %}
 
 {% block content %}
@@ -43,17 +44,37 @@
             </div>
             <div class="schedule-content">
                 {% for period in range(1, 10) %}
-                <div class="period-row">
-                    {% for day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] %}
-                    <div class="class-slot">
-                        <select class="class-select" data-period="{{ period }}" data-day="{{ day }}">
-                            <option value="">Select Class</option>
-                            {% for class in ["Math Research", "AP Bio", "AP Chem", "AP Physics 1", "AP Physics C", "AP Calc BC", "AP Calc AB"] %}
-                            <option value="{{ class }}">{{ class }}</option>
+                <div class="period-row" data-period="{{ period }}">
+                    <div class="class-slot-group">
+                        <div class="class-slot-header">
+                            <select class="class-select main-select" data-period="{{ period }}">
+                                <option value="">Select Class</option>
+                                {% for class in ["Math Research", "AP Bio", "AP Chem", "AP Physics 1", "AP Physics C", "AP Calc BC", "AP Calc AB"] %}
+                                <option value="{{ class }}">{{ class }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="schedule-type-toggle">
+                                <label class="toggle-label">
+                                    <input type="checkbox" class="split-checkbox">
+                                    <span class="toggle-text">Split Schedule</span>
+                                    <span class="toggle-icon"><i class="fas fa-calendar-week"></i></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="split-slots hidden">
+                            {% for day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] %}
+                            <div class="day-slot">
+                                <span class="day-label">{{ day[:3]|title }}</span>
+                                <select class="class-select split-select" data-period="{{ period }}" data-day="{{ day }}">
+                                    <option value="">None</option>
+                                    {% for class in ["Math Research", "AP Bio", "AP Chem", "AP Physics 1", "AP Physics C", "AP Calc BC", "AP Calc AB"] %}
+                                    <option value="{{ class }}">{{ class }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
                             {% endfor %}
-                        </select>
+                        </div>
                     </div>
-                    {% endfor %}
                 </div>
                 {% endfor %}
             </div>

@@ -801,8 +801,65 @@ input[type="date"] {
 
 .availability-actions {
     display: flex;
-    gap: 1rem;
-    margin-bottom: 2rem;
+    gap: 12px;
+    margin-top: 20px;
+    justify-content: center;
+    align-items: center;
+}
+
+.refresh-btn {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary-color);
+    color: var(--text-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.refresh-btn i {
+    font-size: 1.2em;
+    z-index: 2;
+}
+
+.refresh-btn .glow-effect {
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+        circle at center,
+        rgba(124, 77, 255, 0.8) 0%,
+        rgba(124, 77, 255, 0.4) 30%,
+        rgba(124, 77, 255, 0) 70%
+    );
+    animation: rotate 3s linear infinite;
+    z-index: 1;
+}
+
+.refresh-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(124, 77, 255, 0.4);
+}
+
+.refresh-btn:hover .glow-effect {
+    animation: rotate 1.5s linear infinite;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .current-schedule {
@@ -870,14 +927,13 @@ input[type="date"] {
 
 /* Animations */
 @keyframes glow {
-    0% {
-        box-shadow: 0 0 5px rgba(0, 255, 0, 0.2);
+    0%, 100% {
+        box-shadow: 0 0 15px rgba(124, 77, 255, 0.4),
+                    0 0 30px rgba(124, 77, 255, 0.2);
     }
     50% {
-        box-shadow: 0 0 15px rgba(0, 255, 0, 0.4);
-    }
-    100% {
-        box-shadow: 0 0 5px rgba(0, 255, 0, 0.2);
+        box-shadow: 0 0 25px rgba(124, 77, 255, 0.6),
+                    0 0 50px rgba(124, 77, 255, 0.3);
     }
 }
 

@@ -465,3 +465,69 @@ body {
     border-bottom-right-radius: 16px;
     box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.05);
 }
+
+.retry-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    margin: 20px auto;
+    background: var(--gradient-primary);
+    color: var(--text-light);
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(228, 76, 101, 0.3);
+}
+
+.retry-button::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, 
+        var(--primary-color), 
+        #ff6b6b, 
+        var(--primary-color));
+    border-radius: 26px;
+    z-index: -1;
+    animation: glowingBorder 2s linear infinite;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.retry-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(228, 76, 101, 0.4);
+}
+
+.retry-button:hover::before {
+    opacity: 1;
+}
+
+.retry-button:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 10px rgba(228, 76, 101, 0.3);
+}
+
+.retry-button i {
+    font-size: 18px;
+    transition: transform 0.3s ease;
+}
+
+.retry-button:hover i {
+    transform: rotate(180deg);
+}
+
+@keyframes glowingBorder {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
