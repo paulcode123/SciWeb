@@ -203,18 +203,14 @@
                         <label for="targetDate">Target Date:</label>
                         <input type="datetime-local" id="targetDate" class="form-input">
                     </div>
-                    <div class="form-group compact">
-                        <label for="notificationText">Notification Text:</label>
-                        <input type="text" id="notificationText" class="form-input" placeholder="Enter notification message">
-                    </div>
-                    <div class="form-group compact notification-times">
-                        <label>Notification Times:</label>
-                        <div class="notification-time-list" id="notificationTimeList">
-                            <!-- Notification times will be added here -->
+                    <div class="form-group compact check-in-dates">
+                        <label>Check-in Dates:</label>
+                        <div class="check-in-date-list" id="checkInDateList">
+                            <!-- Check-in dates will be added here -->
                         </div>
-                        <button type="button" class="add-time-btn" id="addNotificationTime">
+                        <button type="button" class="add-time-btn" id="addCheckInDate">
                             <span class="material-icons">add</span>
-                            Add Time
+                            Add Check-in Date
                         </button>
                     </div>
                 </div>
@@ -271,6 +267,16 @@
             <div class="message-text"></div>
             <div class="message-time"></div>
         </div>
+    </div>
+</template>
+
+<!-- Check-in Date Template (hidden) -->
+<template id="checkInDateTemplate">
+    <div class="check-in-date-item">
+        <input type="datetime-local" class="form-input check-in-date">
+        <button type="button" class="remove-time-btn">
+            <span class="material-icons">close</span>
+        </button>
     </div>
 </template>
 {% endblock %}

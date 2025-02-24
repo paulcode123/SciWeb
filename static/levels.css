@@ -918,4 +918,138 @@
 @keyframes fade-out {
     from { opacity: 1; }
     to { opacity: 0; }
+}
+
+/* Step-by-Step Evaluation Styles */
+.steps-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.step {
+    background: rgba(20, 23, 28, 0.6);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.step:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.step-number {
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.step-status {
+    font-size: 1.2em;
+}
+
+.step.correct {
+    border-left: 4px solid #4CAF50;
+}
+
+.step.incorrect {
+    border-left: 4px solid #f44336;
+}
+
+.step.remaining {
+    border-left: 4px solid #2196F3;
+}
+
+.step-description {
+    color: #fff;
+    margin: 8px 0;
+    line-height: 1.5;
+}
+
+.step-correction {
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(244, 67, 54, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(244, 67, 54, 0.2);
+    color: #fff;
+}
+
+.step-hint {
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(33, 150, 243, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(33, 150, 243, 0.2);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.step-hint-icon {
+    color: #2196F3;
+    font-size: 1.2em;
+}
+
+.resubmit-section {
+    margin-top: 24px;
+    padding: 24px;
+    background: rgba(33, 150, 243, 0.1);
+    border-radius: 12px;
+    border: 1px solid rgba(33, 150, 243, 0.2);
+    text-align: center;
+}
+
+.resubmit-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 12px 24px;
+    background: #2196F3;
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.resubmit-button:hover {
+    background: #1976D2;
+    transform: translateY(-2px);
+}
+
+.resubmit-button .material-icons {
+    font-size: 20px;
+}
+
+/* Animation for steps */
+.step {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: stepAppear 0.5s ease-out forwards;
+}
+
+.step:nth-child(2) { animation-delay: 0.1s; }
+.step:nth-child(3) { animation-delay: 0.2s; }
+.step:nth-child(4) { animation-delay: 0.3s; }
+.step:nth-child(5) { animation-delay: 0.4s; }
+
+@keyframes stepAppear {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 } 

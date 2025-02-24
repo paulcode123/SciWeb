@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
         startLoading();
         try {
             const data = await fetchRequest('/data', { 
-                data: 'Assignments, TodoTrees, Classes' 
+                data: 'Assignments, TodoTrees' 
             });
             
             // Process assignments
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const item = clone.querySelector('.assignment-item');
             
             item.querySelector('.class-name').textContent = assignment.class_name;
-            item.querySelector('.due-date').textContent = formatDate(assignment.due);
+            item.querySelector('.due-date').textContent = processDate(assignment.due);
             item.querySelector('.assignment-name').textContent = assignment.name;
             item.querySelector('.assignment-points').textContent = `${assignment.points} points`;
             
@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 task.description ? task.description.substring(0, 100) + '...' : '';
             
             const nextCheckin = new Date(task.checkIn_dates[0]);
-            item.querySelector('.next-checkin').textContent = formatDate(nextCheckin);
+            item.querySelector('.next-checkin').textContent = processDate(nextCheckin);
             item.querySelector('.task-type').textContent = task.type;
             
             item.addEventListener('click', () => showTaskDetails(task));
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function() {
             task.checkIn_dates.forEach(date => {
                 const dateEl = document.createElement('div');
                 dateEl.className = 'date-item';
-                dateEl.textContent = formatDate(date);
+                dateEl.textContent = processDate(date);
                 datesList.appendChild(dateEl);
             });
         }
@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', function() {
         alert('Assignment creation would be implemented here');
     });
 
-    function formatDate(dateStr) {
+    function processDate(dateStr) {
         const date = new Date(dateStr);
         const today = new Date();
         const tomorrow = new Date(today);

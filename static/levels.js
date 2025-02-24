@@ -98,7 +98,9 @@ const ProblemState = {
     problemIndex: 0,
     recording: false,
     mediaRecorder: null,
-    audioChunks: []
+    audioChunks: [],
+    previousSteps: [],
+    attemptNumber: 1
 };
 
 /**
@@ -152,11 +154,13 @@ const MasteryState = {
         }
     },
     
-    // Decay configuration
+    // Decay configuration for Bloom's levels
     decayRates: {
-        easy: 0.1,    // 10% decay per week
-        medium: 0.15,  // 15% decay per week
-        hard: 0.2     // 20% decay per week
+        remember: 0.1,    // 10% decay per week
+        understand: 0.12, // 12% decay per week
+        apply: 0.15,      // 15% decay per week
+        analyze: 0.18,    // 18% decay per week
+        create: 0.2       // 20% decay per week
     },
     
     // Constants for mastery calculation
@@ -906,10 +910,16 @@ async function loadProblems(nodeId) {
     // Filter out problems that have already been completed
     const filteredProblems = conceptProblems.filter(p => !completedProblemIds.has(p.id));
     
-    // Sort by difficulty
+    // Sort by Bloom's level complexity
     filteredProblems.sort((a, b) => {
-        const difficultyOrder = { 'easy': 1, 'medium': 2, 'hard': 3 };
-        return difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty];
+        const bloomOrder = { 
+            'remember': 1, 
+            'understand': 2, 
+            'apply': 3, 
+            'analyze': 4, 
+            'create': 5 
+        };
+        return bloomOrder[a.bloom_level] - bloomOrder[b.bloom_level];
     });
     
     log('Found problems:', filteredProblems);
@@ -952,7 +962,8 @@ function displayProblem(problem) {
     }
     
     if (problemDifficulty) {
-        problemDifficulty.textContent = `Difficulty: ${problem.difficulty.charAt(0).toUpperCase() + problem.difficulty.slice(1)}`;
+        const bloomLevel = problem.bloom_level.charAt(0).toUpperCase() + problem.bloom_level.slice(1);
+        problemDifficulty.textContent = `Bloom's Level: ${bloomLevel}`;
     }
     
     if (problemText) {
@@ -1234,6 +1245,129 @@ async function processAudio(audioBlob) {
 }
 
 /**
+ * Display evaluation results
+ * Shows logical steps and remaining steps
+ */
+function displayEvaluation(evaluation) {
+    log('Displaying evaluation:', evaluation);
+    const evaluationSection = document.getElementById('evaluation-results');
+    if (!evaluationSection) return;
+    
+    // Remove hidden class to show the evaluation section
+    evaluationSection.classList.remove('hidden');
+    
+    // Create evaluation display
+    const content = document.createElement('div');
+    content.className = 'evaluation-content';
+    
+    // Add understanding score
+    const scoreDiv = document.createElement('div');
+    scoreDiv.className = 'evaluation-score';
+    scoreDiv.innerHTML = `
+        <h3>Understanding Score</h3>
+        <div class="score-circle ${getScoreClass(evaluation.score)}">
+            ${Math.round(evaluation.score * 100)}%
+        </div>
+    `;
+    content.appendChild(scoreDiv);
+    
+    // Add logical steps analysis
+    if (evaluation.logical_steps && evaluation.logical_steps.length > 0) {
+        const stepsDiv = document.createElement('div');
+        stepsDiv.className = 'evaluation-section steps';
+        stepsDiv.innerHTML = `
+            <h3>Your Solution Steps</h3>
+            <div class="steps-list">
+                ${evaluation.logical_steps.map(step => `
+                    <div class="step ${step.is_correct ? 'correct' : 'incorrect'}">
+                        <div class="step-header">
+                            <span class="step-number">Step ${step.step_number}</span>
+                            <span class="step-status">${step.is_correct ? '✓' : '✗'}</span>
+                        </div>
+                        <p class="step-description">${step.description}</p>
+                        ${!step.is_correct && step.correct_approach ? 
+                            `<p class="step-correction">Correct approach: ${step.correct_approach}</p>` : 
+                            ''}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        content.appendChild(stepsDiv);
+    }
+    
+    // Add remaining steps
+    if (evaluation.remaining_steps && evaluation.remaining_steps.length > 0) {
+        const remainingDiv = document.createElement('div');
+        remainingDiv.className = 'evaluation-section remaining';
+        remainingDiv.innerHTML = `
+            <h3>Next Steps</h3>
+            <div class="steps-list">
+                ${evaluation.remaining_steps.map(step => `
+                    <div class="step remaining">
+                        <div class="step-header">
+                            <span class="step-number">Step ${step.step_number}</span>
+                            <span class="step-hint-icon">💡</span>
+                        </div>
+                        <p class="step-description">${step.description}</p>
+                        <p class="step-hint">Hint: ${step.hint}</p>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        content.appendChild(remainingDiv);
+    }
+    
+    // Add resubmit option if available
+    if (evaluation.can_resubmit) {
+        const resubmitDiv = document.createElement('div');
+        resubmitDiv.className = 'resubmit-section';
+        resubmitDiv.innerHTML = `
+            <p>You can improve your solution. Would you like to try again?</p>
+            <button id="resubmit-button" class="resubmit-button">
+                <span class="material-icons">refresh</span>
+                Revise Solution
+            </button>
+        `;
+        content.appendChild(resubmitDiv);
+        
+        // Add resubmit button handler
+        const resubmitButton = resubmitDiv.querySelector('#resubmit-button');
+        resubmitButton.addEventListener('click', () => {
+            // Enable input fields for resubmission
+            const answerInput = document.getElementById('answer-input');
+            const explanationInput = document.getElementById('explanation-input');
+            const submitButton = document.getElementById('submit-answer');
+            const evaluateButton = document.getElementById('evaluate-button');
+            
+            if (answerInput) {
+                answerInput.disabled = false;
+                answerInput.value = ProblemState.currentAnswer || '';
+            }
+            if (explanationInput) {
+                explanationInput.disabled = false;
+                explanationInput.value = document.getElementById('transcription-text')?.textContent || '';
+            }
+            if (submitButton) submitButton.disabled = false;
+            if (evaluateButton) evaluateButton.disabled = true;
+            
+            // Store previous steps for next evaluation
+            ProblemState.previousSteps = evaluation.logical_steps;
+            ProblemState.attemptNumber = (evaluation.attempt_number || 1) + 1;
+            
+            // Hide evaluation results
+            evaluationSection.classList.add('hidden');
+        });
+    }
+    
+    // Clear previous content and add new evaluation
+    evaluationSection.innerHTML = '';
+    evaluationSection.appendChild(content);
+    
+    // Scroll to evaluation results
+    evaluationSection.scrollIntoView({ behavior: 'smooth' });
+}
+
+/**
  * Evaluate student's understanding
  * Sends answer and explanation to backend for evaluation
  */
@@ -1259,7 +1393,9 @@ async function evaluateUnderstanding() {
             class_id: DataState.currentClass,
             problems: DataState.problems,
             cmaps: DataState.cmaps,
-            umaps: DataState.umaps
+            umaps: DataState.umaps,
+            attempt_number: ProblemState.attemptNumber || 1,
+            previous_steps: ProblemState.previousSteps || []
         };
         
         log('Sending evaluation data:', evaluationData);
@@ -1287,102 +1423,19 @@ async function evaluateUnderstanding() {
         const modifications = {
             mastery_level: evaluation.score,
             score: evaluation.score,
-            date_derived: new Date().toISOString(),
-            strengths: evaluation.correct_concepts,
-            weaknesses: evaluation.misconceptions
+            date_derived: new Date().toISOString()
         };
         
-        log('Created concept modifications:', modifications);
+        // Only update concept map if this is the final attempt or mastery achieved
+        if (!evaluation.can_resubmit || evaluation.score >= 0.8) {
+            await updateConceptMap(modifications);
+        }
         
-        // Update concept map with modifications
-        await updateConceptMap(modifications);
-        
-        log('Evaluation complete');
     } catch (error) {
-        log('Error during evaluation:', error);
+        log('Error evaluating understanding:', error);
         showError('Failed to evaluate understanding. Please try again.');
-        evaluateButton.disabled = false;
+        if (evaluateButton) evaluateButton.disabled = false;
     }
-}
-
-/**
- * Display evaluation results
- * Shows correct/incorrect statements and suggestions
- */
-function displayEvaluation(evaluation) {
-    log('Displaying evaluation:', evaluation);
-    const evaluationSection = document.getElementById('evaluation-results');
-    if (!evaluationSection) return;
-    
-    // Remove hidden class to show the evaluation section
-    evaluationSection.classList.remove('hidden');
-    
-    // Create evaluation display
-    const content = document.createElement('div');
-    content.className = 'evaluation-content';
-    
-    // Add understanding score
-    const scoreDiv = document.createElement('div');
-    scoreDiv.className = 'evaluation-score';
-    scoreDiv.innerHTML = `
-        <h3>Understanding Score</h3>
-        <div class="score-circle ${getScoreClass(evaluation.score)}">
-            ${Math.round(evaluation.score * 100)}%
-        </div>
-    `;
-    content.appendChild(scoreDiv);
-    
-    // Add correct concepts
-    if (evaluation.correct_concepts && evaluation.correct_concepts.length > 0) {
-        const correctList = document.createElement('div');
-        correctList.className = 'evaluation-section correct';
-        correctList.innerHTML = `
-            <h3>✓ Correct Understanding</h3>
-            <ul>
-                ${evaluation.correct_concepts.map(concept => `<li>${concept}</li>`).join('')}
-            </ul>
-        `;
-        content.appendChild(correctList);
-    }
-    
-    // Add misconceptions
-    if (evaluation.misconceptions && evaluation.misconceptions.length > 0) {
-        const misconceptionsList = document.createElement('div');
-        misconceptionsList.className = 'evaluation-section incorrect';
-        misconceptionsList.innerHTML = `
-            <h3>✗ Areas for Improvement</h3>
-            <ul>
-                ${evaluation.misconceptions.map(concept => `<li>${concept}</li>`).join('')}
-            </ul>
-        `;
-        content.appendChild(misconceptionsList);
-    }
-    
-    // Add suggestions
-    if (evaluation.suggestions && evaluation.suggestions.length > 0) {
-        const suggestionsList = document.createElement('div');
-        suggestionsList.className = 'evaluation-section suggestions';
-        suggestionsList.innerHTML = `
-            <h3>💡 Suggestions</h3>
-            <ul>
-                ${evaluation.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
-            </ul>
-        `;
-        content.appendChild(suggestionsList);
-    }
-    
-    // Clear previous content and add new evaluation
-    evaluationSection.innerHTML = '';
-    evaluationSection.appendChild(content);
-    
-    // Show next problem button if available
-    const nextButton = document.getElementById('next-problem');
-    if (nextButton) {
-        nextButton.disabled = false;
-    }
-    
-    // Scroll to evaluation results
-    evaluationSection.scrollIntoView({ behavior: 'smooth' });
 }
 
 /**
@@ -1728,13 +1781,13 @@ function calculateMasteryLevel(nodeId, evaluationHistory, timeSpent) {
         // Apply decay based on time since last practice
         const lastPractice = new Date(evaluationHistory[evaluationHistory.length - 1].date);
         const daysSinceLastPractice = (new Date() - lastPractice) / (1000 * 60 * 60 * 24);
-        const difficulty = ProblemState.currentProblem?.difficulty || 'medium';
-        const decayRate = MasteryState.decayRates[difficulty];
+        const bloomLevel = ProblemState.currentProblem?.bloom_level || 'remember';
+        const decayRate = MasteryState.decayRates[bloomLevel];
         const decayFactor = Math.max(0.3, 1 - (daysSinceLastPractice * decayRate / 7)); // Decay per week
         
         log('Decay calculation:', {
             daysSinceLastPractice: daysSinceLastPractice.toFixed(1),
-            difficulty: difficulty,
+            bloomLevel: bloomLevel,
             decayRate: decayRate,
             decayFactor: decayFactor.toFixed(3)
         });

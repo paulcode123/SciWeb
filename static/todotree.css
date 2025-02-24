@@ -851,3 +851,72 @@ input[type="datetime-local"] {
         opacity: 1;
     }
 }
+
+.check-in-dates {
+    margin-bottom: 0 !important;
+}
+
+.check-in-date-list {
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.check-in-date-item {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.check-in-date-item .form-input {
+    flex: 1;
+}
+
+.add-time-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #2ecc71;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.add-time-btn:hover {
+    background: #27ae60;
+}
+
+.add-time-btn .material-icons {
+    font-size: 18px;
+}
+
+.remove-time-btn {
+    background: none;
+    border: none;
+    color: #e74c3c;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.remove-time-btn:hover {
+    background: rgba(231, 76, 60, 0.1);
+}
+
+.remove-time-btn .material-icons {
+    font-size: 20px;
+}
+
+/* Style datetime-local inputs */
+input[type="datetime-local"] {
+    color-scheme: dark;
+}

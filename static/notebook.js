@@ -314,7 +314,10 @@ function createWorksheetElement(worksheet) {
                 ${initialProblems.map((problem, index) => 
                     `<li>
                         <i class="fas fa-question-circle"></i>
-                        <span class="question-text">${problem.problem}</span>
+                        <div class="question-header">
+                            <span class="question-text">${problem.problem}</span>
+                            <span class="bloom-level">${problem.bloom_level ? capitalizeFirstLetter(problem.bloom_level) : 'Remember'}</span>
+                        </div>
                         <button class="solve-question" data-index="${index}" title="Solve Question">
                             <i class="fas fa-lightbulb"></i>
                         </button>
@@ -332,7 +335,10 @@ function createWorksheetElement(worksheet) {
                             ${remainingProblems.map((problem, index) => 
                                 `<li>
                                     <i class="fas fa-question-circle"></i>
-                                    <span class="question-text">${problem.problem}</span>
+                                    <div class="question-header">
+                                        <span class="question-text">${problem.problem}</span>
+                                        <span class="bloom-level">${problem.bloom_level ? capitalizeFirstLetter(problem.bloom_level) : 'Remember'}</span>
+                                    </div>
                                     <button class="solve-question" data-index="${index + 5}" title="Solve Question">
                                         <i class="fas fa-lightbulb"></i>
                                     </button>
@@ -344,9 +350,22 @@ function createWorksheetElement(worksheet) {
                 </div>
             ` : ''}
             <div class="practice-actions">
-                <button class="more-like-this" title="Show More Similar Problems">
-                    <i class="fas fa-plus-circle"></i> More Like This
-                </button>
+                <div class="more-like-this-container">
+                    <button class="more-like-this" title="Show More Similar Problems">
+                        <i class="fas fa-plus-circle"></i> More
+                    </button>
+                    <div class="bloom-level-selector" title="Select Bloom's Level">
+                        <i class="fas fa-chevron-down"></i>
+                        <select class="bloom-select">
+                            <option value="">Any</option>
+                            <option value="remember">Remember</option>
+                            <option value="understand">Understand</option>
+                            <option value="apply">Apply</option>
+                            <option value="analyze">Analyze</option>
+                            <option value="create">Create</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="additional-problems" style="display: none;">
                     <ol class="practice-list more-problems"></ol>
                 </div>
@@ -412,13 +431,13 @@ function createWorksheetElement(worksheet) {
             try {
                 startLoading();
                 const newProblem = {
-                    id: Math.floor(100000 + Math.random() * 900000).toString(), // Generate 6-digit ID
+                    id: Math.floor(100000 + Math.random() * 900000).toString(),
                     classID: worksheet.classID,
                     unit: worksheet.unit,
                     worksheetID: worksheet.id,
                     problem: question,
-                    difficulty: "medium", // Default difficulty
-                    concepts: [] // Empty concepts array, to be filled by problem mapping
+                    bloom_level: "remember", // Default to remember level
+                    concepts: []
                 };
                 
                 // Add to Problems sheet
@@ -438,7 +457,10 @@ function createWorksheetElement(worksheet) {
                 const li = document.createElement('li');
                 li.innerHTML = `
                     <i class="fas fa-question-circle"></i>
-                    <span class="question-text">${question}</span>
+                    <div class="question-header">
+                        <span class="question-text">${question}</span>
+                        <span class="bloom-level">${capitalizeFirstLetter(newProblem.bloom_level)}</span>
+                    </div>
                     <button class="solve-question" data-index="${problems.length}" title="Solve Question">
                         <i class="fas fa-lightbulb"></i>
                     </button>
@@ -567,6 +589,7 @@ function createWorksheetElement(worksheet) {
     worksheetDiv.querySelector('.more-like-this').addEventListener('click', async () => {
         const additionalProblems = worksheetDiv.querySelector('.additional-problems');
         const moreProblemsContainer = worksheetDiv.querySelector('.more-problems');
+        const selectedBloomLevel = worksheetDiv.querySelector('.bloom-select').value;
         
         startLoading();
         try {
@@ -581,7 +604,8 @@ function createWorksheetElement(worksheet) {
                     file: worksheet.image,
                     existingProblems: existingProblems,
                     count: 5,
-                    fileType: 'image/png'
+                    fileType: 'image/png',
+                    bloom_level: selectedBloomLevel // Add the selected level to the request
                 })
             });
             
@@ -591,17 +615,17 @@ function createWorksheetElement(worksheet) {
                 throw new Error(data.error);
             }
             
-            // Create new problem objects and add them to the Problems sheet
+            // Create new problem objects
             const newProblems = data.problems.map(problemData => ({
-                id: Math.floor(100000 + Math.random() * 900000).toString(), // Generate 6-digit ID
+                id: Math.floor(100000 + Math.random() * 900000).toString(),
                 classID: worksheet.classID,
                 unit: worksheet.unit,
                 worksheetID: worksheet.id,
                 problem: problemData.problem,
-                difficulty: problemData.difficulty,
-                concepts: [] // Empty concepts array, to be filled by problem mapping
+                bloom_level: problemData.bloom_level.toLowerCase(),
+                concepts: []
             }));
-            console.log(newProblems);
+            
             // Add all new problems to the Problems sheet
             for (const problem of newProblems) {
                 await fetchRequest('/post_data', {
@@ -609,7 +633,8 @@ function createWorksheetElement(worksheet) {
                     data: problem
                 });
             }
-            // remove Problems from local storage
+            
+            // Remove Problems from local storage
             localStorage.removeItem('Problems');
             
             // Add to local data
@@ -622,7 +647,10 @@ function createWorksheetElement(worksheet) {
             moreProblemsContainer.innerHTML = newProblems.map((problem, index) => `
                 <li>
                     <i class="fas fa-question-circle"></i>
-                    <span class="question-text">${problem.problem}</span>
+                    <div class="question-header">
+                        <span class="question-text">${problem.problem}</span>
+                        <span class="bloom-level">${capitalizeFirstLetter(problem.bloom_level)}</span>
+                    </div>
                     <button class="solve-question" data-index="${problems.length + index}" title="Solve Question">
                         <i class="fas fa-lightbulb"></i>
                     </button>
@@ -1003,6 +1031,11 @@ function toggleSidebar(sidebar, content, toggleButton) {
     }
 }
 
+// Helper function to capitalize first letter
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
+}
+
 // Add CSS for the upload dialog
 const style = document.createElement('style');
 style.textContent = `
@@ -1091,3 +1124,70 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// Add CSS for Bloom's level display
+const style2 = document.createElement('style');
+style2.textContent += `
+    .question-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 5px;
+    }
+    
+    .bloom-level {
+        font-size: 0.8em;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: #2d2d2d;
+        color: #fff;
+        margin-left: 10px;
+    }
+
+    .more-like-this-container {
+        display: flex;
+        align-items: stretch;
+        margin-bottom: 10px;
+    }
+
+    .more-like-this {
+        border-radius: 4px 0 0 4px !important;
+        margin: 0 !important;
+        flex-grow: 1;
+    }
+
+    .bloom-level-selector {
+        position: relative;
+        background: rgb(228, 76, 101);
+        border-left: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 0 4px 4px 0;
+        padding: 0 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+    }
+
+    .bloom-level-selector i {
+        color: white;
+        font-size: 0.8em;
+        pointer-events: none;
+    }
+
+    .bloom-select {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+    .bloom-select option {
+        background: #2d2d2d;
+        color: white;
+        padding: 8px;
+    }
+`;
+document.head.appendChild(style2);

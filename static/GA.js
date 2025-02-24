@@ -66,7 +66,6 @@ async function main(){
     val_sums = data["cat_value_sums"];
     goals = data["goals"];
 
-    setClasses(weights)
     setStats(stats)
     
     setCompliments(compliments)
@@ -85,6 +84,21 @@ async function main(){
       setTimeout(startAnalysisTutorial, 1000);
     }
 
+    // Add legend toggle event listeners
+    document.querySelectorAll('.legend-toggle').forEach(toggle => {
+      toggle.addEventListener('change', function() {
+        const showLegend = this.checked;
+        // Update all three graphs
+        Plotly.relayout('myGraph', {showlegend: showLegend});
+        Plotly.relayout('myHisto', {showlegend: showLegend});
+        Plotly.relayout('myChangeGraph', {showlegend: showLegend});
+        // Sync all toggles
+        document.querySelectorAll('.legend-toggle').forEach(t => {
+          t.checked = showLegend;
+        });
+      });
+    });
+
     endLoading();
 }
 
@@ -100,156 +114,6 @@ function setStats(stats){
   document.getElementById("s5").textContent = stats["most_worsened_class"]
   document.getElementById("s5").nextElementSibling.textContent += "("+stats["grade_changes"][stats["most_worsened_class"]]+"%)"
   document.getElementById("s6").textContent = stats["past30_avg"] + "%"
-}
-function setClasses(weights){
-    var classes = Object.keys(weights)
-    var class_div = document.getElementById("classes")
-    console.log(classes)
-    var all_checkboxes = [];
-
-    //create an all checkbox that checks all the checkboxes in the class and their subcategories
-    let [t, cb, m] = createCheckbox("All");
-    t.appendChild(m);
-    t.appendChild(cb);
-    class_div.appendChild(t);
-      
-      for(let x=0;x<classes.length;x++){
-      // define the class checkboxes
-      let subcategories = document.createElement("div");
-      let [text, checkbox, checkmark] = createCheckbox(classes[x])
-      all_checkboxes.push(checkbox);
-
-      // for each category in the class, create a checkbox
-      for (const category in weights[classes[x]]) {
-        let label = document.createElement("label");
-        let input = document.createElement("input");
-        all_checkboxes.push(input);
-        input.type = 'checkbox';
-        input.value = category.toLowerCase();
-        input.name = 'class';
-        label.textContent = "     "+ category;
-        label.className = 'category-checkbox';
-        input.addEventListener('change', function() {
-          if(this.checked) {
-            label.style.backgroundColor = 'rgba(228, 76, 101, 1)'; // Directly change the background color
-          } else {
-            label.style.backgroundColor = '#1b1c1c'; // Revert to original color
-          }
-        });
-        label.appendChild(input);
-        subcategories.appendChild(label);
-      }
-
-      // hide subcategories by default
-      subcategories.style.display = 'none';
-
-      checkbox.addEventListener('change', function() {
-        checkboxes = subcategories.querySelectorAll('input[name="class"]');
-        if(this.checked) {
-          text.style.backgroundColor = 'rgba(228, 76, 101, 1)'; // Directly change the background color
-          subcategories.style.display = 'block';
-          // check all subcategories
-          for (let i = 0; i < checkboxes.length; i++) {
-            checkboxes[i].checked = true;
-            checkboxes[i].dispatchEvent(new Event('change'));
-          }
-        } else {
-          text.style.backgroundColor = '#1b1c1c'; // Revert to original color
-          subcategories.style.display = 'none';
-          // uncheck all subcategories
-          for (let i = 0; i < checkboxes.length; i++) {
-            checkboxes[i].checked = false;
-            checkboxes[i].dispatchEvent(new Event('change'));
-          }
-        }
-      });
-      text.appendChild(checkmark);
-      text.appendChild(checkbox);
-      class_div.appendChild(text);
-      class_div.appendChild(subcategories);
-    }
-
-
-    //set all checkbox properties
-    
-    cb.addEventListener('change', function() {
-      if(this.checked) {
-        t.style.backgroundColor = 'rgba(228, 76, 101, 1)'; // Directly change the background color
-        for (let i = 0; i < all_checkboxes.length; i++) {
-          all_checkboxes[i].checked = true;
-          console.log(all_checkboxes[i], "checked")
-          all_checkboxes[i].dispatchEvent(new Event('change'));
-        }
-      } else {
-        t.style.backgroundColor = '#1b1c1c'; // Revert to original color
-        for (let i = 0; i < all_checkboxes.length; i++) {
-          all_checkboxes[i].checked = false;
-          all_checkboxes[i].dispatchEvent(new Event('change'));
-        }
-      }
-    });
-
-
-}
-
-function createCheckbox(content){
-  let text = document.createElement("label");
-  let checkbox = document.createElement("input");
-  let checkmark = document.createElement("span");
-  
-
-  checkbox.type = 'checkbox';
-  checkbox.value = content.toLowerCase();
-  checkbox.name = 'class';
-
-  text.textContent = "     "+ content;
-  text.className = 'class-checkbox';
-
-  checkmark.className = 'checkmark';
-  return [text, checkbox, checkmark];
-}
-
-async function setGoalProgress(){
-    const progress_data = await fetchRequest('/goals_progress', { data: '' });
-    
-    console.log(progress_data)
-    container_element = document.getElementById("GoalProgressContainer")
-    for (let i = 0; i < progress_data.length; i++) {
-      const goal = progress_data[i];
-      const goalElement = document.createElement("div");
-      goalElement.className = "goal";
-      var dateBar = document.createElement('progress');
-      var gradeBar = document.createElement('progress');
-      var br = document.createElement('br');
-      
-      dateBar.value = parseFloat(goal.percent_time_passed);
-      dateBar.max = 1;
-      
-      gradeBar.value = parseFloat(goal.percent_grade_change);
-      gradeBar.max = 1;
-  
-      // code to round to 1 decimal place: Math.round(num * 10) / 10
-  
-      var title = document.createElement('h3');
-      title.textContent = "Your goal for "+goal.class+" "+goal.category;
-      var datesText = document.createElement('p');
-      datesText.textContent = "Date set: " + goal.date_set+" | Target date: " + goal.goal_date;
-  
-      var gradesText = document.createElement('p');
-      gradesText.textContent = "Grade when set: " + Math.round(goal.grade_when_set*100)/100+" | Target grade: " + goal.goal_grade;
-  
-      var trajectory = document.createElement('p');
-      trajectory.textContent = "Current Trajectory by goal date: " + Math.round(goal.current_grade_trajectory*100)/100;
-  
-      goalElement.appendChild(title);
-      goalElement.appendChild(datesText);
-      goalElement.appendChild(dateBar);
-      goalElement.appendChild(br);
-      goalElement.appendChild(gradesText);
-      goalElement.appendChild(gradeBar);
-      goalElement.appendChild(trajectory);
-      container_element.appendChild(goalElement);
-    }    
 }
 
 main()
@@ -403,7 +267,7 @@ const layout = {
         title: 'Grades',
         showgrid: false
     },
-    showlegend: false,
+    showlegend: document.getElementById('legendToggleGraph').checked, // Set based on checkbox
     displayModeBar: false,
     paper_bgcolor: 'rgba(0,0,0,0)', // Transparent background
     plot_bgcolor: 'rgba(0,0,0,0)',  // Transparent plot area
@@ -823,7 +687,8 @@ function draw_histogram(grades, cat, comp_time) {
     let grade = grades[i];
     console.log(cat.includes('all') && cat.includes('All'))
     
-    if ((cat.includes(grade['class'].toLowerCase()) || cat.includes('all')) && (cat.includes(grade['category'].toLowerCase()) || cat.includes('All'))) {
+    if ((cat.includes(grade['class'].toLowerCase()) || cat.includes('all')) && 
+        (cat.includes(grade['category'].toLowerCase()) || cat.includes('All'))) {
       grade_points.push(grade);
     }
   }
@@ -861,55 +726,79 @@ function draw_histogram(grades, cat, comp_time) {
     individualTraces.push({x: kde.x, y: kde.y}); // Store individual KDE
   }
 
-var layout = {
+  // Store the combined KDE
+  var data = grades.map(grade => grade['score']/grade['value']*100);
+  var kde = kernelDensityEstimation(data, epanechnikovKernel, bandwidth);
+  let combinedTrace = [{
+    x: kde.x,
+    y: kde.y,
+    mode: 'lines',
+    name: 'Combined',
+    line: {
+      color: 'rgba(228, 76, 101, 0.7)',
+      width: 2
+    },
+    hovertemplate: 'Combined<br>Grade: %{x:.1f}%<br>Density: %{y:.3f}<extra></extra>'
+  }];
+
+  // Define tracenums
+  let tracenums = Array.from({length: traces.length}, (_, i) => i);
+
+  const layout = {
     title: 'Grade Distribution',
     xaxis: {title: 'Grade', showgrid: false},
     yaxis: {title: 'Density', showgrid: false},
-    showlegend: false,
+    showlegend: document.getElementById('legendToggleHisto').checked,
     displayModeBar: false,
-    paper_bgcolor: 'rgba(0,0,0,0)', // Transparent background
-    plot_bgcolor: 'rgba(0,0,0,0)',  // Transparent plot area
-    font: {
-    color: 'white' // White text
-  }
-};
-// Store the combined KDE
-var data = grades.map(grade => grade['score']/grade['value']*100);
-var kde = kernelDensityEstimation(data, epanechnikovKernel, bandwidth);
-let combinedTrace = {
-  x: kde.x,
-  y: kde.y,
-  name: 'Combined',
-  hovertemplate: 'Combined<br>Grade: %{x:.1f}%<br>Density: %{y:.3f}<extra></extra>'
-};
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: 'white' }
+  };
 
-// Define tracenums
-let tracenums = Array.from({length: traces.length}, (_, i) => i);
+  // Initial plot with combined trace
+  Plotly.newPlot('myHisto', combinedTrace, layout);
 
-
-Plotly.newPlot('myHisto', traces, layout);
-setTimeout(function(){
-  animationHistogram(tracenums, Array(traces.length).fill(combinedTrace));
-}, comp_time*500);
-
-// Update the event listener for the checkbox
-document.getElementById('componentsHisto').addEventListener('change', function() {
-  if(this.checked) {
-    animationHistogram(tracenums, individualTraces);
-  } else {
-    animationHistogram(tracenums, Array(traces.length).fill(combinedTrace));
-  }
-});
+  // Update the event listener for the checkbox
+  document.getElementById('componentsHisto').addEventListener('change', function() {
+    const layout = {
+      title: 'Grade Distribution',
+      xaxis: {title: 'Grade', showgrid: false},
+      yaxis: {title: 'Density', showgrid: false},
+      showlegend: document.getElementById('legendToggleHisto').checked,
+      displayModeBar: false,
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { color: 'white' }
+    };
+    
+    if(this.checked) {
+      Plotly.react('myHisto', traces, layout);
+    } else {
+      Plotly.react('myHisto', combinedTrace, layout);
+    }
+  });
 }
 
 function animationHistogram(tracenums, traces){
-  // Resize immediately before animation
-  Plotly.relayout('myHisto', {'yaxis.autorange': true});
+  const layout = {
+    title: 'Grade Distribution',
+    xaxis: {title: 'Grade', showgrid: false},
+    yaxis: {
+      title: 'Density',
+      showgrid: false,
+      autorange: true
+    },
+    showlegend: document.getElementById('legendToggleHisto').checked,
+    displayModeBar: false,
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: 'white' }
+  };
   
   Plotly.animate('myHisto', {
     data: traces,
     traces: tracenums,
-    layout: {}
+    layout: layout
   }, {
     transition: {
       duration: 3000,
@@ -928,39 +817,6 @@ function draw_graphs(grade_spreads, times, weights, grades, cat, val_sums, comp_
   draw_histogram(grades, cat, comp_time);
   draw_change_graph(grade_spreads, times, weights, cat, 15);
 }
-
-document.getElementById("class-form").addEventListener("submit", function(event) {
-  event.preventDefault();
-  const errorMessage = document.getElementById("error-message");
-  errorMessage.textContent = "";
-  const checkboxes = document.querySelectorAll('input[name="class"]:checked');
-  const selectedClasses = Array.from(checkboxes).map(function(checkbox) {
-    return checkbox.value;
-  }).filter(value => value.toLowerCase() !== 'all'); // Filter out "All" from selections
-  
-  if (selectedClasses.length === 0) {
-    errorMessage.textContent = "Please select at least one class.";
-    return;
-  }
-
-  // Uncheck all component and individual grade checkboxes
-  document.getElementById('components').checked = false;
-  document.getElementById('individual').checked = false;
-  document.getElementById('componentsHisto').checked = false;
-  document.getElementById('componentsChange').checked = false;
-
-  console.log(document.getElementById('loadingWheel').style.visibility)
-  document.getElementById('loadingWheel').style.visibility = "visible";
-  document.getElementById('loadingWheel').style.display = "block";
-  
-  let specificity = document.getElementById("mySlider").value;
-  console.log(selectedClasses);
-  draw_graphs(grade_spreads, times, weights, grades, selectedClasses, val_sums, specificity);
-  console.log("done")
-});
-
-
-
 
 const insightContainer = document.getElementById("insightContainer");
 
@@ -1391,7 +1247,7 @@ function draw_change_graph(grade_spreads, times, weights, cat, timeframe=15) {
       showgrid: false,
       tickangle: -45
     },
-    showlegend: true,
+    showlegend: document.getElementById('legendToggleChange').checked,
     paper_bgcolor: 'rgba(0,0,0,0)',
     plot_bgcolor: 'rgba(0,0,0,0)',
     font: { color: 'white' }
@@ -1414,26 +1270,32 @@ function draw_change_graph(grade_spreads, times, weights, cat, timeframe=15) {
 
   // Add new event listener for components toggle
   componentsCheckbox.changeHandler = function() {
+    const layout = {
+      title: 'Grade Changes by Time Period',
+      barmode: this.checked ? 'stack' : 'group',
+      hovermode: 'closest',
+      yaxis: {
+        title: 'Grade Change (%)',
+        zeroline: true,
+        zerolinecolor: 'white',
+        zerolinewidth: 2,
+        showgrid: false
+      },
+      xaxis: {
+        title: 'Time Period',
+        showgrid: false,
+        tickangle: -45
+      },
+      showlegend: document.getElementById('legendToggleChange').checked,
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { color: 'white' }
+    };
+
     if (this.checked) {
-      // When showing components, update the entire data array at once
-      Plotly.react('myChangeGraph', traces, {
-        ...layout,
-        barmode: 'stack'
-      }).then(() => {
-        Plotly.relayout('myChangeGraph', {
-          'yaxis.autorange': true
-        });
-      });
+      Plotly.react('myChangeGraph', traces, layout);
     } else {
-      // When showing combined, update to single trace
-      Plotly.react('myChangeGraph', combinedTrace, {
-        ...layout,
-        barmode: 'group'
-      }).then(() => {
-        Plotly.relayout('myChangeGraph', {
-          'yaxis.autorange': true
-        });
-      });
+      Plotly.react('myChangeGraph', combinedTrace, layout);
     }
   };
   componentsCheckbox.addEventListener('change', componentsCheckbox.changeHandler);
@@ -1471,13 +1333,19 @@ document.getElementById('gradeSearch').addEventListener('keyup', function() {
     currentController = new AbortController();
     const signal = currentController.signal;
 
-    const searchTerm = this.value.toLowerCase();
+    const searchTerm = this.value.toLowerCase().trim();
     
     try {
         document.querySelectorAll('.result-item').forEach(item => {
             // Check if search was aborted
             if (signal.aborted) {
                 throw new Error('aborted');
+            }
+            
+            // Hide all results if search term is empty
+            if (!searchTerm) {
+                item.style.display = 'none';
+                return;
             }
             
             if (item.textContent.toLowerCase().includes(searchTerm)) {

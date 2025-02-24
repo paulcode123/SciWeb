@@ -137,15 +137,20 @@ VISION_ANALYSIS_PROMPT = """Analyze this worksheet and provide insights in the f
     "practice_questions": [
         {
             "question": "Full question text",
-            "difficulty": "easy|medium|hard"
+            "bloom_level": "Remember|Understand|Apply|Analyze|Create"
         }
     ]
 }
 
 For practice questions:
 1. Generate at least 10 questions similar to those on the worksheet
-2. Vary the difficulty levels
-3. Questions should represent the full range of difficulty and types of problems as on the worksheet"""
+2. Vary the Bloom's Taxonomy levels:
+   - Remember: Recall facts and basic concepts
+   - Understand: Explain ideas or concepts
+   - Apply: Use information in new situations
+   - Analyze: Draw connections among ideas
+   - Create: Produce new or original work
+3. Questions should represent the full range of cognitive levels as appropriate for the worksheet content"""
 
 WORKSHEET_ANSWER_PROMPT = ChatPromptTemplate.from_messages([
     ("system", "You are an expert tutor helping students understand educational content. Number your steps and use LaTeX for equations."),
@@ -207,20 +212,40 @@ Context:
 - Student's Answer: {answer}
 - Student's Explanation: {explanation}
 - Unit: {unit}
-- Related Concept Map: {concept_map}
+- Attempt Number: {attempt_number}
+- Previous Steps: {previous_steps}
 
-Evaluate the student's response and provide:
-1. A score between 0 and 1 indicating their level of understanding
-2. List of correctly understood concepts
-3. List of any misconceptions or areas needing improvement
-4. Specific suggestions for improvement
+Break down the problem into logical steps and evaluate the student's response. For each step:
+1. Identify what the student did
+2. Determine if it was correct
+3. Provide the correct approach if needed
 
-Format your response as a JSON object with the following structure:
+Also identify any remaining steps the student needs to complete.
+
+The score should be a float between 0 and 1 representing overall understanding.
+Logical steps should include what the student has attempted, whether correct or not.
+Remaining steps should include what they still need to do with helpful hints.
+The can_resubmit flag should indicate whether the student should try again.
+
+Format your response as a JSON object with the following structure (DO NOT include any comments in the JSON):
 {
-    "score": float,
-    "correct_concepts": [str],
-    "misconceptions": [str],
-    "suggestions": [str]
+    "score": 0.5,
+    "logical_steps": [
+        {
+            "step_number": 1,
+            "description": "What the student did in this step",
+            "is_correct": true,
+            "correct_approach": ""
+        }
+    ],
+    "remaining_steps": [
+        {
+            "step_number": 1,
+            "description": "What needs to be done",
+            "hint": "Helpful hint for completing this step"
+        }
+    ],
+    "can_resubmit": true
 }
 
 Response:""")

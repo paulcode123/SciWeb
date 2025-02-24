@@ -474,12 +474,11 @@ document.addEventListener('DOMContentLoaded', function() {
             dateNotificationSection.classList.toggle('show', type !== 'Motivator');
         }
 
-        // Load existing dates and notifications if any
+        // Load existing dates and check-ins if any
         if (type !== 'Motivator') {
             const deadlineInput = document.getElementById('deadline');
             const targetDateInput = document.getElementById('targetDate');
-            const notificationTextInput = document.getElementById('notificationText');
-            const timeList = document.getElementById('notificationTimeList');
+            const checkInList = document.getElementById('checkInDateList');
             
             if (deadlineInput) {
                 deadlineInput.value = editingNode.dataset.deadline || '';
@@ -487,20 +486,17 @@ document.addEventListener('DOMContentLoaded', function() {
             if (targetDateInput) {
                 targetDateInput.value = editingNode.dataset.targetDate || '';
             }
-            if (notificationTextInput) {
-                notificationTextInput.value = editingNode.dataset.notificationText || '';
-            }
             
-            // Clear existing notification times
-            if (timeList) {
-                timeList.innerHTML = '';
+            // Clear existing check-in dates
+            if (checkInList) {
+                checkInList.innerHTML = '';
                 
-                // Load saved notification times
+                // Load saved check-in dates
                 try {
-                    const times = JSON.parse(editingNode.dataset.notificationTimes || '[]');
-                    times.forEach(time => addNotificationTimeItem(time));
+                    const dates = JSON.parse(editingNode.dataset.checkInDates || '[]');
+                    dates.forEach(date => addCheckInDateItem(date));
                 } catch (e) {
-                    console.error('Error loading notification times:', e);
+                    console.error('Error loading check-in dates:', e);
                 }
             }
         }
@@ -529,105 +525,21 @@ document.addEventListener('DOMContentLoaded', function() {
         editingNode = null;
     }
 
-    // Add validation function for notification times
-    function validateNotificationTime(timeInput) {
-        const selectedTime = new Date(timeInput.value);
+    // Add validation function for check-in dates
+    function validateCheckInDate(dateInput) {
+        const selectedDate = new Date(dateInput.value);
         const now = new Date();
-        const fourWeeksFromNow = new Date(now.getTime() + (28 * 24 * 60 * 60 * 1000));
         
-        if (selectedTime < now) {
-            alert('Cannot set notifications in the past');
-            timeInput.value = '';
-            return false;
-        }
-        
-        if (selectedTime > fourWeeksFromNow) {
-            alert('Cannot set notifications more than 4 weeks in advance');
-            timeInput.value = '';
+        if (selectedDate < now) {
+            alert('Cannot set check-in dates in the past');
+            dateInput.value = '';
             return false;
         }
         
         return true;
     }
 
-    // Update notification time item creation
-    function addNotificationTimeItem(value = '') {
-        const template = document.getElementById('notificationTimeTemplate');
-        const clone = template.content.cloneNode(true);
-        
-        const timeInput = clone.querySelector('.notification-time');
-        timeInput.value = value;
-        
-        // Add validation on change
-        timeInput.addEventListener('change', function() {
-            if (validateNotificationTime(this)) {
-                scheduleNotification(this.value, editingNode);
-            }
-        });
-        
-        const removeBtn = clone.querySelector('.remove-time-btn');
-        removeBtn.addEventListener('click', function() {
-            const timeValue = this.closest('.notification-time-item').querySelector('.notification-time').value;
-            if (timeValue) {
-                cancelNotification(timeValue, editingNode);
-            }
-            this.closest('.notification-time-item').remove();
-            scheduleAutoSave();
-        });
-        
-        document.getElementById('notificationTimeList').appendChild(clone);
-
-        // If a value was provided, validate and schedule it
-        if (value) {
-            if (validateNotificationTime(timeInput)) {
-                scheduleNotification(value, editingNode);
-            }
-        }
-    }
-
-    // Add FCM notification scheduling function
-    async function scheduleNotification(time, node) {
-        try {
-            const notificationData = {
-                nodeId: node.dataset.id,
-                scheduled_time: time,
-                notificationText: node.dataset.notificationText || `Reminder for: ${node.querySelector('span').textContent}`,
-                treeId: currentTreeId,
-                OSIS: osis,
-                title: `Reminder for: ${node.querySelector('span').textContent}`,
-                body: node.dataset.notificationText || `Reminder for: ${node.querySelector('span').textContent}`,
-
-            };
-
-            await fetchRequest('/schedule_notification', {
-                data: notificationData
-            });
-            
-            console.log('Notification scheduled successfully for:', time);
-        } catch (error) {
-            console.error('Error scheduling notification:', error);
-            alert('Failed to schedule notification. Please try again.');
-        }
-    }
-
-    // Add FCM notification cancellation function
-    async function cancelNotification(time, node) {
-        try {
-            await fetchRequest('/cancel_notification', {
-                data: {
-                    nodeId: node.dataset.id,
-                    scheduledTime: time,
-                    treeId: currentTreeId
-                }
-            });
-            
-            console.log('Notification cancelled successfully for:', time);
-        } catch (error) {
-            console.error('Error cancelling notification:', error);
-        }
-    }
-
-    // Update saveNodeChanges to handle notification changes
+    // Update saveNodeChanges to handle check-in dates
     function saveNodeChanges() {
         if (!editingNode) return;
 
@@ -648,33 +560,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 editingNode.style.top = `${y}px`;
             }
             
-            // Save dates and notifications for Task and Goal types
+            // Save dates and check-ins for Task and Goal types
             if (newType !== 'Motivator') {
-                const oldNotificationTimes = JSON.parse(editingNode.dataset.notificationTimes || '[]');
-                const newNotificationTimes = Array.from(document.querySelectorAll('.notification-time'))
+                const oldCheckInDates = JSON.parse(editingNode.dataset.checkInDates || '[]');
+                const newCheckInDates = Array.from(document.querySelectorAll('.check-in-date'))
                     .map(input => input.value)
-                    .filter(time => time);
-
-                // Cancel removed notifications
-                oldNotificationTimes.forEach(time => {
-                    if (!newNotificationTimes.includes(time)) {
-                        cancelNotification(time, editingNode);
-                    }
-                });
+                    .filter(date => date);
 
                 editingNode.dataset.deadline = document.getElementById('deadline').value;
                 editingNode.dataset.targetDate = document.getElementById('targetDate').value;
-                editingNode.dataset.notificationText = document.getElementById('notificationText').value;
-                editingNode.dataset.notificationTimes = JSON.stringify(newNotificationTimes);
+                editingNode.dataset.checkInDates = JSON.stringify(newCheckInDates);
             } else {
-                // Cancel all notifications if type changed to Motivator
-                const oldTimes = JSON.parse(editingNode.dataset.notificationTimes || '[]');
-                oldTimes.forEach(time => cancelNotification(time, editingNode));
-                
                 delete editingNode.dataset.deadline;
                 delete editingNode.dataset.targetDate;
-                delete editingNode.dataset.notificationText;
-                delete editingNode.dataset.notificationTimes;
+                delete editingNode.dataset.checkInDates;
             }
 
             // Save chat history
@@ -684,22 +583,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }));
             editingNode.dataset.chatHistory = JSON.stringify(messages);
             
-            // Handle orbital dots for Goal type
-            let orbitalDots = editingNode.querySelector('.orbital-dots');
-            if (newType === 'Goal' && !orbitalDots) {
-                orbitalDots = document.createElement('div');
-                orbitalDots.className = 'orbital-dots';
-                for (let i = 0; i < 4; i++) {
-                    const dot = document.createElement('div');
-                    dot.className = 'orbital-dot';
-                    orbitalDots.appendChild(dot);
-                }
-                editingNode.appendChild(orbitalDots);
-            } else if (newType !== 'Goal' && orbitalDots) {
-                orbitalDots.remove();
-            }
-
-            // Save grade goal data if it's a Goal
+            // Handle grade goal data if it's a Goal
             if (newType === 'Goal') {
                 const gradeGoalClass = document.getElementById('gradeGoalClass').value;
                 const gradeGoalTarget = document.getElementById('gradeGoalTarget').value;
@@ -1292,8 +1176,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add optional data if present
             if (node.dataset.deadline) nodeData.deadline = node.dataset.deadline;
             if (node.dataset.targetDate) nodeData.targetDate = node.dataset.targetDate;
-            if (node.dataset.notificationText) nodeData.notificationText = node.dataset.notificationText;
-            if (node.dataset.notificationTimes) nodeData.notificationTimes = JSON.parse(node.dataset.notificationTimes);
+            if (node.dataset.checkInDates) nodeData.checkInDates = JSON.parse(node.dataset.checkInDates);
             if (node.dataset.chatHistory) nodeData.chatHistory = JSON.parse(node.dataset.chatHistory);
             if (node.dataset.context) nodeData.context = node.dataset.context;
             if (node.dataset.breakOffText) nodeData.breakOffText = node.dataset.breakOffText;
@@ -1385,11 +1268,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (nodeData.description) circle.dataset.description = nodeData.description;
                 if (nodeData.deadline) circle.dataset.deadline = nodeData.deadline;
                 if (nodeData.targetDate) circle.dataset.targetDate = nodeData.targetDate;
-                if (nodeData.notificationText) circle.dataset.notificationText = nodeData.notificationText;
-                if (nodeData.notificationTimes) circle.dataset.notificationTimes = JSON.stringify(nodeData.notificationTimes);
+                if (nodeData.checkInDates) circle.dataset.checkInDates = JSON.stringify(nodeData.checkInDates);
                 if (nodeData.chatHistory) circle.dataset.chatHistory = JSON.stringify(nodeData.chatHistory);
                 if (nodeData.context) circle.dataset.context = nodeData.context;
                 if (nodeData.breakOffText) circle.dataset.breakOffText = nodeData.breakOffText;
+                if (nodeData.gradeGoalClass) {
+                    circle.dataset.gradeGoalClass = nodeData.gradeGoalClass;
+                    circle.dataset.gradeGoalTarget = nodeData.gradeGoalTarget;
+                }
+
+                // Add orbital dots for Goal type
+                if (nodeData.type === 'Goal') {
+                    const orbitalDots = document.createElement('div');
+                    orbitalDots.className = 'orbital-dots';
+                    for (let i = 0; i < 4; i++) {
+                        const dot = document.createElement('div');
+                        dot.className = 'orbital-dot';
+                        orbitalDots.appendChild(dot);
+                    }
+                    circle.appendChild(orbitalDots);
+                }
 
                 content.appendChild(circle);
             });
@@ -1881,10 +1779,33 @@ document.addEventListener('DOMContentLoaded', function() {
         form.style.display = form.style.display === 'none' ? 'flex' : 'none';
     });
 
-    // Add event listener for Add Time button
-    document.getElementById('addNotificationTime').addEventListener('click', () => {
-        addNotificationTimeItem();
+    // Add event listener for Add Check-in Date button
+    document.getElementById('addCheckInDate').addEventListener('click', () => {
+        addCheckInDateItem();
     });
+
+    function addCheckInDateItem(value = '') {
+        const template = document.getElementById('checkInDateTemplate');
+        const clone = template.content.cloneNode(true);
+        
+        const dateInput = clone.querySelector('.check-in-date');
+        dateInput.value = value;
+        
+        // Add validation on change
+        dateInput.addEventListener('change', function() {
+            if (validateCheckInDate(this)) {
+                scheduleAutoSave();
+            }
+        });
+        
+        const removeBtn = clone.querySelector('.remove-time-btn');
+        removeBtn.addEventListener('click', function() {
+            this.closest('.check-in-date-item').remove();
+            scheduleAutoSave();
+        });
+        
+        document.getElementById('checkInDateList').appendChild(clone);
+    }
 
     // Add these new functions after initializeContainer()
     function handleHashNavigation() {

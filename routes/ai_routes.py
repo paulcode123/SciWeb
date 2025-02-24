@@ -35,6 +35,8 @@ def get_AI_function_calling():
 
   return json.dumps(response)
 
+
+# Notebooks/Problems routes
 @ai_routes.route('/ask-question', methods=['POST'])
 def ask_question():
     from main import init
@@ -73,6 +75,125 @@ def solve_question():
     
     return jsonify({"solution": solution})
 
+@ai_routes.route('/generate-problems', methods=['POST'])
+def generate_problems():
+    from main import init
+    from output_processor import clean_llm_response, parse_json_response
+    vars = init()
+    try:
+        data = request.json
+        
+        # Get required data from request
+        file_reference = data['file']  # This is the reference ID in the bucket
+        existing_problems = data.get('existingProblems', [])
+        count = data.get('count', 5)  # Default to 5 problems
+        file_type = data.get('fileType', 'image/png')
+        bloom_level = data.get('bloom_level', None)  # Optional specific Bloom's level
+        
+        # Get the file from the bucket
+        base64_content = download_file("sciweb-files", file_reference)
+        
+        if not base64_content:
+            return jsonify({"error": "Failed to retrieve worksheet image"}), 404
+            
+        # Format the prompt to request JSON output
+        prompt = f"""Given these existing practice problems:
+        {existing_problems}
+        
+        Please generate {count} new, unique practice problems that:
+        1. Are similar in style to the existing problems
+        2. Cover similar concepts but are not identical
+        3. Are appropriate for the same grade level
+        4. Include proper mathematical notation using LaTeX where appropriate
+        {f"5. Focus on the '{bloom_level}' level of Bloom's Taxonomy" if bloom_level else ""}
+        
+        Return the problems in this exact JSON format:
+        {{
+            "problems": [
+                {{
+                    "problem": "Problem text here",
+                    "bloom_level": "{bloom_level if bloom_level else "Remember|Understand|Apply|Analyze|Create"}"
+                }}
+            ]
+        }}
+        
+        Requirements:
+        - Each problem must have both a problem text and Bloom's Taxonomy level
+        - Bloom's Taxonomy levels:
+          * Remember: Recall facts and basic concepts
+          * Understand: Explain ideas or concepts
+          * Apply: Use information in new situations
+          * Analyze: Draw connections among ideas
+          * Create: Produce new or original work
+        - Use proper LaTeX notation for mathematical expressions
+        - Generate exactly {count} problems"""
+        
+        # Generate problems using vision LLM
+        response = answer_worksheet_question(
+            vars['vision_llm'],
+            base64_content,
+            file_type,
+            prompt
+        )
+        
+        try:
+            # Clean and parse the response using output_processor functions
+            parsed_response = parse_json_response(response)
+            print("parsed_response", parsed_response)
+            
+            # Validate the response format
+            if not isinstance(parsed_response, dict) or 'problems' not in parsed_response:
+                raise ValueError("Response missing 'problems' key")
+                
+            problems = parsed_response['problems']
+            
+            # Validate each problem
+            validated_problems = []
+            for prob in problems:
+                if not isinstance(prob, dict):
+                    continue
+                    
+                problem_text = prob.get('problem', '').strip()
+                prob_bloom_level = prob.get('bloom_level', '').strip().lower()
+                
+                if not problem_text or not prob_bloom_level:
+                    continue
+                    
+                if prob_bloom_level not in ['remember', 'understand', 'apply', 'analyze', 'create']:
+                    # If a specific level was requested, use that, otherwise default to 'remember'
+                    prob_bloom_level = bloom_level.lower() if bloom_level else 'remember'
+                    
+                validated_problems.append({
+                    "problem": problem_text,
+                    "bloom_level": prob_bloom_level
+                })
+            
+            # Take only the requested number of problems
+            validated_problems = validated_problems[:count]
+            
+            if not validated_problems:
+                return jsonify({"error": "No valid problems generated"}), 500
+                
+            return jsonify({"problems": validated_problems})
+            
+        except json.JSONDecodeError as je:
+            print("Failed to parse response as JSON:", response)
+            return jsonify({
+                "error": "Failed to parse generated problems",
+                "details": str(je)
+            }), 500
+        except Exception as e:
+            print("Error validating problems:", str(e))
+            return jsonify({
+                "error": "Failed to validate generated problems",
+                "details": str(e)
+            }), 500
+        
+    except Exception as e:
+        print(f"Error generating problems: {str(e)}")
+        traceback.print_exc()  # Print full traceback for debugging
+        return jsonify({"error": "Failed to generate problems"}), 500
+    
 
 
 def validate_file_content(file_content: str, file_type: str) -> bool:
@@ -220,7 +341,7 @@ def process_notebook_file():
                     "worksheetID": worksheet_id,
                     "unit": unit,
                     "problem": question["question"],
-                    "difficulty": question["difficulty"]
+                    "difficulty": question["bloom_level"]
                 })
                 success_count += 1
             except Exception as e:
@@ -277,7 +398,6 @@ def process_notebook_file():
             "error": "Internal server error",
             "message": str(e)
         }), 500
-  
 
 @ai_routes.route('/get-units', methods=['POST'])
 def get_units():
@@ -297,9 +417,35 @@ def get_units():
     units = list(set(notebook['unit'] for notebook in notebooks if int(notebook['classID']) == int(class_id)))
     print("units", units)
     return jsonify({"units": units})
+
+@ai_routes.route('/map_problems', methods=['POST'])
+def map_problems_route():
+    from main import init
+    vars = init()
+    data = request.json
+
+    print("in map_problems_route")
+    concept_map = data.get('conceptMap')
+    problems = data.get('problems')
     
+    if not concept_map:
+        return json.dumps({"message": "error", "error": "No concept map found for this unit"})
+    
+    if not problems:
+        return json.dumps({"message": "error", "error": "No problems found for this unit"})
+    
+    # Map the problems to concepts
+    result = map_problems(problems, concept_map, vars['llm'])
+    
+    return json.dumps({"message": "success"})
 
 
+
+
+
+
+
+# Levels routes
 @ai_routes.route('/generate-questions', methods=['POST'])
 def generate_questions():
     from main import init
@@ -339,6 +485,124 @@ def generate_questions():
         print(f"Error generating questions: {str(e)}")
         return jsonify({"error": "Failed to generate questions"}), 500
 
+
+@ai_routes.route('/evaluate_understanding', methods=['POST'])
+def evaluate_understanding():
+    """Evaluate student's understanding based on their answer and explanation"""
+    try:
+        # Initialize vars to get LLM
+        from main import init
+        vars = init()
+        
+        data = request.get_json()
+        
+        # Get the problem from the problems list
+        problem = next((p for p in data.get('problems', []) 
+                       if p['id'] == data['problem_id']), None)
+        
+        if not problem:
+            return jsonify({
+                'success': False,
+                'error': 'Problem not found'
+            }), 404
+
+        # Prepare evaluation context
+        evaluation_context = {
+            'problem': problem['problem'],
+            'student_answer': data.get('answer', ''),
+            'student_explanation': data.get('explanation', ''),
+            'unit': data.get('unit', ''),
+            'attempt_number': data.get('attempt_number', 1),
+            'previous_steps': data.get('previous_steps', [])
+        }
+
+        # Get evaluation from LLM
+        evaluation = evaluate_student_response(vars['llm'], evaluation_context)
+        
+        # Calculate mastery based on score
+        mastery = 'mastered' if evaluation['score'] >= 0.8 else 'derived'
+        
+        # Add attempt number to response
+        response = {
+            'success': True,
+            'score': evaluation['score'],
+            'logical_steps': evaluation['logical_steps'],
+            'remaining_steps': evaluation['remaining_steps'],
+            'can_resubmit': evaluation['can_resubmit'],
+            'mastery': mastery,
+            'attempt_number': evaluation_context['attempt_number']
+        }
+        
+        return jsonify(response)
+
+    except Exception as e:
+        logger.error(f"Error evaluating understanding: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@ai_routes.route('/process_audio', methods=['POST'])
+def process_audio():
+    print("in process_audio")
+    try:
+        if 'audio' not in request.files:
+
+            return jsonify({'error': 'No audio file provided'}), 400
+            
+        audio_file = request.files['audio']
+        problem_id = request.form.get('problem_id')
+        answer = request.form.get('answer')
+        
+        print(f"Received audio file: {audio_file.filename}, Content type: {audio_file.content_type}")
+        
+        # Convert audio to format suitable for speech recognition
+        audio_data = audio_file.read()
+        audio_io = io.BytesIO(audio_data)
+        
+        # Initialize speech recognizer with specific settings
+        recognizer = sr.Recognizer()
+        recognizer.energy_threshold = 300
+        recognizer.dynamic_energy_threshold = True
+        recognizer.pause_threshold = 0.8
+        
+        try:
+            # Convert audio to AudioFile format
+            with sr.AudioFile(audio_io) as source:
+                print("Reading audio file...")
+                audio = recognizer.record(source)
+                print("Audio file read successfully")
+                
+            try:
+                # Perform speech recognition
+                print("Starting speech recognition...")
+                transcription = recognizer.recognize_google(audio)
+                print("Speech recognition completed:", transcription)
+                
+                return jsonify({
+                    'transcription': transcription,
+                    'problem_id': problem_id,
+                    'answer': answer
+                })
+                
+            except sr.UnknownValueError:
+                print("Speech recognition could not understand audio")
+                return jsonify({'error': 'Could not understand audio. Please speak clearly and try again.'}), 400
+            except sr.RequestError as e:
+                print("Speech recognition service error:", str(e))
+                return jsonify({'error': f'Speech service error: {str(e)}'}), 500
+                
+        except Exception as e:
+            print("Error processing audio file:", str(e))
+            return jsonify({'error': f'Error processing audio file: {str(e)}'}), 500
+            
+    except Exception as e:
+        print(f"Error in process_audio: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+
+
+# Evaluate routes
 @ai_routes.route('/evaluate-final', methods=['POST'])
 def evaluate_final():
     from main import init
@@ -368,229 +632,11 @@ def generate_followup():
     )
     return jsonify({"followup": followup})
 
-@ai_routes.route('/evaluate_understanding', methods=['POST'])
-def evaluate_understanding():
-    """Evaluate student's understanding based on their answer and explanation"""
-    try:
-        # Initialize vars to get LLM
-        from main import init
-        vars = init()
-        
-        data = request.get_json()
-        
-        # Get the problem from the problems list
-        problem = next((p for p in data.get('problems', []) 
-                       if p['id'] == data['problem_id']), None)
-        
-        if not problem:
-            return jsonify({
-                'success': False,
-                'error': 'Problem not found'
-            }), 404
-
-        # Prepare evaluation context
-        evaluation_context = {
-            'problem': problem['problem'],
-            'student_answer': data.get('answer', ''),
-            'student_explanation': data.get('explanation', ''),
-            'unit': data.get('unit', '')
-        }
-
-        # Get evaluation from LLM
-        evaluation = evaluate_student_response(vars['llm'], evaluation_context)
-        
-        # Calculate mastery based on score
-        mastery = 'mastered' if evaluation['score'] >= 0.8 else 'derived'
-        
-        return jsonify({
-            'success': True,
-            'score': evaluation['score'],
-            'correct_concepts': evaluation['correct_concepts'],
-            'misconceptions': evaluation['misconceptions'],
-            'suggestions': evaluation['suggestions'],
-            'mastery': mastery
-        })
-
-    except Exception as e:
-        logger.error(f"Error evaluating understanding: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-
-# Levels routes
-@ai_routes.route('/generate-bloom-questions', methods=['POST'])
-def generate_bloom_questions_route():
-    from main import init
-    vars = init()
-    data = request.json
-
-    try:
-        questions = generate_bloom_questions(
-            vars['llm'],
-            data['level'],
-            data['previousAnswers'],
-            data['notebookContent']
-        )
-        return jsonify({"questions": questions.model_dump()})
-    except Exception as e:
-        print(f"Error generating Bloom's questions: {str(e)}")
-        return jsonify({"error": "Failed to generate questions"}), 500
-
-@ai_routes.route('/evaluate-answer', methods=['POST'])
-def evaluate_answer():
-    from main import init
-    vars = init()
-    try:
-
-        data = request.json
-        
-        # Get problem details
-        problems = get_user_data("Problems")
-        problem = next((p for p in problems if str(p['id']) == str(data['problem_id'])), None)
-        
-        if not problem:
-            return jsonify({'error': 'Problem not found'}), 404
-            
-        # Get concept map for context
-        cmaps = get_user_data("CMaps")
-        cmap = next((m for m in cmaps if m['unit'] == data['unit'] and str(m['classID']) == str(data['class_id'])), None)
-        
-        if not cmap:
-            return jsonify({'error': 'Concept map not found'}), 404
-            
-        # Prepare evaluation context
-        evaluation_context = {
-            'problem': problem,
-            'student_answer': data['answer'],
-            'student_explanation': data['explanation'],
-            'concept_map': cmap,
-            'unit': data['unit']
-        }
-        
-        # Use LLM to evaluate response
-        evaluation = evaluate_student_response(vars['llm'], evaluation_context)
-        
-        # Calculate mastery level
-        mastery = evaluation['score'] >= 0.8
-        
-        return jsonify({
-            'success': True,
-            'score': evaluation['score'],
-            'correct_concepts': evaluation['correct_concepts'],
-            'misconceptions': evaluation['misconceptions'],
-            'suggestions': evaluation['suggestions'],
-            'mastery': mastery,
-            'modifications': {
-                'mastery_level': evaluation['score'],
-                'score': evaluation['score']
-            }
-        })
-        
-    except Exception as e:
-        print(f"Error evaluating answer: {str(e)}")
-        return jsonify({'error': f'Failed to evaluate answer: {str(e)}'}), 500
 
 
 
-@ai_routes.route('/make_explanation_cards', methods=['POST'])
-def make_explanation_cards_route():
-    from main import init
-    vars = init()
-    data = request.json
 
-    print(data)
-    explanations = make_explanation_cards(
-        data['notebook'], 
-        vars['llm'], 
-        data['history'],
-        data.get('user_input', None)
-    )
-    return json.dumps({"explanations": explanations})
-
-
-@ai_routes.route('/map_problems', methods=['POST'])
-def map_problems_route():
-    from main import init
-    vars = init()
-    data = request.json
-
-    print("in map_problems_route")
-    concept_map = data.get('conceptMap')
-    problems = data.get('problems')
-    
-    if not concept_map:
-        return json.dumps({"message": "error", "error": "No concept map found for this unit"})
-    
-    if not problems:
-        return json.dumps({"message": "error", "error": "No problems found for this unit"})
-    
-    # Map the problems to concepts
-    result = map_problems(problems, concept_map, vars['llm'])
-    
-    return json.dumps({"message": "success"})
-
-
-@ai_routes.route('/save-guide', methods=['POST'])
-def save_guide():
-    from main import init
-    vars = init()
-    data = request.json
-
-    try:
-        post_data("Guides", {
-            "classId": data['class_id'],
-            "userId": session['user_data']['osis'],
-            "content": data['guide_content'],
-            "timestamp": datetime.now().isoformat()
-        })
-        return jsonify({"success": True})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
-
-@ai_routes.route('/generate-derive-questions', methods=['POST'])
-def generate_derive_questions_route():
-    from main import init
-    vars = init()
-    data = request.json
-
-    try:
-        # Get notebook synthesis for the selected class/unit
-        synthesis_data = data['notebooks']
-        synthesis = next((item['synthesis'] for item in synthesis_data 
-                         if item['unit'] == data['unit']), None)
-        
-        if not synthesis:
-            return jsonify({"error": "No synthesis found for this unit"}), 404
-            
-        questions = generate_derive_questions(vars['llm'], synthesis)
-        return jsonify(questions.model_dump())
-        
-    except Exception as e:
-        print(f"Error generating derive questions: {str(e)}")
-        return jsonify({"error": "Failed to generate questions"}), 500
-
-@ai_routes.route('/evaluate-derive-answer', methods=['POST'])
-def evaluate_derive_answer_route():
-    from main import init
-    vars = init()
-    data = request.json
-
-    try:
-        evaluation = evaluate_derive_answer(
-            vars['llm'],
-            data['question'],
-            data['expected_answer'],
-            data['user_answer']
-        )
-        return jsonify(evaluation.model_dump())
-        
-    except Exception as e:
-        print(f"Error evaluating answer: {str(e)}")
-        return jsonify({"error": "Failed to evaluate answer"}), 500
-
-
+#derive routes
 @ai_routes.route('/derive-conversation', methods=['POST'])
 def derive_conversation():
     from main import init
@@ -656,8 +702,6 @@ def derive_conversation():
         print(f"Error in derive conversation: {str(e)}")
         return jsonify({"error": "Failed to generate response"}), 500
 
-
-
 @ai_routes.route('/get_concept_explanation', methods=['POST'])
 def get_concept_explanation():
     from main import init
@@ -687,171 +731,4 @@ def get_concept_explanation():
 
 
 
-# Audio processing routes
-@ai_routes.route('/process_audio', methods=['POST'])
-def process_audio():
-    print("in process_audio")
-    try:
-        if 'audio' not in request.files:
 
-            return jsonify({'error': 'No audio file provided'}), 400
-            
-        audio_file = request.files['audio']
-        problem_id = request.form.get('problem_id')
-        answer = request.form.get('answer')
-        
-        print(f"Received audio file: {audio_file.filename}, Content type: {audio_file.content_type}")
-        
-        # Convert audio to format suitable for speech recognition
-        audio_data = audio_file.read()
-        audio_io = io.BytesIO(audio_data)
-        
-        # Initialize speech recognizer with specific settings
-        recognizer = sr.Recognizer()
-        recognizer.energy_threshold = 300
-        recognizer.dynamic_energy_threshold = True
-        recognizer.pause_threshold = 0.8
-        
-        try:
-            # Convert audio to AudioFile format
-            with sr.AudioFile(audio_io) as source:
-                print("Reading audio file...")
-                audio = recognizer.record(source)
-                print("Audio file read successfully")
-                
-            try:
-                # Perform speech recognition
-                print("Starting speech recognition...")
-                transcription = recognizer.recognize_google(audio)
-                print("Speech recognition completed:", transcription)
-                
-                return jsonify({
-                    'transcription': transcription,
-                    'problem_id': problem_id,
-                    'answer': answer
-                })
-                
-            except sr.UnknownValueError:
-                print("Speech recognition could not understand audio")
-                return jsonify({'error': 'Could not understand audio. Please speak clearly and try again.'}), 400
-            except sr.RequestError as e:
-                print("Speech recognition service error:", str(e))
-                return jsonify({'error': f'Speech service error: {str(e)}'}), 500
-                
-        except Exception as e:
-            print("Error processing audio file:", str(e))
-            return jsonify({'error': f'Error processing audio file: {str(e)}'}), 500
-            
-    except Exception as e:
-        print(f"Error in process_audio: {str(e)}")
-        return jsonify({'error': f'Server error: {str(e)}'}), 500
-
-@ai_routes.route('/generate-problems', methods=['POST'])
-def generate_problems():
-    from main import init
-    from output_processor import clean_llm_response, parse_json_response
-    vars = init()
-    try:
-        data = request.json
-        
-        # Get required data from request
-        file_reference = data['file']  # This is the reference ID in the bucket
-        existing_problems = data.get('existingProblems', [])
-        count = data.get('count', 5)  # Default to 5 problems
-        file_type = data.get('fileType', 'image/png')
-        
-        # Get the file from the bucket
-        base64_content = download_file("sciweb-files", file_reference)
-        
-        if not base64_content:
-            return jsonify({"error": "Failed to retrieve worksheet image"}), 404
-            
-        # Format the prompt to request JSON output
-        prompt = f"""Given these existing practice problems:
-        {existing_problems}
-        
-        Please generate {count} new, unique practice problems that:
-        1. Are similar in style and difficulty to the existing problems
-        2. Cover similar concepts but are not identical
-        3. Are appropriate for the same grade level
-        4. Include proper mathematical notation using LaTeX where appropriate
-        
-        Return the problems in this exact JSON format:
-        {{
-            "problems": [
-                {{
-                    "problem": "Problem text here",
-                    "difficulty": "easy|medium|hard"
-                }}
-            ]
-        }}
-        
-        Requirements:
-        - Each problem must have both a problem text and difficulty level
-        - Difficulty must be one of: easy, medium, hard
-        - Use proper LaTeX notation for mathematical expressions
-        - Generate exactly {count} problems"""
-        
-        # Generate problems using vision LLM
-        response = answer_worksheet_question(
-            vars['vision_llm'],
-            base64_content,
-            file_type,
-            prompt
-        )
-        
-        try:
-            # Clean and parse the response using output_processor functions
-            parsed_response = parse_json_response(response)
-            
-            # Validate the response format
-            if not isinstance(parsed_response, dict) or 'problems' not in parsed_response:
-                raise ValueError("Response missing 'problems' key")
-                
-            problems = parsed_response['problems']
-            
-            # Validate each problem
-            validated_problems = []
-            for prob in problems:
-                if not isinstance(prob, dict):
-                    continue
-                    
-                problem_text = prob.get('problem', '').strip()
-                difficulty = prob.get('difficulty', '').strip().lower()
-                
-                if not problem_text or not difficulty:
-                    continue
-                    
-                if difficulty not in ['easy', 'medium', 'hard']:
-                    difficulty = 'medium'
-                    
-                validated_problems.append({
-                    "problem": problem_text,
-                    "difficulty": difficulty
-                })
-            
-            # Take only the requested number of problems
-            validated_problems = validated_problems[:count]
-            
-            if not validated_problems:
-                return jsonify({"error": "No valid problems generated"}), 500
-                
-            return jsonify({"problems": validated_problems})
-            
-        except json.JSONDecodeError as je:
-            print("Failed to parse response as JSON:", response)
-            return jsonify({
-                "error": "Failed to parse generated problems",
-                "details": str(je)
-            }), 500
-        except Exception as e:
-            print("Error validating problems:", str(e))
-            return jsonify({
-                "error": "Failed to validate generated problems",
-                "details": str(e)
-            }), 500
-        
-    except Exception as e:
-        print(f"Error generating problems: {str(e)}")
-        traceback.print_exc()  # Print full traceback for debugging
-        return jsonify({"error": "Failed to generate problems"}), 500

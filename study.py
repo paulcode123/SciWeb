@@ -105,7 +105,7 @@ def chat_with_function_calling(prompt, grades=None):
                 "properties": {
                     "sheet": {
                         "type": "string",
-                        "description": "The name of the sheet to fetch data from: Grades, Classes, Assignments, Chat, Calendar, Distributions, or Guides",
+                        "description": "The name of the sheet to fetch data from: Classes, Assignments, Chat, Calendar, Distributions, or Guides",
                     },
                 },
                 "required": ["sheet"],
@@ -136,6 +136,7 @@ def chat_with_function_calling(prompt, grades=None):
             sheet = eval(arguments).get("sheet")
             function_response = get_user_data(sheet)
         elif function_name == "get_grades":
+            print("getting grades")
             function_response = grades
             
         follow_up_prompt = {"role": "function", "name": function_name, "content": str(function_response)}
@@ -567,7 +568,9 @@ def evaluate_student_response(llm, context: Dict[str, Any]) -> Dict[str, Any]:
             "problem": context['problem'],
             "answer": context['student_answer'],
             "explanation": context['student_explanation'],
-            "unit": context['unit']
+            "unit": context['unit'],
+            "attempt_number": context.get('attempt_number', 1),
+            "previous_steps": json.dumps(context.get('previous_steps', []))
         }
         
         # Create messages for evaluation
@@ -579,19 +582,35 @@ Problem: {problem}
 Student Answer: {answer}
 Student Explanation: {explanation}
 Unit: {unit}
+Attempt Number: {attempt_number}
+Previous Steps: {previous_steps}
 
-Evaluate the student's understanding and provide:
-1. A score between 0 and 1
-2. List of correctly understood concepts
-3. List of misconceptions
-4. Suggestions for improvement
+Break down the problem into logical steps and evaluate the student's response. For each step:
+1. Identify what the student did
+2. Determine if it was correct
+3. Provide the correct approach if needed
 
-Format your response as a JSON object with these fields:
+Also identify any remaining steps the student needs to complete.
+
+Format your response as a JSON object with the following structure:
 {{
-    "score": 0.0,
-    "correct_concepts": [],
-    "misconceptions": [],
-    "suggestions": []
+    "score": float,  // Overall score between 0 and 1
+    "logical_steps": [  // Steps the student has attempted
+        {{
+            "step_number": int,
+            "description": str,  // What the student did
+            "is_correct": bool,
+            "correct_approach": str  // Only if incorrect
+        }}
+    ],
+    "remaining_steps": [  // Steps not yet attempted
+        {{
+            "step_number": int,
+            "description": str,
+            "hint": str
+        }}
+    ],
+    "can_resubmit": bool  // Whether student should try again
 }}""".format(**formatted_context))
         ]
         
@@ -613,9 +632,9 @@ Format your response as a JSON object with these fields:
             
             return {
                 'score': evaluation.score,
-                'correct_concepts': evaluation.correct_concepts,
-                'misconceptions': evaluation.misconceptions,
-                'suggestions': evaluation.suggestions
+                'logical_steps': [step.model_dump() for step in evaluation.logical_steps],
+                'remaining_steps': [step.model_dump() for step in evaluation.remaining_steps],
+                'can_resubmit': evaluation.can_resubmit
             }
             
         except json.JSONDecodeError as e:

@@ -273,6 +273,11 @@ async function getFCMToken(messaging) {
   }
 }
 
+// Function to check if device is mobile
+function isMobileDevice() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
 // Save token to server
 async function saveTokenToServer(token) {
   const deviceName = navigator.userAgent;
@@ -281,7 +286,8 @@ async function saveTokenToServer(token) {
   console.log("userTokens", userTokens);
   const timeStamp = Date.now();
   
-  if (userTokens.length == 0 && !notificationsEnabled) {
+  if (userTokens.length === 0) {
+    // No existing token, add new one
     await fetchRequest('/post_data', {
       data: {
         "token": token,
@@ -295,8 +301,23 @@ async function saveTokenToServer(token) {
     updateNotificationUI(true, "Notifications are enabled for this device.");
     notificationsEnabled = true;
   } else {
-    console.log("Token already exists for this user and device.");
-    updateNotificationUI(true, "Notifications are already enabled for this device.");
+    // Token exists, check if it needs updating
+    const existingToken = userTokens[0].token;
+    if (token !== existingToken) {
+      // Update the token using update_data route
+      await fetchRequest('/update_data', {
+        sheet: "Tokens",
+        data: {
+          "token": token,
+          "deviceName": deviceName,
+          "timeStamp": timeStamp
+        },
+        row_name: "OSIS",
+        row_value: osis
+      });
+      console.log("Token updated for device:", deviceName);
+    }
+    updateNotificationUI(true, "Notifications are enabled for this device.");
     notificationsEnabled = true;
   }
 }
@@ -309,7 +330,25 @@ async function setupMessaging() {
     return;
   }
 
+  // Check if this is a mobile device
+  const isMobile = isMobileDevice();
+  
   try {
+    // For desktop devices, just check if notifications exist
+    if (!isMobile) {
+      const currentTokens = await fetchRequest('/data', {data: "Name, Tokens"});
+      const userTokens = currentTokens['Tokens'].filter(t => parseInt(t.OSIS) == parseInt(osis));
+      if (userTokens.length > 0) {
+        console.log("Notifications are enabled on mobile device");
+        updateNotificationUI(true, "Notifications are enabled on your mobile device.");
+        notificationsEnabled = true;
+      } else {
+        updateNotificationUI(false, "Enable notifications on your mobile device to receive updates.");
+      }
+      return;
+    }
+
+    // For mobile devices, proceed with notification setup
     const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
     console.log('ServiceWorker registration successful with scope:', registration.scope);
 
@@ -341,26 +380,48 @@ async function setupMessaging() {
 
   } catch (error) {
     console.error('Error setting up messaging:', error);
+    updateNotificationUI(false, "Error setting up notifications.");
   }
 }
 
 
 
 
-function updateNotificationUI(isEnabled, errorText) {
+function updateNotificationUI(isEnabled, message) {
   // define all the elements that are used in the function
   const notificationsIcon = document.getElementById('notificationsIcon');
   const notificationsEnabled = document.getElementById('notificationsEnabled');
   const notificationsDisabled = document.getElementById('notificationsDisabled');
-  const retryButton = document.getElementById('retryButton');
   const errorElement = document.getElementById('errorText');
+
   // update the elements
   notificationsEnabled.style.display = isEnabled ? 'inline' : 'none';
   notificationsDisabled.style.display = isEnabled ? 'none' : 'inline';
-  errorElement.style.display = isEnabled ? 'none' : 'block';
-  retryButton.style.display = isEnabled ? 'none' : 'block';
+  errorElement.style.display = 'none';  // Initially hidden
 
-  errorElement.innerHTML = errorText;
+  // Set up hover behavior
+  const iconToShow = isEnabled ? notificationsEnabled : notificationsDisabled;
+  iconToShow.title = message;  // Show message on hover
+
+  // Set up hover events for showing/hiding the message
+  iconToShow.addEventListener('mouseenter', () => {
+    errorElement.textContent = message;
+    errorElement.style.display = 'block';
+    errorElement.style.position = 'absolute';
+    errorElement.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+    errorElement.style.color = 'white';
+    errorElement.style.padding = '8px';
+    errorElement.style.borderRadius = '4px';
+    errorElement.style.fontSize = '14px';
+    errorElement.style.maxWidth = '200px';
+    errorElement.style.textAlign = 'center';
+    errorElement.style.transform = 'translateY(30px)';
+    errorElement.style.zIndex = '1000';
+  });
+
+  iconToShow.addEventListener('mouseleave', () => {
+    errorElement.style.display = 'none';
+  });
 }
 
 // Call setupMessaging when the page loads

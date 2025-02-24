@@ -1,3 +1,5 @@
+cacheTimeout = 40; // 40 minutes
+
 async function getBase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -79,7 +81,7 @@ async function getBase64(file) {
                     
 
                     // Check if cache is still valid (less than 15 minutes old)
-                    if (Date.now() - timestamp < 15 * 60 * 1000 || sheet === 'Grades') {
+                    if (Date.now() - timestamp < cacheTimeout * 60 * 1000 || sheet === 'Grades') {
                         console.log('Using cached data for:', sheet);
                         response[sheet] = data;
                         cachedSheets[sheet] = data;  // Add to cachedSheets
@@ -190,7 +192,7 @@ function processDate(date){
   }
 
 
-  function set_create_user_add_EL(users, user_add_field, userList){
+function set_create_user_add_EL(users, user_add_field, userList){
 
     // add event listener to user_add_field to show users that match the query
     user_add_field.addEventListener('input', () => {
