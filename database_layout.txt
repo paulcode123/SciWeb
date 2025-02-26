@@ -28,7 +28,6 @@ Sheet name: Classes; accessed by getting the classes for the user from the Users
     name(name of the class)
     teacher(name of the teacher)
     id(4 digit id)
-    assignments(list of ids of assignments in the class)
     categories(dictionary of categories in the class; ["homework", 40, "Assessments", 60] format)
     description(description of the class)
     period(period of the class)
@@ -316,11 +315,13 @@ Sheet name: TodoTrees
             name: str,
             description: str (optional, detailed description of the node),
             position: {x: number, y: number},
-            deadline: str (optional),
-            targetDate: str (optional),
+            deadline: str (optional, in YYYY-MM-DDTHH:mm format),
+            targetDate: str (optional, in YYYY-MM-DDTHH:mm format),
             gradeGoalClass: str (optional),
             gradeGoalTarget: float (optional),
-            checkInDates: [str] (optional),
+            checkInDates: [str] (optional, array of dates in YYYY-MM-DD format),
+            motivationLink: str (optional),(for motivator nodes, allows user to link to a youtube video to motivate them)
+            motivationLinkTime: str (optional), (extends the above with a time range of the video, i.e. 06:00-07:00)
             context: str (optional, 40-word synthesis of parent conversation),
             breakOffText: str (optional, text in parent conversation that this task was broken off from),
             chatHistory: [{

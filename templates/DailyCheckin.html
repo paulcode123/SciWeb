@@ -61,6 +61,25 @@
             </button>
         </div>
 
+        <!-- Motivation Window -->
+        <div class="swipe-window animated-window" id="motivation-window">
+            <div class="window-header">
+                <h2>🌟 Daily Motivation</h2>
+                <div class="decoration-element sparkles"></div>
+            </div>
+            <div class="motivation-content">
+                <h3>Let's see what we're working towards...</h3>
+                <div class="form-group">
+                    <select id="motivation-select" class="motivation-dropdown">
+                        <option value="">Select a motivation</option>
+                    </select>
+                </div>
+                <div id="video-container" style="display: none;">
+                    <div id="youtube-player"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- TodoTree Tasks Window -->
         <div class="swipe-window animated-window" id="tasks-window">
             <div class="window-header">
@@ -103,13 +122,66 @@
 <template id="assignment-template">
     <div class="assignment-item">
         <div class="assignment-header">
-            <span class="class-name"></span>
+            <div class="assignment-meta">
+                <span class="class-name"></span>
+                <span class="assignment-category"></span>
+            </div>
             <span class="due-date"></span>
         </div>
-        <div class="assignment-name"></div>
-        <div class="assignment-points"></div>
+        <div class="assignment-content">
+            <div class="assignment-name"></div>
+            <div class="assignment-description" style="display: none;"></div>
+        </div>
+        <div class="assignment-footer">
+            <div class="assignment-points"></div>
+        </div>
     </div>
 </template>
+
+<!-- Assignment Modal -->
+<div id="assignment-modal" class="modal">
+    <div class="modal-content">
+        <h3>New Assignment</h3>
+        <form id="assignment-form">
+            <div class="form-group">
+                <label for="assignment-name">Assignment Name*</label>
+                <input type="text" id="assignment-name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="assignment-class">Class*</label>
+                <select id="assignment-class" required></select>
+            </div>
+            
+            <div class="form-group">
+                <label for="assignment-category">Category*</label>
+                <select id="assignment-category" required disabled>
+                    <option value="">Select a class first</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="assignment-due">Due Date*</label>
+                <input type="date" id="assignment-due" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="assignment-points">Points*</label>
+                <input type="number" id="assignment-points" min="0" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="assignment-description">Description</label>
+                <textarea id="assignment-description" rows="3"></textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="document.getElementById('assignment-modal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn-primary">Create Assignment</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <template id="task-template">
     <div class="task-item">

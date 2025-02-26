@@ -225,8 +225,12 @@ function set_create_user_add_EL(users, user_add_field, userList){
         }
     });
 }
-let currentLoadingImage = 0;
-let loadingInterval;
+
+// Loading state management
+window.loadingState = window.loadingState || {
+    currentImageIndex: 0,
+    interval: null
+};
 
 function startLoading(fixedTop = null) {
     const container = document.querySelector('.loading-container');
@@ -247,12 +251,12 @@ function startLoading(fixedTop = null) {
     
     // Show first image
     images[0].classList.add('active');
-    currentLoadingImage = 0;
+    window.loadingState.currentImageIndex = 0;
     
-    loadingInterval = setInterval(() => {
-        images[currentLoadingImage].classList.remove('active');
-        currentLoadingImage = (currentLoadingImage + 1) % images.length;
-        images[currentLoadingImage].classList.add('active');
+    window.loadingState.interval = setInterval(() => {
+        images[window.loadingState.currentImageIndex].classList.remove('active');
+        window.loadingState.currentImageIndex = (window.loadingState.currentImageIndex + 1) % images.length;
+        images[window.loadingState.currentImageIndex].classList.add('active');
     }, 1500);
 }
 
@@ -260,7 +264,7 @@ function endLoading() {
     const container = document.querySelector('.loading-container');
     const images = container.querySelectorAll('.loading-image');
     
-    clearInterval(loadingInterval);
+    clearInterval(window.loadingState.interval);
     container.style.display = 'none';
     images.forEach(img => img.classList.remove('active'));
     
@@ -282,8 +286,8 @@ function updateCacheInfoDisplay() {
             const value = JSON.parse(localStorage.getItem(key));
             if (value && value.timestamp) {
                 const timeAgo = Math.round((Date.now() - value.timestamp) / 60000); // Convert to minutes
-                // Only show if less than 15 minutes old
-                if (timeAgo < 15) {
+                // Use the same timeout as defined at the top
+                if (timeAgo < cacheTimeout) {
                     const item = document.createElement('div');
                     item.className = 'cached-sheet-item';
                     item.innerHTML = `

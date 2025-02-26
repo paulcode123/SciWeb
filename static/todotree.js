@@ -474,6 +474,16 @@ document.addEventListener('DOMContentLoaded', function() {
             dateNotificationSection.classList.toggle('show', type !== 'Motivator');
         }
 
+        // Show/hide motivation section for Motivator type
+        const motivationSection = document.getElementById('motivationSection');
+        if (motivationSection) {
+            motivationSection.style.display = type === 'Motivator' ? 'block' : 'none';
+            if (type === 'Motivator') {
+                document.getElementById('motivationLink').value = editingNode.dataset.motivationLink || '';
+                document.getElementById('motivationLinkTime').value = editingNode.dataset.motivationLinkTime || '';
+            }
+        }
+
         // Load existing dates and check-ins if any
         if (type !== 'Motivator') {
             const deadlineInput = document.getElementById('deadline');
@@ -527,16 +537,41 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add validation function for check-in dates
     function validateCheckInDate(dateInput) {
-        const selectedDate = new Date(dateInput.value);
-        const now = new Date();
+        const selectedDate = new Date(dateInput.value + 'T00:00:00'); // Convert to midnight of selected date
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Set to midnight for date-only comparison
         
-        if (selectedDate < now) {
+        // Compare dates - allow today's date
+        if (selectedDate.getTime() < today.getTime()) {
             alert('Cannot set check-in dates in the past');
             dateInput.value = '';
             return false;
         }
         
         return true;
+    }
+
+    // Validate YouTube link format
+    function validateYouTubeLink(link) {
+        if (!link) return true; // Empty link is valid
+        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(\S*)?$/;
+        return youtubeRegex.test(link);
+    }
+
+    // Validate time range format
+    function validateTimeRange(timeRange) {
+        if (!timeRange) return true; // Empty time range is valid
+        const timeRegex = /^([0-5]?[0-9]):([0-5][0-9])-([0-5]?[0-9]):([0-5][0-9])$/;
+        if (!timeRegex.test(timeRange)) return false;
+
+        const [start, end] = timeRange.split('-');
+        const [startHours, startMinutes] = start.split(':').map(Number);
+        const [endHours, endMinutes] = end.split(':').map(Number);
+        
+        const startTime = startHours * 60 + startMinutes;
+        const endTime = endHours * 60 + endMinutes;
+        
+        return endTime > startTime;
     }
 
     // Update saveNodeChanges to handle check-in dates
@@ -546,6 +581,26 @@ document.addEventListener('DOMContentLoaded', function() {
         const newName = nodeNameInput.value.trim();
         const newType = nodeTypeSelect.value;
         const description = document.getElementById('nodeDescription').value.trim();
+
+        if (!newName) {
+            alert('Node name is required');
+            return;
+        }
+
+        if (newType === 'Motivator') {
+            const motivationLink = document.getElementById('motivationLink').value.trim();
+            const motivationLinkTime = document.getElementById('motivationLinkTime').value.trim();
+
+            if (motivationLink && !validateYouTubeLink(motivationLink)) {
+                alert('Please enter a valid YouTube URL');
+                return;
+            }
+
+            if (motivationLinkTime && !validateTimeRange(motivationLinkTime)) {
+                alert('Please enter a valid time range in format MM:SS-MM:SS');
+                return;
+            }
+        }
 
         if (newName) {
             editingNode.querySelector('span').textContent = newName;
@@ -560,11 +615,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 editingNode.style.top = `${y}px`;
             }
             
+            // Save motivation data for Motivator type
+            if (newType === 'Motivator') {
+                const motivationLink = document.getElementById('motivationLink').value.trim();
+                const motivationLinkTime = document.getElementById('motivationLinkTime').value.trim();
+                
+                if (motivationLink) {
+                    editingNode.dataset.motivationLink = motivationLink;
+                    if (motivationLinkTime) {
+                        editingNode.dataset.motivationLinkTime = motivationLinkTime;
+                    } else {
+                        delete editingNode.dataset.motivationLinkTime;
+                    }
+                } else {
+                    delete editingNode.dataset.motivationLink;
+                    delete editingNode.dataset.motivationLinkTime;
+                }
+            } else {
+                delete editingNode.dataset.motivationLink;
+                delete editingNode.dataset.motivationLinkTime;
+            }
+            
             // Save dates and check-ins for Task and Goal types
             if (newType !== 'Motivator') {
                 const oldCheckInDates = JSON.parse(editingNode.dataset.checkInDates || '[]');
-                const newCheckInDates = Array.from(document.querySelectorAll('.check-in-date'))
-                    .map(input => input.value)
+                
+                const newCheckInDates = Array.from(document.querySelectorAll('#checkInDateList .check-in-date'))
+                    .map(input => input.value) // Date inputs will return YYYY-MM-DD format
                     .filter(date => date);
 
                 editingNode.dataset.deadline = document.getElementById('deadline').value;
@@ -1184,6 +1261,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 nodeData.gradeGoalClass = node.dataset.gradeGoalClass;
                 nodeData.gradeGoalTarget = node.dataset.gradeGoalTarget;
             }
+            if (node.dataset.motivationLink) {
+                nodeData.motivationLink = node.dataset.motivationLink;
+                if (node.dataset.motivationLinkTime) {
+                    nodeData.motivationLinkTime = node.dataset.motivationLinkTime;
+                }
+            }
 
             return nodeData;
         });
@@ -1275,6 +1358,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (nodeData.gradeGoalClass) {
                     circle.dataset.gradeGoalClass = nodeData.gradeGoalClass;
                     circle.dataset.gradeGoalTarget = nodeData.gradeGoalTarget;
+                }
+                if (nodeData.motivationLink) {
+                    circle.dataset.motivationLink = nodeData.motivationLink;
+                    if (nodeData.motivationLinkTime) {
+                        circle.dataset.motivationLinkTime = nodeData.motivationLinkTime;
+                    }
                 }
 
                 // Add orbital dots for Goal type
