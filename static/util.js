@@ -1,3 +1,202 @@
+// Utility functions for SciWeb
+
+// Convert file to base64
+function getBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+}
+
+// Make color opaque by removing any alpha channel
+function make_color_opaque(color) {
+    // If color is in rgba format, convert to hex
+    if (color.startsWith('rgba')) {
+        const rgba = color.match(/[\d.]+/g);
+        color = '#' + 
+            Math.round(rgba[0]).toString(16).padStart(2, '0') +
+            Math.round(rgba[1]).toString(16).padStart(2, '0') +
+            Math.round(rgba[2]).toString(16).padStart(2, '0');
+    }
+    return color;
+}
+
+// Fetch request wrapper
+async function fetchRequest(endpoint, data = {}) {
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Error in fetchRequest:', error);
+        return null;
+    }
+}
+
+// Set class/league image
+async function set_class_img(img) {
+    if (!img || typeof img !== 'string' || img === '') {
+        return;
+    }
+
+    try {
+        const response = await fetchRequest('/get-file', { file: img.toString() });
+        let b64 = response.file;
+        
+        // Handle different image types
+        if (b64.includes('pngbase64')) {
+            b64 = b64.replace('dataimage/pngbase64', 'data:image/png;base64,');
+            b64 = b64.slice(0, -1);
+        } else if (b64.includes('jpegbase64')) {
+            b64 = b64.replace('dataimage/jpegbase64', 'data:image/jpeg;base64,');
+        }
+
+        const container = document.getElementById('classimgcontainer');
+        container.innerHTML = ''; // Clear existing images
+        const classimg = document.createElement('img');
+        classimg.src = b64;
+        container.appendChild(classimg);
+    } catch (error) {
+        console.error('Error setting class image:', error);
+    }
+}
+
+// Set up image upload functionality
+async function setImageEl(data, sheet) {
+    const imgUpload = document.getElementById('imgupload');
+    if (!imgUpload) return;
+
+    imgUpload.addEventListener('change', async function() {
+        try {
+            const img = await getBase64(this.files[0]);
+            const id = Math.floor(Math.random() * 90000000) + 10000000;
+            const response = await fetchRequest('/upload-file', { file: img, name: id });
+            
+            if (response) {
+                await updateClassPic(id, data, sheet);
+            }
+        } catch (error) {
+            console.error('Error uploading image:', error);
+        }
+    });
+}
+
+// Update class/league picture
+async function updateClassPic(id, data, sheet) {
+    try {
+        const updatedData = { ...data, img: id };
+        const response = await fetchRequest('/update_data', {
+            row_value: data.id,
+            row_name: "id",
+            data: updatedData,
+            sheet: sheet
+        });
+        
+        if (response) {
+            location.reload();
+        }
+    } catch (error) {
+        console.error('Error updating picture:', error);
+    }
+}
+
+// Set up color picker functionality
+function set_color_EL(sheet, data) {
+    const saveColorBtn = document.getElementById('savecolor');
+    const colorInput = document.getElementById('color');
+    const colorLabel = document.getElementById('colorLabel');
+
+    if (!saveColorBtn || !colorInput || !colorLabel) return;
+
+    // Show color picker when label is clicked
+    colorLabel.addEventListener('click', () => {
+        colorInput.style.display = 'block';
+        saveColorBtn.style.display = 'block';
+    });
+
+    // Save color when button is clicked
+    saveColorBtn.addEventListener('click', async function() {
+        const color = make_color_opaque(colorInput.value);
+        document.getElementById('class-header').style.backgroundColor = color;
+        colorInput.style.display = 'none';
+        saveColorBtn.style.display = 'none';
+
+        const updatedData = { ...data, color: color };
+        await fetchRequest('/update_data', {
+            row_value: data.id,
+            row_name: "id",
+            data: updatedData,
+            sheet: sheet
+        });
+    });
+}
+
+// Show join button and handle joining
+function show_Join(user, data, sheet) {
+    const joinBtn = document.getElementById('joinBtn');
+    if (!joinBtn || !user || user[1] === 404) return;
+
+    const userOsis = user.osis?.toString();
+    const dataOsis = data.OSIS?.toString()?.split(/[\s,]+/).filter(Boolean);
+
+    if (!userOsis || !dataOsis || dataOsis.includes(userOsis)) return;
+
+    joinBtn.style.display = 'block';
+    join_class(data, user, sheet);
+}
+
+// Handle join button click
+function join_class(data, user, sheet) {
+    const joinBtn = document.getElementById('joinBtn');
+    if (!joinBtn) return;
+
+    joinBtn.addEventListener('click', async function() {
+        const updatedData = {
+            ...data,
+            OSIS: data.OSIS ? `${data.OSIS}, ${user.osis}` : user.osis
+        };
+
+        await fetchRequest('/update_data', {
+            row_value: data.id,
+            row_name: "id",
+            data: updatedData,
+            sheet: sheet
+        });
+
+        location.reload();
+    });
+}
+
+// Add user bubbles to display members
+function add_user_bubbles(data, users) {
+    const userListContainer = document.getElementById('user-list');
+    if (!userListContainer || !data.OSIS) return;
+
+    const members = data.OSIS.toString()
+        .split(/[\s,]+/)
+        .filter(item => item.length > 0);
+
+    members.forEach(memberId => {
+        const user = users.find(u => u.osis == memberId);
+        if (!user) return;
+
+        const userBubble = document.createElement('div');
+        userBubble.textContent = user.first_name;
+        userBubble.classList.add('user-bubble');
+        userBubble.addEventListener('click', () => {
+            window.location.href = '/users/' + memberId;
+        });
+        userListContainer.appendChild(userBubble);
+    });
+}
+
 async function getBase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();

@@ -8,164 +8,126 @@
 <!-- css block -->
 {% block css %}
 <link rel="stylesheet" href="/static/league.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.css">
 {% endblock %}
 
 <!-- content block -->
 {% block content %}
-
+<div class="league-container">
   <div id="classimgcontainer"></div>
-  <div id="head">
+  <div id="head" class="league-header">
     <h1>{{ league_name }} League</h1>
-    <button id="joinBtn">Join League</button>
+    <button id="joinBtn" class="action-button">Join League</button>
     <h3 id="description"></h3>
-    <div id="user-list"></div>
-    <div id="assignmentList"></div>
     
-    <br>
-    </div>
-    </div>
-    <!-- create input image upload element with a label "🖼️" -->
-    <input type="file" id="imgupload" style="display: none;">
-    <label for="imgupload" id="uploadLabel">🖼️</label>
+    <!-- Design controls -->
+    <div class="design-controls">
+      <input type="file" id="imgupload" accept="image/*" style="display: none;">
+      <label for="imgupload" id="uploadLabel" class="control-label">🖼️ Change Cover Image</label>
 
-    <!-- create color input with paint emoji label -->
-    <label for="color" id="colorLabel">🎨</label>
-    <input type="color" id="color" value="#000000" style="display: none;">
-    <button id="savecolor" style="display: none;">Save Color</button>
+      <input type="color" id="color" value="#000000" style="display: none;">
+      <label for="color" id="colorLabel" class="control-label">🎨 Change Theme</label>
+      <button id="savecolor" class="action-button" style="display: none;">Save Color</button>
+    </div>
 
-    <br>
+    <!-- Members section -->
+    <div class="members-section">
+      <h2>Members</h2>
+      <div id="user-list" class="user-bubbles"></div>
+    </div>
+
+    <!-- Graph section -->
     <div class="graphcontainer">
-      <h1>Grades Over Time</h1>
+      <h2>Grades Over Time</h2>
       <canvas id="myChart"></canvas>
-  </div>
-    <br>
-    <div class="leaderboard" id="GPAlb">
-      <h1>GPA Leaderboard</h1>
-      <table>
+    </div>
+
+    <!-- Leaderboards -->
+    <div class="leaderboards-section">
+      <div class="leaderboard" id="GPAlb">
+        <h2>GPA Leaderboard</h2>
+        <table>
           <thead>
-              <tr>
-                  <th>Place</th>
-                  <th>Name</th>
-                  <th>Score</th>
-              </tr>
-          </thead>
-          <tbody>
-              <tr>
-                  <td>🥇 1</td>
-                  <td>--</td>
-                  <td>--</td>
-              </tr>
-              <tr>
-                  <td>🥈 2</td>
-                  <td>--</td>
-                  <td>--</td>
-              </tr>
-              <tr>
-                  <td>🥉 3</td>
-                  <td>--</td>
-                  <td>--</td>
-              </tr>
-              <tr>
-                  <td>4</td>
-                  <td>--</td>
-                  <td>--</td>
-              </tr>
-              <!-- Add more rows as needed -->
-          </tbody>
-      </table>
-  </div>
-  <br><br>
-  <div class="leaderboard" id="RIlb">
-    <h1>Recent Improvement Leaderboard</h1>
-    <table>
-        <thead>
             <tr>
-                <th>Place</th>
-                <th>Name</th>
-                <th>Score</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>🥇 1</td>
-                <td>--</td>
-                <td>--</td>
-            </tr>
-            <tr>
-                <td>🥈 2</td>
-                <td>--</td>
-                <td>--</td>
-            </tr>
-            <tr>
-                <td>🥉 3</td>
-                <td>--</td>
-                <td>--</td>
-            </tr>
-            <tr>
-                <td>4</td>
-                <td>--</td>
-                <td>--</td>
-            </tr>
-            <!-- Add more rows as needed -->
-        </tbody>
-    </table>
-</div>
-<br><br>
-<div class="leaderboard" id="Glb">
-  <h1>Goals Leaderboard</h1>
-  <table>
-      <thead>
-          <tr>
               <th>Place</th>
               <th>Name</th>
               <th>Score</th>
-          </tr>
-      </thead>
-      <tbody>
-          <tr>
-              <td>🥇 1</td>
-              <td>--</td>
-              <td>--</td>
-          </tr>
-          <tr>
-              <td>🥈 2</td>
-              <td>--</td>
-              <td>--</td>
-          </tr>
-          <tr>
-              <td>🥉 3</td>
-              <td>--</td>
-              <td>--</td>
-          </tr>
-          <tr>
-              <td>4</td>
-              <td>--</td>
-              <td>--</td>
-          </tr>
-          <!-- Add more rows as needed -->
-      </tbody>
-  </table>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>🥇 1</td><td>--</td><td>--</td></tr>
+            <tr><td>🥈 2</td><td>--</td><td>--</td></tr>
+            <tr><td>🥉 3</td><td>--</td><td>--</td></tr>
+            <tr><td>4</td><td>--</td><td>--</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="leaderboard" id="RIlb">
+        <h2>Recent Improvement Leaderboard</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Place</th>
+              <th>Name</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>🥇 1</td><td>--</td><td>--</td></tr>
+            <tr><td>🥈 2</td><td>--</td><td>--</td></tr>
+            <tr><td>🥉 3</td><td>--</td><td>--</td></tr>
+            <tr><td>4</td><td>--</td><td>--</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="leaderboard" id="Glb">
+        <h2>Goals Leaderboard</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Place</th>
+              <th>Name</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>🥇 1</td><td>--</td><td>--</td></tr>
+            <tr><td>🥈 2</td><td>--</td><td>--</td></tr>
+            <tr><td>🥉 3</td><td>--</td><td>--</td></tr>
+            <tr><td>4</td><td>--</td><td>--</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Chat section -->
+    <div id="chat-box" class="chat-section">
+      <div class="chat-header">
+        <h2>League Chat</h2>
+        <button id="refresh-chat" class="action-button" title="Refresh chat">🔄</button>
+      </div>
+      <ul id="message-list"></ul>
+      <div id="image-container"></div>
+      <div id="input-container">
+        <input type="text" id="message-input" placeholder="Type your message...">
+        <button id="clear" class="action-button" title="Clear message">❌</button>
+        <button id="send-button" class="action-button">Send</button>
+        <input type="file" id="upload" accept="image/*" style="display: none;">
+        <label for="upload" class="upload-label" title="Upload file">📁</label>
+      </div>
+    </div>
+  </div>
 </div>
 
-  
-  
-  <br><br>
-  
-  <div id="chat-box">
-    <button id="refresh-chat">🔄</button>
-    <ul id="message-list"></ul>
-    <div id="image-container"></div>
-    <div id="input-container">
-      <input type="text" id="message-input" placeholder="Type your message...">
-      <button id="clear">❌</button>
-      <button id="send-button">Send</button>
-      <input type="file" id="upload" style="display: none;">
-      <label for="upload" id="uploadLabel">📁</label>
-      
-    </div>
+<!-- Loading indicator -->
+<div id="loadingWheel" class="loading-wheel"></div>
 {% endblock %}
 
 <!-- js block -->
 {% block js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+<script src="/static/util.js"></script>
 <script src="/static/league.js"></script>
 {% endblock %}

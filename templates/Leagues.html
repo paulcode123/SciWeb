@@ -13,6 +13,15 @@
 <!-- content block -->
 {% block content %}
     <h1>My Leagues</h1>
+    
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="flash-message">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
     <div id="leagueList"></div>
     
     <br>
@@ -21,16 +30,37 @@
         <!-- name -->
         <label for="leagueName">League Name:</label>
         <input type="text" id="leagueName" name="leagueName"><br>
-        <!-- activities(checkboxes) -->
+        <!-- activities(clickable cards) -->
         <label for="activities">Activities:</label>
         <div id="activityOptions">
-        <label for="GOTC"><input type="checkbox" class="activities" name="activities" id="GOTC">Grades over time Chart</label><br>
-        <label for="GPAlb"><input type="checkbox" class="activities" name="activities" id="GPAlb">GPA leaderboard</label><br>
-        <label for="RIlb"><input type="checkbox" class="activities" name="activities" id="RIlb">Recent Improvement Leaderboard</label><br>
-        <label for="Glb"><input type="checkbox" class="activities" name="activities" id="Glb">Goals Leaderboard</label><br>
-        <label for="RAS"><input type="checkbox" class="activities" name="activities" id="RAS">Recent Assessment Share</label><br>
-        <label for="SS"><input type="checkbox" class="activities" name="activities" id="SS">Stat Share</label><br>
-        <label for="R"><input type="checkbox" class="activities" name="activities" id="R">Reactions</label>
+            <button type="button" class="activity-card" data-id="GOTC">
+                <span class="activity-name">Grades over time Chart</span>
+                <span class="select-indicator"></span>
+            </button>
+            <button type="button" class="activity-card" data-id="GPAlb">
+                <span class="activity-name">GPA leaderboard</span>
+                <span class="select-indicator"></span>
+            </button>
+            <button type="button" class="activity-card" data-id="RIlb">
+                <span class="activity-name">Recent Improvement Leaderboard</span>
+                <span class="select-indicator"></span>
+            </button>
+            <button type="button" class="activity-card" data-id="Glb">
+                <span class="activity-name">Goals Leaderboard</span>
+                <span class="select-indicator"></span>
+            </button>
+            <button type="button" class="activity-card" data-id="RAS">
+                <span class="activity-name">Recent Assessment Share</span>
+                <span class="select-indicator"></span>
+            </button>
+            <button type="button" class="activity-card" data-id="SS">
+                <span class="activity-name">Stat Share</span>
+                <span class="select-indicator"></span>
+            </button>
+            <button type="button" class="activity-card" data-id="R">
+                <span class="activity-name">Reactions</span>
+                <span class="select-indicator"></span>
+            </button>
         </div>
         <!-- add users -->
         <label for="addUsers">Add Users:</label>

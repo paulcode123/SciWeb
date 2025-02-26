@@ -1,7 +1,7 @@
 # Import necessary libraries
-
+# i like basketballs (revised comment-- sadly)
 # Flask is a web framework for Python that allows backend-frontend communication
-from flask import Flask, render_template, request, session, redirect, url_for, send_from_directory, jsonify, Response, stream_with_context
+from flask import Flask, render_template, request, session, redirect, url_for, send_from_directory, jsonify, Response, stream_with_context, flash
 # json is a library for parsing and creating JSON data
 import json
 
@@ -302,12 +302,17 @@ def class_page(classid):
 # League page, for specific leagues
 @app.route('/league/<leagueid>')
 def league_page(leagueid):
-  leagues = get_user_data("Leagues")
-  league_data = next(
-    (row for row in leagues if int(row['id']) == int(leagueid)), None)
-  league_name = league_data['Name']
-  return render_template('league.html',
-                         league_name=league_name)
+    leagues = get_user_data("Leagues")
+    league_data = next(
+        (row for row in leagues if int(row['id']) == int(leagueid)), None)
+    
+    if league_data is None:
+        # League not found, redirect to leagues page
+        flash('League not found')
+        return redirect('/Leagues')
+        
+    league_name = league_data['Name']
+    return render_template('league.html', league_name=league_name)
 
 # Assignment page, for specific assignments
 @app.route('/assignment/<assignmentid>')

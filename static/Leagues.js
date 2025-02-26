@@ -19,8 +19,12 @@ async function main() {
     
     set_create_user_add_EL(users, user_add_field, userList);
     displayLeagues(leagues);
-    // hide loading wheel
-    document.getElementById('loadingWheel').style.display = 'none';
+    
+    // Only try to hide loading wheel if it exists
+    const loadingWheel = document.getElementById('loadingWheel');
+    if (loadingWheel) {
+        loadingWheel.style.display = 'none';
+    }
 }
 main();
 
@@ -46,37 +50,73 @@ function displayLeagues(leagues) {
     });
 }
 
+// Initialize activity card selection
+document.querySelectorAll('.activity-card').forEach(card => {
+    card.addEventListener('click', () => {
+        card.classList.toggle('selected');
+    });
+});
+
 // add event listener when form is submitted
 leagueForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const leagueName = document.getElementById('leagueName').value;
-    const activitiesChecklist = document.getElementById('activityOptions')
-    var leagueUsers = [osis];
+    var leagueUsers = [osis.toString()]; // Convert first OSIS to string
     // loop through all users in userList
     userList.childNodes.forEach(user => {
-        // add user to leagueUsers
-        leagueUsers.push(user.value);
+        // add user to leagueUsers as string
+        leagueUsers.push(user.value.toString());
     });
-    leagueUsers = leagueUsers.join(", ");
-    // list all of the checked activities
+    
+    // Get selected activities
     const leagueActivities = [];
-    activitiesChecklist.childNodes.forEach(activity => {
-        // if element is a label
-        if(activity.nodeName != "LABEL"){
-            return;
-        }
-        activity = activity.childNodes[0];
-        
-        if(activity.checked){
-            
-            // push id of element value to leagueActivities
-            leagueActivities.push(activity.id);
-        }
+    document.querySelectorAll('.activity-card.selected').forEach(card => {
+        leagueActivities.push(card.dataset.id);
     });
+    
     // make random 8 digit id
     const id = Math.floor(Math.random() * 100000000);
-    // create league
-    await fetchRequest('/post_data', {"sheet": "Leagues", "data": {"Name": leagueName, "OSIS": leagueUsers, "Activities": leagueActivities, "id": id}});
-    //reload page
-    location.reload();
+    
+    try {
+        // create league with proper data structure for Firebase
+        const response = await fetchRequest('/post_data', {
+            "sheet": "Leagues", 
+            "data": {
+                "id": id,
+                "Name": leagueName, 
+                "OSIS": leagueUsers, // Array of OSIS strings
+                "Activities": leagueActivities
+            }
+        });
+        
+        console.log('League creation response:', response);
+        
+        if (response && response.message === "success") {
+            // Create and add the new league element to the list
+            const leagueList = document.getElementById('leagueList');
+            const leagueEl = document.createElement('div');
+            leagueEl.classList.add('leagueEl');
+            leagueEl.innerText = leagueName;
+            leagueEl.addEventListener('click', () => {
+                window.location.href = `/league/${id}`;
+            });
+            leagueList.appendChild(leagueEl);
+            
+            // Reset form
+            leagueForm.reset();
+            leagueForm.style.display = 'none';
+            // Unselect all activity cards
+            document.querySelectorAll('.activity-card.selected').forEach(card => {
+                card.classList.remove('selected');
+            });
+            // Clear user list
+            userList.innerHTML = '';
+        } else {
+            console.error('Failed to create league:', response);
+            alert('Failed to create league. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error creating league:', error);
+        alert('An error occurred while creating the league. Please try again.');
+    }
 });

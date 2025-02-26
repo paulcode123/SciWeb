@@ -1,74 +1,121 @@
-#leagueForm{
-    margin-top: 20px;
-    margin-left: 20px;
-    margin-right: 20px;
-    margin-bottom: 20px;
-    padding: 20px;
-    border: 1px solid black;
-    border-radius: 10px;
-    background-color: #336e4a;
+/* Modern color palette */
+:root {
+    --primary: #4361ee;
+    --primary-dark: #3046c5;
+    --secondary: #4895ef;
+    --accent: #4cc9f0;
+    --background: #f8f9fa;
+    --text: #2b2d42;
+    --white: #ffffff;
+    --light-gray: #e9ecef;
+    --success: #2ec4b6;
+    --hover-shadow: rgba(67, 97, 238, 0.15);
+    --form-bg: #2b2d42;
+    --input-bg: #3d405b;
+    --option-bg: #3d405b;
+    --option-hover: #4361ee;
+    --text-light: #e9ecef;
+}
+
+h1 {
+    color: var(--primary-dark);
+    margin: 30px 20px;
+    font-size: 2.5em;
+}
+
+#leagueForm {
+    margin: 20px;
+    padding: 25px;
+    border: none;
+    border-radius: 15px;
+    background: var(--form-bg);
+    box-shadow: 0 4px 20px var(--hover-shadow);
     display: none;
+    max-width: 600px;
+    color: var(--text-light);
 }
 
 /* submit button styles */
-#submit{
-    margin-top: 10px;
-    margin-left: 20px;
-    margin-right: 20px;
-    margin-bottom: 20px;
-    padding: 10px;
-    border: 1px solid black;
-    border-radius: 10px;
-    background-color: #11634a;
+#submit {
+    margin-top: 20px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(145deg, var(--primary), var(--primary-dark));
+    color: var(--white);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
-#submit:hover{
-    background-color: #02340c;
+#submit:hover {
+    background: linear-gradient(145deg, var(--primary-dark), var(--primary));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--hover-shadow);
 }
 
 /* create league button that shows the form */
-#createLeague{
-    margin-top: 20px;
-    margin-left: 20px;
-    margin-right: 20px;
-    margin-bottom: 20px;
-    padding: 10px;
-    border: 1px solid black;
-    border-radius: 10px;
-    background-color: #336e4a;
+#createLeague {
+    margin: 20px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(145deg, var(--primary), var(--primary-dark));
+    color: var(--white);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
-/* hover effect */
-#createLeague:hover{
-    background-color: #02340c;
+#createLeague:hover {
+    background: linear-gradient(145deg, var(--primary-dark), var(--primary));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--hover-shadow);
 }
 
-/* add styles to all checkboxes */
-input[type="checkbox"]{
-    margin-left: 20px;
-    margin-right: 20px;
-    margin-bottom: 10px;
-    /* make it bigger */
+/* Checkbox styles */
+#leagueForm input[type="checkbox"] {
+    margin: 0 15px 0 0;
     transform: scale(1.5);
+    accent-color: var(--accent);
+    cursor: pointer;
+    position: relative;
+    width: 20px;
+    height: 20px;
+    opacity: 1;
+    appearance: auto;
+    -webkit-appearance: auto;
+    -moz-appearance: auto;
 }
 
-/* add styles to all labels  */
-/* label{
-    padding: 10px;
-    border: 1px solid black;
-    border-radius: 10px;
-    background-color: #2b48a0;
-    margin-left: 20px;
-} */
+/* Label styles */
+#leagueForm label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    color: var(--text-light);
+    font-weight: 600;
+    font-size: 1.1em;
+}
 
-/* add styles to all text inputs  */
-input[type="text"]{
-    margin-left: 20px;
-    margin-right: 20px;
-    margin-bottom: 10px;
-    padding: 10px;
-    border: 1px solid black;
-    border-radius: 10px;
+/* Text input styles */
+#leagueForm input[type="text"] {
+    margin: 8px 0 16px 0;
+    padding: 12px;
+    border: 1px solid var(--input-bg);
+    border-radius: 8px;
+    width: calc(100% - 26px);
+    font-size: 1em;
+    background-color: var(--input-bg);
+    color: var(--text-light);
+    transition: all 0.3s ease;
+}
+
+#leagueForm input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--hover-shadow);
+    background-color: var(--input-bg);
 }
 
 #addUsers, #userList {
@@ -76,19 +123,202 @@ input[type="text"]{
 }
 
 .userEl {
-    padding:3px;
-    border: 1px solid black;
-    border-radius: 3px;
-    background-color: #2b48a0;
+    display: inline-block;
+    padding: 8px 16px;
+    margin: 4px;
+    border: none;
+    border-radius: 20px;
+    background: linear-gradient(145deg, var(--secondary), var(--accent));
+    color: var(--white);
     cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px var(--hover-shadow);
+}
+
+.userEl:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--hover-shadow);
+}
+
+#leagueList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 20px;
 }
 
 .leagueEl {
-    padding:40px;
-    border: 1px solid black;
-    border-radius: 3px;
-    background-color: #2b48a0;
+    padding: 30px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(145deg, var(--white), var(--background));
+    box-shadow: 0 4px 6px var(--hover-shadow);
     cursor: pointer;
-    width: 60%;
+    transition: all 0.3s ease;
+    color: var(--text);
+    text-align: center;
+    font-size: 1.2em;
+    font-weight: 500;
+}
+
+.leagueEl:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px var(--hover-shadow);
+    background: linear-gradient(145deg, var(--background), var(--white));
+}
+
+#activityOptions {
+    background-color: var(--option-bg);
+    padding: 20px;
+    border-radius: 12px;
+    margin: 15px 0 25px 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    display: grid;
+    gap: 10px;
+}
+
+.activity-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 15px 20px;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--input-bg);
+    color: var(--text-light);
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+}
+
+.activity-card:hover {
+    background-color: var(--option-hover);
+    transform: translateX(5px);
+}
+
+.activity-card.selected {
+    background-color: var(--accent);
+    color: white;
+}
+
+.activity-name {
+    flex-grow: 1;
+}
+
+.select-indicator {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--text-light);
+    border-radius: 50%;
+    margin-left: 15px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.activity-card.selected .select-indicator {
+    background-color: white;
+    border-color: white;
+}
+
+.activity-card.selected .select-indicator:after {
+    content: '✓';
+    position: absolute;
+    color: var(--accent);
+    font-size: 16px;
+    font-weight: bold;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Toggle switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+    margin-left: 10px;
+}
+
+/* Hide default checkbox */
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    margin: 0;
+    padding: 0;
+}
+
+/* The slider */
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--input-bg);
+    transition: .4s;
+    border-radius: 34px;
+    border: 2px solid var(--accent);
+}
+
+/* Slider knob */
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 4px;
+    bottom: 2px;
+    background-color: var(--text-light);
+    transition: .4s;
+    border-radius: 50%;
+}
+
+/* Checked state */
+.toggle-switch input:checked + .toggle-slider {
+    background-color: var(--accent);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(24px);
+    background-color: white;
+}
+
+/* Hover effects */
+.toggle-container:hover .activity-text {
+    color: var(--accent);
+}
+
+.toggle-container:hover .toggle-slider {
+    border-color: var(--accent);
+    box-shadow: 0 0 5px var(--accent);
+}
+
+/* Active/checked text state */
+.toggle-container input:checked ~ .activity-text {
+    color: var(--accent);
+    font-weight: 500;
+}
+
+.flash-message {
+    background-color: var(--primary-dark);
+    color: var(--white);
+    padding: 1rem;
+    margin: 1rem 20px;
+    border-radius: 8px;
+    text-align: center;
+    animation: fadeOut 5s forwards;
+    position: relative;
+}
+
+@keyframes fadeOut {
+    0% { opacity: 1; }
+    70% { opacity: 1; }
+    100% { opacity: 0; }
 }
 
