@@ -35,6 +35,8 @@
     border-radius: 20px;
     margin: 20px;
     animation: slideIn 0.6s ease-out;
+    box-sizing: border-box;
+    width: 100%;
 }
 
 .welcome-content {
@@ -284,6 +286,41 @@ h2 {
     #video-container {
         max-width: 100%;
     }
+
+    .swipe-container {
+        width: 100%;
+        display: flex;
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .swipe-window,
+    .welcome-slide,
+    .task-checkin-window,
+    .task-followup-window {
+        flex: 0 0 100vw;
+        width: 100vw;
+        min-width: 100vw;
+        padding: 40px 15px 15px;
+        overflow-y: auto;
+        box-sizing: border-box;
+    }
+
+    .welcome-slide {
+        margin: 0;
+        border-radius: 0;
+    }
+
+    .task-checkin-content,
+    .task-followup-content {
+        padding: 1.5rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .checkin-form .form-group,
+    .followup-form .form-group {
+        padding: 1rem;
+    }
 }
 
 /* Desktop Optimizations */
@@ -309,6 +346,22 @@ h2 {
     .task-details {
         max-width: 800px;
         margin: 0 auto;
+    }
+
+    .swipe-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        padding: 20px;
+        transition: none;
+        width: 100%;
+    }
+
+    .swipe-window,
+    .welcome-slide,
+    .task-checkin-window,
+    .task-followup-window {
+        width: 100%;
     }
 }
 
@@ -736,4 +789,90 @@ h2 {
     justify-content: space-between;
     color: rgba(255, 255, 255, 0.6);
     font-size: 0.85rem;
+}
+
+/* Task Check-in and Follow-up Styles */
+.task-checkin-window,
+.task-followup-window {
+    width: 20%;
+    height: 100%;
+    padding: 60px 20px 20px;
+    overflow-y: auto;
+}
+
+.task-checkin-content,
+.task-followup-content {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.task-checkin-content .task-hierarchy,
+.task-followup-content .task-name {
+    font-size: 1.2rem;
+    color: white;
+    margin-bottom: 1rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    display: inline-block;
+}
+
+.task-checkin-content .task-description {
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 2rem;
+    line-height: 1.5;
+}
+
+.checkin-form,
+.followup-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.checkin-form .form-group,
+.followup-form .form-group {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1.5rem;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.checkin-form label,
+.followup-form label {
+    display: block;
+    color: white;
+    margin-bottom: 1rem;
+    font-weight: 500;
+}
+
+.checkin-form textarea,
+.followup-form textarea,
+.followup-form input[type="date"] {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 1rem;
+    color: white;
+    font-family: 'Poppins', sans-serif;
+    resize: vertical;
+    transition: all 0.3s ease;
+}
+
+.checkin-form textarea:focus,
+.followup-form textarea:focus,
+.followup-form input[type="date"]:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.save-checkin-btn,
+.save-followup-btn {
+    margin-top: 1rem;
+    width: 100%;
 }

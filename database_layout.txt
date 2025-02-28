@@ -301,7 +301,7 @@ Sheet name: Problems:
     worksheetID(id of the worksheet)
     problem(problem statement)
     bloom_level("remember", "understand", "apply", "analyze", "create")
-    concepts(id of the concepts the problem requires) // added separately by problem mapping
+    concepts [int] (id of the concepts the problem requires) // added separately by problem mapping
 
 Sheet name: TodoTrees
 

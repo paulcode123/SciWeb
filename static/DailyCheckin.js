@@ -54,9 +54,10 @@ document.addEventListener('DOMContentLoaded', function() {
     container.addEventListener('touchend', () => {
         const diff = touchStartX - touchEndX;
         const threshold = 50;
+        const totalSlides = document.querySelectorAll('.swipe-window').length;
         
         if (Math.abs(diff) > threshold) {
-            if (diff > 0 && currentWindow < 3) {
+            if (diff > 0 && currentWindow < totalSlides - 1) {
                 switchWindow(currentWindow + 1);
             } else if (diff < 0 && currentWindow > 0) {
                 switchWindow(currentWindow - 1);
@@ -66,7 +67,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function switchWindow(index) {
         currentWindow = index;
-        container.style.transform = `translateX(-${index * 20}%)`; // Changed from 25% to 20% for 5 windows
+        const container = document.querySelector('.swipe-container');
+        
+        if (window.innerWidth <= 768) {
+            container.style.transform = `translateX(-${index * 100}vw)`; // Use viewport width units
+        }
+        
+        const dots = document.querySelectorAll('.dot');
         dots.forEach((dot, i) => {
             dot.classList.toggle('active', i === index);
         });
@@ -92,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadData() {
         startLoading();
         try {
-            await loadClasses(); // Load classes first
+            await loadClasses();
             const data = await fetchRequest('/data', { 
                 data: 'Assignments, TodoTrees' 
             });
@@ -109,29 +116,25 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Process tasks and motivators
             if (data.TodoTrees && data.TodoTrees[0]) {
-                todoTreeData = data.TodoTrees[0]; // Store the full tree data
+                todoTreeData = data.TodoTrees[0];
                 const todayStr = today.toISOString().split('T')[0];
-                console.log('Today string:', todayStr);
-                console.log('Available nodes:', todoTreeData.nodes);
                 
                 // Filter tasks with check-ins
                 tasks = todoTreeData.nodes.filter(node => {
-                    console.log('Checking node:', node);
                     return node.type !== 'Motivator' &&
                            node.checkInDates && 
                            node.checkInDates.includes(todayStr);
                 });
-                
-                console.log('Filtered tasks:', tasks);
 
                 // Add parent hierarchy information to each task
                 tasks = tasks.map(task => ({
                     ...task,
                     parentHierarchy: findParentHierarchy(task.id)
                 }));
-                
-                console.log('Tasks with hierarchy:', tasks);
 
+                // Create dynamic slides for each task
+                createDynamicSlides(tasks);
+                
                 // Filter motivators with video links
                 motivators = data.TodoTrees[0].nodes.filter(node =>
                     node.type === 'Motivator' &&
@@ -193,10 +196,316 @@ document.addEventListener('DOMContentLoaded', function() {
             
             renderAssignments();
             renderTasks();
+            updateSwipeIndicator();
         } catch (error) {
             console.error('Error loading data:', error);
         }
         endLoading();
+    }
+
+    function createDynamicSlides(tasks) {
+        const container = document.querySelector('.swipe-container');
+        const taskCheckinTemplate = document.getElementById('task-checkin-template');
+        const taskFollowupTemplate = document.getElementById('task-followup-template');
+
+        // Remove any existing dynamic slides
+        const existingDynamicSlides = container.querySelectorAll('.task-checkin-window, .task-followup-window');
+        existingDynamicSlides.forEach(slide => slide.remove());
+
+        // Create new slides for each task
+        tasks.forEach(task => {
+            // Create check-in slide
+            const checkinSlide = taskCheckinTemplate.content.cloneNode(true);
+            const checkinWindow = checkinSlide.querySelector('.task-checkin-window');
+            
+            checkinWindow.dataset.taskId = task.id;
+            checkinWindow.querySelector('.task-name').textContent = `📝 ${task.name} Check-in`;
+            
+            if (task.parentHierarchy && task.parentHierarchy.length > 0) {
+                const hierarchyText = task.parentHierarchy
+                    .map(parent => parent.name)
+                    .join(' › ');
+                checkinWindow.querySelector('.task-hierarchy').textContent = hierarchyText;
+            }
+            
+            checkinWindow.querySelector('.task-description').textContent = task.description || '';
+
+            // Add event listener for check-in form
+            const saveCheckinBtn = checkinWindow.querySelector('.save-checkin-btn');
+            saveCheckinBtn.addEventListener('click', () => saveCheckin(task.id));
+
+            // Create follow-up slide
+            const followupSlide = taskFollowupTemplate.content.cloneNode(true);
+            const followupWindow = followupSlide.querySelector('.task-followup-window');
+            
+            followupWindow.dataset.taskId = task.id;
+            followupWindow.querySelector('.task-name').textContent = task.name;
+
+            // Initialize date fields with current values
+            const targetDateInput = followupWindow.querySelector('.target-date');
+            const deadlineDateInput = followupWindow.querySelector('.deadline-date');
+            
+            if (task.targetDate) {
+                targetDateInput.value = task.targetDate.split('T')[0]; // Get just the date part
+            }
+            if (task.deadline) {
+                deadlineDateInput.value = task.deadline.split('T')[0]; // Get just the date part
+            }
+
+            // Add event listener for follow-up form
+            const saveFollowupBtn = followupWindow.querySelector('.save-followup-btn');
+            saveFollowupBtn.addEventListener('click', () => saveFollowup(task.id));
+
+            // Append both slides
+            container.appendChild(checkinWindow);
+            container.appendChild(followupWindow);
+
+            // Initialize chat after the slides are in the DOM
+            initializeChat(task.id);
+        });
+
+        // Update container width for mobile view
+        if (window.innerWidth <= 768) {
+            const totalSlides = 4 + (tasks.length * 2); // Base slides + (check-in + follow-up) per task
+            container.style.width = `${totalSlides * 100}%`;
+            
+            // Update individual slide widths
+            const allSlides = container.querySelectorAll('.swipe-window');
+            allSlides.forEach(slide => {
+                slide.style.width = `${100 / totalSlides}%`;
+            });
+        }
+    }
+
+    function updateSwipeIndicator() {
+        const indicator = document.querySelector('.swipe-indicator');
+        const totalSlides = document.querySelectorAll('.swipe-window').length;
+        
+        // Clear existing dots
+        indicator.innerHTML = '';
+        
+        // Create new dots
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'dot' + (i === currentWindow ? ' active' : '');
+            indicator.appendChild(dot);
+        }
+    }
+
+    async function saveCheckin(taskId) {
+        const task = todoTreeData.nodes.find(node => node.id === taskId);
+        const checkinWindow = document.querySelector(`.task-checkin-window[data-task-id="${taskId}"]`);
+        const chatMessages = checkinWindow.querySelector('.chat-messages');
+
+        try {
+            // Save chat history to task
+            const messages = Array.from(chatMessages.children).map(msg => ({
+                text: msg.textContent,
+                type: msg.classList.contains('user-message') ? 'user' : 'ai',
+                timestamp: new Date().toISOString()
+            }));
+
+            if (!task.chatHistory) task.chatHistory = [];
+            task.chatHistory.push(...messages);
+
+            // Save updated task data to database
+            await fetchRequest('/update_data', {
+                sheet: 'TodoTrees',
+                data: todoTreeData,
+                row_name: 'id',
+                row_value: todoTreeData.id
+            });
+
+            // Move to follow-up window
+            const currentIndex = Array.from(document.querySelectorAll('.swipe-window')).findIndex(window => 
+                window.classList.contains('task-checkin-window') && window.getAttribute('data-task-id') === taskId
+            );
+            switchWindow(currentIndex + 1);
+        } catch (error) {
+            console.error('Error saving check-in:', error);
+            alert('Failed to save check-in. Please try again.');
+        }
+    }
+
+    function initializeChat(taskId) {
+        const checkinWindow = document.querySelector(`.task-checkin-window[data-task-id="${taskId}"]`);
+        const chatMessages = checkinWindow.querySelector('.chat-messages');
+        const chatInput = checkinWindow.querySelector('.chat-input');
+        const sendButton = checkinWindow.querySelector('.chat-send-btn');
+
+        // Load existing chat history
+        const task = todoTreeData.nodes.find(node => node.id === taskId);
+        if (task.chatHistory) {
+            task.chatHistory.forEach(msg => {
+                addChatMessage(chatMessages, msg.text, msg.type);
+            });
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Send message on button click
+        sendButton.addEventListener('click', () => sendMessage(taskId));
+
+        // Send message on Enter (but Shift+Enter for new line)
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage(taskId);
+            }
+        });
+    }
+
+    async function sendMessage(taskId) {
+        const checkinWindow = document.querySelector(`.task-checkin-window[data-task-id="${taskId}"]`);
+        const chatMessages = checkinWindow.querySelector('.chat-messages');
+        const chatInput = checkinWindow.querySelector('.chat-input');
+        const message = chatInput.value.trim();
+
+        if (!message) return;
+
+        try {
+            // Add user message to UI
+            addChatMessage(chatMessages, message, 'user');
+            chatInput.value = '';
+
+            // Add user message to task's chat history
+            const task = todoTreeData.nodes.find(node => node.id === taskId);
+            if (!task.chatHistory) task.chatHistory = [];
+            task.chatHistory.push({
+                type: 'user',
+                text: message,
+                timestamp: new Date().toISOString()
+            });
+
+            // Show typing indicator
+            const typingIndicator = document.createElement('div');
+            typingIndicator.className = 'typing-indicator';
+            for (let i = 0; i < 3; i++) {
+                typingIndicator.appendChild(document.createElement('span'));
+            }
+            chatMessages.appendChild(typingIndicator);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // Prepare messages for AI
+            const messages = [
+                {
+                    role: "system",
+                    content: `You are an AI assistant helping with a task named "${task.name}" in a task management system. 
+                    ${task.deadline ? `The deadline is ${task.deadline}.` : ''}
+                    ${task.targetDate ? `The target date is ${task.targetDate}.` : ''}
+                    
+                    Help the user with:
+                    - Progress updates and challenges
+                    - Breaking down complex tasks
+                    - Time management strategies
+                    - Motivation and accountability
+                    - Setting realistic milestones
+                    
+                    Be concise, practical, and encouraging in your responses.`
+                }
+            ];
+
+            // Add chat history (last 10 messages)
+            const history = task.chatHistory.slice(-10);
+            history.forEach(msg => {
+                messages.push({
+                    role: msg.type === 'user' ? 'user' : 'assistant',
+                    content: msg.text
+                });
+            });
+
+            // Add current message
+            messages.push({
+                role: 'user',
+                content: message
+            });
+
+            // Send to AI and get response
+            const response = await fetchRequest('/AI', {
+                data: messages
+            });
+
+            // Remove typing indicator
+            typingIndicator.remove();
+
+            // Add AI response to UI
+            addChatMessage(chatMessages, response, 'ai');
+
+            // Add AI response to task's chat history
+            task.chatHistory.push({
+                type: 'ai',
+                text: response,
+                timestamp: new Date().toISOString()
+            });
+
+            // Save updated chat history to database
+            await fetchRequest('/update_data', {
+                sheet: 'TodoTrees',
+                data: todoTreeData,
+                row_name: 'id',
+                row_value: todoTreeData.id
+            });
+
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        } catch (error) {
+            console.error('Error sending message:', error);
+            alert('Failed to send message. Please try again.');
+        }
+    }
+
+    function addChatMessage(container, text, type) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${type}`;
+        messageDiv.textContent = text;
+        container.appendChild(messageDiv);
+    }
+
+    async function saveFollowup(taskId) {
+        const followupWindow = document.querySelector(`.task-followup-window[data-task-id="${taskId}"]`);
+        const nextDate = followupWindow.querySelector('.next-checkin-date').value;
+        const targetDate = followupWindow.querySelector('.target-date').value;
+        const deadline = followupWindow.querySelector('.deadline-date').value;
+
+        if (!nextDate) {
+            alert('Please select the next check-in date');
+            return;
+        }
+
+        try {
+            // Update task data
+            const task = todoTreeData.nodes.find(node => node.id === taskId);
+            
+            // Update check-in dates
+            if (!task.checkInDates) task.checkInDates = [];
+            task.checkInDates.push(nextDate);
+            task.checkInDates.sort();
+
+            // Update target date and deadline if changed
+            if (targetDate) {
+                task.targetDate = targetDate + 'T00:00';
+            }
+            if (deadline) {
+                task.deadline = deadline + 'T00:00';
+            }
+
+            // Update the database
+            await fetchRequest('/update_data', {
+                sheet: 'TodoTrees',
+                data: todoTreeData,
+                row_name: 'id',
+                row_value: todoTreeData.id
+            });
+
+            // Return to tasks list
+            switchWindow(3);
+            loadData(); // Refresh the data
+
+        } catch (error) {
+            console.error('Error saving follow-up:', error);
+            alert('Failed to save follow-up. Please try again.');
+        }
     }
 
     // Function to find parent hierarchy of a node

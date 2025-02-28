@@ -19,6 +19,7 @@
         <div class="dot"></div>
         <div class="dot"></div>
         <div class="dot"></div>
+        <!-- Dots will be added dynamically for each task -->
     </div>
     
     <div class="swipe-container">
@@ -89,32 +90,64 @@
             <div class="tasks-list"></div>
         </div>
 
-        <!-- Task Details Window -->
-        <div class="swipe-window animated-window" id="task-details-window">
-            <div class="window-header">
-                <h2>🎯 Task Details</h2>
-                <div class="decoration-element circles"></div>
+        <!-- Templates for dynamic task slides -->
+        <template id="task-checkin-template">
+            <div class="swipe-window animated-window task-checkin-window">
+                <div class="window-header">
+                    <h2 class="task-name">📝 Task Check-in</h2>
+                    <div class="decoration-element stars"></div>
+                </div>
+                <div class="task-checkin-content">
+                    <div class="task-hierarchy"></div>
+                    <div class="task-description"></div>
+                    <div class="checkin-form">
+                        <div class="chat-container">
+                            <div class="chat-messages"></div>
+                            <div class="chat-input-container">
+                                <textarea class="chat-input" placeholder="Type your message..." rows="2"></textarea>
+                                <button class="add-btn chat-send-btn">
+                                    <span class="material-icons">send</span>
+                                </button>
+                            </div>
+                        </div>
+                        <button class="add-btn bounce-animation save-checkin-btn">
+                            <span class="material-icons">event_available</span>
+                            Save and Continue to Follow-up
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div class="task-details">
-                <div class="task-header">
-                    <h3 class="task-name"></h3>
-                    <div class="task-type"></div>
+        </template>
+
+        <template id="task-followup-template">
+            <div class="swipe-window animated-window task-followup-window">
+                <div class="window-header">
+                    <h2>📅 Schedule Follow-up</h2>
+                    <div class="decoration-element circles"></div>
                 </div>
-                <div class="task-description"></div>
-                <div class="checkin-dates">
-                    <h4>📅 Check-in Dates</h4>
-                    <div class="dates-list"></div>
-                    <button class="add-btn bounce-animation" id="add-checkin-date-btn">
-                        <span class="material-icons">event_add</span>
-                        Add Check-in Date
-                    </button>
-                </div>
-                <div class="conversation-history">
-                    <h4>💭 Conversation History</h4>
-                    <div class="chat-messages"></div>
+                <div class="task-followup-content">
+                    <div class="task-name"></div>
+                    <div class="followup-form">
+                        <div class="form-group">
+                            <label>Next Check-in Date</label>
+                            <input type="date" class="next-checkin-date">
+                        </div>
+                        <div class="form-group">
+                            <label>Target Date</label>
+                            <input type="date" class="target-date">
+                        </div>
+                        <div class="form-group">
+                            <label>Deadline</label>
+                            <input type="date" class="deadline-date">
+                        </div>
+                        <button class="add-btn bounce-animation save-followup-btn">
+                            <span class="material-icons">event_available</span>
+                            Schedule Follow-up
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </template>
     </div>
 </div>
 

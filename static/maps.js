@@ -557,7 +557,7 @@ async function selectNode(nodeId) {
         ]);
 
         const problems = problemsResponse.Problems.filter(p => 
-            p.concepts && p.concepts.includes(nodeId.toString())
+            p.concepts && p.concepts.includes(parseInt(nodeId))
         );
 
         // Group problems by worksheet
@@ -599,7 +599,7 @@ async function selectNode(nodeId) {
                                     <div class="question-content">
                                         <p>${problem.problem}</p>
                                         <div class="question-meta">
-                                            <span class="difficulty">Difficulty: ${problem.difficulty}</span>
+                                            <span class="difficulty">Bloom Level: ${problem.bloom_level}</span>
                                             ${scoreDisplay}
                                         </div>
                                     </div>

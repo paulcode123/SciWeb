@@ -89,12 +89,23 @@
 {% endblock %}
 
 {% block content %}
+
 <div class="controls">
-    <button id="addNodeBtn" class="control-btn">Add Node</button>
-    <button id="addEdgeBtn" class="control-btn">Add Edge</button>
-    <button id="cancelEdgeBtn" class="control-btn" style="display: none;">Cancel Edge</button>
-    <button id="deleteBtn" class="control-btn">Delete Mode</button>
-    <button id="dragModeBtn" class="control-btn">Drag Mode</button>
+    <button id="addNodeBtn" class="control-btn" title="Add Node">
+        <span class="material-icons">add_circle</span>
+    </button>
+    <button id="addEdgeBtn" class="control-btn" title="Add Edge">
+        <span class="material-icons">timeline</span>
+    </button>
+    <button id="cancelEdgeBtn" class="control-btn" style="display: none;" title="Cancel Edge">
+        <span class="material-icons">cancel</span>
+    </button>
+    <button id="deleteBtn" class="control-btn" title="Delete Mode">
+        <span class="material-icons">delete</span>
+    </button>
+    <button id="dragModeBtn" class="control-btn" title="Drag Mode">
+        <span class="material-icons">open_with</span>
+    </button>
 </div>
 <div class="infinite-container" id="infiniteContainer">
     <div class="infinite-content">
