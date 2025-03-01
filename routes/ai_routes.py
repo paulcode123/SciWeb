@@ -14,6 +14,7 @@ from classroom import *
 from grades import *
 from jupiter import *
 from study import *
+from openai_utils import *
 
 from prompts import *
 
@@ -26,6 +27,7 @@ ai_routes = Blueprint('ai_routes', __name__)
 # Function to return insights to the Study page
 @ai_routes.route('/AI', methods=['POST'])
 def get_AI():
+  print("in get_AI")
   return json.dumps(get_insights(request.json['data']))
 
 # make route for AI with function calling
@@ -883,5 +885,65 @@ Problems to analyze:
         raise
 
 
+
+# TodoTree routes
+@ai_routes.route('/generate_embedding', methods=['POST'])
+def create_embedding():
+    """Generate embeddings for node context text."""
+    import asyncio
+    
+    try:
+        data = request.get_json()
+        node_id = data.get('node_id')
+        context_text = data.get('context_text')
+        
+        if not all([node_id, context_text]):
+            return jsonify({'error': 'Missing required parameters'}), 400
+            
+        # Create event loop and run async operations
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        async def process_embedding():
+            # Generate embedding for the context
+            embedding = await generate_embedding(context_text)
+            
+            return {
+                'success': True,
+                'embedding': embedding
+            }
+        
+        # Run the async function and get result
+        result = loop.run_until_complete(process_embedding())
+        loop.close()
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Error in create_embedding: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@ai_routes.route('/AI_embeddings', methods=['POST'])
+def get_AI_embeddings():
+    """Process chat messages with context embeddings for semantic search."""
+    print("in get_AI_embeddings")
+    try:
+        data = request.get_json()
+        messages = data.get('messages', [])
+        node_embeddings = data.get('node_embeddings', [])  # List of embeddings from current and parent nodes
+        
+        if not messages or not node_embeddings:
+            return jsonify({'error': 'Missing required parameters'}), 400
+
+        # Combine embeddings with messages for semantic context
+        response = chat_with_embeddings(messages, node_embeddings)
+        
+        return jsonify({
+            'response': response
+        })
+        
+    except Exception as e:
+        print(f"Error in get_AI_embeddings: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 

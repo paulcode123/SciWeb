@@ -328,7 +328,9 @@ Sheet name: TodoTrees
                 text: str,
                 type: str (user/ai),
                 timestamp: str
-            }]
+            }],
+            contextText: str (optional, large context text up to 1000 words),
+            contextEmbedding: [float] (optional, OpenAI vector embedding for the context)
         }
     )
     edges(array of objects containing:

@@ -90,6 +90,7 @@ async function initializeResources() {
     });
     const resources = response.Resources || [];
     renderResources(resources);
+    setupResourceSearch();
   } catch (error) {
     console.error('Error initializing resources:', error);
   }
@@ -117,12 +118,55 @@ function createResourceElement(resource) {
   div.className = 'resource-item';
   div.dataset.resourceId = resource.id;
   div.dataset.type = resource.type;
+  div.dataset.createdAt = resource.created_at;
+  div.dataset.likes = resource.likes?.length || 0;
+  div.dataset.downloads = resource.downloads || 0;
   
   const typeIcons = {
     notes: '📝',
     practice: '✏️',
     guide: '📚',
-    link: '🔗'
+    link: '��',
+    file: '📎'
+  };
+
+  // Track resource view
+  trackResourceView(resource.id);
+
+  // Format file size if present
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let size = bytes;
+    let unitIndex = 0;
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex++;
+    }
+    return `${size.toFixed(1)} ${units[unitIndex]}`;
+  };
+
+  // Generate content HTML based on resource type
+  const getContentHTML = () => {
+    if (resource.type === 'link') {
+      return `<a href="${resource.content}" target="_blank" class="resource-link">${resource.content}</a>`;
+    } else if (resource.type === 'file') {
+      const fileInfo = resource.content;
+      return `
+        <div class="file-resource">
+          <div class="file-info">
+            <span class="file-name">${fileInfo.filename}</span>
+            <span class="file-size">${formatFileSize(fileInfo.size)}</span>
+          </div>
+          <button class="action-button download-btn" onclick="downloadResource('${resource.id}', '${fileInfo.url}', '${fileInfo.filename}')">
+            Download
+          </button>
+        </div>
+      `;
+    } else {
+      const content = typeof resource.content === 'object' ? resource.content.preview : resource.content;
+      return `<p class="resource-text">${content}</p>`;
+    }
   };
 
   div.innerHTML = `
@@ -131,17 +175,21 @@ function createResourceElement(resource) {
       <div class="resource-meta">
         <span class="resource-likes" data-resource-id="${resource.id}">👍 ${resource.likes?.length || 0}</span>
         <span class="resource-comments" data-resource-id="${resource.id}">💬 ${resource.comments?.length || 0}</span>
+        <span class="resource-views">👁️ ${resource.views || 0}</span>
+        ${resource.type === 'file' ? `<span class="resource-downloads">⬇️ ${resource.downloads || 0}</span>` : ''}
       </div>
     </div>
     <div class="resource-content">
-      ${resource.type === 'link' 
-        ? `<a href="${resource.content}" target="_blank" class="resource-link">${resource.content}</a>`
-        : `<p>${typeof resource.content === 'object' ? resource.content.preview : resource.content}</p>`
-      }
+      ${getContentHTML()}
     </div>
     <div class="resource-footer">
-      <span class="resource-author">Shared by ${resource.shared_by}</span>
-      <span class="resource-time">${formatTimeAgo(resource.created_at)}</span>
+      <div class="resource-tags">
+        ${(resource.tags || []).map(tag => `<span class="resource-tag">${tag}</span>`).join('')}
+      </div>
+      <div class="resource-info">
+        <span class="resource-author">Shared by ${resource.shared_by}</span>
+        <span class="resource-time">${formatTimeAgo(resource.created_at)}</span>
+      </div>
     </div>
   `;
 
@@ -457,6 +505,9 @@ function setupEventListeners() {
       switchChatTab(e.target.dataset.tab);
     });
   });
+
+  // Resource search and sorting
+  setupResourceSearch();
 }
 
 // Assignment form handling
@@ -1197,11 +1248,17 @@ function showResourceModal() {
             <option value="practice">Practice Problems</option>
             <option value="guide">Study Guide</option>
             <option value="link">External Link</option>
+            <option value="file">File Upload</option>
           </select>
         </div>
-        <div class="form-group">
+        <div class="form-group" id="contentGroup">
           <label for="resourceContent">Content</label>
           <textarea id="resourceContent" required maxlength="5000"></textarea>
+        </div>
+        <div class="form-group" id="fileGroup" style="display: none;">
+          <label for="resourceFile">File</label>
+          <input type="file" id="resourceFile" accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png">
+          <p class="file-info">Max size: 10MB. Supported formats: PDF, DOC, DOCX, TXT, JPG, PNG</p>
         </div>
         <div class="form-group">
           <label for="resourceTags">Tags (comma separated)</label>
@@ -1226,6 +1283,31 @@ function showResourceModal() {
   
   const form = modalContainer.querySelector('#resourceForm');
   const cancelBtn = modalContainer.querySelector('#cancelResourceBtn');
+  const typeSelect = document.getElementById('resourceType');
+  const contentGroup = document.getElementById('contentGroup');
+  const fileGroup = document.getElementById('fileGroup');
+  
+  // Toggle between content and file upload based on type
+  typeSelect.addEventListener('change', (e) => {
+    if (e.target.value === 'file') {
+      contentGroup.style.display = 'none';
+      fileGroup.style.display = 'block';
+      document.getElementById('resourceContent').removeAttribute('required');
+      document.getElementById('resourceFile').setAttribute('required', 'required');
+    } else if (e.target.value === 'link') {
+      contentGroup.style.display = 'block';
+      fileGroup.style.display = 'none';
+      document.getElementById('resourceContent').setAttribute('required', 'required');
+      document.getElementById('resourceFile').removeAttribute('required');
+      document.getElementById('resourceContent').placeholder = 'Enter URL here';
+    } else {
+      contentGroup.style.display = 'block';
+      fileGroup.style.display = 'none';
+      document.getElementById('resourceContent').setAttribute('required', 'required');
+      document.getElementById('resourceFile').removeAttribute('required');
+      document.getElementById('resourceContent').placeholder = 'Enter content here';
+    }
+  });
   
   const closeModal = () => {
     const modal = document.getElementById('resourceModal');
@@ -1236,24 +1318,74 @@ function showResourceModal() {
   
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const resourceData = {
-      title: document.getElementById('resourceTitle').value,
-      type: document.getElementById('resourceType').value,
-      content: document.getElementById('resourceContent').value,
-      tags: document.getElementById('resourceTags').value
-        .split(',')
-        .map(tag => tag.trim())
-        .filter(tag => tag.length > 0),
-      visibility: document.getElementById('resourceVisibility').value,
-      class_id: classData.id,
-      shared_by: currentUser,
-      id: Math.floor(Math.random() * 10000),
-      created_at: new Date().toISOString(),
-      likes: [],
-      comments: []
-    };
+    startLoading();
     
     try {
+      const resourceData = {
+        title: document.getElementById('resourceTitle').value,
+        type: document.getElementById('resourceType').value,
+        tags: document.getElementById('resourceTags').value
+          .split(',')
+          .map(tag => tag.trim())
+          .filter(tag => tag.length > 0),
+        visibility: document.getElementById('resourceVisibility').value,
+        class_id: classData.id,
+        shared_by: currentUser,
+        id: Math.floor(Math.random() * 10000),
+        created_at: new Date().toISOString(),
+        likes: [],
+        comments: [],
+        downloads: 0,
+        views: 0
+      };
+
+      // Handle file upload
+      if (resourceData.type === 'file') {
+        const file = document.getElementById('resourceFile').files[0];
+        if (!file) throw new Error('Please select a file');
+        
+        if (file.size > 10 * 1024 * 1024) { // 10MB limit
+          throw new Error('File size exceeds 10MB limit');
+        }
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const uploadResponse = await fetch('/upload-file', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!uploadResponse.ok) throw new Error('File upload failed');
+        
+        const { fileUrl, fileType } = await uploadResponse.json();
+        resourceData.content = {
+          url: fileUrl,
+          type: fileType,
+          filename: file.name,
+          size: file.size
+        };
+      } else {
+        resourceData.content = document.getElementById('resourceContent').value;
+        
+        // Validate URL for link type
+        if (resourceData.type === 'link') {
+          try {
+            new URL(resourceData.content);
+          } catch {
+            throw new Error('Please enter a valid URL');
+          }
+        }
+        
+        // Compress content if it's too long
+        if (typeof resourceData.content === 'string' && resourceData.content.length > 1000) {
+          resourceData.content = {
+            full: resourceData.content,
+            preview: resourceData.content.substring(0, 997) + '...'
+          };
+        }
+      }
+      
       await postResource(resourceData);
       
       // Add to activity feed
@@ -1267,7 +1399,9 @@ function showResourceModal() {
       await initializeResources();
     } catch (error) {
       console.error('Error sharing resource:', error);
-      alert('Failed to share resource. Please try again.');
+      alert(error.message || 'Failed to share resource. Please try again.');
+    } finally {
+      endLoading();
     }
   });
   
@@ -1302,15 +1436,19 @@ async function postResource(resourceData) {
 function filterResources(type) {
   const resourcesList = document.getElementById('resourcesList');
   const resources = resourcesList.querySelectorAll('.resource-item');
+  const searchInput = document.getElementById('resourceSearch');
+  const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
   
   resources.forEach(resource => {
-    if (type === 'all' || resource.dataset.type === type.toLowerCase()) {
-      resource.style.display = 'block';
-    } else {
-      resource.style.display = 'none';
-    }
+    const matchesType = type === 'all' || resource.dataset.type === type.toLowerCase();
+    const matchesSearch = !searchTerm || 
+      resource.textContent.toLowerCase().includes(searchTerm) ||
+      resource.querySelector('.resource-tags').textContent.toLowerCase().includes(searchTerm);
+    
+    resource.style.display = matchesType && matchesSearch ? 'block' : 'none';
   });
 }
+
 async function postStudyGroup(groupData) {
   try {
     await fetchRequest('/post_data', {
@@ -1435,5 +1573,120 @@ function createPollElement(pollData) {
   `;
 }
 
-// ... rest of existing code ...
+// Add these new functions for resource tracking
+async function trackResourceView(resourceId) {
+  try {
+    const resource = await fetchRequest('/data', { 
+      data: 'Resources',
+      filters: { id: resourceId }
+    });
+    
+    resource.views = (resource.views || 0) + 1;
+    await fetchRequest('/update_data', {
+      sheet: 'Resources',
+      row_value: resourceId,
+      row_name: 'id',
+      data: resource
+    });
+  } catch (error) {
+    console.error('Error tracking resource view:', error);
+  }
+}
+
+async function downloadResource(resourceId, url, filename) {
+  try {
+    // Track download
+    const resource = await fetchRequest('/data', { 
+      data: 'Resources',
+      filters: { id: resourceId }
+    });
+    
+    resource.downloads = (resource.downloads || 0) + 1;
+    await fetchRequest('/update_data', {
+      sheet: 'Resources',
+      row_value: resourceId,
+      row_name: 'id',
+      data: resource
+    });
+
+    // Update UI
+    const downloadsEl = document.querySelector(`[data-resource-id="${resourceId}"] .resource-downloads`);
+    if (downloadsEl) {
+      downloadsEl.textContent = `⬇️ ${resource.downloads}`;
+    }
+
+    // Trigger download
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error('Error downloading resource:', error);
+    alert('Failed to download resource. Please try again.');
+  }
+}
+
+// Add this to the setupEventListeners function
+function setupResourceSearch() {
+  const resourcesCard = document.querySelector('.resources');
+  if (!resourcesCard) return;
+
+  // Add search input
+  const searchContainer = document.createElement('div');
+  searchContainer.className = 'resource-search';
+  searchContainer.innerHTML = `
+    <input type="text" id="resourceSearch" placeholder="Search resources...">
+    <select id="resourceSort">
+      <option value="newest">Newest First</option>
+      <option value="oldest">Oldest First</option>
+      <option value="popular">Most Popular</option>
+      <option value="downloads">Most Downloads</option>
+    </select>
+  `;
+
+  const categoriesContainer = resourcesCard.querySelector('.resource-categories');
+  categoriesContainer.parentNode.insertBefore(searchContainer, categoriesContainer);
+
+  // Add event listeners
+  const searchInput = document.getElementById('resourceSearch');
+  const sortSelect = document.getElementById('resourceSort');
+
+  searchInput.addEventListener('input', () => {
+    const activeType = resourcesCard.querySelector('.resource-tag.active').textContent;
+    filterResources(activeType);
+  });
+
+  sortSelect.addEventListener('change', () => {
+    sortResources(sortSelect.value);
+  });
+}
+
+function sortResources(sortBy) {
+  const resourcesList = document.getElementById('resourcesList');
+  const resources = Array.from(resourcesList.children);
+
+  resources.sort((a, b) => {
+    const aResource = a.dataset;
+    const bResource = b.dataset;
+
+    switch (sortBy) {
+      case 'newest':
+        return new Date(bResource.createdAt) - new Date(aResource.createdAt);
+      case 'oldest':
+        return new Date(aResource.createdAt) - new Date(bResource.createdAt);
+      case 'popular':
+        return (parseInt(bResource.likes) || 0) - (parseInt(aResource.likes) || 0);
+      case 'downloads':
+        return (parseInt(bResource.downloads) || 0) - (parseInt(aResource.downloads) || 0);
+      default:
+        return 0;
+    }
+  });
+
+  // Clear and re-append sorted resources
+  resourcesList.innerHTML = '';
+  resources.forEach(resource => resourcesList.appendChild(resource));
+}
 

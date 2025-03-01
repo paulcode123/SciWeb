@@ -164,6 +164,23 @@
                     <label for="nodeDescription">Description:</label>
                     <textarea id="nodeDescription" class="form-input" rows="3" placeholder="Enter a detailed description..."></textarea>
                 </div>
+                <div class="form-group compact">
+                    <label for="nodeContext">Context (up to 1000 words):</label>
+                    <div class="context-container">
+                        <textarea id="nodeContext" class="form-input context-area" rows="8" placeholder="Enter context for AI processing (up to 1000 words)..."></textarea>
+                        <div class="context-info">
+                            <span id="contextWordCount">0</span> / 1000 words
+                            <button class="process-context-btn" id="processContextBtn">
+                                <span class="material-icons">autorenew</span>
+                                Process
+                            </button>
+                            <div id="embeddingStatus" class="embedding-status">
+                                <span class="material-icons">check_circle</span>
+                                <span class="status-text">Embeddings up to date</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="form-group type-selector">
                     <label>Type:</label>
                     <div class="type-options">

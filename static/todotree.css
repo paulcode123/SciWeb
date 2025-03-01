@@ -1202,3 +1202,178 @@ input[type="datetime-local"] {
         padding-top: 20px;
     }
 }
+
+.context-container {
+    position: relative;
+    width: 100%;
+}
+
+.context-area {
+    width: 100%;
+    resize: vertical;
+    min-height: 150px;
+    font-family: inherit;
+    margin-bottom: 4px;
+    padding: 12px;
+    background: #1a1a1a;
+    border: 2px solid #34495e;
+    border-radius: 6px;
+    color: white;
+    font-size: 14px;
+    line-height: 1.5;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.context-area:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 1px #3498db;
+}
+
+.context-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #95a5a6;
+    font-size: 0.9rem;
+    padding: 4px 8px;
+    gap: 12px;
+}
+
+.context-info > :first-child {
+    white-space: nowrap;
+}
+
+.embedding-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.2);
+    transition: background-color 0.2s;
+}
+
+.embedding-status .material-icons {
+    font-size: 16px;
+}
+
+.embedding-status.pending {
+    background: rgba(243, 156, 18, 0.2);
+}
+
+.embedding-status.pending .material-icons {
+    color: #f39c12;
+    animation: spin 1s linear infinite;
+}
+
+.embedding-status.error {
+    background: rgba(231, 76, 60, 0.2);
+}
+
+.embedding-status.error .material-icons {
+    color: #e74c3c;
+}
+
+.embedding-status.success {
+    background: rgba(46, 204, 113, 0.2);
+}
+
+.embedding-status.success .material-icons {
+    color: #2ecc71;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Add transition for word count color change */
+#contextWordCount {
+    transition: color 0.2s;
+    font-weight: 500;
+}
+
+/* Style for when word count exceeds limit */
+#contextWordCount.over-limit {
+    color: #e74c3c;
+    font-weight: 700;
+}
+
+.process-context-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.process-context-btn:hover {
+    background: #2980b9;
+    transform: translateY(-1px);
+}
+
+.process-context-btn:active {
+    transform: translateY(0);
+}
+
+.process-context-btn .material-icons {
+    font-size: 16px;
+}
+
+.process-context-btn:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+}
+
+.semantic-toggle {
+    padding: 8px;
+    border-bottom: 1px solid #2a2a2a;
+    background: #1e1e1e;
+}
+
+.semantic-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 1px solid #3a3a3a;
+    border-radius: 4px;
+    padding: 6px 12px;
+    color: #888;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.semantic-button .material-icons {
+    font-size: 18px;
+    color: #888;
+    transition: color 0.2s ease;
+}
+
+.semantic-button:hover {
+    background: #2a2a2a;
+    color: #fff;
+}
+
+.semantic-button:hover .material-icons {
+    color: #2196F3;
+}
+
+.semantic-button.active {
+    background: #2a2a2a;
+    color: #2196F3;
+    border-color: #2196F3;
+}
+
+.semantic-button.active .material-icons {
+    color: #2196F3;
+}
