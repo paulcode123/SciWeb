@@ -89,12 +89,23 @@
 {% endblock %}
 
 {% block content %}
+
 <div class="controls">
-    <button id="addNodeBtn" class="control-btn">Add Node</button>
-    <button id="addEdgeBtn" class="control-btn">Add Edge</button>
-    <button id="cancelEdgeBtn" class="control-btn" style="display: none;">Cancel Edge</button>
-    <button id="deleteBtn" class="control-btn">Delete Mode</button>
-    <button id="dragModeBtn" class="control-btn">Drag Mode</button>
+    <button id="addNodeBtn" class="control-btn" title="Add Node">
+        <span class="material-icons">add_circle</span>
+    </button>
+    <button id="addEdgeBtn" class="control-btn" title="Add Edge">
+        <span class="material-icons">timeline</span>
+    </button>
+    <button id="cancelEdgeBtn" class="control-btn" style="display: none;" title="Cancel Edge">
+        <span class="material-icons">cancel</span>
+    </button>
+    <button id="deleteBtn" class="control-btn" title="Delete Mode">
+        <span class="material-icons">delete</span>
+    </button>
+    <button id="dragModeBtn" class="control-btn" title="Drag Mode">
+        <span class="material-icons">open_with</span>
+    </button>
 </div>
 <div class="infinite-container" id="infiniteContainer">
     <div class="infinite-content">
@@ -177,6 +188,17 @@
                     </div>
                 </div>
                 <input type="hidden" id="nodeType" value="Task">
+
+                <div class="motivation-section" id="motivationSection" style="display: none;">
+                    <div class="form-group compact">
+                        <label for="motivationLink">YouTube Link:</label>
+                        <input type="text" id="motivationLink" class="form-input" placeholder="Enter YouTube video URL">
+                    </div>
+                    <div class="form-group compact">
+                        <label for="motivationLinkTime">Time Range (e.g., 06:00-07:00):</label>
+                        <input type="text" id="motivationLinkTime" class="form-input" placeholder="Start-End time (e.g., 06:00-07:00)">
+                    </div>
+                </div>
 
                 <div class="grade-goal-section" id="gradeGoalSection">
                     <button type="button" class="grade-goal-btn" id="addGradeGoalBtn">
@@ -273,7 +295,7 @@
 <!-- Check-in Date Template (hidden) -->
 <template id="checkInDateTemplate">
     <div class="check-in-date-item">
-        <input type="datetime-local" class="form-input check-in-date">
+        <input type="date" class="form-input check-in-date">
         <button type="button" class="remove-time-btn">
             <span class="material-icons">close</span>
         </button>

@@ -1,28 +1,134 @@
+/* Add CSS variable for banner height */
+:root {
+    --banner-height: 100px;  /* Adjust this value to match your actual banner height */
+}
+
 .controls {
     position: fixed;
     top: 20px;
     left: 20px;
-    z-index: 1000;
     display: flex;
     gap: 10px;
 }
 
 .control-btn {
-    padding: 8px 16px;
+    width: 44px;
+    height: 44px;
     background: #2c3e50;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 50%;
     cursor: pointer;
-    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.control-btn .material-icons {
+    font-size: 24px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .control-btn:hover {
     background: #34495e;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.control-btn:hover .material-icons {
+    transform: scale(1.1);
+}
+
+.control-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .control-btn.active {
     background: #c0392b;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(192, 57, 43, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(192, 57, 43, 0);
+    }
+}
+
+/* Add ripple effect */
+.control-btn::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+    background-repeat: no-repeat;
+    background-position: 50%;
+    transform: scale(10, 10);
+    opacity: 0;
+    transition: transform .5s, opacity 1s;
+}
+
+.control-btn:active::after {
+    transform: scale(0, 0);
+    opacity: .3;
+    transition: 0s;
+}
+
+/* Mobile Responsive Adjustments */
+@media screen and (max-width: 768px) {
+    .controls {
+        position: fixed;
+        top: 60px;
+        left: 0;
+        right: 0;
+        height: 60px;
+        background: rgba(26, 32, 44, 0.95);
+        padding: 8px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .control-btn {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        font-size: 14px;
+    }
+
+    .control-btn .material-icons {
+        font-size: 20px;
+    }
+
+    .circle {
+        width: 100px;
+        height: 100px;
+    }
+
+    .circle span {
+        font-size: 14px;
+        padding: 8px;
+    }
+
+    .infinite-container {
+        margin-top: 120px; /* Reduced from 160px to match the new spacing */
+        padding-top: 20px;
+    }
 }
 
 .infinite-container {
@@ -413,6 +519,23 @@
     border-top: 1px solid #34495e;
     text-align: right;
     flex-shrink: 0;
+}
+
+.modal-footer .control-btn {
+    width: 200px;
+    height: 44px;
+    border-radius: 8px;
+    background: #3498db;
+    color: white;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.modal-footer .control-btn:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .form-group {
@@ -919,4 +1042,163 @@ input[type="datetime-local"] {
 /* Style datetime-local inputs */
 input[type="datetime-local"] {
     color-scheme: dark;
+}
+
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    background: #1a1a1a;
+    border-radius: 8px;
+    border: 1px solid #34495e;
+    overflow: hidden;
+}
+
+.chat-history {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.chat-input-container {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    border-top: 1px solid #34495e;
+    background: #2c3e50;
+}
+
+.chat-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #34495e;
+    border-radius: 4px;
+    background: #1a1a1a;
+    color: white;
+    resize: none;
+    min-height: 40px;
+    font-size: 14px;
+}
+
+.chat-input:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.send-message-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 4px;
+    background: #3498db;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.send-message-btn:hover {
+    background: #2980b9;
+}
+
+.send-message-btn .material-icons {
+    font-size: 20px;
+}
+
+@media screen and (max-width: 768px) {
+    .modal-content {
+        width: 100%;
+        height: 100vh;
+        border-radius: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modal-footer {
+        padding: 16px;
+    }
+
+    .modal-footer .control-btn {
+        width: 100%;
+        max-width: none;
+        height: 48px;
+        font-size: 16px;
+        border-radius: 8px;
+        margin: 0;
+    }
+
+    .node-edit-panel {
+        position: static;
+        width: 100%;
+        max-height: none;
+        margin-top: 16px;
+    }
+
+    .node-content {
+        margin-right: 0;
+        padding: 16px;
+    }
+
+    .chat-container {
+        height: 50vh;
+        margin-top: 16px;
+    }
+
+    .chat-history {
+        flex: 1;
+        min-height: 200px;
+    }
+
+    .chat-input-container {
+        padding: 12px;
+        background: #2c3e50;
+    }
+
+    .chat-input {
+        min-height: 40px;
+        max-height: 80px;
+    }
+
+    .controls {
+        position: fixed;
+        top: 60px;
+        left: 0;
+        right: 0;
+        height: 60px;
+        background: rgba(26, 32, 44, 0.95);
+        padding: 8px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .control-btn {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        font-size: 14px;
+    }
+
+    .control-btn .material-icons {
+        font-size: 20px;
+    }
+
+    .circle {
+        width: 100px;
+        height: 100px;
+    }
+
+    .circle span {
+        font-size: 14px;
+        padding: 8px;
+    }
+
+    .infinite-container {
+        margin-top: 120px;
+        padding-top: 20px;
+    }
 }

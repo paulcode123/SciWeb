@@ -105,7 +105,7 @@ async function loadMapsForClass() {
     if (!classId) return;
     
     try {
-        const response = await fetchRequest('/data', { 'data': 'CMaps' });
+        const response = await fetchRequest('/data', { 'data': 'Classes, CMaps' });
         const maps = response.CMaps.filter(map => map.classID === parseInt(classId));
         
         maps.forEach(map => {
@@ -136,7 +136,7 @@ async function loadSelectedMap() {
     }
     
     try {
-        const response = await fetchRequest('/data', { 'data': 'CMaps' });
+        const response = await fetchRequest('/data', { 'data': 'Classes, CMaps' });
         const map = response.CMaps.find(m => m.id === parseInt(mapId));
         
         if (map) {
@@ -192,6 +192,7 @@ async function loadSelectedMap() {
 
 function addNode() {
     const id = generateId();
+    console.log('Adding new node with ID:', id);
     nodes.add({
         id,
         label: 'New Node',
@@ -200,6 +201,8 @@ function addNode() {
         youtube: [],
         prerequisites: []
     });
+    console.log('Current nodes:', nodes.get());
+    console.log('Network instance:', network);
 }
 
 function onNodeSelect(params) {
