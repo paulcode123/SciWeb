@@ -20,9 +20,11 @@ from prompts import *
 
 ai_routes = Blueprint('ai_routes', __name__)
 
-
-
-
+# Load API keys
+with open('api_keys.json') as f:
+    keys = json.load(f)
+    
+client = OpenAI(api_key=keys["OpenAiAPIKey"])
 
 # Function to return insights to the Study page
 @ai_routes.route('/AI', methods=['POST'])
@@ -945,5 +947,44 @@ def get_AI_embeddings():
     except Exception as e:
         print(f"Error in get_AI_embeddings: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+@ai_routes.route('/api/opportunities', methods=['POST'])
+def get_opportunities():
+    data = request.json
+    goal = data.get('goal')
+    
+    if not goal:
+        return jsonify({'error': 'No goal provided'}), 400
+        
+    try:
+        # Create a prompt for GPT-4 to generate opportunities
+        prompt = f"""Given the goal: "{goal}"
+        Please provide a list of specific opportunities (competitions, internships, programs, etc.) that could help achieve this goal.
+        Format each opportunity as a JSON object with the following structure:
+        {{
+            "id": "unique_id",
+            "title": "opportunity name",
+            "type": "competition/internship/program/etc",
+            "description": "detailed description of the opportunity and how it relates to the goal"
+        }}
+        Return an array of 5-8 relevant opportunities."""
+        
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a career and educational opportunity advisor."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7
+        )
+        
+        # Parse the response and ensure it's valid JSON
+        opportunities = json.loads(response.choices[0].message.content)
+        
+        return jsonify(opportunities)
+        
+    except Exception as e:
+        print(f"Error generating opportunities: {str(e)}")
+        return jsonify({'error': 'Failed to generate opportunities'}), 500
 
 

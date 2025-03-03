@@ -90,7 +90,7 @@
 
 {% block content %}
 
-<div class="controls">
+<div class="controls" style="margin-top: 60px;">
     <button id="addNodeBtn" class="control-btn" title="Add Node">
         <span class="material-icons">add_circle</span>
     </button>
@@ -105,6 +105,10 @@
     </button>
     <button id="dragModeBtn" class="control-btn" title="Drag Mode">
         <span class="material-icons">open_with</span>
+    </button>
+    <button id="findOpportunitiesBtn" class="control-btn ai-btn" title="AI Opportunities">
+        <span class="material-icons">smart_toy</span>
+        <div class="ai-pulse"></div>
     </button>
 </div>
 <div class="infinite-container" id="infiniteContainer">
@@ -318,6 +322,39 @@
         </button>
     </div>
 </template>
+
+<!-- Add Opportunities Modal -->
+<div class="modal" id="opportunitiesModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Find Opportunities</h2>
+            <button class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="goalInput">What's your goal?</label>
+                <input type="text" id="goalInput" class="form-input" placeholder="Enter your goal...">
+            </div>
+            <div id="opportunitiesList" class="opportunities-list" style="display: none;">
+                <h3>Opportunities</h3>
+                <div class="opportunities-container">
+                    <!-- Opportunities will be dynamically added here -->
+                </div>
+            </div>
+            <div id="loadingOpportunities" class="loading-opportunities" style="display: none;">
+                <div class="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+                <p>Searching for opportunities...</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="control-btn" id="searchOpportunitiesBtn">Search Opportunities</button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block js %}

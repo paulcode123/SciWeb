@@ -2376,4 +2376,255 @@ document.addEventListener('DOMContentLoaded', function() {
         
         return []; // No path found
     }
+
+    async function fetchOpportunitiesFromAI(goal) {
+        const response = await fetch('/api/opportunities', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ goal })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch opportunities');
+        }
+
+        return await response.json();
+    }
+
+    function displayOpportunities(opportunities) {
+        const container = document.querySelector('.opportunities-container');
+        container.innerHTML = ''; // Clear existing opportunities
+
+        // Add a container for selected opportunities at the bottom
+        const selectedContainer = document.createElement('div');
+        selectedContainer.className = 'selected-opportunities';
+        selectedContainer.innerHTML = '<h4>Selected Opportunities</h4>';
+        
+        opportunities.forEach(opportunity => {
+            const card = document.createElement('div');
+            card.className = 'opportunity-card';
+            card.dataset.id = opportunity.id;
+            
+            // Extract and validate links from title and description
+            const { title, description } = extractAndValidateLinks(opportunity.title, opportunity.description);
+            
+            card.innerHTML = `
+                <div class="opportunity-title">${title}</div>
+                <div class="opportunity-type">${escapeHtml(opportunity.type)}</div>
+                <div class="opportunity-description">${description}</div>
+                <div class="opportunity-actions">
+                    <button class="opportunity-button select" data-id="${opportunity.id}">Select</button>
+                </div>
+            `;
+
+            // Add event listener for select button
+            card.querySelector('.select').addEventListener('click', () => {
+                const button = card.querySelector('.select');
+                if (button.textContent === 'Select') {
+                    button.textContent = 'Selected';
+                    button.classList.add('selected');
+                    // Move to selected container
+                    const clone = card.cloneNode(true);
+                    clone.querySelector('.select').addEventListener('click', () => {
+                        card.querySelector('.select').textContent = 'Select';
+                        card.querySelector('.select').classList.remove('selected');
+                        clone.remove();
+                        updateDoneButton();
+                    });
+                    selectedContainer.appendChild(clone);
+                }
+                updateDoneButton();
+            });
+
+            container.appendChild(card);
+        });
+
+        // Add Done button below the opportunities list
+        const doneButton = document.createElement('button');
+        doneButton.className = 'control-btn done-btn';
+        doneButton.textContent = 'Create Motivator';
+        doneButton.style.display = 'none';
+        doneButton.addEventListener('click', async () => {
+            const selectedCards = selectedContainer.querySelectorAll('.opportunity-card');
+            if (selectedCards.length > 0) {
+                const goalInput = document.getElementById('goalInput').value.trim();
+                // Create motivator node
+                const motivatorNode = await createMotivatorNode(goalInput);
+                
+                // Create nodes for each selected opportunity and connect to motivator
+                for (const card of selectedCards) {
+                    const opportunityId = card.dataset.id;
+                    await createNodeFromOpportunity(opportunityId, motivatorNode.id);
+                }
+                
+                // Close the opportunities modal
+                const opportunitiesModal = document.getElementById('opportunitiesModal');
+                opportunitiesModal.classList.remove('show');
+                // Clear the input and hide the opportunities list
+                document.getElementById('goalInput').value = '';
+                document.getElementById('opportunitiesList').style.display = 'none';
+            }
+        });
+
+        // Append selected container and done button after the opportunities list
+        container.parentElement.appendChild(selectedContainer);
+        container.parentElement.appendChild(doneButton);
+
+        function updateDoneButton() {
+            const hasSelected = selectedContainer.querySelectorAll('.opportunity-card').length > 0;
+            doneButton.style.display = hasSelected ? 'block' : 'none';
+        }
+
+        // Helper function to extract and validate links
+        function extractAndValidateLinks(title, description) {
+            // URL regex pattern
+            const urlPattern = /(https?:\/\/[^\s]+)/g;
+            
+            // Function to validate and format URLs
+            const validateUrl = (url) => {
+                try {
+                    const validUrl = new URL(url);
+                    return `<a href="${validUrl.href}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+                } catch {
+                    return url;
+                }
+            };
+
+            // Process title and description
+            const processedTitle = escapeHtml(title).replace(urlPattern, url => validateUrl(url));
+            const processedDescription = escapeHtml(description).replace(urlPattern, url => validateUrl(url));
+
+            return {
+                title: processedTitle,
+                description: processedDescription
+            };
+        }
+
+        document.getElementById('opportunitiesList').style.display = 'block';
+    }
+
+    async function createMotivatorNode(goalText) {
+        const nodeId = generateUniqueNodeId();
+        const circle = document.createElement('div');
+        circle.className = 'circle';
+        circle.draggable = true;
+        circle.dataset.id = nodeId;
+        circle.dataset.type = 'Motivator';
+
+        const span = document.createElement('span');
+        span.textContent = goalText;
+        circle.appendChild(span);
+
+        // Position the node with random offset from center
+        const containerRect = container.getBoundingClientRect();
+        const centerX = containerWidth / 2;
+        const centerY = containerHeight / 2;
+        const randomOffset = () => Math.random() * 200 - 100;
+        
+        circle.style.left = `${centerX + randomOffset()}px`;
+        circle.style.top = `${centerY + randomOffset()}px`;
+
+        content.appendChild(circle);
+        initializeCircles();
+        drawEdges();
+
+        return { id: nodeId, element: circle };
+    }
+
+    async function createNodeFromOpportunity(opportunityId, parentId) {
+        const opportunities = document.querySelectorAll('.opportunity-card');
+        const opportunity = Array.from(opportunities).find(opp => opp.dataset.id === opportunityId);
+        
+        if (!opportunity) return;
+
+        const nodeId = generateUniqueNodeId();
+        const circle = document.createElement('div');
+        circle.className = 'circle';
+        circle.draggable = true;
+        circle.dataset.id = nodeId;
+        circle.dataset.type = 'Task';
+
+        const title = opportunity.querySelector('.opportunity-title').textContent;
+        const description = opportunity.querySelector('.opportunity-description').textContent;
+
+        const span = document.createElement('span');
+        span.textContent = title;
+        circle.appendChild(span);
+
+        // Position the node with random offset from parent
+        const parent = document.querySelector(`.circle[data-id="${parentId}"]`);
+        const parentRect = parent.getBoundingClientRect();
+        const randomOffset = () => Math.random() * 200 - 100;
+        
+        circle.style.left = `${parseFloat(parent.style.left) + randomOffset()}px`;
+        circle.style.top = `${parseFloat(parent.style.top) + 150 + randomOffset()}px`;
+
+        // Store the description as context
+        circle.dataset.description = description;
+
+        content.appendChild(circle);
+        
+        // Create edge connecting to parent
+        edges.push({ from: parentId, to: nodeId });
+        
+        initializeCircles();
+        drawEdges();
+        
+        return { id: nodeId, element: circle };
+    }
+
+    // Initialize opportunities functionality
+    const findOpportunitiesBtn = document.getElementById('findOpportunitiesBtn');
+    const opportunitiesModal = document.getElementById('opportunitiesModal');
+    const closeOpportunitiesBtn = opportunitiesModal.querySelector('.close-btn');
+    const searchOpportunitiesBtn = document.getElementById('searchOpportunitiesBtn');
+    const goalInput = document.getElementById('goalInput');
+    const opportunitiesList = document.getElementById('opportunitiesList');
+    const loadingOpportunities = document.getElementById('loadingOpportunities');
+
+    findOpportunitiesBtn.addEventListener('click', () => {
+        opportunitiesModal.classList.add('show');
+    });
+
+    closeOpportunitiesBtn.addEventListener('click', () => {
+        opportunitiesModal.classList.remove('show');
+        opportunitiesList.style.display = 'none';
+        goalInput.value = '';
+    });
+
+    searchOpportunitiesBtn.addEventListener('click', async () => {
+        const goal = goalInput.value.trim();
+        if (!goal) {
+            alert('Please enter a goal');
+            return;
+        }
+
+        // Show loading state
+        loadingOpportunities.style.display = 'flex';
+        opportunitiesList.style.display = 'none';
+        findOpportunitiesBtn.classList.add('processing');
+
+        try {
+            const opportunities = await fetchOpportunitiesFromAI(goal);
+            displayOpportunities(opportunities);
+        } catch (error) {
+            console.error('Error fetching opportunities:', error);
+            alert('Failed to fetch opportunities. Please try again.');
+        } finally {
+            loadingOpportunities.style.display = 'none';
+            findOpportunitiesBtn.classList.remove('processing');
+        }
+    });
+
+    // Helper function to escape HTML and prevent XSS
+    function escapeHtml(unsafe) {
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
 });

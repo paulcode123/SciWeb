@@ -1377,3 +1377,230 @@ input[type="datetime-local"] {
 .semantic-button.active .material-icons {
     color: #2196F3;
 }
+
+/* Opportunities Styles */
+.opportunities-list {
+    margin-top: 24px;
+}
+
+.opportunities-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.opportunity-card {
+    background: #2c3e50;
+    border-radius: 8px;
+    padding: 16px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+}
+
+.opportunity-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.opportunity-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 8px;
+}
+
+.opportunity-type {
+    display: inline-block;
+    padding: 4px 8px;
+    background: #3498db;
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-bottom: 8px;
+}
+
+.opportunity-description {
+    color: #bdc3c7;
+    font-size: 14px;
+    line-height: 1.4;
+    margin-bottom: 12px;
+}
+
+.opportunity-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.opportunity-button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.opportunity-button.accept {
+    background: #2ecc71;
+    color: white;
+}
+
+.opportunity-button.accept:hover {
+    background: #27ae60;
+}
+
+.opportunity-button.reject {
+    background: #e74c3c;
+    color: white;
+}
+
+.opportunity-button.reject:hover {
+    background: #c0392b;
+}
+
+.loading-opportunities {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 32px;
+}
+
+.loading-opportunities p {
+    color: #bdc3c7;
+    font-size: 16px;
+}
+
+/* AI Button Styles */
+.control-btn.ai-btn {
+    background: linear-gradient(45deg, #2c3e50, #3498db);
+    position: relative;
+    overflow: visible;
+    transition: all 0.3s ease;
+}
+
+.control-btn.ai-btn:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(45deg, #3498db, #2980b9);
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+}
+
+.control-btn.ai-btn .material-icons {
+    color: #fff;
+    position: relative;
+    z-index: 2;
+    font-size: 24px;
+    animation: aiFloat 3s ease-in-out infinite;
+}
+
+.ai-pulse {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(52, 152, 219, 0.2) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: 1;
+    animation: aiPulse 2s ease-out infinite;
+}
+
+@keyframes aiPulse {
+    0% {
+        transform: translate(-50%, -50%) scale(0.95);
+        opacity: 0.6;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.2);
+        opacity: 0;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(0.95);
+        opacity: 0.6;
+    }
+}
+
+@keyframes aiFloat {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-2px);
+    }
+}
+
+/* Add a subtle glow effect when the AI is processing */
+.control-btn.ai-btn.processing {
+    animation: aiProcessing 1.5s ease-in-out infinite;
+}
+
+@keyframes aiProcessing {
+    0% {
+        box-shadow: 0 0 5px #3498db, 0 0 10px #3498db, 0 0 15px #3498db;
+    }
+    50% {
+        box-shadow: 0 0 10px #3498db, 0 0 20px #3498db, 0 0 30px #3498db;
+    }
+    100% {
+        box-shadow: 0 0 5px #3498db, 0 0 10px #3498db, 0 0 15px #3498db;
+    }
+}
+
+.selected-opportunities {
+    margin-top: 24px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    margin-bottom: 24px;
+}
+
+.selected-opportunities h4 {
+    color: #fff;
+    margin: 0 0 16px 0;
+    font-size: 18px;
+}
+
+.opportunity-button.select {
+    background: #3498db;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.opportunity-button.select:hover {
+    background: #2980b9;
+    transform: translateY(-1px);
+}
+
+.opportunity-button.select.selected {
+    background: #27ae60;
+}
+
+.done-btn {
+    display: block;
+    width: 100%;
+    margin-top: 24px;
+    padding: 12px;
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.done-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.done-btn:active {
+    transform: translateY(0);
+}
