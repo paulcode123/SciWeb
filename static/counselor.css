@@ -3,15 +3,26 @@
 /* Styles for AI Counselor Sidebar */
 .ai-sidebar {
     position: fixed;
-    right: 0;
-    top: 60px; /* Adjusted to position below the navbar */
-    transform: translateY(0);
-    width: 300px;
-    background-color: #333;
-    color: white;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    right: 10px;
+    bottom: 10px;
+    width: 50px;
+    background-color: rgba(30, 30, 30, 0.95);
+    color: var(--text-color);
+    border-radius: 25px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     z-index: 1000;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+}
+
+.ai-sidebar.expanded {
+    width: 300px;
+    border-radius: 12px;
+    height: 400px;
+    display: flex;
+    flex-direction: column;
+    background-color: rgba(30, 30, 30, 0.95);
 }
 
 /* Add media query to hide sidebar on mobile */
@@ -22,31 +33,232 @@
 }
 
 .toggle-logo {
-    width: 50px; /* Adjust size as needed */
-    height: auto;
+    width: 40px;
+    height: 40px;
     cursor: pointer;
     display: block;
-    margin: 10px auto; /* Center the logo */
+    margin: 5px;
+    padding: 5px;
+    border-radius: 50%;
+    transition: background-color 0.3s;
+}
+
+.toggle-logo:hover {
+    background-color: var(--surface-color-hover);
 }
 
 .chat-area {
+    display: none;
     padding: 10px;
+    background: rgba(30, 30, 30, 0.95);
+    flex: 1;
+    flex-direction: column;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    height: calc(100% - 50px); /* Subtract the toggle logo height */
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+}
+
+.ai-sidebar.expanded .chat-area {
+    display: flex;
+    opacity: 1;
 }
 
 .chat-log {
-    max-height: 400px;
+    flex: 1;
     overflow-y: auto;
     margin-bottom: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: calc(100% - 60px); /* Leave space for input area */
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-color) var(--surface-color);
+}
+
+.chat-log::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-log::-webkit-scrollbar-track {
+    background: var(--surface-color);
+}
+
+.chat-log::-webkit-scrollbar-thumb {
+    background-color: var(--primary-color);
+    border-radius: 3px;
+}
+
+.chat-input-area {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    border-top: 1px solid var(--border-color);
+    min-height: 60px;
+    max-height: 60px;
+}
+
+#user-input {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    background: var(--background-color);
+    color: var(--text-color);
+    resize: none;
+    font-family: inherit;
+    font-size: 14px;
+    min-height: 36px;
+    max-height: 100px;
 }
 
 .user-message {
     text-align: right;
-    color: #007bff;
+    color: #ffffff;
+    margin: 5px 0;
+    padding: 8px 12px;
+    background: rgba(70, 130, 180, 0.9);
+    border-radius: 12px 12px 2px 12px;
+    max-width: 80%;
+    margin-left: auto;
 }
 
 .ai-message {
     text-align: left;
-    color: #fff;
-}
+    color: #ffffff;
+    margin: 5px 0;
+    padding: 8px 12px;
+    background: rgba(50, 50, 50, 0.9);
+    border-radius: 12px 12px 12px 2px;
+    max-width: 80%;
+} 
 
-/* ... existing styles ... */
+
+/* Cache Info Button */
+.cache-info-button {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    z-index: 1000;
+    cursor: pointer;
+    font-size: 14px;
+    color: #888;
+    transition: color 0.3s;
+    display: none; /* Hidden by default, shown only on desktop */
+    opacity: 0.6;
+    padding: 5px;
+  }
+
+  @media (min-width: 1024px) {
+    .cache-info-button {
+      display: block;
+    }
+  }
+
+  .cache-info-button:hover {
+    color: #4a98e2;
+    opacity: 1;
+  }
+
+  .fetch-bubble {
+    position: absolute;
+    left: 30px;
+    bottom: 0;
+    background: rgba(30, 30, 30, 0.95);
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    white-space: nowrap;
+    display: none;
+    align-items: center;
+    gap: 5px;
+    animation: slideIn 0.3s ease-out;
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(-10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .fetch-bubble .spinner {
+    width: 8px;
+    height: 8px;
+    border: 2px solid #4a98e2;
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    display: inline-block;
+    animation: rotation 1s linear infinite;
+  }
+
+  @keyframes rotation {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .cache-info-content {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 5px);
+    left: 0;
+    background: rgba(30, 30, 30, 0.95);
+    padding: 8px;
+    border-radius: 4px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    min-width: 160px;
+    font-size: 11px;
+  }
+
+  .cache-info-content::after {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 0;
+    right: 0;
+    height: 15px;
+    background: transparent;
+  }
+
+  .cache-info-button:hover .cache-info-content {
+    display: block;
+  }
+
+  .cache-info-content h4 {
+    margin: 0 0 5px 0;
+    color: #fff;
+    font-size: 12px;
+  }
+
+  .cached-sheet-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 0;
+    color: #fff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .cached-sheet-item:last-child {
+    border-bottom: none;
+  }
+
+  .cached-sheet-item .delete-cache {
+    color: #ff4444;
+    cursor: pointer;
+    padding: 1px 4px;
+    border-radius: 2px;
+    font-size: 10px;
+    margin-left: 5px;
+  }
+
+  .cached-sheet-item .delete-cache:hover {
+    background: rgba(255, 68, 68, 0.2);
+  }

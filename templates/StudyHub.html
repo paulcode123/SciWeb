@@ -15,104 +15,159 @@
 {% block content %}
 <div class="studyhub-container">
     <h1 class="main-title">Study Hub</h1>
-    <p class="main-description">Your intelligent learning companion for nailing your STEM tests</p>
+    <p class="main-description">Your intelligent learning companion for mastering STEM concepts</p>
 
-    <div class="study-grid">
+    <div class="learning-journey">
         <!-- Derive Section -->
-        <section class="study-section derive-section">
-            <div class="section-header">
-                <i class="fas fa-lightbulb"></i>
-                <h2>Derive</h2>
+        <section class="journey-section derive-section">
+            <div class="journey-number">1</div>
+            <div class="section-content">
+                <div class="section-header">
+                    <i class="fas fa-lightbulb"></i>
+                    <h2>Derive</h2>
+                </div>
+                <p class="section-description">Build deep understanding through guided discovery and inductive reasoning</p>
+                <div class="feature-highlights">
+                    <div class="feature-item">
+                        <i class="fas fa-diagram-project"></i>
+                        <span>Create concept maps</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-arrows-to-circle"></i>
+                        <span>Connect ideas</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-brain"></i>
+                        <span>Develop intuition</span>
+                    </div>
+                </div>
+                <div class="tool-buttons">
+                    <a href="/Maps" class="tool-button map-button">
+                        <i class="fas fa-diagram-project"></i>
+                        <span>Concept Map</span>
+                    </a>
+                    <a href="/Derive" class="tool-button derive-button">
+                        <i class="fas fa-book-open"></i>
+                        <span>Start Deriving</span>
+                    </a>
+                </div>
             </div>
-            <p class="section-description">Use inductive reasoning to draw general conclusions and build understanding from specific examples</p>
-            <div class="tool-buttons">
-                <a href="/DeriveGuide" class="tool-button">
-                    <i class="fas fa-diagram-project"></i>
-                    <span>Concept Map</span>
-                </a>
-                <a href="/GuideBuilder" class="tool-button">
-                    <i class="fas fa-book-open"></i>
-                    <span>Guide Builder</span>
-                </a>
-            </div>
+            <div class="connection-line"></div>
         </section>
 
         <!-- Practice Section -->
-        <section class="study-section practice-section">
-            <div class="section-header">
-                <i class="fas fa-dumbbell"></i>
-                <h2>Practice</h2>
+        <section class="journey-section practice-section">
+            <div class="journey-number">2</div>
+            <div class="section-content">
+                <div class="section-header">
+                    <i class="fas fa-dumbbell"></i>
+                    <h2>Practice</h2>
+                </div>
+                <p class="section-description">Apply your knowledge through progressive challenges and adaptive learning</p>
+                <div class="feature-highlights">
+                    <div class="feature-item">
+                        <i class="fas fa-layer-group"></i>
+                        <span>Level-based progression</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-chart-simple"></i>
+                        <span>Track progress</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-magnifying-glass-chart"></i>
+                        <span>Error analysis</span>
+                    </div>
+                </div>
+                <div class="tool-buttons">
+                    <a href="/Levels" class="tool-button practice-button">
+                        <i class="fas fa-layer-group"></i>
+                        <span>Start Practice</span>
+                    </a>
+                </div>
             </div>
-            <p class="section-description">Use deductive reasoning to apply formulas and concepts to solve practice problems</p>
-            <div class="tool-buttons">
-                <a href="/StudyLevels2" class="tool-button">
-                    <i class="fas fa-layer-group"></i>
-                    <span>Progressive Practice</span>
-                </a>
-            </div>
+            <div class="connection-line"></div>
         </section>
 
         <!-- Evaluate Section -->
-        <section class="study-section evaluate-section">
-            <div class="section-header">
-                <i class="fas fa-chart-line"></i>
-                <h2>Evaluate</h2>
-            </div>
-            <p class="section-description">Take practice quizzes to gauge your understanding and track your progress</p>
-            <div class="tool-buttons">
-                <a href="/Evaluate" class="tool-button">
-                    <i class="fas fa-tasks"></i>
-                    <span>Practice Quiz</span>
-                </a>
-            </div>
-        </section>
-
-        <!-- Link Guides Section -->
-        <section class="study-section guides-section">
-            <div class="section-header">
-                <i class="fas fa-link"></i>
-                <h2>Study Guides</h2>
-            </div>
-            <p class="section-description">Track your upcoming assessments and manage your study guides</p>
-            
-            <!-- Upcoming Assessments Table -->
-            <div class="table-container">
-                <h3><i class="fas fa-calendar"></i> Upcoming Assessments</h3>
-                <table id="assessments-table">
-                    <thead>
-                        <tr>
-                            <th>Class & Unit</th>
-                            <th>Assessment Date</th>
-                            <th>Notebooks</th>
-                            <th>Study Score</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="assessments-body">
-                        <!-- Populated by JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Past Assessments Table -->
-            <div class="table-container">
-                <h3><i class="fas fa-history"></i> Past Assessments</h3>
-                <table id="past-assessments-table">
-                    <thead>
-                        <tr>
-                            <th>Class & Unit</th>
-                            <th>Date</th>
-                            <th>Grade</th>
-                            <th>Link Grade</th>
-                        </tr>
-                    </thead>
-                    <tbody id="past-assessments-body">
-                        <!-- Populated by JavaScript -->
-                    </tbody>
-                </table>
+        <section class="journey-section evaluate-section">
+            <div class="journey-number">3</div>
+            <div class="section-content">
+                <div class="section-header">
+                    <i class="fas fa-chart-line"></i>
+                    <h2>Evaluate</h2>
+                </div>
+                <p class="section-description">Test your mastery with timed assessments and comprehensive problems</p>
+                <div class="feature-highlights">
+                    <div class="feature-item">
+                        <i class="fas fa-clock"></i>
+                        <span>Timed practice</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-sliders"></i>
+                        <span>Customizable difficulty</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-rotate"></i>
+                        <span>Unique problems</span>
+                    </div>
+                </div>
+                <div class="tool-buttons">
+                    <a href="/Evaluate" class="tool-button evaluate-button">
+                        <i class="fas fa-tasks"></i>
+                        <span>Start Quiz</span>
+                    </a>
+                </div>
             </div>
         </section>
     </div>
+
+    <!-- Study Guides Section -->
+    <section class="guides-container">
+        <div class="guides-header">
+            <i class="fas fa-book"></i>
+            <h2>Study Progress</h2>
+        </div>
+        
+        <div class="guides-grid">
+            <div class="upcoming-assessments">
+                <h3><i class="fas fa-calendar"></i> Upcoming Assessments</h3>
+                <div class="table-wrapper">
+                    <table id="assessments-table">
+                        <thead>
+                            <tr>
+                                <th>Class & Unit</th>
+                                <th>Assessment Date</th>
+                                <th>Progress</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="assessments-body">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="past-assessments">
+                <h3><i class="fas fa-history"></i> Past Performance</h3>
+                <div class="table-wrapper">
+                    <table id="past-assessments-table">
+                        <thead>
+                            <tr>
+                                <th>Class & Unit</th>
+                                <th>Date</th>
+                                <th>Grade</th>
+                                <th>Analysis</th>
+                            </tr>
+                        </thead>
+                        <tbody id="past-assessments-body">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
 </div>
 {% endblock %}
 

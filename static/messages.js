@@ -1,38 +1,275 @@
 var current_location;
 var current_recipients;
 var current_chat;
-var location_to_recipients={}
+var location_to_recipients = {};
 var users;
+var folders = {
+    all: { name: 'All Messages', icon: 'inbox' },
+    unread: { name: 'Unread', icon: 'envelope', count: 0 },
+    starred: { name: 'Starred', icon: 'star', messages: [] }
+};
+var currentFolder = 'all';
+var searchQuery = '';
+var dateFilter = 'all';
 
 document.addEventListener('DOMContentLoaded', function() {
+    initializeUI();
     getData().then(data => {
         console.log(data);
         DisplayThreads(data);
     });
+});
 
-    // Add event listeners
+function initializeUI() {
+    // Message input handlers
     document.getElementById('send-button').addEventListener('click', sendMessage);
     document.getElementById('message-input').addEventListener('keydown', function(event) {
-        if (event.key === 'Enter') {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
             sendMessage();
         }
     });
-    document.getElementById('refresh-chat').addEventListener('click', refresh);
-    document.getElementById('upload').addEventListener('change', handleFileUpload);
-    document.getElementById('clear').addEventListener('click', clearInput);
 
-});
+    // File upload handler
+    document.getElementById('upload').addEventListener('change', handleFileUpload);
+    
+    // Search and filter handlers
+    document.getElementById('message-search').addEventListener('input', handleSearch);
+    document.getElementById('date-filter').addEventListener('change', handleDateFilter);
+    
+    // Folder handlers
+    document.getElementById('create-folder').addEventListener('click', showFolderModal);
+    document.getElementById('folder-form').addEventListener('submit', handleCreateFolder);
+    document.getElementById('cancel-folder').addEventListener('click', hideFolderModal);
+    
+    // Thread view handlers
+    document.getElementById('thread-view').addEventListener('click', toggleThreadView);
+    document.querySelector('.back-to-chat').addEventListener('click', closeThreadView);
+    
+    // Chat actions
+    document.getElementById('star-chat').addEventListener('click', toggleStarChat);
+    document.getElementById('move-to-folder').addEventListener('click', showFoldersList);
+    
+    // Utility buttons
+    document.getElementById('refresh-chat').addEventListener('click', refresh);
+    document.getElementById('clear').addEventListener('click', clearInput);
+    document.getElementById('emoji-btn').addEventListener('click', toggleEmojiPicker);
+
+    // Initialize folders
+    loadFolders();
+    
+    // Start real-time updates
+    initializeRealTimeUpdates();
+}
+
+async function refresh() {
+    console.log("refreshing...");
+    const data = await fetchRequest('/data', { data: "Chat" });
+    current_chat = data.Chat;
+    receive_messages(data.Chat, users, current_location);
+    updateUnreadCount();
+}
+
+function handleSearch(event) {
+    searchQuery = event.target.value.toLowerCase();
+    filterMessages();
+}
+
+function handleDateFilter(event) {
+    dateFilter = event.target.value;
+    filterMessages();
+}
+
+function filterMessages() {
+    const messages = document.querySelectorAll('.message');
+    messages.forEach(message => {
+        const text = message.querySelector('.message-text').textContent.toLowerCase();
+        const date = new Date(message.dataset.timestamp);
+        const isVisible = shouldShowMessage(message, text, date);
+        message.style.display = isVisible ? 'flex' : 'none';
+    });
+}
+
+function shouldShowMessage(message, text, date) {
+    // Search filter
+    if (searchQuery && !text.includes(searchQuery)) {
+        return false;
+    }
+
+    // Date filter
+    if (dateFilter !== 'all') {
+        const now = new Date();
+        switch (dateFilter) {
+            case 'today':
+                if (date.toDateString() !== now.toDateString()) return false;
+                break;
+            case 'week':
+                const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+                if (date < weekAgo) return false;
+                break;
+            case 'month':
+                const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
+                if (date < monthAgo) return false;
+                break;
+        }
+    }
+
+    // Folder filter
+    if (currentFolder !== 'all') {
+        if (currentFolder === 'unread' && !message.classList.contains('unread')) return false;
+        if (currentFolder === 'starred' && !message.classList.contains('starred')) return false;
+        if (folders[currentFolder] && !folders[currentFolder].messages.includes(message.dataset.id)) return false;
+    }
+
+    return true;
+}
+
+function loadFolders() {
+    const foldersList = document.getElementById('folders-list');
+    foldersList.innerHTML = '';
+
+    // Add default folders
+    Object.entries(folders).forEach(([key, folder]) => {
+        const button = createFolderButton(key, folder);
+        foldersList.appendChild(button);
+    });
+}
+
+function createFolderButton(key, folder) {
+    const button = document.createElement('button');
+    button.className = `folder-item ${currentFolder === key ? 'active' : ''}`;
+    button.dataset.folder = key;
+    button.innerHTML = `
+        <i class="fas fa-${folder.icon}"></i>
+        ${folder.name}
+        ${folder.count ? `<span class="badge">${folder.count}</span>` : ''}
+    `;
+    button.onclick = () => switchFolder(key);
+    return button;
+}
+
+function switchFolder(folderKey) {
+    currentFolder = folderKey;
+    document.querySelectorAll('.folder-item').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.folder === folderKey);
+    });
+    filterMessages();
+}
+
+function showFolderModal() {
+    document.getElementById('folder-modal').classList.add('active');
+}
+
+function hideFolderModal() {
+    document.getElementById('folder-modal').classList.remove('active');
+}
+
+function handleCreateFolder(event) {
+    event.preventDefault();
+    const name = document.getElementById('folder-name').value;
+    const color = document.getElementById('folder-color').value;
+    
+    const folderKey = name.toLowerCase().replace(/\s+/g, '-');
+    folders[folderKey] = {
+        name: name,
+        icon: 'folder',
+        color: color,
+        messages: []
+    };
+    
+    loadFolders();
+    hideFolderModal();
+    event.target.reset();
+}
+
+function toggleThreadView() {
+    const threadContainer = document.querySelector('.thread-container');
+    threadContainer.classList.toggle('active');
+    if (threadContainer.classList.contains('active')) {
+        loadThreadMessages();
+    }
+}
+
+function closeThreadView() {
+    document.querySelector('.thread-container').classList.remove('active');
+}
+
+function loadThreadMessages() {
+    const threadMessages = document.querySelector('.thread-messages');
+    threadMessages.innerHTML = '';
+    
+    // Get messages in the current thread
+    const messages = Array.from(document.querySelectorAll('.message'))
+        .filter(msg => msg.dataset.threadId === current_location);
+    
+    messages.forEach(msg => {
+        const clone = msg.cloneNode(true);
+        threadMessages.appendChild(clone);
+    });
+}
+
+function toggleStarChat() {
+    const button = document.getElementById('star-chat');
+    const isStarred = button.classList.toggle('active');
+    
+    if (isStarred) {
+        folders.starred.messages.push(current_location);
+        button.querySelector('i').classList.replace('far', 'fas');
+    } else {
+        const index = folders.starred.messages.indexOf(current_location);
+        if (index > -1) folders.starred.messages.splice(index, 1);
+        button.querySelector('i').classList.replace('fas', 'far');
+    }
+}
+
+function showFoldersList() {
+    // Create and show a dropdown of available folders
+    const dropdown = document.createElement('div');
+    dropdown.className = 'folder-dropdown';
+    
+    Object.entries(folders).forEach(([key, folder]) => {
+        if (key !== 'all' && key !== 'unread') {
+            const item = document.createElement('div');
+            item.className = 'folder-dropdown-item';
+            item.innerHTML = `<i class="fas fa-${folder.icon}"></i> ${folder.name}`;
+            item.onclick = () => moveToFolder(key);
+            dropdown.appendChild(item);
+        }
+    });
+    
+    const button = document.getElementById('move-to-folder');
+    button.appendChild(dropdown);
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function closeDropdown(e) {
+        if (!dropdown.contains(e.target) && !button.contains(e.target)) {
+            dropdown.remove();
+            document.removeEventListener('click', closeDropdown);
+        }
+    });
+}
+
+function moveToFolder(folderKey) {
+    if (folders[folderKey]) {
+        folders[folderKey].messages.push(current_location);
+        showNotification(`Moved to ${folders[folderKey].name}`);
+    }
+}
+
+function showNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
 
 function toggleSection(sectionId) {
     const list = document.getElementById(`${sectionId}-list`);
     list.classList.toggle('active');
-}
-
-async function refresh(){
-    console.log("refreshing...")
-    data = await fetchRequest('/data', { data: "Chat"});
-    current_chat = data.Chat;
-    receive_messages(data.Chat, users, current_location);
 }
 
 function isThreadSet(){
@@ -359,6 +596,18 @@ function base64ToBlob(base64, type = 'application/octet-stream') {
         console.error('Error converting base64 to blob:', error);
         return null;
     }
+}
+
+function initializeRealTimeUpdates() {
+    setInterval(async () => {
+        await refresh();
+    }, 5000); // Poll every 5 seconds
+}
+
+function updateUnreadCount() {
+    const unreadMessages = document.querySelectorAll('.message.unread').length;
+    folders.unread.count = unreadMessages;
+    document.querySelector('[data-folder="unread"] .badge').textContent = unreadMessages;
 }
 
 

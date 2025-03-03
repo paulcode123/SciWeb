@@ -1,10 +1,17 @@
-// Add this import at the top of the file
+// Add Shepherd.js for the tutorial
 import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
 
+const shepherdScript = document.createElement('script');
+shepherdScript.src = 'https://cdn.jsdelivr.net/npm/shepherd.js@11.1.1/dist/js/shepherd.min.js';
+document.head.appendChild(shepherdScript);
+
+const shepherdStyles = document.createElement('link');
+shepherdStyles.rel = 'stylesheet';
+shepherdStyles.href = 'https://cdn.jsdelivr.net/npm/shepherd.js@11.1.1/dist/css/shepherd.css';
+document.head.appendChild(shepherdStyles);
 
 // Jupiter API?
-
 const form = document.querySelector("#gradeform");
 const tbody = document.querySelector("#mytbody");
 var grades;
@@ -14,7 +21,11 @@ var friends;
 
 // when OpenGA button is clicked, open the GradeAnalysis page
 document.getElementById('OpenGA').addEventListener('click', () => {
-  window.location.href = '/GradeAnalysis';
+  // Check if we're in tutorial mode
+  const urlParams = new URLSearchParams(window.location.search);
+  const inTutorial = urlParams.get('tutorial') === 'true';
+  // Pass tutorial parameter if we're in tutorial mode
+  window.location.href = inTutorial ? '/GradeAnalysis?tutorial=true' : '/GradeAnalysis';
 });
 
 //add event listener to the pull button
@@ -36,92 +47,66 @@ async function pullfromJupiter(){
   const addclasses = document.getElementById('addclasses').checked;
   const updateLeagues = document.getElementById('updateLeagues').checked;
   
-
-  // First make POST request with credentials
-  const response = await fetchRequest('/jupiter_auth', {
+  try {
+    // First authenticate
+    statusDiv.innerHTML = '<p>Authenticating...</p>';
+    const authResponse = await fetchRequest('/jupiter_auth', {
       "osis": osis,
       "password": password,
       "addclasses": addclasses,
       "updateLeagues": updateLeagues
     });
-  
 
-  if (!response.status) {
-    alert('Authentication failed');
-    endLoading();
-    return;
-  }
-
-  // Then create EventSource for streaming
-  const evtSource = new EventSource('/jupiter');
-  
-  evtSource.onmessage = function(event) {
-    try {
-        console.log("Received SSE message:", event.data.substring(0, 30));
-        const data = JSON.parse(event.data);
-        
-        if(data.error) {
-            console.error("SSE error:", data.error);
-            evtSource.close();
-            statusDiv.remove();
-            alert(data.error);
-            endLoading();
-            return;
-        }
-        
-        if(data.status === 'complete') {
-            evtSource.close();
-            statusDiv.remove();
-            
-            // Create completion animation
-            const checkDiv = document.createElement('div');
-            checkDiv.className = 'completion-check';
-            const checkIcon = document.createElement('div');
-            checkIcon.className = 'check-icon';
-            checkDiv.appendChild(checkIcon);
-            document.body.appendChild(checkDiv);
-            
-            // Remove animation and show grades after delay
-            setTimeout(() => {
-                checkDiv.classList.add('fade-out');
-                setTimeout(() => {
-                    checkDiv.remove();
-                    createGradesTable(data.grades);
-                }, 300);
-            }, 1200);
-            
-            // set Grades in cache
-            localStorage.setItem('Grades', JSON.stringify({
-              data: data.grades,
-              timestamp: Date.now()
-            }));
-            console.log("Grades set in cache", localStorage.getItem('Grades').substring(0, 30));
-
-            endLoading();
-        } else {
-            console.log("Updating status:", data.message);
-            statusDiv.innerHTML = `<p>${data.message}</p>`;
-        }
-    } catch (error) {
-        console.error('Error parsing SSE data:', error, 'Raw data:', event.data);
-        evtSource.close();
-        statusDiv.remove();
-        alert('Error processing server response');
-        endLoading();
+    if (!authResponse || authResponse.error) {
+      throw new Error(authResponse?.error || 'Authentication failed');
     }
-  };
 
-  evtSource.onopen = function() {
-    console.log("SSE connection opened");
-  };
+    // Process classes
+    statusDiv.innerHTML = '<p>Getting classes and tokens data...</p>';
+    const classesResponse = await fetchRequest('/jupiter_process_classes', {});
+    if (!classesResponse || classesResponse.error) {
+      throw new Error(classesResponse?.error || 'Failed to process classes');
+    }
 
-  evtSource.onerror = function(err) {
-    console.error("SSE error:", err);
-    evtSource.close();
+    // Process grades
+    statusDiv.innerHTML = '<p>Processing grades...</p>';
+    const gradesResponse = await fetchRequest('/jupiter_process_grades', {
+      classes: classesResponse.classes
+    });
+    if (!gradesResponse || gradesResponse.error) {
+      throw new Error(gradesResponse?.error || 'Failed to process grades');
+    }
+
+    // Success - show completion animation and update grades table
     statusDiv.remove();
-    alert('Error occurred while fetching grades');
+    const checkDiv = document.createElement('div');
+    checkDiv.className = 'completion-check';
+    const checkIcon = document.createElement('div');
+    checkIcon.className = 'check-icon';
+    checkDiv.appendChild(checkIcon);
+    document.body.appendChild(checkDiv);
+    
+    setTimeout(() => {
+      checkDiv.classList.add('fade-out');
+      setTimeout(() => {
+        checkDiv.remove();
+        createGradesTable(gradesResponse.grades);
+      }, 300);
+    }, 1200);
+
+    // Set grades in cache
+    localStorage.setItem('Grades', JSON.stringify({
+      data: gradesResponse.grades,
+      timestamp: Date.now()
+    }));
+
+  } catch (error) {
+    console.error('Error:', error);
+    statusDiv.remove();
+    alert(error.message || 'An error occurred while fetching grades');
+  } finally {
     endLoading();
-  };
+  }
 }
 
 //When the user selects a class, update the category dropdown with the categories for that class
@@ -724,3 +709,109 @@ function filterGrades() {
     row.style.display = shouldShow || searchTerm === '' ? '' : 'none';
   }
 }
+
+// Add this function after the other initialization code
+function startGradesTutorial() {
+  console.log("Starting grades tutorial");
+  
+  // Check if Shepherd is loaded
+  if (typeof Shepherd === 'undefined') {
+    console.log("Waiting for Shepherd to load...");
+    setTimeout(startGradesTutorial, 100);
+    return;
+  }
+
+  const tour = new Shepherd.Tour({
+    useModalOverlay: true,
+    defaultStepOptions: {
+      classes: 'shadow-md bg-purple-dark',
+      scrollTo: true,
+      cancelIcon: {
+        enabled: true
+      },
+      popperOptions: {
+        modifiers: [{ name: 'offset', options: { offset: [0, 12] } }]
+      }
+    }
+  });
+
+  // Jupiter Login
+  tour.addStep({
+    id: 'jupiter',
+    text: 'The fastest way to get started is to pull your grades directly from Jupiter! Enter your OSIS and password here.',
+    attachTo: {
+      element: '#Jupull',
+      on: 'bottom'
+    },
+    buttons: [{
+      text: 'Next',
+      action: tour.next
+    }]
+  });
+
+  // Manual Entry Form
+  tour.addStep({
+    id: 'manual-entry',
+    text: 'You can also manually enter grades. Click here to show the grade entry form.',
+    attachTo: {
+      element: '#toggleGradeForm',
+      on: 'bottom'
+    },
+    buttons: [{
+      text: 'Show me how',
+      action: () => {
+        // Show the form if it's hidden
+        const form = document.getElementById('gradeform');
+        const button = document.getElementById('toggleGradeForm');
+        if (form.style.display === 'none') {
+          form.style.display = 'block';
+          button.textContent = button.textContent.slice(0, -1) + 'v';
+        }
+        tour.next();
+      }
+    }]
+  });
+
+  // Grade Entry Fields
+  tour.addStep({
+    id: 'grade-fields',
+    text: 'Enter your grade details here. Make sure to select the correct class and category.',
+    attachTo: {
+      element: '#mytbody',
+      on: 'top'
+    },
+    buttons: [{
+      text: 'Next',
+      action: tour.next
+    }]
+  });
+
+  // Grade Analysis
+  tour.addStep({
+    id: 'grade-analysis',
+    text: 'After entering your grades, click here to see detailed analysis of your performance!',
+    attachTo: {
+      element: '#OpenGA',
+      on: 'bottom'
+    },
+    buttons: [{
+      text: 'Show Analysis',
+      action: () => {
+        window.location.href = '/GradeAnalysis?tutorial=true';
+      }
+    }]
+  });
+
+  // Start the tour
+  tour.start();
+}
+
+// Add this to your window load event listener
+window.addEventListener('load', async () => {
+  // Check if we're coming from the home page tutorial
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('tutorial') === 'true') {
+    // Small delay to ensure page is fully loaded
+    setTimeout(startGradesTutorial, 500);
+  }
+});

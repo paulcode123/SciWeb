@@ -1,0 +1,53 @@
+{% extends "darkThemeTemplate.html" %}
+
+{% block css %}
+<link rel="stylesheet" href="/static/mapbuilder.css">
+{% endblock %}
+
+{% block content %}
+<div class="map-builder-container">
+    <div class="toolbar">
+        <select id="classSelect">
+            <option value="">Select Class</option>
+        </select>
+        <input type="text" id="unitInput" placeholder="Unit Name">
+        <select id="mapSelect">
+            <option value="">New Map</option>
+        </select>
+        <button id="addNodeBtn">Add Node</button>
+        <button id="saveMapBtn">Save Map</button>
+        <button id="updateMapBtn" disabled>Update Map</button>
+    </div>
+    
+    <div class="main-content">
+        <div id="networkContainer"></div>
+        
+        <div class="node-editor">
+            <h3>Node Properties</h3>
+            <div class="editor-form">
+                <input type="text" id="nodeLabel" placeholder="Node Label">
+                <textarea id="nodeDescription" placeholder="Node Description"></textarea>
+                <textarea id="starterPrompt" placeholder="Starter Prompt"></textarea>
+                <div class="youtube-section">
+                    <input type="text" id="youtubeLink" placeholder="YouTube Link">
+                    <input type="text" id="timeRange" placeholder="Time Range (e.g., 06:00-07:00)">
+                    <button id="addYoutubeBtn">Add Video Reference</button>
+                </div>
+                <div id="youtubeList"></div>
+                <div class="prerequisites-section">
+                    <h4>Prerequisites</h4>
+                    <div id="prerequisitesList"></div>
+                </div>
+                <button id="updateNodeBtn">Update Node</button>
+                <button id="deleteNodeBtn">Delete Node</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
+
+<!-- js block -->
+{% block js %}
+<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<script src="/static/mapbuilder.js"></script>
+{% endblock %}

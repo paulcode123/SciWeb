@@ -1,201 +1,4 @@
-// Utility functions for SciWeb
-
-// Convert file to base64
-function getBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-    });
-}
-
-// Make color opaque by removing any alpha channel
-function make_color_opaque(color) {
-    // If color is in rgba format, convert to hex
-    if (color.startsWith('rgba')) {
-        const rgba = color.match(/[\d.]+/g);
-        color = '#' + 
-            Math.round(rgba[0]).toString(16).padStart(2, '0') +
-            Math.round(rgba[1]).toString(16).padStart(2, '0') +
-            Math.round(rgba[2]).toString(16).padStart(2, '0');
-    }
-    return color;
-}
-
-// Fetch request wrapper
-async function fetchRequest(endpoint, data = {}) {
-    try {
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data)
-        });
-        return await response.json();
-    } catch (error) {
-        console.error('Error in fetchRequest:', error);
-        return null;
-    }
-}
-
-// Set class/league image
-async function set_class_img(img) {
-    if (!img || typeof img !== 'string' || img === '') {
-        return;
-    }
-
-    try {
-        const response = await fetchRequest('/get-file', { file: img.toString() });
-        let b64 = response.file;
-        
-        // Handle different image types
-        if (b64.includes('pngbase64')) {
-            b64 = b64.replace('dataimage/pngbase64', 'data:image/png;base64,');
-            b64 = b64.slice(0, -1);
-        } else if (b64.includes('jpegbase64')) {
-            b64 = b64.replace('dataimage/jpegbase64', 'data:image/jpeg;base64,');
-        }
-
-        const container = document.getElementById('classimgcontainer');
-        container.innerHTML = ''; // Clear existing images
-        const classimg = document.createElement('img');
-        classimg.src = b64;
-        container.appendChild(classimg);
-    } catch (error) {
-        console.error('Error setting class image:', error);
-    }
-}
-
-// Set up image upload functionality
-async function setImageEl(data, sheet) {
-    const imgUpload = document.getElementById('imgupload');
-    if (!imgUpload) return;
-
-    imgUpload.addEventListener('change', async function() {
-        try {
-            const img = await getBase64(this.files[0]);
-            const id = Math.floor(Math.random() * 90000000) + 10000000;
-            const response = await fetchRequest('/upload-file', { file: img, name: id });
-            
-            if (response) {
-                await updateClassPic(id, data, sheet);
-            }
-        } catch (error) {
-            console.error('Error uploading image:', error);
-        }
-    });
-}
-
-// Update class/league picture
-async function updateClassPic(id, data, sheet) {
-    try {
-        const updatedData = { ...data, img: id };
-        const response = await fetchRequest('/update_data', {
-            row_value: data.id,
-            row_name: "id",
-            data: updatedData,
-            sheet: sheet
-        });
-        
-        if (response) {
-            location.reload();
-        }
-    } catch (error) {
-        console.error('Error updating picture:', error);
-    }
-}
-
-// Set up color picker functionality
-function set_color_EL(sheet, data) {
-    const saveColorBtn = document.getElementById('savecolor');
-    const colorInput = document.getElementById('color');
-    const colorLabel = document.getElementById('colorLabel');
-
-    if (!saveColorBtn || !colorInput || !colorLabel) return;
-
-    // Show color picker when label is clicked
-    colorLabel.addEventListener('click', () => {
-        colorInput.style.display = 'block';
-        saveColorBtn.style.display = 'block';
-    });
-
-    // Save color when button is clicked
-    saveColorBtn.addEventListener('click', async function() {
-        const color = make_color_opaque(colorInput.value);
-        document.getElementById('class-header').style.backgroundColor = color;
-        colorInput.style.display = 'none';
-        saveColorBtn.style.display = 'none';
-
-        const updatedData = { ...data, color: color };
-        await fetchRequest('/update_data', {
-            row_value: data.id,
-            row_name: "id",
-            data: updatedData,
-            sheet: sheet
-        });
-    });
-}
-
-// Show join button and handle joining
-function show_Join(user, data, sheet) {
-    const joinBtn = document.getElementById('joinBtn');
-    if (!joinBtn || !user || user[1] === 404) return;
-
-    const userOsis = user.osis?.toString();
-    const dataOsis = data.OSIS?.toString()?.split(/[\s,]+/).filter(Boolean);
-
-    if (!userOsis || !dataOsis || dataOsis.includes(userOsis)) return;
-
-    joinBtn.style.display = 'block';
-    join_class(data, user, sheet);
-}
-
-// Handle join button click
-function join_class(data, user, sheet) {
-    const joinBtn = document.getElementById('joinBtn');
-    if (!joinBtn) return;
-
-    joinBtn.addEventListener('click', async function() {
-        const updatedData = {
-            ...data,
-            OSIS: data.OSIS ? `${data.OSIS}, ${user.osis}` : user.osis
-        };
-
-        await fetchRequest('/update_data', {
-            row_value: data.id,
-            row_name: "id",
-            data: updatedData,
-            sheet: sheet
-        });
-
-        location.reload();
-    });
-}
-
-// Add user bubbles to display members
-function add_user_bubbles(data, users) {
-    const userListContainer = document.getElementById('user-list');
-    if (!userListContainer || !data.OSIS) return;
-
-    const members = data.OSIS.toString()
-        .split(/[\s,]+/)
-        .filter(item => item.length > 0);
-
-    members.forEach(memberId => {
-        const user = users.find(u => u.osis == memberId);
-        if (!user) return;
-
-        const userBubble = document.createElement('div');
-        userBubble.textContent = user.first_name;
-        userBubble.classList.add('user-bubble');
-        userBubble.addEventListener('click', () => {
-            window.location.href = '/users/' + memberId;
-        });
-        userListContainer.appendChild(userBubble);
-    });
-}
+cacheTimeout = 40; // 40 minutes
 
 async function getBase64(file) {
     return new Promise((resolve, reject) => {
@@ -207,86 +10,135 @@ async function getBase64(file) {
   }
 
   async function fetchRequest(route, reqbody) {
-    // console.log(reqbody);
-    
-    // Clear cache when modifying data
-    if (route == '/post_data' || route == '/update_data' || route == '/delete_data') {
-        const sheetToInvalidate = reqbody.sheet;
-        if (sheetToInvalidate) {
-            console.log('Invalidating cache for:', sheetToInvalidate);
-            localStorage.removeItem(sheetToInvalidate);
-        }
-    }
-    console.log('route', route, route == '/post_data', route === '/post_data');
-    
-    // Only apply caching for /data route
+    // Show fetch bubble if fetching data
     if (route === '/data') {
-        const requestedSheets = reqbody.data.split(', ');
-        let response = {};
-        let sheetsToFetch = [];
-        let cachedSheets = {};  // Store cached sheets to pass as prev_sheets
-        
-        // First, check cache for each sheet
-        for (const sheet of requestedSheets) {
-            // Skip caching for real-time data
-            if (sheet === 'Chat' || sheet === 'Battles') {
-                sheetsToFetch.push(sheet);
-                continue;
-            }
-            
-            // Check cache in localStorage
-            const cachedItem = localStorage.getItem(sheet);
-            if (cachedItem) {
-                const { data, timestamp } = JSON.parse(cachedItem);
-                
-                // Check if cache is still valid (less than 15 minutes old)
-                if (Date.now() - timestamp < 15 * 60 * 1000 || sheet === 'Grades') {
-                    console.log('Using cached data for:', sheet);
-                    response[sheet] = data;
-                    cachedSheets[sheet] = data;  // Add to cachedSheets
-                    console.log('CachedSheets:', cachedSheets);
-                    continue;
-                } else {
-                    // Remove expired cache
-                    localStorage.removeItem(sheet);
-                }
-            }
-            
-            sheetsToFetch.push(sheet);
-        }
-        console.log("cachedSheets", cachedSheets);
-        // if Grades is in sheetsToFetch, remove it and set response['Grades'] to a blank array
-        if (sheetsToFetch.includes('Grades')) {
-            sheetsToFetch = sheetsToFetch.filter(sheet => sheet !== 'Grades');
-            response['Grades'] = [{'name': 'Please pull grades from Jupiter'}];
-        }
-        // Fetch any uncached sheets
-        if (sheetsToFetch.length > 0) {
-            console.log('Fetching sheets:', sheetsToFetch, "with prev_sheets", cachedSheets);
-            const freshData = await normalFetch(route, { 
-                ...reqbody, 
-                data: sheetsToFetch.join(', '),
-                prev_sheets: cachedSheets  // Pass cached sheets to backend
-            });
-            
-            // Cache the fresh data
-            for (const sheet of sheetsToFetch) {
-                if (sheet !== 'Chat' && sheet !== 'Battles') {
-                    localStorage.setItem(sheet, JSON.stringify({
-                        data: freshData[sheet],
-                        timestamp: Date.now()
-                    }));
-                    console.log('Caching data for:', sheet);
-                }
-                response[sheet] = freshData[sheet];
-            }
-        }
-        
-        return response;
+        document.querySelector('.fetch-bubble').style.display = 'flex';
     }
-    
-    // For all other routes, just fetch normally
-    return await normalFetch(route, reqbody);
+
+    try {
+        // Update cache when modifying data
+        if (route === '/post_data' || route === '/update_data' || route === '/delete_data') {
+            const sheetToUpdate = reqbody.sheet;
+            if (sheetToUpdate) {
+                const cachedItem = localStorage.getItem(sheetToUpdate);
+                if (cachedItem) {
+                    const { data: cachedData, timestamp } = JSON.parse(cachedItem);
+                    
+                    if (route === '/post_data') {
+                        // Add new item to cached data
+                        cachedData.push(reqbody.data);
+                        localStorage.setItem(sheetToUpdate, JSON.stringify({
+                            data: cachedData,
+                            timestamp: Date.now()
+                        }));
+                    } else if (route === '/update_data') {
+                        // Update existing item in cached data
+                        const updatedData = cachedData.map(item => 
+                            item.id === reqbody.data.id ? reqbody.data : item
+                        );
+                        localStorage.setItem(sheetToUpdate, JSON.stringify({
+                            data: updatedData,
+                            timestamp: Date.now()
+                        }));
+                    } else if (route === '/delete_data') {
+                        // Remove item from cached data
+                        const filteredData = cachedData.filter(item => item.id !== reqbody.data.id);
+                        localStorage.setItem(sheetToUpdate, JSON.stringify({
+                            data: filteredData,
+                            timestamp: Date.now()
+                        }));
+                    }
+                }
+            }
+        }
+        
+        // Only apply caching for /data route
+        if (route === '/data') {
+            const requestedSheets = reqbody.data.split(', ');
+            let response = {};
+            let sheetsToFetch = [];
+            let cachedSheets = {};  // Store cached sheets to pass as prev_sheets
+            
+            // Check if Classes is needed but not requested
+            const needsClasses = !requestedSheets.includes('Classes');
+            if (needsClasses) {
+                requestedSheets.push('Classes');
+            }
+            
+            // First, check cache for each sheet
+            for (const sheet of requestedSheets) {
+                // Skip caching for real-time data
+                if (sheet === 'Chat' || sheet === 'Battles') {
+                    sheetsToFetch.push(sheet);
+                    continue;
+                }
+                
+                // Check cache in localStorage
+                const cachedItem = localStorage.getItem(sheet);
+                // console.log('cachedItem', sheet, cachedItem);
+                if (cachedItem) {
+                    const { data, timestamp } = JSON.parse(cachedItem);
+                    
+
+                    // Check if cache is still valid (less than 15 minutes old)
+                    if (Date.now() - timestamp < cacheTimeout * 60 * 1000 || sheet === 'Grades') {
+                        console.log('Using cached data for:', sheet);
+                        response[sheet] = data;
+                        cachedSheets[sheet] = data;  // Add to cachedSheets
+                        console.log('CachedSheets:', cachedSheets);
+                        continue;
+                    } else {
+                        // Remove expired cache
+                        localStorage.removeItem(sheet);
+                    }
+                }
+                
+                sheetsToFetch.push(sheet);
+            }
+            console.log("cachedSheets", cachedSheets);
+            // if Grades is in sheetsToFetch, remove it and set response['Grades'] to a blank array
+            if (sheetsToFetch.includes('Grades')) {
+                sheetsToFetch = sheetsToFetch.filter(sheet => sheet !== 'Grades');
+                response['Grades'] = [{'name': 'Please pull grades from Jupiter'}];
+            }
+
+            // Fetch any uncached sheets
+            if (sheetsToFetch.length > 0) {
+                console.log('Fetching sheets:', sheetsToFetch, "with prev_sheets", cachedSheets);
+                document.querySelector('.fetch-bubble span:last-child').textContent = `Fetching ${sheetsToFetch.join(', ')}`;
+                const freshData = await normalFetch(route, { 
+                    ...reqbody, 
+                    data: sheetsToFetch.join(', '),
+                    prev_sheets: cachedSheets  // Pass cached sheets to backend
+                });
+                
+                // Cache the fresh data
+                for (const sheet of sheetsToFetch) {
+                    if (sheet !== 'Chat' && sheet !== 'Battles') {
+                        localStorage.setItem(sheet, JSON.stringify({
+                            data: freshData[sheet],
+                            timestamp: Date.now()
+                        }));
+                        console.log('Caching data for:', sheet);
+                    }
+                    response[sheet] = freshData[sheet];
+                }
+            }
+            
+            // Update the cache info display after any changes
+            updateCacheInfoDisplay();
+            
+            return response;
+        }
+        
+        // For all other routes, just fetch normally
+        return await normalFetch(route, reqbody);
+    } finally {
+        // Hide fetch bubble after request completes
+        if (route === '/data') {
+            document.querySelector('.fetch-bubble').style.display = 'none';
+        }
+    }
 }
 
 // Helper function for normal fetch
@@ -340,7 +192,7 @@ function processDate(date){
   }
 
 
-  function set_create_user_add_EL(users, user_add_field, userList){
+function set_create_user_add_EL(users, user_add_field, userList){
 
     // add event listener to user_add_field to show users that match the query
     user_add_field.addEventListener('input', () => {
@@ -415,3 +267,52 @@ function endLoading() {
     // document.body.style.pointerEvents = 'auto';
     document.body.style.opacity = '1';
 }
+
+// Cache Info Display Functions
+function updateCacheInfoDisplay() {
+    const cachedSheetsList = document.getElementById('cached-sheets-list');
+    if (!cachedSheetsList) return;
+
+    cachedSheetsList.innerHTML = '';
+    
+    // Get all items from localStorage
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        try {
+            const value = JSON.parse(localStorage.getItem(key));
+            if (value && value.timestamp) {
+                const timeAgo = Math.round((Date.now() - value.timestamp) / 60000); // Convert to minutes
+                // Only show if less than 15 minutes old
+                if (timeAgo < 15) {
+                    const item = document.createElement('div');
+                    item.className = 'cached-sheet-item';
+                    item.innerHTML = `
+                        <span>${key} (${timeAgo}m ago)</span>
+                        <span class="delete-cache" onclick="clearCacheAndUpdate('${key}')">×</span>
+                    `;
+                    cachedSheetsList.appendChild(item);
+                } else {
+                    // Remove expired cache
+                    localStorage.removeItem(key);
+                }
+            }
+        } catch (e) {
+            // Skip non-JSON items in localStorage
+            continue;
+        }
+    }
+}
+
+function clearCacheAndUpdate(sheet) {
+    clearCache(sheet);
+    updateCacheInfoDisplay();
+}
+
+// Initialize cache info display when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Initial update
+    updateCacheInfoDisplay();
+    
+    // Update every minute
+    setInterval(updateCacheInfoDisplay, 60000);
+});

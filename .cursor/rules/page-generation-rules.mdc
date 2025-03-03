@@ -1,0 +1,7 @@
+---
+description: File, Route, and Function Organizational Rules
+globs: 
+---
+
+All html files go in templates folder, all js/css files go directly into static folder
+Add routes to [page_init.py](mdc:routes/page_init.py)

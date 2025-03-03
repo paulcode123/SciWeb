@@ -6,46 +6,88 @@
 
 {% block css %}
 <link rel="stylesheet" href="/static/schedule.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 {% endblock %}
 
 {% block content %}
 <div class="schedule-container">
-    <!-- Sidebar for draggable items -->
-    <div class="sidebar">
-        <div class="sidebar-section">
-            <h3><i class="fas fa-tasks"></i> Assignments</h3>
-            <div id="assignments-list" class="draggable-list"></div>
+    <div class="schedule-header">
+        <h2>Class Schedule</h2>
+        <div class="schedule-controls">
+            <div class="privacy-toggle">
+                <label for="schedulePrivacy">Schedule Privacy:</label>
+                <select id="schedulePrivacy">
+                    <option value="public">Public</option>
+                    <option value="friends">Friends Only</option>
+                    <option value="private">Private</option>
+                </select>
+            </div>
+            <button id="saveSchedule" class="button primary">Save Schedule</button>
         </div>
-        
-        <div class="sidebar-section">
-            <h3><i class="fas fa-star"></i> Aspirations</h3>
-            <div id="aspirations-list" class="draggable-list"></div>
-        </div>
-        
-        <div class="sidebar-section">
-            <h3><i class="fas fa-book"></i> Study Blocks</h3>
-            <div id="study-blocks" class="draggable-list"></div>
-        </div>
+    </div>
 
-        <div class="sidebar-section">
-            <h3><i class="fas fa-plus"></i> Custom Task</h3>
-            <div class="custom-task-form">
-                <input type="text" id="custom-task-name" placeholder="Task name">
-                <textarea id="custom-task-desc" placeholder="Description"></textarea>
-                <button id="add-custom-task"><i class="fas fa-plus"></i> Add Task</button>
+    <div class="schedule-grid">
+        <div class="time-column">
+            <div class="period header"></div>
+            {% for period in range(1, 10) %}
+            <div class="period">Period {{ period }}</div>
+            {% endfor %}
+        </div>
+        
+        <div class="days-grid">
+            <div class="day-headers">
+                <div class="day-header">Monday</div>
+                <div class="day-header">Tuesday</div>
+                <div class="day-header">Wednesday</div>
+                <div class="day-header">Thursday</div>
+                <div class="day-header">Friday</div>
+            </div>
+            <div class="schedule-content">
+                {% for period in range(1, 10) %}
+                <div class="period-row" data-period="{{ period }}">
+                    <div class="class-slot-group">
+                        <div class="class-slot-header">
+                            <select class="class-select main-select" data-period="{{ period }}">
+                                <option value="">Select Class</option>
+                                {% for class in ["Math Research", "AP Bio", "AP Chem", "AP Physics 1", "AP Physics C", "AP Calc BC", "AP Calc AB"] %}
+                                <option value="{{ class }}">{{ class }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="schedule-type-toggle">
+                                <label class="toggle-label">
+                                    <input type="checkbox" class="split-checkbox">
+                                    <span class="toggle-text">Split Schedule</span>
+                                    <span class="toggle-icon"><i class="fas fa-calendar-week"></i></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="split-slots hidden">
+                            {% for day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] %}
+                            <div class="day-slot">
+                                <span class="day-label">{{ day[:3]|title }}</span>
+                                <select class="class-select split-select" data-period="{{ period }}" data-day="{{ day }}">
+                                    <option value="">None</option>
+                                    {% for class in ["Math Research", "AP Bio", "AP Chem", "AP Physics 1", "AP Physics C", "AP Calc BC", "AP Calc AB"] %}
+                                    <option value="{{ class }}">{{ class }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
     </div>
 
-
-<div class="calendar-container">
-    <div id="calendar"></div>
+    <div class="shared-schedules">
+        <h3>View Other Schedules</h3>
+        <div id="friendSchedules">
+            <!-- Friend schedules will be loaded here -->
+        </div>
+    </div>
 </div>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
-
 {% endblock %}
 
 {% block js %}

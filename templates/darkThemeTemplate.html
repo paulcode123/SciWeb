@@ -15,6 +15,8 @@
 		
         <link rel="stylesheet" href="/static/counselor.css">
         <link rel="icon" href="/static/media/favicon.png" sizes="48x48" type="image/x-icon">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+        
 		<noscript><link rel="stylesheet" href="/static/PitchFiles/assets/css/noscript.css" /></noscript>
     {% block css %}
     {% endblock %}
@@ -23,9 +25,11 @@
     {% if request.path != '/' %}
     <div id="ai-counselor-sidebar" class="ai-sidebar">
       <img id="toggle-sidebar" class="toggle-logo" src="/static/media/favicon.png"/>
-      <div id="chat-area" class="chat-area" style="display: none;">
+      <div id="chat-area" class="chat-area">
           <div id="chat-log" class="chat-log"></div>
-          <input type="text" id="user-input" placeholder="Type your message..." />
+          <div class="chat-input-area">
+              <textarea id="user-input" placeholder="Type your message..." rows="1"></textarea>
+          </div>
       </div>
     </div>
     {% endif %}
@@ -49,10 +53,9 @@
                         <a>Achieve</a>
                         <ul>
                           <li><a href="/EnterGrades">Enter</a></li>
-                          <li><a href="/GradeAnalysis">Analyze</a></li>
-                          <li><a href="/Schedule">Schedule</a></li>
-                          <li><a href="/Goals">Goals</a></li>
-                          <li><a href="/Inspire">Inspire</a></li>
+                          <li><a href="/GradeAnalysis">Analyze</a></li>                          
+                          <li><a href="/TodoTree">Todo Tree</a></li>
+                          <li><a href="/TodoList">Todo List</a></li>
                         </ul>
                       </li>
                       <li>
@@ -60,6 +63,7 @@
                         <ul>
                           <li><a href="/Notebook">Notebook</a></li>
                           <li><a href="/StudyHub">StudyHub</a></li>
+                          <li><a href="/PromptLibrary">Prompt Library</a></li>
                         </ul>
                       </li>
                       <li>
@@ -67,6 +71,7 @@
                         <ul>
                           <li><a href="/Classes">Classes</a></li>
                           <li><a href="/Assignments">Assignments</a></li>
+                          <li><a href="/Schedule">Schedule</a></li>
                           <li><a href="/Leagues">Leagues</a></li>
                           <li><a href="#">Questions</a></li>
                         </ul>
@@ -88,8 +93,19 @@
                   {% block content %}
         
                   {% endblock %}
-<!-- ADD CODE HERE -->
 
+                  <!-- Cache Info Button -->
+                  <div id="cache-info-button" class="cache-info-button">
+                    <i class="fas fa-info-circle"></i>
+                    <div class="fetch-bubble">
+                      <span class="spinner"></span>
+                      <span>Fetching...</span>
+                    </div>
+                    <div class="cache-info-content">
+                      <h4>Cached Sheets</h4>
+                      <div id="cached-sheets-list"></div>
+                    </div>
+                  </div>
 
 <!-- Scripts -->
 <script src="/static/util.js"></script>

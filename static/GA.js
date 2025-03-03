@@ -16,6 +16,16 @@ var goals;
 var combinedx;
 var combinedy;
 
+// Add Shepherd.js for the tutorial
+const shepherdScript = document.createElement('script');
+shepherdScript.src = 'https://cdn.jsdelivr.net/npm/shepherd.js@11.1.1/dist/js/shepherd.min.js';
+document.head.appendChild(shepherdScript);
+
+const shepherdStyles = document.createElement('link');
+shepherdStyles.rel = 'stylesheet';
+shepherdStyles.href = 'https://cdn.jsdelivr.net/npm/shepherd.js@11.1.1/dist/css/shepherd.css';
+document.head.appendChild(shepherdStyles);
+
 async function main(){
   startLoading();
   // get all the data
@@ -56,7 +66,6 @@ async function main(){
     val_sums = data["cat_value_sums"];
     goals = data["goals"];
 
-    setClasses(weights)
     setStats(stats)
     
     setCompliments(compliments)
@@ -67,6 +76,29 @@ async function main(){
 
     // Initialize modal after data is loaded
     initializeGoalModal();
+
+    // Check if we should start the tutorial
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('tutorial') === 'true') {
+      // Small delay to ensure everything is loaded
+      setTimeout(startAnalysisTutorial, 1000);
+    }
+
+    // Add legend toggle event listeners
+    document.querySelectorAll('.legend-toggle').forEach(toggle => {
+      toggle.addEventListener('change', function() {
+        const showLegend = this.checked;
+        // Update all three graphs
+        Plotly.relayout('myGraph', {showlegend: showLegend});
+        Plotly.relayout('myHisto', {showlegend: showLegend});
+        Plotly.relayout('myChangeGraph', {showlegend: showLegend});
+        // Sync all toggles
+        document.querySelectorAll('.legend-toggle').forEach(t => {
+          t.checked = showLegend;
+        });
+      });
+    });
+
     endLoading();
 }
 
@@ -82,156 +114,6 @@ function setStats(stats){
   document.getElementById("s5").textContent = stats["most_worsened_class"]
   document.getElementById("s5").nextElementSibling.textContent += "("+stats["grade_changes"][stats["most_worsened_class"]]+"%)"
   document.getElementById("s6").textContent = stats["past30_avg"] + "%"
-}
-function setClasses(weights){
-    var classes = Object.keys(weights)
-    var class_div = document.getElementById("classes")
-    console.log(classes)
-    var all_checkboxes = [];
-
-    //create an all checkbox that checks all the checkboxes in the class and their subcategories
-    let [t, cb, m] = createCheckbox("All");
-    t.appendChild(m);
-    t.appendChild(cb);
-    class_div.appendChild(t);
-      
-      for(let x=0;x<classes.length;x++){
-      // define the class checkboxes
-      let subcategories = document.createElement("div");
-      let [text, checkbox, checkmark] = createCheckbox(classes[x])
-      all_checkboxes.push(checkbox);
-
-      // for each category in the class, create a checkbox
-      for (const category in weights[classes[x]]) {
-        let label = document.createElement("label");
-        let input = document.createElement("input");
-        all_checkboxes.push(input);
-        input.type = 'checkbox';
-        input.value = category.toLowerCase();
-        input.name = 'class';
-        label.textContent = "     "+ category;
-        label.className = 'category-checkbox';
-        input.addEventListener('change', function() {
-          if(this.checked) {
-            label.style.backgroundColor = 'rgba(228, 76, 101, 1)'; // Directly change the background color
-          } else {
-            label.style.backgroundColor = '#1b1c1c'; // Revert to original color
-          }
-        });
-        label.appendChild(input);
-        subcategories.appendChild(label);
-      }
-
-      // hide subcategories by default
-      subcategories.style.display = 'none';
-
-      checkbox.addEventListener('change', function() {
-        checkboxes = subcategories.querySelectorAll('input[name="class"]');
-        if(this.checked) {
-          text.style.backgroundColor = 'rgba(228, 76, 101, 1)'; // Directly change the background color
-          subcategories.style.display = 'block';
-          // check all subcategories
-          for (let i = 0; i < checkboxes.length; i++) {
-            checkboxes[i].checked = true;
-            checkboxes[i].dispatchEvent(new Event('change'));
-          }
-        } else {
-          text.style.backgroundColor = '#1b1c1c'; // Revert to original color
-          subcategories.style.display = 'none';
-          // uncheck all subcategories
-          for (let i = 0; i < checkboxes.length; i++) {
-            checkboxes[i].checked = false;
-            checkboxes[i].dispatchEvent(new Event('change'));
-          }
-        }
-      });
-      text.appendChild(checkmark);
-      text.appendChild(checkbox);
-      class_div.appendChild(text);
-      class_div.appendChild(subcategories);
-    }
-
-
-    //set all checkbox properties
-    
-    cb.addEventListener('change', function() {
-      if(this.checked) {
-        t.style.backgroundColor = 'rgba(228, 76, 101, 1)'; // Directly change the background color
-        for (let i = 0; i < all_checkboxes.length; i++) {
-          all_checkboxes[i].checked = true;
-          console.log(all_checkboxes[i], "checked")
-          all_checkboxes[i].dispatchEvent(new Event('change'));
-        }
-      } else {
-        t.style.backgroundColor = '#1b1c1c'; // Revert to original color
-        for (let i = 0; i < all_checkboxes.length; i++) {
-          all_checkboxes[i].checked = false;
-          all_checkboxes[i].dispatchEvent(new Event('change'));
-        }
-      }
-    });
-
-
-}
-
-function createCheckbox(content){
-  let text = document.createElement("label");
-  let checkbox = document.createElement("input");
-  let checkmark = document.createElement("span");
-  
-
-  checkbox.type = 'checkbox';
-  checkbox.value = content.toLowerCase();
-  checkbox.name = 'class';
-
-  text.textContent = "     "+ content;
-  text.className = 'class-checkbox';
-
-  checkmark.className = 'checkmark';
-  return [text, checkbox, checkmark];
-}
-
-async function setGoalProgress(){
-    const progress_data = await fetchRequest('/goals_progress', { data: '' });
-    
-    console.log(progress_data)
-    container_element = document.getElementById("GoalProgressContainer")
-    for (let i = 0; i < progress_data.length; i++) {
-      const goal = progress_data[i];
-      const goalElement = document.createElement("div");
-      goalElement.className = "goal";
-      var dateBar = document.createElement('progress');
-      var gradeBar = document.createElement('progress');
-      var br = document.createElement('br');
-      
-      dateBar.value = parseFloat(goal.percent_time_passed);
-      dateBar.max = 1;
-      
-      gradeBar.value = parseFloat(goal.percent_grade_change);
-      gradeBar.max = 1;
-  
-      // code to round to 1 decimal place: Math.round(num * 10) / 10
-  
-      var title = document.createElement('h3');
-      title.textContent = "Your goal for "+goal.class+" "+goal.category;
-      var datesText = document.createElement('p');
-      datesText.textContent = "Date set: " + goal.date_set+" | Target date: " + goal.goal_date;
-  
-      var gradesText = document.createElement('p');
-      gradesText.textContent = "Grade when set: " + Math.round(goal.grade_when_set*100)/100+" | Target grade: " + goal.goal_grade;
-  
-      var trajectory = document.createElement('p');
-      trajectory.textContent = "Current Trajectory by goal date: " + Math.round(goal.current_grade_trajectory*100)/100;
-  
-      goalElement.appendChild(title);
-      goalElement.appendChild(datesText);
-      goalElement.appendChild(dateBar);
-      goalElement.appendChild(br);
-      goalElement.appendChild(gradesText);
-      goalElement.appendChild(gradeBar);
-      goalElement.appendChild(trajectory);
-      container_element.appendChild(goalElement);
-    }    
 }
 
 main()
@@ -385,7 +267,7 @@ const layout = {
         title: 'Grades',
         showgrid: false
     },
-    showlegend: false,
+    showlegend: document.getElementById('legendToggleGraph').checked, // Set based on checkbox
     displayModeBar: false,
     paper_bgcolor: 'rgba(0,0,0,0)', // Transparent background
     plot_bgcolor: 'rgba(0,0,0,0)',  // Transparent plot area
@@ -485,35 +367,64 @@ setTimeout(function(){
 }, comp_time*500);
 }
 
-async function animationGOTC(numTraces, traces){
-  const animationDuration = 3500; // 3.5 seconds for animation
+async function animationGOTC(numTraces, traces) {
+  const myPlot = document.getElementById('myGraph');
+  const currentLayout = myPlot.layout;
+  
+  // Store current layout properties we want to preserve
+  const preservedLayout = {
+    images: currentLayout.images || [],
+    xaxis: {
+      range: currentLayout.xaxis.range,
+      title: currentLayout.xaxis.title,
+      tickvals: currentLayout.xaxis.tickvals,
+      ticktext: currentLayout.xaxis.ticktext,
+      showgrid: false
+    },
+    yaxis: {
+      title: currentLayout.yaxis.title,
+      showgrid: false
+    },
+    title: currentLayout.title,
+    showlegend: false,
+    displayModeBar: false,
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: 'white' },
+    hovermode: 'closest'
+  };
 
+  // Perform the animation
   await Plotly.animate('myGraph', {
     data: traces,
     traces: numTraces,
-    layout: {}
+    layout: preservedLayout
   }, {
     transition: {
-      duration: animationDuration,
+      duration: 3500,
       easing: 'cubic-in-out'
     },
     frame: {
-      duration: animationDuration,
-      redraw: true  // Force complete redraw
+      duration: 3500,
+      redraw: true
     }
   });
 
-  // Wait for animation to complete before resizing
-  await new Promise(resolve => setTimeout(resolve, animationDuration));
-  
-  // Store current goals and images
-  const currentLayout = document.getElementById('myGraph').layout;
-  const currentGoals = currentLayout.images || [];
-  
-  // Perform relayout with preserved goals
+  // Wait for animation to complete
+  await new Promise(resolve => setTimeout(resolve, 3600));
+
+  // Calculate y-axis range based on data with reduced margins (2% instead of 5%)
+  let allYValues = traces.flatMap(trace => trace.y || []);
+  let yMin = Math.min(...allYValues) * 0.98; // Reduced from 0.95 to 0.98
+  let yMax = Math.max(...allYValues) * 1.02; // Reduced from 1.05 to 1.02
+
+  // Update layout with calculated ranges while preserving other properties
   await Plotly.relayout('myGraph', {
-    'yaxis.autorange': true,
-    images: currentGoals
+    ...preservedLayout,
+    yaxis: {
+      ...preservedLayout.yaxis,
+      range: [yMin, yMax]
+    }
   });
 }
 
@@ -605,65 +516,119 @@ async function addGoal(xData, yData) {
 function updateGoals(goals, categories) {
   // if goals does not exist, return
   if (!goals) {
+    console.log("No goals provided to updateGoals");
     return;
   }
+  console.log("Updating goals with:", { goals, categories });
+  
   // for each goal in goals where goal['categories'] matches categories, add a line on the graph
   graph = document.getElementById('myGraph');
+  if (!graph) {
+    console.error("Could not find myGraph element");
+    return;
+  }
+  console.log("Current graph layout:", graph.layout);
+  
   medals = [];
   lines = [];
   for (let i = 0; i < goals.length; i++) {
     let goal = goals[i];
-    console.log(goal['categories'], categories)
+    console.log(`Processing goal ${i}:`, goal);
+    
     if (goal['categories'].every(category => categories.includes(category))) {
-      // convert goal['date'] to serial date
-      let xgoal = dateToSerial(goal['date']);
-      let ygoal = goal['grade'];
-      let xinitdate = goal['date_set'];
-      let xinit = dateToSerial(xinitdate);
-      // get yinit by interpolating from combinedx and combinedy
-      let yinit = interpolate(xinit, combinedx, combinedy);
-
-      console.log("in updateGoals", xgoal, ygoal, xinit, yinit);
-      // create a line from (xinit, yinit) to (xgoal, ygoal) on the graph
-      let line = {
-        x: [xinit, xgoal],
-        y: [yinit, ygoal],
-        mode: 'lines',
-        line: {
-          color: 'rgba(255, 255, 255, 0.5)',
-          width: 1
-        },
-        name: 'Goal'
-      };
-      lines.push(line);
-      // add the image(/static/media/GoalMedal.png) of a medal, representing the goal, at (xgoal, ygoal)
-      sizex = (graph.layout.xaxis.range[1]-graph.layout.xaxis.range[0])/5;
-      sizey = (graph.layout.yaxis.range[1]-graph.layout.yaxis.range[0])/5;
+      // Normalize date formats
+      let goalDate = goal['date'];
+      if (goalDate.includes('-')) {
+        // Convert YYYY-MM-DD to MM/DD/YYYY
+        let [year, month, day] = goalDate.split('-');
+        goalDate = `${month}/${day}/${year}`;
+      }
       
-      let image = {
-        source: '/static/media/GoalMedal.png',
-        x: xgoal,
-        y: ygoal,
-        xref: 'x',
-        yref: 'y',
-        sizinf: 'contain',
-        sizex: 5,
-        sizey: 5,
-        xanchor: 'center',
-        yanchor: 'middle'
-      };
-      medals.push(image);
+      let dateSet = goal['date_set'];
+      if (dateSet.includes('-')) {
+        let [year, month, day] = dateSet.split('-');
+        dateSet = `${month}/${day}/${year}`;
+      }
+      
+      // convert goal['date'] to serial date
+      let xgoal = dateToSerial(goalDate);
+      let ygoal = goal['grade'];
+      let xinit = dateToSerial(dateSet);
+      
+      console.log("Goal coordinates:", {
+        xgoal,
+        ygoal,
+        xinit,
+        dateSet
+      });
+      
+      try {
+        // get yinit by interpolating from combinedx and combinedy
+        let yinit = interpolate(xinit, combinedx, combinedy);
+        console.log("Interpolated yinit:", yinit);
+
+        // create a line from (xinit, yinit) to (xgoal, ygoal) on the graph
+        let line = {
+          x: [xinit, xgoal],
+          y: [yinit, ygoal],
+          mode: 'lines',
+          line: {
+            color: 'rgba(255, 255, 255, 0.5)',
+            width: 1
+          },
+          name: 'Goal'
+        };
+        console.log("Created line trace:", line);
+        lines.push(line);
+        
+        // Add medal image with correct attributes
+        let image = {
+          source: '/static/media/GoalMedal.png',
+          x: xgoal,
+          y: ygoal,
+          xref: 'x',
+          yref: 'y',
+          sizing: 'contain',
+          sizex: 5,
+          sizey: 5,
+          xanchor: 'center',
+          yanchor: 'middle',
+          layer: 'above'
+        };
+        console.log("Created medal image:", image);
+        medals.push(image);
+      } catch (error) {
+        console.error("Error processing goal:", error);
+        console.error("Goal data:", { goal, xinit, combinedx, combinedy });
+      }
+    } else {
+      console.log("Goal categories don't match current categories, skipping");
     }
   }
-  console.log(medals)
-  Plotly.addTraces(graph, lines);
-  Plotly.relayout(graph, {
-    images: medals,
-    'images[0].xref': 'paper',
-    'images[0].yref': 'paper',
-    'images[0].sizex': 0.05,
-    'images[0].sizey': 0.05
-  });
+  
+  console.log("Final medals array:", medals);
+  console.log("Final lines array:", lines);
+  
+  try {
+    if (lines.length > 0) {
+      console.log("Adding traces to graph");
+      Plotly.addTraces(graph, lines);
+    }
+    
+    // Update layout with images
+    let currentLayout = graph.layout || {};
+    console.log("Current layout before update:", currentLayout);
+    
+    let newLayout = {
+      ...currentLayout,
+      images: medals
+    };
+    console.log("New layout to be applied:", newLayout);
+    
+    Plotly.relayout(graph, newLayout);
+  } catch (error) {
+    console.error("Error updating plot:", error);
+  }
 }
 
 function interpolate(x, xs, ys) {
@@ -722,7 +687,8 @@ function draw_histogram(grades, cat, comp_time) {
     let grade = grades[i];
     console.log(cat.includes('all') && cat.includes('All'))
     
-    if ((cat.includes(grade['class'].toLowerCase()) || cat.includes('all')) && (cat.includes(grade['category'].toLowerCase()) || cat.includes('All'))) {
+    if ((cat.includes(grade['class'].toLowerCase()) || cat.includes('all')) && 
+        (cat.includes(grade['category'].toLowerCase()) || cat.includes('All'))) {
       grade_points.push(grade);
     }
   }
@@ -760,53 +726,79 @@ function draw_histogram(grades, cat, comp_time) {
     individualTraces.push({x: kde.x, y: kde.y}); // Store individual KDE
   }
 
-var layout = {
+  // Store the combined KDE
+  var data = grades.map(grade => grade['score']/grade['value']*100);
+  var kde = kernelDensityEstimation(data, epanechnikovKernel, bandwidth);
+  let combinedTrace = [{
+    x: kde.x,
+    y: kde.y,
+    mode: 'lines',
+    name: 'Combined',
+    line: {
+      color: 'rgba(228, 76, 101, 0.7)',
+      width: 2
+    },
+    hovertemplate: 'Combined<br>Grade: %{x:.1f}%<br>Density: %{y:.3f}<extra></extra>'
+  }];
+
+  // Define tracenums
+  let tracenums = Array.from({length: traces.length}, (_, i) => i);
+
+  const layout = {
     title: 'Grade Distribution',
     xaxis: {title: 'Grade', showgrid: false},
     yaxis: {title: 'Density', showgrid: false},
-    showlegend: false,
+    showlegend: document.getElementById('legendToggleHisto').checked,
     displayModeBar: false,
-    paper_bgcolor: 'rgba(0,0,0,0)', // Transparent background
-    plot_bgcolor: 'rgba(0,0,0,0)',  // Transparent plot area
-    font: {
-    color: 'white' // White text
-  }
-};
-// Store the combined KDE
-var data = grades.map(grade => grade['score']/grade['value']*100);
-var kde = kernelDensityEstimation(data, epanechnikovKernel, bandwidth);
-let combinedTrace = {
-  x: kde.x,
-  y: kde.y,
-  name: 'Combined',
-  hovertemplate: 'Combined<br>Grade: %{x:.1f}%<br>Density: %{y:.3f}<extra></extra>'
-};
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: 'white' }
+  };
 
-// Define tracenums
-let tracenums = Array.from({length: traces.length}, (_, i) => i);
+  // Initial plot with combined trace
+  Plotly.newPlot('myHisto', combinedTrace, layout);
 
-
-Plotly.newPlot('myHisto', traces, layout);
-setTimeout(function(){
-  animationHistogram(tracenums, Array(traces.length).fill(combinedTrace));
-}, comp_time*500);
-
-// Update the event listener for the checkbox
-document.getElementById('componentsHisto').addEventListener('change', function() {
-  if(this.checked) {
-    animationHistogram(tracenums, individualTraces);
-  } else {
-    animationHistogram(tracenums, Array(traces.length).fill(combinedTrace));
-  }
-});
+  // Update the event listener for the checkbox
+  document.getElementById('componentsHisto').addEventListener('change', function() {
+    const layout = {
+      title: 'Grade Distribution',
+      xaxis: {title: 'Grade', showgrid: false},
+      yaxis: {title: 'Density', showgrid: false},
+      showlegend: document.getElementById('legendToggleHisto').checked,
+      displayModeBar: false,
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { color: 'white' }
+    };
+    
+    if(this.checked) {
+      Plotly.react('myHisto', traces, layout);
+    } else {
+      Plotly.react('myHisto', combinedTrace, layout);
+    }
+  });
 }
 
 function animationHistogram(tracenums, traces){
+  const layout = {
+    title: 'Grade Distribution',
+    xaxis: {title: 'Grade', showgrid: false},
+    yaxis: {
+      title: 'Density',
+      showgrid: false,
+      autorange: true
+    },
+    showlegend: document.getElementById('legendToggleHisto').checked,
+    displayModeBar: false,
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: 'white' }
+  };
   
   Plotly.animate('myHisto', {
     data: traces,
     traces: tracenums,
-    layout: {}
+    layout: layout
   }, {
     transition: {
       duration: 3000,
@@ -816,10 +808,6 @@ function animationHistogram(tracenums, traces){
       duration: 3000
     }
   });
-  setTimeout(function(){
-    console.log('resizing')
-    Plotly.relayout('myHisto', {'yaxis.autorange': true});
-  }, 4000);
 }
 
 // create a function to call draw_histogram and draw_gotc with all of the necessary parameters
@@ -829,39 +817,6 @@ function draw_graphs(grade_spreads, times, weights, grades, cat, val_sums, comp_
   draw_histogram(grades, cat, comp_time);
   draw_change_graph(grade_spreads, times, weights, cat, 15);
 }
-
-document.getElementById("class-form").addEventListener("submit", function(event) {
-  event.preventDefault();
-  const errorMessage = document.getElementById("error-message");
-  errorMessage.textContent = "";
-  const checkboxes = document.querySelectorAll('input[name="class"]:checked');
-  const selectedClasses = Array.from(checkboxes).map(function(checkbox) {
-    return checkbox.value;
-  }).filter(value => value.toLowerCase() !== 'all'); // Filter out "All" from selections
-  
-  if (selectedClasses.length === 0) {
-    errorMessage.textContent = "Please select at least one class.";
-    return;
-  }
-
-  // Uncheck all component and individual grade checkboxes
-  document.getElementById('components').checked = false;
-  document.getElementById('individual').checked = false;
-  document.getElementById('componentsHisto').checked = false;
-  document.getElementById('componentsChange').checked = false;
-
-  console.log(document.getElementById('loadingWheel').style.visibility)
-  document.getElementById('loadingWheel').style.visibility = "visible";
-  document.getElementById('loadingWheel').style.display = "block";
-  
-  let specificity = document.getElementById("mySlider").value;
-  console.log(selectedClasses);
-  draw_graphs(grade_spreads, times, weights, grades, selectedClasses, val_sums, specificity);
-  console.log("done")
-});
-
-
-
 
 const insightContainer = document.getElementById("insightContainer");
 
@@ -1292,7 +1247,7 @@ function draw_change_graph(grade_spreads, times, weights, cat, timeframe=15) {
       showgrid: false,
       tickangle: -45
     },
-    showlegend: true,
+    showlegend: document.getElementById('legendToggleChange').checked,
     paper_bgcolor: 'rgba(0,0,0,0)',
     plot_bgcolor: 'rgba(0,0,0,0)',
     font: { color: 'white' }
@@ -1315,26 +1270,32 @@ function draw_change_graph(grade_spreads, times, weights, cat, timeframe=15) {
 
   // Add new event listener for components toggle
   componentsCheckbox.changeHandler = function() {
+    const layout = {
+      title: 'Grade Changes by Time Period',
+      barmode: this.checked ? 'stack' : 'group',
+      hovermode: 'closest',
+      yaxis: {
+        title: 'Grade Change (%)',
+        zeroline: true,
+        zerolinecolor: 'white',
+        zerolinewidth: 2,
+        showgrid: false
+      },
+      xaxis: {
+        title: 'Time Period',
+        showgrid: false,
+        tickangle: -45
+      },
+      showlegend: document.getElementById('legendToggleChange').checked,
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { color: 'white' }
+    };
+
     if (this.checked) {
-      // When showing components, update the entire data array at once
-      Plotly.react('myChangeGraph', traces, {
-        ...layout,
-        barmode: 'stack'
-      }).then(() => {
-        Plotly.relayout('myChangeGraph', {
-          'yaxis.autorange': true
-        });
-      });
+      Plotly.react('myChangeGraph', traces, layout);
     } else {
-      // When showing combined, update to single trace
-      Plotly.react('myChangeGraph', combinedTrace, {
-        ...layout,
-        barmode: 'group'
-      }).then(() => {
-        Plotly.relayout('myChangeGraph', {
-          'yaxis.autorange': true
-        });
-      });
+      Plotly.react('myChangeGraph', combinedTrace, layout);
     }
   };
   componentsCheckbox.addEventListener('change', componentsCheckbox.changeHandler);
@@ -1372,13 +1333,19 @@ document.getElementById('gradeSearch').addEventListener('keyup', function() {
     currentController = new AbortController();
     const signal = currentController.signal;
 
-    const searchTerm = this.value.toLowerCase();
+    const searchTerm = this.value.toLowerCase().trim();
     
     try {
         document.querySelectorAll('.result-item').forEach(item => {
             // Check if search was aborted
             if (signal.aborted) {
                 throw new Error('aborted');
+            }
+            
+            // Hide all results if search term is empty
+            if (!searchTerm) {
+                item.style.display = 'none';
+                return;
             }
             
             if (item.textContent.toLowerCase().includes(searchTerm)) {
@@ -1662,5 +1629,115 @@ function formatDueDate(dateString) {
         year: 'numeric'
     };
     return date.toLocaleDateString('en-US', options);
+}
+
+function startAnalysisTutorial() {
+  console.log("Starting analysis tutorial");
+  
+  // Check if Shepherd is loaded
+  if (typeof Shepherd === 'undefined') {
+    console.log("Waiting for Shepherd to load...");
+    setTimeout(startAnalysisTutorial, 100);
+    return;
+  }
+
+  const tour = new Shepherd.Tour({
+    useModalOverlay: true,
+    defaultStepOptions: {
+      classes: 'shadow-md bg-purple-dark',
+      scrollTo: true,
+      cancelIcon: {
+        enabled: true
+      },
+      popperOptions: {
+        modifiers: [{ name: 'offset', options: { offset: [0, 12] } }]
+      }
+    }
+  });
+
+  // Overview Stats
+  tour.addStep({
+    id: 'stats-overview',
+    text: 'Here\'s a quick overview of your academic performance. You can see your GPA, average grades, and recent changes.',
+    attachTo: {
+      element: '.stats-container',
+      on: 'bottom'
+    },
+    buttons: [{
+      text: 'Next',
+      action: tour.next
+    }]
+  });
+
+  // Grade Over Time Graph
+  tour.addStep({
+    id: 'time-graph',
+    text: 'This graph shows how your grades have changed over time. You can toggle between combined view and individual components.',
+    attachTo: {
+      element: '#myGraph',
+      on: 'bottom'
+    },
+    buttons: [{
+      text: 'Next',
+      action: tour.next
+    }]
+  });
+
+  // Grade Distribution
+  tour.addStep({
+    id: 'distribution',
+    text: 'See how your grades are distributed and compare with class averages. Use the checkboxes to filter by class or category.',
+    attachTo: {
+      element: '#myHisto',
+      on: 'top'
+    },
+    buttons: [{
+      text: 'Next',
+      action: tour.next
+    }]
+  });
+
+  // Goals Section
+  tour.addStep({
+    id: 'goals',
+    text: 'Set and track your grade goals here. Click on the graph to set a target grade, or use the "Add Goal" button for manual entry.',
+    attachTo: {
+      element: '#goalTableBody',
+      on: 'top'
+    },
+    buttons: [{
+      text: 'Next',
+      action: tour.next
+    }]
+  });
+
+  // Class Selection
+  tour.addStep({
+    id: 'class-selection',
+    text: 'Filter your analysis by selecting specific classes or categories. The graphs will update automatically.',
+    attachTo: {
+      element: '#classes',
+      on: 'right'
+    },
+    buttons: [{
+      text: 'Next',
+      action: tour.next
+    }]
+  });
+
+  // Final Step
+  tour.addStep({
+    id: 'finish-analysis',
+    text: 'That\'s it! Use these tools to track your progress and set meaningful academic goals. Ready to check out your todo list?',
+    buttons: [{
+      text: 'Show Todo List',
+      action: () => {
+        window.location.href = '/TodoTree?tutorial=true';
+      }
+    }]
+  });
+
+  // Start the tour
+  tour.start();
 }
 

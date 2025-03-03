@@ -1,6 +1,8 @@
 import json
 from typing import Any, Dict, Union
-from langchain.schema import BaseMessage
+from langchain.schema import BaseMessage, HumanMessage, AIMessage, SystemMessage
+from langchain.prompts import ChatPromptTemplate
+from langchain.chains import LLMChain
 
 def clean_llm_response(response: Union[str, Dict[str, Any], BaseMessage]) -> str:
     """Clean and standardize LLM response for JSON parsing"""
@@ -47,11 +49,27 @@ def parse_json_response(response: Union[str, Dict[str, Any], BaseMessage], model
         print(f"Error processing response: {str(e)}")
         raise
 
-def create_llm_chain(llm, prompt, verbose=True):
-    """Create a LangChain chain with standard configuration"""
-    from langchain.chains import LLMChain
-    return LLMChain(
-        llm=llm,
-        prompt=prompt,
-        verbose=verbose
-    ) 
+def create_llm_chain(llm, prompt, memory=None):
+    """Create a chain with the given LLM and prompt"""
+    if isinstance(prompt, str):
+        # Convert string prompt to ChatPromptTemplate
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", prompt)
+        ])
+    elif isinstance(prompt, list) and all(isinstance(m, (HumanMessage, AIMessage, SystemMessage)) for m in prompt):
+        # If we have a list of message objects, create a template from them
+        prompt = ChatPromptTemplate.from_messages(prompt)
+    
+    if memory:
+        return LLMChain(
+            llm=llm,
+            prompt=prompt,
+            memory=memory,
+            verbose=True
+        )
+    else:
+        return LLMChain(
+            llm=llm,
+            prompt=prompt,
+            verbose=True
+        ) 

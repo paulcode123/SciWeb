@@ -1,104 +1,153 @@
 {% extends "darkThemeTemplate.html" %}
 
-<!-- title block -->
 {% block title %}
-<title>SciWeb | Levels</title>
+<title>SciWeb - Practice</title>
 {% endblock %}
 
-<!-- css block -->
 {% block css %}
-<link rel="stylesheet" href="/static/levels.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/vis-network/styles/vis-network.min.css">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='levels.css') }}">
 {% endblock %}
 
-<!-- content block -->
 {% block content %}
-<h2>AI Study Tools - Bloom's Taxonomy</h2>
-
-<div id="class-selection">
-    <select id="class-select">
-        <option value="">Select a class</option>
-    </select>
-    <select id="unit-select" disabled>
-        <option value="">Select a unit</option>
-    </select>
-    <button id="start-evaluation" class="start-evaluation-button">Start Evaluation</button>
-</div>
-
-<div id="settings-panel" class="settings-panel">
-    <div class="settings-header" onclick="toggleSettings()">
-        <h3>Custom Settings</h3>
-        <i class="fas fa-chevron-down settings-toggle-icon"></i>
-    </div>
-    <div id="settings-content" class="settings-content">
-        <div class="settings-grid">
-            <div class="setting-item">
-                <label for="starting-level">Starting Level:</label>
-                <select id="starting-level">
-                    <option value="0">Remembering</option>
-                    <option value="1">Understanding</option>
-                    <option value="2">Applying</option>
-                    <option value="3">Analyzing</option>
-                    <option value="4">Evaluating</option>
-                    <option value="5">Creating</option>
-                </select>
-            </div>
-            <div class="setting-item">
-                <label for="points-needed">Points Needed to Advance:</label>
-                <input type="number" id="points-needed" value="50" min="10" max="100">
+<div class="derive-container">
+    <!-- Left Panel: Unit Selection -->
+    <div class="left-panel">
+        <div class="class-selection">
+            <h2>Select Unit</h2>
+            <select id="unit-select" class="modern-select">
+                <option value="" disabled selected>Choose a unit...</option>
+            </select>
+        </div>
+        <div class="progress-section">
+            <h3>Progress</h3>
+            <div class="progress-stats">
+                <div class="stat">
+                    <span class="stat-label">Problems Completed</span>
+                    <span class="stat-value">0/0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Time Spent</span>
+                    <span class="stat-value">0h 0m</span>
+                </div>
             </div>
         </div>
-        
-        <div class="setting-item full-width">
-            <label for="question-prompt">Custom Question Generation Prompt:</label>
-            <textarea id="question-prompt" rows="3">Generate 5 specific short-response questions about the topics/example questions. The questions should be at the {level} level of Bloom's Taxonomy...</textarea>
+    </div>
+
+    <!-- Center Panel: Problem Interface -->
+    <div class="center-panel">
+        <div class="chat-header">
+            <div class="chat-title">
+                <h2>Practice Problems</h2>
+                <span class="subtitle">Master concepts through problem-solving</span>
+            </div>
         </div>
-        
-        <div class="setting-item full-width">
-            <label for="scoring-prompt">Custom Scoring Prompt:</label>
-            <textarea id="scoring-prompt" rows="3">You are an AI assistant tasked with evaluating a student's answer to a {level}-level question in Bloom's Taxonomy...</textarea>
+        <div class="problem-container">
+            <!-- Current Problem Display -->
+            <div id="problem-display" class="problem-display">
+                <div class="problem-header">
+                    <span class="problem-number">Problem #1</span>
+                    <span class="problem-difficulty">Difficulty: Medium</span>
+                </div>
+                <div class="problem-content">
+                    <p id="problem-text">Select a unit to begin solving problems...</p>
+                </div>
+            </div>
+
+            <!-- Answer Section -->
+            <div id="answer-section" class="answer-section">
+                <div class="answer-input-container">
+                    <textarea id="answer-input" placeholder="Enter your answer here..." rows="3"></textarea>
+                    <button id="submit-answer" class="submit-button" disabled>
+                        <span class="material-icons">check</span>
+                    </button>
+                </div>
+                
+                <!-- Verbal Explanation Section -->
+                <div id="explanation-section" class="explanation-section hidden">
+                    <div class="explanation-prompt">
+                        <p>Now, explain your reasoning:</p>
+                        <div class="explanation-input-container">
+                            <textarea id="explanation-input" placeholder="Type your explanation here..." rows="3"></textarea>
+                            <button id="record-button" class="record-button">
+                                <span class="material-icons">mic</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="transcription" class="transcription hidden">
+                        <h4>Your Explanation:</h4>
+                        <p id="transcription-text"></p>
+                        <button id="evaluate-button" class="evaluate-button" disabled>
+                            <span class="material-icons">analytics</span>
+                            Evaluate Understanding
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Evaluation Results -->
+                <div id="evaluation-results" class="evaluation-results hidden">
+                    <h4>Analysis of Your Understanding:</h4>
+                    <div id="logical-statements" class="logical-statements">
+                        <!-- Statements will be added here dynamically -->
+                    </div>
+                    <div id="concept-modifications" class="concept-modifications">
+                        <h4>Suggested Concept Map Updates:</h4>
+                        <!-- Modifications will be added here dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Controls -->
+            <div class="problem-navigation">
+                <button id="prev-problem" class="nav-button" disabled>
+                    <span class="material-icons">arrow_back</span>
+                    Previous
+                </button>
+                <button id="next-problem" class="nav-button" disabled>
+                    Next
+                    <span class="material-icons">arrow_forward</span>
+                </button>
+            </div>
         </div>
-
-        <button id="open-notebook" class="notebook-button">
-            Open Notebook in New Tab
-        </button>
     </div>
-</div>
 
-<div id="loading" style="display: none;">
-    <p>Loading questions...</p>
-</div>
-
-<div id="evaluation" style="display: none;">
-    <h3 id="current-level">Level: Remembering</h3>
-    <div id="progress-bar">
-        <div id="progress-fill"></div>
+    <!-- Right Panel: Concept Map -->
+    <div class="right-panel">
+        <div class="map-header">
+            <div class="map-title">
+                <h2>Concept Map</h2>
+                <span class="subtitle">Your learning progress</span>
+            </div>
+            <div class="map-controls">
+                <button id="zoom-in" class="control-button" title="Zoom In">
+                    <span class="material-icons">zoom_in</span>
+                </button>
+                <button id="zoom-out" class="control-button" title="Zoom Out">
+                    <span class="material-icons">zoom_out</span>
+                </button>
+                <button id="reset-view" class="control-button" title="Reset View">
+                    <span class="material-icons">center_focus_strong</span>
+                </button>
+            </div>
+        </div>
+        <div id="concept-map"></div>
+        <div class="legend">
+            <div class="legend-item">
+                <span class="status-dot pending"></span> Not Started
+            </div>
+            <div class="legend-item">
+                <span class="status-dot in-progress"></span> Derived
+            </div>
+            <div class="legend-item">
+                <span class="status-dot completed"></span> Mastered
+            </div>
+        </div>
     </div>
-    <p id="points">Points: 0 / 50</p>
-    <div id="question-container">
-        <p id="question"></p> 
-        <p id="question-difficulty"></p>
-        <textarea id="answer" rows="4" cols="50"></textarea>
-        <button id="submit-answer">Submit Answer</button>
-        <button id="next-question" style="display: none;">Next Question</button>
-    </div>
-    <div id="feedback" style="display: none;"></div>
-</div>
-
-<div id="level-complete" style="display: none;">
-    <h3>Level Complete!</h3>
-    <p id="level-complete-message"></p>
-    <button id="next-level">Proceed to Next Level</button>
-</div>
-
-<div id="all-levels-complete" style="display: none;">
-    <h3>Congratulations!</h3>
-    <p>You've completed all levels of Bloom's Taxonomy for this unit.</p>
 </div>
 {% endblock %}
 
-<!-- js block -->
 {% block js %}
-<script src="/static/levels.js"></script>
-{% endblock %}
-
+<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<script src="{{ url_for('static', filename='levels.js') }}"></script>
+{% endblock %} 

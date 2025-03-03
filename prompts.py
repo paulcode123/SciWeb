@@ -1,4 +1,6 @@
-from langchain.prompts import ChatPromptTemplate
+from langchain.prompts import ChatPromptTemplate, PromptTemplate
+from langchain.output_parsers import PydanticOutputParser
+from models import *
 
 # Derive
 DERIVE_PROMPT = ChatPromptTemplate.from_messages([
@@ -23,6 +25,7 @@ DERIVE_PROMPT = ChatPromptTemplate.from_messages([
                  ]}}""")
 ])
 
+
 DERIVE_EVAL_PROMPT = ChatPromptTemplate.from_messages([
     ("system", """You are an expert at evaluating student responses and guiding them toward understanding.
                  If their answer shows understanding, accept it as a study guide point.
@@ -40,28 +43,29 @@ DERIVE_EVAL_PROMPT = ChatPromptTemplate.from_messages([
                     "simplifiedQuestion": "simpler follow-up question"}}""")
 ])
 
-DERIVE_HELP_PROMPT = ChatPromptTemplate.from_messages([
-    ("system", """You are a calm, laid-back physics teacher who fosters learning by saying less and encouraging the student to say more. Your teaching philosophy is rooted in minimal intervention, letting students drive the conversation through their reasoning and curiosity.
+DERIVE_HELP_PROMPT = """You are a Socratic guide helping a student derive mathematical/scientific concepts. Your role is to:
+1. Ask thought-provoking questions that lead students to discover concepts themselves
+2. Keep responses shorter than the student's messages
+3. Focus on WHY and HOW these concepts were developed as opposed to WHAT the concept is
+4. Never directly explain concepts - instead guide through questions
+5. Acknowledge student insights and build upon them
+6. If student is stuck, provide minimal help
 
-For each concept:
+Remember:
+- Keep responses concise and focused
+- Use questions to guide rather than explanations to teach
+- At the beginning of each message, append "DERIVED=FALSE" if the student has not yet completely derived the concept, or "DERIVED=TRUE" if they have. It should take 3-6 messages to derive the concept.
 
-Start with a simple, open-ended question that relates to the student’s personal experience.
-Respond with short prompts or follow-up questions to nudge the student toward deeper reflection, without providing direct answers.
-Your responses should generally be shorter than the student's responses, max 10 words. This should encourage the student to articulate their own understanding.
-Let pauses and moments of silence create space for the student to think critically and connect ideas independently.
-Provide validation and subtle guidance only when necessary to keep the conversation on track.
-Use a conversational and approachable tone, ensuring the student feels comfortable exploring their thoughts and ideas freely.
+Example format:
+Student: [longer explanation of their thinking]
+You: "DERIVED=FALSE Interesting observation! But what if we changed X? What would happen?" [shorter response]
 
-If this is the start of the conversation (no conversation history), begin with an engaging real-world scenario that relates to the concept, followed by a thought-provoking question."""),
-    ("human", """The student is trying to understand this concept: {question}
+When student derives the goal concept:
+You: "DERIVED=TRUE Excellent explanation! You've understood how [concept] works and why it's important."
 
-The expected understanding is: {expected_answer}
-
-Conversation history:
-{conversation_history}
-
-Student's message: {student_message}""")
-]) 
+Goal concept: {concept}
+Previously derived concepts: {prerequisites}
+"""
 
 # Explanation(GuideBuilder)
 EXPLANATION_PROMPT = ChatPromptTemplate.from_messages([
@@ -126,17 +130,27 @@ QUESTION_TYPE_PROMPT = ChatPromptTemplate.from_messages([
 ])
 
 # Notebooks
-IMAGE_ANALYSIS_PROMPT = ChatPromptTemplate.from_messages([
-    ("system", """You are an expert at analyzing educational worksheets. 
-    Always respond in the following JSON format:
-    {
-        "topic": "Main topic of the worksheet",
-        "notes": ["Key point 1", "Key point 2", ...],
-        "practice_questions": ["Question 1", "Question 2", ...]
-    }"""),
-    ("user", """Analyze this worksheet image and provide the key information in JSON format:
-    data:{file_type};base64,{image_content}""")
-])
+VISION_ANALYSIS_PROMPT = """Analyze this worksheet and provide insights in the following JSON format:
+{
+    "topic": "Main topic of the worksheet (derived from content)",
+    "notes": ["Key point 1", "Key point 2", ...],
+    "practice_questions": [
+        {
+            "question": "Full question text",
+            "bloom_level": "Remember|Understand|Apply|Analyze|Create"
+        }
+    ]
+}
+
+For practice questions:
+1. Generate at least 10 questions similar to those on the worksheet
+2. Vary the Bloom's Taxonomy levels:
+   - Remember: Recall facts and basic concepts
+   - Understand: Explain ideas or concepts
+   - Apply: Use information in new situations
+   - Analyze: Draw connections among ideas
+   - Create: Produce new or original work
+3. Questions should represent the full range of cognitive levels as appropriate for the worksheet content"""
 
 WORKSHEET_ANSWER_PROMPT = ChatPromptTemplate.from_messages([
     ("system", "You are an expert tutor helping students understand educational content. Number your steps and use LaTeX for equations."),
@@ -144,21 +158,32 @@ WORKSHEET_ANSWER_PROMPT = ChatPromptTemplate.from_messages([
     data:{file_type};base64,{image_content}""")
 ])
 
-SYNTHESIZE_UNIT_PROMPT = ChatPromptTemplate.from_messages([
-    ("system", """You are a test writer making a list containing as diverse of a sample of problems as possible from the notebook data. Should be 10-15 problems, maximum 800 characters.
-    Plain list format, get at least 1 problem for each topic covered in the notebook."""),
-    ("user", """Worksheet Data:
-    {notebook_data}
+PROBLEM_MAPPING_PROMPT = ChatPromptTemplate.from_messages([
+    ("system", """You are an expert at analyzing mathematical problems and identifying the concepts they require to solve. You will be given a concept map with nodes containing concepts and their descriptions, and a list of problems. For each problem, identify which concepts from the map are required to solve it."""),
+    ("human", """Given this concept map:
+    {concept_map}
     
-    Synthesis:""")
+    And these problems:
+    {problems}
+    
+    For each problem, identify the concept IDs required to solve it.
+    Return in this exact JSON format:
+    {{
+        "problem_mappings": [
+            {{
+                "problem_id": "the problem's ID",
+                "required_concepts": ["concept_id1", "concept_id2", ...]
+            }}
+        ]
+    }}""")
 ])
 
 # Levels
 LEVELS_GENERATE_PROMPT = ChatPromptTemplate.from_messages([
-        ("system", "You are an expert at creating practice questions. Return only valid JSON without markdown."),
+        ("system", "You are an expert at creating practice questions of varying difficulty levels. Return only valid JSON without markdown."),
         ("human", """Here is a maximally diverse sample of questions from the unit: {content}
          
-         Create 3 Bloom's Taxonomy level {level} questions within the bounds of this sample.
+         Create 3 {level} level questions ({level} = single step for Rookie, multi-step for Challenger, AP level for Scholar, hard AP level for Master, college level for Samurai).
 
 Previous questions to avoid: {previous}
 
@@ -173,31 +198,57 @@ Return exactly this JSON structure:
 }}
 
 Requirements:
-1. Questions must be at the Bloom's {level} cognitive level and be inline with the sample
-2. Vary difficulty (1-5 scale)
+1. Questions must match the difficulty level description
+2. Vary difficulty within the level (1-5 scale)
 3. Use LaTeX for math: \\\\(x^2\\\\)
-4. Questions should be very applied, as opposed to theoretical. They should require reasoning and mulitple steps""")
+4. Questions should be applied and practical, requiring reasoning and appropriate number of steps for the level""")
 ])
 
-LEVELS_EVAL_PROMPT = ChatPromptTemplate.from_messages([
-        ("system", """You are an expert at evaluating student responses based on Bloom's Taxonomy.
-                     You must respond with ONLY a JSON object. Do not include markdown formatting."""),
-        ("human", """For this {level}-level question: {question}
-                     Evaluate this answer: {answer}. 
-                     And consider how to modify this Study guide to mitigate any error: {guide}
-                     
-                     Return this exact JSON structure:
-                     {{
-                         "correct": true/false,
-                         "feedback": "Detailed feedback evaluating the answer",
-                        (if correct==true, the following fields are all n/a)
-                         "correct_answer": "The complete correct answer",
-                         "error_step": "The number/letter of the step in the guide that the student made an error on, ex. A1",
-                         "new_step": "The rewritten step text",
-                         "subpoints": ["How-to style subpoint 1", "How-to style subpoint 2", "..."],
-                         "mistake": "The mistake the student made on that step"
-                     }}""")
-    ])
+# Evaluation prompt for student responses
+LEVELS_EVAL_PROMPT = PromptTemplate.from_template("""You are an expert tutor evaluating a student's understanding of physics concepts.
+
+Context:
+- Problem: {problem}
+- Student's Answer: {answer}
+- Student's Explanation: {explanation}
+- Unit: {unit}
+- Attempt Number: {attempt_number}
+- Previous Steps: {previous_steps}
+
+Break down the problem into logical steps and evaluate the student's response. For each step:
+1. Identify what the student did
+2. Determine if it was correct
+3. Provide the correct approach if needed
+
+Also identify any remaining steps the student needs to complete.
+
+The score should be a float between 0 and 1 representing overall understanding.
+Logical steps should include what the student has attempted, whether correct or not.
+Remaining steps should include what they still need to do with helpful hints.
+The can_resubmit flag should indicate whether the student should try again.
+
+Format your response as a JSON object with the following structure (DO NOT include any comments in the JSON):
+{
+    "score": 0.5,
+    "logical_steps": [
+        {
+            "step_number": 1,
+            "description": "What the student did in this step",
+            "is_correct": true,
+            "correct_approach": ""
+        }
+    ],
+    "remaining_steps": [
+        {
+            "step_number": 1,
+            "description": "What needs to be done",
+            "hint": "Helpful hint for completing this step"
+        }
+    ],
+    "can_resubmit": true
+}
+
+Response:""")
 
 # Evaluate
 EVALUATE_PROMPT = ChatPromptTemplate.from_messages([
@@ -234,3 +285,20 @@ EVALUATE_EVAL_PROMPT = ChatPromptTemplate.from_messages([
                      "predicted_success": "Predicted success level"
                  }}""")
 ])
+
+CONCEPT_EXPLANATION_PROMPT = ChatPromptTemplate.from_messages([
+    ("system", """You are an expert at explaining scientific concepts clearly and comprehensively.
+                 Your goal is to provide a complete explanation that helps students deeply understand the concept."""),
+    ("human", """Given this concept:
+                 Concept: {concept_label} - {concept_description}
+                 
+                 Provide a complete explanation that:
+                 1. Explains both the what and the why
+                 2. Uses clear examples and analogies
+                 3. Connects to real-world applications
+                 4. Includes historical context when relevant
+                 
+                 Return in this exact JSON format:
+                 {{"explanation": "Your complete explanation here"}}""")
+])
+

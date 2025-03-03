@@ -1,0 +1,25 @@
+---
+description: HTML Structure
+globs: .html
+---
+For new html pages, always extend [darkThemeTemplate.html](mdc:templates/darkThemeTemplate.html)
+
+Follow this block structure template:
+{% block title %}
+<title>Page Title here</title>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="/static/stylesheet.css">
+{% endblock %}
+
+{% block content %}
+Page Content Here
+{% endblock %}
+
+{% block js %}
+<script src="/static/Classes.js"></script>
+{% endblock %}
+
+
+

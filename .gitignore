@@ -4,5 +4,9 @@ gclassrm.json
 service_key.json
 static/credentials.json
 cloudRunKey.json
-#error free falling lab add __pycache__ to .gitignore
+# ignore all pycache files
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
 

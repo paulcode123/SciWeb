@@ -338,54 +338,106 @@
   cursor: pointer;
 }
 
-/* Add this to your existing CSS */
-.video-conference #meet {
-  width: 100%;
-  height: 400px;
-  display: none;
-}
-
-.video-conference #meet.active {
-  display: block;
+/* Video Conference with Enhanced Features */
+.video-conference {
+  flex: 1;
+  min-width: 100%;  /* Take full width */
+  margin-bottom: 2rem;
 }
 
 #meet-wrapper {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  min-height: 700px;  /* Increased minimum height */
 }
 
-/* Add these styles */
+.room-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+#meet {
+  flex: 1;
+  min-height: 600px;  /* Increased minimum height */
+  background-color: var(--background-dark);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
 .meeting-controls {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.5rem;
-}
-
-.participant-count {
-  background: rgba(74, 144, 226, 0.1);
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  color: var(--text-light);
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  margin-top: auto;
 }
 
 #startMeeting {
-  flex: 1;
-  max-width: 200px;
+  flex: 0 0 auto;
+  min-width: 200px;
   background: var(--primary-color);
   border: none;
   padding: 0.75rem 1.5rem;
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: 500;
   transition: all 0.3s ease;
 }
 
-#startMeeting:hover {
-  background: var(--secondary-color);
+.room-features {
+  display: flex;
+  gap: 1rem;
+  margin-left: auto;
+}
+
+.feature-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.feature-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Adjust grid layout for video conference */
+.grid-layout {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);  /* Changed to 2 columns */
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+/* Make video conference span full width */
+.grid-layout .video-conference {
+  grid-column: 1 / -1;  /* Span all columns */
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .grid-layout {
+    grid-template-columns: 1fr;  /* Single column on smaller screens */
+  }
+  
+  #meet {
+    min-height: 500px;  /* Slightly smaller on mobile */
+  }
 }
 
 /* Study Groups */
@@ -738,28 +790,6 @@
 .action-btn:hover {
   color: var(--text-light);
   transform: translateY(-2px);
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .grid-layout {
-    grid-template-columns: 1fr;
-  }
-  
-  .chat-tabs {
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
-  }
-  
-  .resource-categories {
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
-  }
-  
-  .activity-filters {
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
-  }
 }
 
 /* Add styles for different message types */

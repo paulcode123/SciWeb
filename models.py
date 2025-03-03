@@ -44,10 +44,14 @@ class ScoreBloom(BaseModel):
     subpoints: list[str] = []    # How-to style subpoints
     mistake: str = "n/a"         # The mistake made on that step
 
+class PracticeQuestion(BaseModel):
+    question: str
+    difficulty: str
+
 class ResponseTypeNB(BaseModel):
     topic: str
     notes: list[str]
-    practice_questions: list[str]
+    practice_questions: list[PracticeQuestion]
 
 class Explanation(BaseModel):
     style: str
@@ -110,3 +114,56 @@ class DeriveResponse(BaseModel):
     status: str
     newLine: Optional[str] = None
     simplifiedQuestion: Optional[str] = None 
+
+class ConceptMapNode(BaseModel):
+    id: str
+    label: str
+    description: str
+    prerequisites: List[str]
+    starter_prompts: List[str]
+
+class ConceptMap(BaseModel):
+    classID: int
+    unit: str
+    nodes: List[ConceptMapNode]
+    edges: List[Tuple[str, str]]  # (from_node_id, to_node_id)
+    created_on: str
+    updated_on: str
+
+class UserNodeProgress(BaseModel):
+    status: str  # "derived", "pending", "in_progress"
+    date_derived: Optional[str]
+    chat_history: List[str]
+    user_notes: str
+    mistake_history: List[dict]
+
+class UserConceptMapProgress(BaseModel):
+    OSIS: int
+    classID: int
+    unit: str
+    node_progress: dict[str, UserNodeProgress]  # node_id -> progress
+    last_accessed: str 
+
+class ProblemMapping(BaseModel):
+    problem_id: str
+    required_concepts: list[str]
+
+class ProblemMappingResponse(BaseModel):
+    problem_mappings: list[ProblemMapping] 
+
+class LogicalStep(BaseModel):
+    step_number: int = Field(..., description="The number of this step in the sequence")
+    description: str = Field(..., description="Description of what the student did")
+    is_correct: bool = Field(..., description="Whether the step was performed correctly")
+    correct_approach: Optional[str] = Field(None, description="The correct approach if the step was incorrect")
+
+class RemainingStep(BaseModel):
+    step_number: int = Field(..., description="The number of this step in the sequence")
+    description: str = Field(..., description="Description of what needs to be done")
+    hint: str = Field(..., description="A hint to help the student complete this step")
+
+class EvaluationResponse(BaseModel):
+    score: float = Field(..., description="Score between 0 and 1 indicating level of understanding")
+    logical_steps: List[LogicalStep] = Field(..., description="List of steps the student has attempted")
+    remaining_steps: List[RemainingStep] = Field(..., description="List of steps not yet attempted")
+    can_resubmit: bool = Field(..., description="Whether the student should try again") 

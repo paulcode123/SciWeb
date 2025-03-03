@@ -1,0 +1,43 @@
+
+Visual Progress Indicators
+A glowing halo/aura around each node that represents mastery level
+Color intensity and size of the halo could indicate proficiency
+Different colors could represent different states:
+Dim/No halo: Not yet attempted
+Orange halo: Just starting (0-40% mastery)
+Yellow halo: Making progress (40-70% mastery)
+Blue halo: Good understanding (70-90% mastery)
+Bright white/gold halo: Mastery achieved (90%+ mastery)
+Progress Calculation
+Track multiple factors to determine the halo intensity:
+Problem completion rate for that concept
+Average evaluation scores
+Consistency of good explanations
+Time spent on problems
+Number of attempts needed to master problems
+Weight recent performance more heavily than older attempts
+Interactive Elements
+Hovering over a node could show detailed progress stats:
+"8/10 problems completed"
+"85% average understanding"
+"Last practiced: 2 days ago"
+"Strong areas: [specific aspects]"
+Clicking could show a progress history graph
+Right-clicking could show recommended next steps
+Dynamic Updates
+Halos pulse briefly when progress is made
+Smooth transitions when mastery level changes
+Visual connections between related concepts could glow when prerequisites are mastered
+Fading halos for concepts that haven't been practiced recently
+Decay System
+Halos slowly fade over time if concepts aren't practiced
+This encourages regular review and practice
+Could show "needs review" indicators when mastery starts to decay
+Different concepts could have different decay rates based on difficulty
+Achievement System
+Special visual effects for achieving full mastery of a concept
+Unique halo patterns for different types of achievements:
+"Perfect Score" halo design
+"Quick Learner" sparkle effect
+"Consistent Performance" steady glow
+Group achievements for mastering related concepts
