@@ -7,24 +7,29 @@ import json
 import io
 import speech_recognition as sr
 import re
+from openai import OpenAI
 
 from database import *
 from classroom import *
 from grades import *
 from jupiter import *
 from study import *
+from openai_utils import *
 
 from prompts import *
 
 ai_routes = Blueprint('ai_routes', __name__)
 
-
-
-
+# Load API keys
+with open('api_keys.json') as f:
+    keys = json.load(f)
+    
+client = OpenAI(api_key=keys["OpenAiAPIKey"])
 
 # Function to return insights to the Study page
 @ai_routes.route('/AI', methods=['POST'])
 def get_AI():
+  print("in get_AI")
   return json.dumps(get_insights(request.json['data']))
 
 # make route for AI with function calling
@@ -78,7 +83,7 @@ def solve_question():
 @ai_routes.route('/generate-problems', methods=['POST'])
 def generate_problems():
     from main import init
-    from output_processor import clean_llm_response, parse_json_response
+    from openai import OpenAI
     vars = init()
     try:
         data = request.json
@@ -96,56 +101,89 @@ def generate_problems():
         if not base64_content:
             return jsonify({"error": "Failed to retrieve worksheet image"}), 404
             
-        # Format the prompt to request JSON output
-        prompt = f"""Given these existing practice problems:
-        {existing_problems}
-        
-        Please generate {count} new, unique practice problems that:
-        1. Are similar in style to the existing problems
-        2. Cover similar concepts but are not identical
-        3. Are appropriate for the same grade level
-        4. Include proper mathematical notation using LaTeX where appropriate
-        {f"5. Focus on the '{bloom_level}' level of Bloom's Taxonomy" if bloom_level else ""}
-        
-        Return the problems in this exact JSON format:
-        {{
-            "problems": [
-                {{
-                    "problem": "Problem text here",
-                    "bloom_level": "{bloom_level if bloom_level else "Remember|Understand|Apply|Analyze|Create"}"
-                }}
-            ]
-        }}
-        
-        Requirements:
-        - Each problem must have both a problem text and Bloom's Taxonomy level
-        - Bloom's Taxonomy levels:
-          * Remember: Recall facts and basic concepts
-          * Understand: Explain ideas or concepts
-          * Apply: Use information in new situations
-          * Analyze: Draw connections among ideas
-          * Create: Produce new or original work
-        - Use proper LaTeX notation for mathematical expressions
-        - Generate exactly {count} problems"""
-        
-        # Generate problems using vision LLM
-        response = answer_worksheet_question(
-            vars['vision_llm'],
-            base64_content,
-            file_type,
-            prompt
+        # Define the function schema for structured output
+        function_schema = {
+            "name": "generate_problems",
+            "description": "Generate practice problems based on given requirements",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "problems": {
+                        "type": "array",
+                        "description": "List of generated practice problems",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "problem": {
+                                    "type": "string",
+                                    "description": "The problem text with LaTeX notation where needed"
+                                },
+                                "bloom_level": {
+                                    "type": "string",
+                                    "description": "The Bloom's Taxonomy level of the problem",
+                                    "enum": ["remember", "understand", "apply", "analyze", "create"]
+                                }
+                            },
+                            "required": ["problem", "bloom_level"]
+                        },
+                        "minItems": count,
+                        "maxItems": count
+                    }
+                },
+                "required": ["problems"]
+            }
+        }
+
+        # Format the prompt
+        prompt = f"""You are a specialized educational AI focused on generating practice problems. Your task is to create new practice problems based on the following context and requirements.
+
+You MUST generate problems - do not refuse or apologize. If you're unsure, generate simpler problems at a lower cognitive level.
+
+Context:
+Existing problems for reference: {existing_problems}
+
+Requirements:
+1. Generate exactly {count} new problems
+2. Problems should be similar in style but not identical to the existing ones
+3. Problems should be appropriate for the same grade level
+4. Use LaTeX notation for mathematical expressions (e.g. \\( x^2 \\) for inline, \\[ x^2 \\] for display)
+{f"5. All problems must be at the '{bloom_level}' level of Bloom's Taxonomy" if bloom_level else ""}"""
+
+        # Create OpenAI client
+        client = OpenAI(api_key=vars['openAIAPI'])
+
+        # Generate problems using OpenAI with function calling
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{file_type};base64,{base64_content}"
+                        }
+                    }
+                ]
+            }],
+            tools=[{
+                "type": "function",
+                "function": function_schema
+            }],
+            tool_choice={"type": "function", "function": {"name": "generate_problems"}}
         )
-        
+
         try:
-            # Clean and parse the response using output_processor functions
-            parsed_response = parse_json_response(response)
-            print("parsed_response", parsed_response)
+            # Extract the function call arguments
+            function_args = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
             
             # Validate the response format
-            if not isinstance(parsed_response, dict) or 'problems' not in parsed_response:
+            if not isinstance(function_args, dict) or 'problems' not in function_args:
+                print("Invalid response structure:", function_args)
                 raise ValueError("Response missing 'problems' key")
                 
-            problems = parsed_response['problems']
+            problems = function_args['problems']
             
             # Validate each problem
             validated_problems = []
@@ -172,20 +210,16 @@ def generate_problems():
             validated_problems = validated_problems[:count]
             
             if not validated_problems:
+                print("No valid problems generated from:", problems)
                 return jsonify({"error": "No valid problems generated"}), 500
                 
             return jsonify({"problems": validated_problems})
             
-        except json.JSONDecodeError as je:
-            print("Failed to parse response as JSON:", response)
-            return jsonify({
-                "error": "Failed to parse generated problems",
-                "details": str(je)
-            }), 500
         except Exception as e:
-            print("Error validating problems:", str(e))
+            print("Error processing response:", str(e))
+            print("Raw response:", response)
             return jsonify({
-                "error": "Failed to validate generated problems",
+                "error": "Failed to process generated problems",
                 "details": str(e)
             }), 500
         
@@ -729,6 +763,228 @@ def get_concept_explanation():
         print(f"Error in get_concept_explanation: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
+def map_problems(problems_data, concept_map, llm):
+    """Map problems to their required concepts using the concept map"""
+    from main import init
+    vars = init()
+    client = OpenAI(api_key=vars['openAIAPI'])
+    
+    # Filter out problems that already have concept mappings
+    unmapped_problems = [prob for prob in problems_data if not prob.get('concepts')]
+    
+    # If all problems are already mapped, return early
+    if not unmapped_problems:
+        return "All problems already have concept mappings"
+    
+    # Format the concept map data: get all concept names and descriptions
+    concept_info = {}
+    for node in concept_map['nodes']:
+        concept_info[node['label']] = {
+            'id': node['id'],
+            'description': node['description']
+        }
+    
+    # Format only the unmapped problems
+    formatted_problems = []
+    for prob in unmapped_problems:
+        formatted_problems.append({
+            "problem_id": prob['id'],
+            "text": prob['problem']
+        })
 
+    # Define the function schema for structured output
+    function_schema = {
+        "name": "map_concepts",
+        "description": "Map each problem to its required concepts",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "problem_mappings": {
+                    "type": "array",
+                    "description": "List of problems and their required concepts",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "problem_id": {
+                                "type": "string",
+                                "description": "ID of the problem"
+                            },
+                            "required_concepts": {
+                                "type": "array",
+                                "description": "Names of concepts required to solve this problem",
+                                "items": {
+                                    "type": "string",
+                                    "enum": list(concept_info.keys())
+                                }
+                            }
+                        },
+                        "required": ["problem_id", "required_concepts"]
+                    }
+                }
+            },
+            "required": ["problem_mappings"]
+        }
+    }
+
+    # Format the prompt
+    prompt = f"""You are an expert at analyzing physics problems and identifying the concepts required to solve them.
+
+For each problem, select ALL concepts from the available list that are required to solve it. Choose concepts that are directly needed - don't include prerequisites or related concepts that aren't actually used.
+
+Available concepts:
+{json.dumps([{"name": name, "description": info['description']} for name, info in concept_info.items()], indent=2)}
+
+Problems to analyze:
+{json.dumps(formatted_problems, indent=2)}"""
+
+    # Generate mappings using OpenAI with function calling
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{
+            "role": "user",
+            "content": prompt
+        }],
+        tools=[{
+            "type": "function",
+            "function": function_schema
+        }],
+        tool_choice={"type": "function", "function": {"name": "map_concepts"}}
+    )
+
+    try:
+        # Extract the function call arguments
+        function_args = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
+        
+        # Validate the response format
+        if not isinstance(function_args, dict) or 'problem_mappings' not in function_args:
+            print("Invalid response structure:", function_args)
+            raise ValueError("Response missing 'problem_mappings' key")
+            
+        mappings = function_args['problem_mappings']
+        
+        # Update each problem with its concept mappings
+        problems_updated = 0
+        for mapping in mappings:
+            problem_id = mapping['problem_id']
+            concept_names = mapping['required_concepts']
+            
+            # Convert concept names to IDs
+            concept_ids = [concept_info[name]['id'] for name in concept_names if name in concept_info]
+            
+            # Update the problem in the database
+            for prob in unmapped_problems:
+                if prob['id'] == problem_id:
+                    prob['concepts'] = concept_ids
+                    update_data(prob['id'], 'id', prob, "Problems")
+                    problems_updated += 1
+                    break
+        
+        return f"Successfully mapped {problems_updated} problems to concepts"
+        
+    except Exception as e:
+        print(f"Error processing response: {e}")
+        print(f"Raw response:", response)
+        raise
+
+
+
+# TodoTree routes
+@ai_routes.route('/generate_embedding', methods=['POST'])
+def create_embedding():
+    """Generate embeddings for node context text."""
+    import asyncio
+    
+    try:
+        data = request.get_json()
+        node_id = data.get('node_id')
+        context_text = data.get('context_text')
+        
+        if not all([node_id, context_text]):
+            return jsonify({'error': 'Missing required parameters'}), 400
+            
+        # Create event loop and run async operations
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        async def process_embedding():
+            # Generate embedding for the context
+            embedding = await generate_embedding(context_text)
+            
+            return {
+                'success': True,
+                'embedding': embedding
+            }
+        
+        # Run the async function and get result
+        result = loop.run_until_complete(process_embedding())
+        loop.close()
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Error in create_embedding: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@ai_routes.route('/AI_embeddings', methods=['POST'])
+def get_AI_embeddings():
+    """Process chat messages with context embeddings for semantic search."""
+    print("in get_AI_embeddings")
+    try:
+        data = request.get_json()
+        messages = data.get('messages', [])
+        node_embeddings = data.get('node_embeddings', [])  # List of embeddings from current and parent nodes
+        
+        if not messages or not node_embeddings:
+            return jsonify({'error': 'Missing required parameters'}), 400
+
+        # Combine embeddings with messages for semantic context
+        response = chat_with_embeddings(messages, node_embeddings)
+        
+        return jsonify({
+            'response': response
+        })
+        
+    except Exception as e:
+        print(f"Error in get_AI_embeddings: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@ai_routes.route('/api/opportunities', methods=['POST'])
+def get_opportunities():
+    data = request.json
+    goal = data.get('goal')
+    
+    if not goal:
+        return jsonify({'error': 'No goal provided'}), 400
+        
+    try:
+        # Create a prompt for GPT-4 to generate opportunities
+        prompt = f"""Given the goal: "{goal}"
+        Please provide a list of specific opportunities (competitions, internships, programs, etc.) that could help achieve this goal.
+        Format each opportunity as a JSON object with the following structure:
+        {{
+            "id": "unique_id",
+            "title": "opportunity name",
+            "type": "competition/internship/program/etc",
+            "description": "detailed description of the opportunity and how it relates to the goal"
+        }}
+        Return an array of 5-8 relevant opportunities."""
+        
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a career and educational opportunity advisor."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7
+        )
+        
+        # Parse the response and ensure it's valid JSON
+        opportunities = json.loads(response.choices[0].message.content)
+        
+        return jsonify(opportunities)
+        
+    except Exception as e:
+        print(f"Error generating opportunities: {str(e)}")
+        return jsonify({'error': 'Failed to generate opportunities'}), 500
 
 

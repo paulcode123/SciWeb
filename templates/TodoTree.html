@@ -89,12 +89,27 @@
 {% endblock %}
 
 {% block content %}
-<div class="controls">
-    <button id="addNodeBtn" class="control-btn">Add Node</button>
-    <button id="addEdgeBtn" class="control-btn">Add Edge</button>
-    <button id="cancelEdgeBtn" class="control-btn" style="display: none;">Cancel Edge</button>
-    <button id="deleteBtn" class="control-btn">Delete Mode</button>
-    <button id="dragModeBtn" class="control-btn">Drag Mode</button>
+
+<div class="controls" style="margin-top: 60px;">
+    <button id="addNodeBtn" class="control-btn" title="Add Node">
+        <span class="material-icons">add_circle</span>
+    </button>
+    <button id="addEdgeBtn" class="control-btn" title="Add Edge">
+        <span class="material-icons">timeline</span>
+    </button>
+    <button id="cancelEdgeBtn" class="control-btn" style="display: none;" title="Cancel Edge">
+        <span class="material-icons">cancel</span>
+    </button>
+    <button id="deleteBtn" class="control-btn" title="Delete Mode">
+        <span class="material-icons">delete</span>
+    </button>
+    <button id="dragModeBtn" class="control-btn" title="Drag Mode">
+        <span class="material-icons">open_with</span>
+    </button>
+    <button id="findOpportunitiesBtn" class="control-btn ai-btn" title="AI Opportunities">
+        <span class="material-icons">smart_toy</span>
+        <div class="ai-pulse"></div>
+    </button>
 </div>
 <div class="infinite-container" id="infiniteContainer">
     <div class="infinite-content">
@@ -153,6 +168,23 @@
                     <label for="nodeDescription">Description:</label>
                     <textarea id="nodeDescription" class="form-input" rows="3" placeholder="Enter a detailed description..."></textarea>
                 </div>
+                <div class="form-group compact">
+                    <label for="nodeContext">Context (up to 1000 words):</label>
+                    <div class="context-container">
+                        <textarea id="nodeContext" class="form-input context-area" rows="8" placeholder="Enter context for AI processing (up to 1000 words)..."></textarea>
+                        <div class="context-info">
+                            <span id="contextWordCount">0</span> / 1000 words
+                            <button class="process-context-btn" id="processContextBtn">
+                                <span class="material-icons">autorenew</span>
+                                Process
+                            </button>
+                            <div id="embeddingStatus" class="embedding-status">
+                                <span class="material-icons">check_circle</span>
+                                <span class="status-text">Embeddings up to date</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="form-group type-selector">
                     <label>Type:</label>
                     <div class="type-options">
@@ -177,6 +209,17 @@
                     </div>
                 </div>
                 <input type="hidden" id="nodeType" value="Task">
+
+                <div class="motivation-section" id="motivationSection" style="display: none;">
+                    <div class="form-group compact">
+                        <label for="motivationLink">YouTube Link:</label>
+                        <input type="text" id="motivationLink" class="form-input" placeholder="Enter YouTube video URL">
+                    </div>
+                    <div class="form-group compact">
+                        <label for="motivationLinkTime">Time Range (e.g., 06:00-07:00):</label>
+                        <input type="text" id="motivationLinkTime" class="form-input" placeholder="Start-End time (e.g., 06:00-07:00)">
+                    </div>
+                </div>
 
                 <div class="grade-goal-section" id="gradeGoalSection">
                     <button type="button" class="grade-goal-btn" id="addGradeGoalBtn">
@@ -273,12 +316,45 @@
 <!-- Check-in Date Template (hidden) -->
 <template id="checkInDateTemplate">
     <div class="check-in-date-item">
-        <input type="datetime-local" class="form-input check-in-date">
+        <input type="date" class="form-input check-in-date">
         <button type="button" class="remove-time-btn">
             <span class="material-icons">close</span>
         </button>
     </div>
 </template>
+
+<!-- Add Opportunities Modal -->
+<div class="modal" id="opportunitiesModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Find Opportunities</h2>
+            <button class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="goalInput">What's your goal?</label>
+                <input type="text" id="goalInput" class="form-input" placeholder="Enter your goal...">
+            </div>
+            <div id="opportunitiesList" class="opportunities-list" style="display: none;">
+                <h3>Opportunities</h3>
+                <div class="opportunities-container">
+                    <!-- Opportunities will be dynamically added here -->
+                </div>
+            </div>
+            <div id="loadingOpportunities" class="loading-opportunities" style="display: none;">
+                <div class="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+                <p>Searching for opportunities...</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="control-btn" id="searchOpportunitiesBtn">Search Opportunities</button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block js %}

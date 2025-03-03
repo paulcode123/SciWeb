@@ -1417,7 +1417,21 @@ function loadCalculatorExpressions(calculator, expressionsString) {
                 text: expr.substring(5).trim(),
                 hidden: true
             });
-        } else {
+        } 
+        // Check if this is a slider definition (starts with SLIDER:)
+        else if (expr.startsWith('SLIDER:')) {
+            const sliderDef = expr.substring(7).trim(); // Remove "SLIDER:"
+            const [variable, range] = sliderDef.split('=');
+            const [min, max] = range.split(':').map(Number);
+            
+            calculator.setExpression({
+                id: 'preset_' + index,
+                type: 'expression',
+                latex: variable + '=' + min,
+                sliderBounds: { min, max }
+            });
+        }
+        else {
             calculator.setExpression({
                 id: 'preset_' + index,
                 type: 'expression',

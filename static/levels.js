@@ -585,7 +585,7 @@ function selectNode(nodeId) {
     
     // Check if this node has problems
     const hasProblems = DataState.problems.some(p => 
-        p.concepts && Array.isArray(p.concepts) && p.concepts.includes(nodeId.toString())
+        p.concepts && Array.isArray(p.concepts) && p.concepts.includes(parseInt(nodeId))
     );
 
     if (!hasProblems) {
@@ -651,7 +651,7 @@ function findNextConcept() {
         const hasUncompletedProblems = DataState.problems.some(p => 
             p.concepts && 
             Array.isArray(p.concepts) && 
-            p.concepts.includes(node.id.toString()) &&
+            p.concepts.includes(parseInt(node.id)) &&
             !completedProblemIds.has(p.id.toString())
         );
 
@@ -691,7 +691,7 @@ function findNextConceptWithProblems(excludeNodeIds = []) {
         return DataState.problems.some(p => 
             p.concepts && 
             Array.isArray(p.concepts) && 
-            p.concepts.includes(node.id.toString()) &&
+            p.concepts.includes(parseInt(node.id)) &&
             !completedProblemIds.has(p.id.toString())
         );
     });
@@ -962,7 +962,9 @@ function displayProblem(problem) {
     }
     
     if (problemDifficulty) {
-        const bloomLevel = problem.bloom_level.charAt(0).toUpperCase() + problem.bloom_level.slice(1);
+        const bloomLevel = problem.bloom_level ? 
+            problem.bloom_level.charAt(0).toUpperCase() + problem.bloom_level.slice(1) : 
+            'Remember';
         problemDifficulty.textContent = `Bloom's Level: ${bloomLevel}`;
     }
     

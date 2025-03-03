@@ -1,28 +1,134 @@
+/* Add CSS variable for banner height */
+:root {
+    --banner-height: 100px;  /* Adjust this value to match your actual banner height */
+}
+
 .controls {
     position: fixed;
     top: 20px;
     left: 20px;
-    z-index: 1000;
     display: flex;
     gap: 10px;
 }
 
 .control-btn {
-    padding: 8px 16px;
+    width: 44px;
+    height: 44px;
     background: #2c3e50;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 50%;
     cursor: pointer;
-    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.control-btn .material-icons {
+    font-size: 24px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .control-btn:hover {
     background: #34495e;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.control-btn:hover .material-icons {
+    transform: scale(1.1);
+}
+
+.control-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .control-btn.active {
     background: #c0392b;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(192, 57, 43, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(192, 57, 43, 0);
+    }
+}
+
+/* Add ripple effect */
+.control-btn::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+    background-repeat: no-repeat;
+    background-position: 50%;
+    transform: scale(10, 10);
+    opacity: 0;
+    transition: transform .5s, opacity 1s;
+}
+
+.control-btn:active::after {
+    transform: scale(0, 0);
+    opacity: .3;
+    transition: 0s;
+}
+
+/* Mobile Responsive Adjustments */
+@media screen and (max-width: 768px) {
+    .controls {
+        position: fixed;
+        top: 60px;
+        left: 0;
+        right: 0;
+        height: 60px;
+        background: rgba(26, 32, 44, 0.95);
+        padding: 8px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .control-btn {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        font-size: 14px;
+    }
+
+    .control-btn .material-icons {
+        font-size: 20px;
+    }
+
+    .circle {
+        width: 100px;
+        height: 100px;
+    }
+
+    .circle span {
+        font-size: 14px;
+        padding: 8px;
+    }
+
+    .infinite-container {
+        margin-top: 120px; /* Reduced from 160px to match the new spacing */
+        padding-top: 20px;
+    }
 }
 
 .infinite-container {
@@ -413,6 +519,23 @@
     border-top: 1px solid #34495e;
     text-align: right;
     flex-shrink: 0;
+}
+
+.modal-footer .control-btn {
+    width: 200px;
+    height: 44px;
+    border-radius: 8px;
+    background: #3498db;
+    color: white;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.modal-footer .control-btn:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .form-group {
@@ -919,4 +1042,565 @@ input[type="datetime-local"] {
 /* Style datetime-local inputs */
 input[type="datetime-local"] {
     color-scheme: dark;
+}
+
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    background: #1a1a1a;
+    border-radius: 8px;
+    border: 1px solid #34495e;
+    overflow: hidden;
+}
+
+.chat-history {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.chat-input-container {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    border-top: 1px solid #34495e;
+    background: #2c3e50;
+}
+
+.chat-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #34495e;
+    border-radius: 4px;
+    background: #1a1a1a;
+    color: white;
+    resize: none;
+    min-height: 40px;
+    font-size: 14px;
+}
+
+.chat-input:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.send-message-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 4px;
+    background: #3498db;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.send-message-btn:hover {
+    background: #2980b9;
+}
+
+.send-message-btn .material-icons {
+    font-size: 20px;
+}
+
+@media screen and (max-width: 768px) {
+    .modal-content {
+        width: 100%;
+        height: 100vh;
+        border-radius: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modal-footer {
+        padding: 16px;
+    }
+
+    .modal-footer .control-btn {
+        width: 100%;
+        max-width: none;
+        height: 48px;
+        font-size: 16px;
+        border-radius: 8px;
+        margin: 0;
+    }
+
+    .node-edit-panel {
+        position: static;
+        width: 100%;
+        max-height: none;
+        margin-top: 16px;
+    }
+
+    .node-content {
+        margin-right: 0;
+        padding: 16px;
+    }
+
+    .chat-container {
+        height: 50vh;
+        margin-top: 16px;
+    }
+
+    .chat-history {
+        flex: 1;
+        min-height: 200px;
+    }
+
+    .chat-input-container {
+        padding: 12px;
+        background: #2c3e50;
+    }
+
+    .chat-input {
+        min-height: 40px;
+        max-height: 80px;
+    }
+
+    .controls {
+        position: fixed;
+        top: 60px;
+        left: 0;
+        right: 0;
+        height: 60px;
+        background: rgba(26, 32, 44, 0.95);
+        padding: 8px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .control-btn {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        font-size: 14px;
+    }
+
+    .control-btn .material-icons {
+        font-size: 20px;
+    }
+
+    .circle {
+        width: 100px;
+        height: 100px;
+    }
+
+    .circle span {
+        font-size: 14px;
+        padding: 8px;
+    }
+
+    .infinite-container {
+        margin-top: 120px;
+        padding-top: 20px;
+    }
+}
+
+.context-container {
+    position: relative;
+    width: 100%;
+}
+
+.context-area {
+    width: 100%;
+    resize: vertical;
+    min-height: 150px;
+    font-family: inherit;
+    margin-bottom: 4px;
+    padding: 12px;
+    background: #1a1a1a;
+    border: 2px solid #34495e;
+    border-radius: 6px;
+    color: white;
+    font-size: 14px;
+    line-height: 1.5;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.context-area:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 1px #3498db;
+}
+
+.context-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #95a5a6;
+    font-size: 0.9rem;
+    padding: 4px 8px;
+    gap: 12px;
+}
+
+.context-info > :first-child {
+    white-space: nowrap;
+}
+
+.embedding-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.2);
+    transition: background-color 0.2s;
+}
+
+.embedding-status .material-icons {
+    font-size: 16px;
+}
+
+.embedding-status.pending {
+    background: rgba(243, 156, 18, 0.2);
+}
+
+.embedding-status.pending .material-icons {
+    color: #f39c12;
+    animation: spin 1s linear infinite;
+}
+
+.embedding-status.error {
+    background: rgba(231, 76, 60, 0.2);
+}
+
+.embedding-status.error .material-icons {
+    color: #e74c3c;
+}
+
+.embedding-status.success {
+    background: rgba(46, 204, 113, 0.2);
+}
+
+.embedding-status.success .material-icons {
+    color: #2ecc71;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Add transition for word count color change */
+#contextWordCount {
+    transition: color 0.2s;
+    font-weight: 500;
+}
+
+/* Style for when word count exceeds limit */
+#contextWordCount.over-limit {
+    color: #e74c3c;
+    font-weight: 700;
+}
+
+.process-context-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.process-context-btn:hover {
+    background: #2980b9;
+    transform: translateY(-1px);
+}
+
+.process-context-btn:active {
+    transform: translateY(0);
+}
+
+.process-context-btn .material-icons {
+    font-size: 16px;
+}
+
+.process-context-btn:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+}
+
+.semantic-toggle {
+    padding: 8px;
+    border-bottom: 1px solid #2a2a2a;
+    background: #1e1e1e;
+}
+
+.semantic-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 1px solid #3a3a3a;
+    border-radius: 4px;
+    padding: 6px 12px;
+    color: #888;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.semantic-button .material-icons {
+    font-size: 18px;
+    color: #888;
+    transition: color 0.2s ease;
+}
+
+.semantic-button:hover {
+    background: #2a2a2a;
+    color: #fff;
+}
+
+.semantic-button:hover .material-icons {
+    color: #2196F3;
+}
+
+.semantic-button.active {
+    background: #2a2a2a;
+    color: #2196F3;
+    border-color: #2196F3;
+}
+
+.semantic-button.active .material-icons {
+    color: #2196F3;
+}
+
+/* Opportunities Styles */
+.opportunities-list {
+    margin-top: 24px;
+}
+
+.opportunities-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.opportunity-card {
+    background: #2c3e50;
+    border-radius: 8px;
+    padding: 16px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+}
+
+.opportunity-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.opportunity-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 8px;
+}
+
+.opportunity-type {
+    display: inline-block;
+    padding: 4px 8px;
+    background: #3498db;
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-bottom: 8px;
+}
+
+.opportunity-description {
+    color: #bdc3c7;
+    font-size: 14px;
+    line-height: 1.4;
+    margin-bottom: 12px;
+}
+
+.opportunity-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.opportunity-button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.opportunity-button.accept {
+    background: #2ecc71;
+    color: white;
+}
+
+.opportunity-button.accept:hover {
+    background: #27ae60;
+}
+
+.opportunity-button.reject {
+    background: #e74c3c;
+    color: white;
+}
+
+.opportunity-button.reject:hover {
+    background: #c0392b;
+}
+
+.loading-opportunities {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 32px;
+}
+
+.loading-opportunities p {
+    color: #bdc3c7;
+    font-size: 16px;
+}
+
+/* AI Button Styles */
+.control-btn.ai-btn {
+    background: linear-gradient(45deg, #2c3e50, #3498db);
+    position: relative;
+    overflow: visible;
+    transition: all 0.3s ease;
+}
+
+.control-btn.ai-btn:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(45deg, #3498db, #2980b9);
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+}
+
+.control-btn.ai-btn .material-icons {
+    color: #fff;
+    position: relative;
+    z-index: 2;
+    font-size: 24px;
+    animation: aiFloat 3s ease-in-out infinite;
+}
+
+.ai-pulse {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(52, 152, 219, 0.2) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: 1;
+    animation: aiPulse 2s ease-out infinite;
+}
+
+@keyframes aiPulse {
+    0% {
+        transform: translate(-50%, -50%) scale(0.95);
+        opacity: 0.6;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.2);
+        opacity: 0;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(0.95);
+        opacity: 0.6;
+    }
+}
+
+@keyframes aiFloat {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-2px);
+    }
+}
+
+/* Add a subtle glow effect when the AI is processing */
+.control-btn.ai-btn.processing {
+    animation: aiProcessing 1.5s ease-in-out infinite;
+}
+
+@keyframes aiProcessing {
+    0% {
+        box-shadow: 0 0 5px #3498db, 0 0 10px #3498db, 0 0 15px #3498db;
+    }
+    50% {
+        box-shadow: 0 0 10px #3498db, 0 0 20px #3498db, 0 0 30px #3498db;
+    }
+    100% {
+        box-shadow: 0 0 5px #3498db, 0 0 10px #3498db, 0 0 15px #3498db;
+    }
+}
+
+.selected-opportunities {
+    margin-top: 24px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    margin-bottom: 24px;
+}
+
+.selected-opportunities h4 {
+    color: #fff;
+    margin: 0 0 16px 0;
+    font-size: 18px;
+}
+
+.opportunity-button.select {
+    background: #3498db;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.opportunity-button.select:hover {
+    background: #2980b9;
+    transform: translateY(-1px);
+}
+
+.opportunity-button.select.selected {
+    background: #27ae60;
+}
+
+.done-btn {
+    display: block;
+    width: 100%;
+    margin-top: 24px;
+    padding: 12px;
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.done-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.done-btn:active {
+    transform: translateY(0);
 }

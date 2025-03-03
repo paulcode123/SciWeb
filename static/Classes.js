@@ -220,16 +220,43 @@ function display_classes(classList, user_data){
       const classItem = document.createElement('div');
       classItem.classList.add('class-item');
       classItem.style.backgroundColor = classData.color;
+      
+      // Calculate average rating
+      const avgRating = classData.ratings ? 
+          (classData.ratings.reduce((a, b) => a + b, 0) / classData.ratings.length).toFixed(1) : 
+          'No ratings';
+
+      // Get pros and cons
+      const pros = classData.pros || [];
+      const cons = classData.cons || [];
+
       classItem.innerHTML = `
         <h3>${classData.name}</h3>
-        <p>Teacher: ${classData.teacher}</p>
+        <p>Period ${classData.period} - ${classData.teacher}</p>
+        <div class="rating-display">
+            <div class="stars">
+                ${getStarDisplay(avgRating)}
+            </div>
+            <span class="rating-number">${typeof avgRating === 'number' ? avgRating : 'No ratings'}</span>
+        </div>
+        <div class="feedback-summary">
+            ${pros.length > 0 ? `
+                <div class="pros-summary">
+                    <h4>Pros:</h4>
+                    <ul>${pros.slice(0, 3).map(pro => `<li>${pro}</li>`).join('')}</ul>
+                </div>
+            ` : ''}
+            ${cons.length > 0 ? `
+                <div class="cons-summary">
+                    <h4>Cons:</h4>
+                    <ul>${cons.slice(0, 3).map(con => `<li>${con}</li>`).join('')}</ul>
+                </div>
+            ` : ''}
+        </div>
       `;
       // if the class is clicked, go to the class page
       classItem.addEventListener('click', () => {
-        // set classname as classData.name with all of the numbers and spaces removed
-        let classname = classData.name.replace(/\s/g, '');
-        classname = classname.replace(/[0-9]/g, '');
-        window.location.href = "/class/" + classname + classData['id'];
+        showReviewModal(classData.id, classData.name);
       });
       //add the class element to the class list container
       classListContainer.appendChild(classItem);
@@ -325,98 +352,376 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-// Enhanced class item creation
+// Function to handle class recommendations
+async function handleRecommendation(classId, isRecommended, reason) {
+    try {
+        const classData = classList.find(c => c.id === classId);
+        if (!classData) return;
+
+        if (!classData.recommendations) {
+            classData.recommendations = [];
+        }
+
+        // Add new recommendation
+        const recommendation = {
+            isRecommended,
+            reason,
+            timestamp: new Date().toISOString(),
+            userId: osis // Global user OSIS
+        };
+
+        classData.recommendations.push(recommendation);
+
+        // Update the class data in the database
+        await fetchRequest('/update_data', {
+            sheet: 'Classes',
+            data: classData,
+            row_name: 'id',
+            row_value: classId
+        });
+
+        showNotification('Recommendation saved successfully!', 'success');
+        return true;
+    } catch (error) {
+        console.error('Error saving recommendation:', error);
+        showNotification('Error saving recommendation', 'error');
+        return false;
+    }
+}
+
+// Function to show recommendation modal
+function showRecommendationModal(classId, className) {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h3>Recommend ${className}</h3>
+            <p>Please provide feedback about the coursework nature only. Do not comment about teachers.</p>
+            <div class="form-group">
+                <label>Would you recommend this class based on its coursework?</label>
+                <div class="recommendation-actions">
+                    <button class="recommendation-btn recommend-btn" data-recommend="true">
+                        <i class="fas fa-thumbs-up"></i> Recommend
+                    </button>
+                    <button class="recommendation-btn not-recommend-btn" data-recommend="false">
+                        <i class="fas fa-thumbs-down"></i> Not Recommend
+                    </button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="recommendation-reason">Why? (Focus on coursework only)</label>
+                <textarea id="recommendation-reason" placeholder="Describe the coursework nature, difficulty level, and workload..." rows="4"></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="button primary" id="submit-recommendation">Submit</button>
+                <button type="button" class="button secondary" id="cancel-recommendation">Cancel</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('show'), 10);
+
+    let selectedRecommendation = null;
+    const reasonInput = modal.querySelector('#recommendation-reason');
+
+    // Handle recommendation button clicks
+    modal.querySelectorAll('.recommendation-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            modal.querySelectorAll('.recommendation-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedRecommendation = btn.dataset.recommend === 'true';
+        });
+    });
+
+    // Handle submit
+    modal.querySelector('#submit-recommendation').addEventListener('click', async () => {
+        if (selectedRecommendation === null) {
+            showNotification('Please select whether you recommend this class', 'error');
+            return;
+        }
+
+        const reason = reasonInput.value.trim();
+        if (!reason) {
+            showNotification('Please provide a reason for your recommendation', 'error');
+            return;
+        }
+
+        if (reason.toLowerCase().includes('teacher') || reason.toLowerCase().includes('professor')) {
+            showNotification('Please do not mention teachers in your recommendation', 'error');
+            return;
+        }
+
+        const success = await handleRecommendation(classId, selectedRecommendation, reason);
+        if (success) {
+            modal.remove();
+            location.reload();
+        }
+    });
+
+    // Handle cancel
+    modal.querySelector('#cancel-recommendation').addEventListener('click', () => {
+        modal.remove();
+    });
+}
+
+// Add moving lines to background
+function createMovingLines() {
+    const container = document.createElement('div');
+    container.className = 'line-container';
+    for (let i = 0; i < 20; i++) {
+        const line = document.createElement('div');
+        line.className = 'moving-line';
+        line.style.top = `${Math.random() * 100}%`;
+        line.style.animationDelay = `${Math.random() * 8}s`;
+        container.appendChild(line);
+    }
+    document.body.appendChild(container);
+}
+
+// Enhanced class display function
 function createClassElement(classData) {
     const classItem = document.createElement('div');
     classItem.className = 'class-item';
     
-    const progress = Math.floor(Math.random() * 100); // Replace with actual progress calculation
-    
+    // Calculate average rating
+    const avgRating = classData.ratings ? 
+        (classData.ratings.reduce((a, b) => a + b, 0) / classData.ratings.length).toFixed(1) : 
+        'No ratings';
+
+    // Get pros and cons
+    const pros = classData.pros || [];
+    const cons = classData.cons || [];
+
     classItem.innerHTML = `
         <h3>${classData.name}</h3>
-        <p>Period ${classData.period} - ${classData.teacher}</p>
-        <div class="progress-container">
-            <div class="progress-bar" style="width: ${progress}%"></div>
+        <p>Period ${classData.period}</p>
+        <div class="rating-display">
+            <div class="stars">
+                ${getStarDisplay(avgRating)}
+            </div>
+            <span class="rating-number">${typeof avgRating === 'number' ? avgRating : 'No ratings'}</span>
         </div>
-        <p class="progress-text">${progress}% Complete</p>
+        <div class="feedback-summary">
+            ${pros.length > 0 ? `
+                <div class="pros-summary">
+                    <h4>Pros:</h4>
+                    <ul>${pros.slice(0, 3).map(pro => `<li>${pro}</li>`).join('')}</ul>
+                </div>
+            ` : ''}
+            ${cons.length > 0 ? `
+                <div class="cons-summary">
+                    <h4>Cons:</h4>
+                    <ul>${cons.slice(0, 3).map(con => `<li>${con}</li>`).join('')}</ul>
+                </div>
+            ` : ''}
+        </div>
+        <button class="review-btn" onclick="showReviewModal('${classData.id}', '${classData.name}')">
+            Add Review
+        </button>
     `;
-    
-    // Add hover animation
-    classItem.addEventListener('mouseenter', () => {
-        classItem.style.transform = 'translateY(-5px) scale(1.02)';
-    });
-    
-    classItem.addEventListener('mouseleave', () => {
-        classItem.style.transform = 'translateY(0) scale(1)';
-    });
-    
+
     return classItem;
 }
 
-// Enhanced form handling
-document.getElementById('joinButton').addEventListener('click', () => {
-    const form = document.getElementById('classForm');
-    form.style.display = 'block';
-    setTimeout(() => form.classList.add('show'), 10);
-});
+function getStarDisplay(rating) {
+    if (typeof rating !== 'number') return '☆☆☆☆☆';
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    let stars = '★'.repeat(fullStars);
+    if (hasHalfStar) stars += '⯨';
+    stars += '☆'.repeat(5 - Math.ceil(rating));
+    return stars;
+}
 
-// Form submission with animation
-document.getElementById('classForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
+function showReviewModal(classId, className) {
+    const modal = document.createElement('div');
+    modal.className = 'review-modal';
     
-    const formData = {
-        period: document.getElementById('periodInput').value,
-        teacher: document.getElementById('teacherInput').value,
-        name: document.getElementById('nameInput').value,
-        categories: document.getElementById('categories').value
-    };
-    
-    try {
-        const response = await fetchRequest('/post_data', {
-            sheet: 'Classes',
-            data: formData
-        });
-        
-        if (response.success) {
-            const classElement = createClassElement(formData);
-            document.getElementById('classList').appendChild(classElement);
-            showNotification('Class added successfully!', 'success');
+    const prosOptions = [
+        'Engaging coursework',
+        'Visual learning',
+        'Project-based',
+        'Interactive lessons',
+        'Clear objectives',
+        'Hands-on activities',
+        'Well-structured',
+        'Collaborative work',
+        'Real-world applications'
+    ];
+
+    const consOptions = [
+        'Test heavy',
+        'Heavy workload',
+        'Uninteresting material',
+        'Fast-paced',
+        'Complex concepts',
+        'Limited resources',
+        'Time-consuming assignments',
+        'Rigid structure',
+        'Limited feedback'
+    ];
+
+    modal.innerHTML = `
+        <div class="review-content">
+            <div class="review-header">
+                <h2>Review ${className}</h2>
+                <button class="modal-close">×</button>
+            </div>
             
-            // Reset and hide form with animation
-            e.target.reset();
-            const form = document.getElementById('classForm');
-            form.classList.remove('show');
-            setTimeout(() => form.style.display = 'none', 300);
-        } else {
-            showNotification('Error adding class', 'error');
-        }
-    } catch (error) {
-        showNotification('Error adding class', 'error');
-        console.error('Error:', error);
-    }
-});
+            <div class="review-form">
+                <div class="star-rating" data-rating="0">
+                    <span class="star" data-value="1">☆</span>
+                    <span class="star" data-value="2">☆</span>
+                    <span class="star" data-value="3">☆</span>
+                    <span class="star" data-value="4">☆</span>
+                    <span class="star" data-value="5">☆</span>
+                </div>
+                
+                <div class="feedback-sections">
+                    <div class="pros-section">
+                        <h4>Pros</h4>
+                        ${prosOptions.map(option => `
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="pros" value="${option}">
+                                ${option}
+                            </label>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="cons-section">
+                        <h4>Cons</h4>
+                        ${consOptions.map(option => `
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="cons" value="${option}">
+                                ${option}
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
 
-// Load existing classes with animation
-async function loadClasses() {
-    try {
-        const response = await fetchRequest('/data', {data: 'Classes'});
-        const classList = document.getElementById('classList');
-        
-        if (response.success && response.data.Classes) {
-            response.data.Classes.forEach((classData, index) => {
-                const classElement = createClassElement(classData);
-                classElement.style.animationDelay = `${index * 0.1}s`;
-                classList.appendChild(classElement);
+                <div class="form-actions">
+                    <button type="button" class="submit-review">Submit Review</button>
+                    <button type="button" class="cancel-review">Cancel</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('show'), 10);
+
+    // Handle star rating
+    let currentRating = 0;
+    const stars = modal.querySelectorAll('.star');
+    stars.forEach(star => {
+        star.addEventListener('mouseover', () => {
+            const rating = parseInt(star.dataset.value);
+            updateStars(stars, rating);
+        });
+        star.addEventListener('click', () => {
+            currentRating = parseInt(star.dataset.value);
+            updateStars(stars, currentRating);
+            stars.forEach((s, index) => {
+                if (index < currentRating) {
+                    s.classList.add('active');
+                } else {
+                    s.classList.remove('active');
+                }
             });
+        });
+    });
+
+    const starRating = modal.querySelector('.star-rating');
+    starRating.addEventListener('mouseout', () => {
+        updateStars(stars, currentRating);
+    });
+
+    // Handle form submission
+    modal.querySelector('.submit-review').addEventListener('click', async () => {
+        if (currentRating === 0) {
+            showNotification('Please select a rating', 'error');
+            return;
         }
+
+        const selectedPros = Array.from(modal.querySelectorAll('input[name="pros"]:checked'))
+            .map(input => input.value);
+        const selectedCons = Array.from(modal.querySelectorAll('input[name="cons"]:checked'))
+            .map(input => input.value);
+
+        if (selectedPros.length === 0 && selectedCons.length === 0) {
+            showNotification('Please select at least one pro or con', 'error');
+            return;
+        }
+
+        const success = await handleReview(classId, {
+            rating: currentRating,
+            pros: selectedPros,
+            cons: selectedCons
+        });
+
+        if (success) {
+            modal.remove();
+            location.reload();
+        }
+    });
+
+    // Handle close and cancel
+    const closeModal = () => {
+        modal.classList.remove('show');
+        setTimeout(() => modal.remove(), 300);
+    };
+
+    modal.querySelector('.modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.cancel-review').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+}
+
+function updateStars(stars, rating) {
+    stars.forEach(star => {
+        const value = parseInt(star.dataset.value);
+        star.textContent = value <= rating ? '★' : '☆';
+    });
+}
+
+async function handleReview(classId, reviewData) {
+    try {
+        const classData = classList.find(c => c.id === classId);
+        if (!classData) return false;
+
+        if (!classData.ratings) classData.ratings = [];
+        if (!classData.pros) classData.pros = [];
+        if (!classData.cons) classData.cons = [];
+
+        classData.ratings.push(reviewData.rating);
+        classData.pros.push(...reviewData.pros);
+        classData.cons.push(...reviewData.cons);
+
+        // Update the class data in the database
+        const response = await fetchRequest('/update_data', {
+            sheet: 'Classes',
+            data: classData,
+            row_name: 'id',
+            row_value: classId
+        });
+
+        if (response.success) {
+            showNotification('Review submitted successfully!', 'success');
+            return true;
+        }
+        throw new Error('Failed to update class data');
     } catch (error) {
-        showNotification('Error loading classes', 'error');
-        console.error('Error:', error);
+        console.error('Error saving review:', error);
+        showNotification('Error saving review', 'error');
+        return false;
     }
 }
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    createMovingLines();
     loadClasses();
 });
 

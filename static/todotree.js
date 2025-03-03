@@ -397,6 +397,48 @@ document.addEventListener('DOMContentLoaded', function() {
         openNodeEditor.call(circle);
     }
 
+    function processContextText() {
+        if (!editingNode) return;
+        
+        const contextArea = document.getElementById('nodeContext');
+        const processButton = document.getElementById('processContextBtn');
+        if (!contextArea || !processButton) return;
+        
+        const wordCount = contextArea.value.trim().split(/\s+/).filter(Boolean).length;
+        if (wordCount > 0 && wordCount <= 1000 && contextArea.value !== editingNode.dataset.contextText) {
+            processButton.disabled = true;
+            updateEmbeddingStatus('pending');
+            
+            // Get current tree data
+            const nodes = Array.from(document.querySelectorAll('.circle')).map(node => ({
+                id: node.dataset.id,
+                type: node.dataset.type,
+                name: node.querySelector('span').textContent,
+                position: {
+                    x: parseFloat(node.style.left) || 0,
+                    y: parseFloat(node.style.top) || 0
+                },
+                context_text: node.dataset.contextText,
+                context_embedding: node.dataset.contextEmbedding ? JSON.parse(node.dataset.contextEmbedding) : null
+            }));
+            
+            generateEmbeddings(editingNode.dataset.id, contextArea.value, nodes, edges)
+                .then(data => {
+                    editingNode.dataset.contextEmbedding = JSON.stringify(data.embedding);
+                    editingNode.dataset.contextText = contextArea.value;
+                    processButton.disabled = false;
+                    updateEmbeddingStatus('success');
+                    
+                    // Save to database after successful embedding generation
+                    scheduleAutoSave();
+                })
+                .catch(error => {
+                    processButton.disabled = false;
+                    updateEmbeddingStatus('error', error.message);
+                });
+        }
+    }
+
     function openNodeEditor(e) {
         if (isAddingEdge || isDeleteMode) return;
         if (e) e.preventDefault();
@@ -405,6 +447,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const name = this.querySelector('span').textContent;
         const type = this.dataset.type;
         const description = this.dataset.description || '';
+        const contextText = this.dataset.contextText || '';
+        const contextEmbedding = this.dataset.contextEmbedding;
 
         // Check if we came from the todo list
         const todoListState = sessionStorage.getItem('todoList_state');
@@ -435,30 +479,75 @@ document.addEventListener('DOMContentLoaded', function() {
             newCloseBtn.addEventListener('click', closeModal);
         }
 
-        // Add back button event listener if present
-        if (showBackButton) {
-            const backBtn = modalHeader.querySelector('.back-to-list-btn');
-            if (backBtn) {
-                backBtn.addEventListener('click', () => {
-                    closeModal();
-                    window.location.href = '/TodoList';
-                });
-            }
-        }
-
-        // Update basic fields
+        // Get all required form elements
         const nodeNameInput = document.getElementById('nodeName');
         const nodeTypeSelect = document.getElementById('nodeType');
         const nodeDescriptionInput = document.getElementById('nodeDescription');
-        
-        if (!nodeNameInput || !nodeTypeSelect || !nodeDescriptionInput) {
-            console.error('Required form elements not found');
+        const nodeContextInput = document.getElementById('nodeContext');
+        const processButton = document.getElementById('processContextBtn');
+
+        // Check if all required elements exist
+        if (!nodeNameInput || !nodeTypeSelect || !nodeDescriptionInput || !nodeContextInput) {
+            console.error('Required form elements not found:', {
+                nodeName: !!nodeNameInput,
+                nodeType: !!nodeTypeSelect,
+                nodeDescription: !!nodeDescriptionInput,
+                nodeContext: !!nodeContextInput
+            });
             return;
         }
 
+        // Set input values
         nodeNameInput.value = name;
         nodeTypeSelect.value = type;
         nodeDescriptionInput.value = description;
+        nodeContextInput.value = contextText;
+
+        // Update word count and embedding status
+        updateContextWordCount();
+        
+        // Check for existing embeddings and update status
+        if (contextEmbedding && contextText) {
+            try {
+                // Try to parse the embedding to verify it's valid
+                JSON.parse(contextEmbedding);
+                updateEmbeddingStatus('success');
+            } catch (e) {
+                console.error('Invalid embedding format:', e);
+                updateEmbeddingStatus('none');
+            }
+        } else {
+            updateEmbeddingStatus('none');
+        }
+        
+        // Set up context area handlers
+        nodeContextInput.addEventListener('input', function() {
+            updateContextWordCount();
+            
+            // Clear success status when editing
+            if (editingNode && this.value !== editingNode.dataset.contextText) {
+                updateEmbeddingStatus('none');
+            }
+        });
+        
+        // Handle paste event
+        nodeContextInput.addEventListener('paste', function() {
+            setTimeout(() => {
+                updateContextWordCount();
+            }, 0);
+        });
+
+        // Add debounced input handler for typing
+        let inputTimeout;
+        nodeContextInput.addEventListener('input', function() {
+            clearTimeout(inputTimeout);
+            inputTimeout = setTimeout(processContextText, 1000);
+        });
+
+        // Add click handler for process button
+        if (processButton) {
+            processButton.addEventListener('click', processContextText);
+        }
         
         // Update type selector UI
         const typeOptions = document.querySelectorAll('.type-option');
@@ -474,18 +563,26 @@ document.addEventListener('DOMContentLoaded', function() {
             dateNotificationSection.classList.toggle('show', type !== 'Motivator');
         }
 
+        // Show/hide motivation section for Motivator type
+        const motivationSection = document.getElementById('motivationSection');
+        if (motivationSection) {
+            motivationSection.style.display = type === 'Motivator' ? 'block' : 'none';
+            if (type === 'Motivator') {
+                const motivationLink = document.getElementById('motivationLink');
+                const motivationLinkTime = document.getElementById('motivationLinkTime');
+                if (motivationLink) motivationLink.value = editingNode.dataset.motivationLink || '';
+                if (motivationLinkTime) motivationLinkTime.value = editingNode.dataset.motivationLinkTime || '';
+            }
+        }
+
         // Load existing dates and check-ins if any
         if (type !== 'Motivator') {
             const deadlineInput = document.getElementById('deadline');
             const targetDateInput = document.getElementById('targetDate');
             const checkInList = document.getElementById('checkInDateList');
             
-            if (deadlineInput) {
-                deadlineInput.value = editingNode.dataset.deadline || '';
-            }
-            if (targetDateInput) {
-                targetDateInput.value = editingNode.dataset.targetDate || '';
-            }
+            if (deadlineInput) deadlineInput.value = editingNode.dataset.deadline || '';
+            if (targetDateInput) targetDateInput.value = editingNode.dataset.targetDate || '';
             
             // Clear existing check-in dates
             if (checkInList) {
@@ -527,10 +624,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add validation function for check-in dates
     function validateCheckInDate(dateInput) {
-        const selectedDate = new Date(dateInput.value);
-        const now = new Date();
+        const selectedDate = new Date(dateInput.value + 'T00:00:00'); // Convert to midnight of selected date
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Set to midnight for date-only comparison
         
-        if (selectedDate < now) {
+        // Compare dates - allow today's date
+        if (selectedDate.getTime() < today.getTime()) {
             alert('Cannot set check-in dates in the past');
             dateInput.value = '';
             return false;
@@ -539,18 +638,63 @@ document.addEventListener('DOMContentLoaded', function() {
         return true;
     }
 
+    // Validate YouTube link format
+    function validateYouTubeLink(link) {
+        if (!link) return true; // Empty link is valid
+        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(\S*)?$/;
+        return youtubeRegex.test(link);
+    }
+
+    // Validate time range format
+    function validateTimeRange(timeRange) {
+        if (!timeRange) return true; // Empty time range is valid
+        const timeRegex = /^([0-5]?[0-9]):([0-5][0-9])-([0-5]?[0-9]):([0-5][0-9])$/;
+        if (!timeRegex.test(timeRange)) return false;
+
+        const [start, end] = timeRange.split('-');
+        const [startHours, startMinutes] = start.split(':').map(Number);
+        const [endHours, endMinutes] = end.split(':').map(Number);
+        
+        const startTime = startHours * 60 + startMinutes;
+        const endTime = endHours * 60 + endMinutes;
+        
+        return endTime > startTime;
+    }
+
     // Update saveNodeChanges to handle check-in dates
-    function saveNodeChanges() {
+    async function saveNodeChanges() {
         if (!editingNode) return;
 
-        const newName = nodeNameInput.value.trim();
-        const newType = nodeTypeSelect.value;
-        const description = document.getElementById('nodeDescription').value.trim();
+        const newName = document.getElementById('nodeName').value.trim();
+        const newType = document.getElementById('nodeType').value;
+        const newDescription = document.getElementById('nodeDescription').value.trim();
+        const newContextText = document.getElementById('nodeContext').value.trim();
+
+        if (!newName) {
+            alert('Node name is required');
+            return;
+        }
+
+        if (newType === 'Motivator') {
+            const motivationLink = document.getElementById('motivationLink').value.trim();
+            const motivationLinkTime = document.getElementById('motivationLinkTime').value.trim();
+
+            if (motivationLink && !validateYouTubeLink(motivationLink)) {
+                alert('Please enter a valid YouTube URL');
+                return;
+            }
+
+            if (motivationLinkTime && !validateTimeRange(motivationLinkTime)) {
+                alert('Please enter a valid time range in format MM:SS-MM:SS');
+                return;
+            }
+        }
 
         if (newName) {
             editingNode.querySelector('span').textContent = newName;
             editingNode.dataset.type = newType;
-            editingNode.dataset.description = description;
+            editingNode.dataset.description = newDescription;
+            editingNode.dataset.contextText = newContextText;
             
             // If this is a new node (no position set yet), position it at viewport center
             if (!editingNode.style.left || !editingNode.style.top) {
@@ -560,11 +704,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 editingNode.style.top = `${y}px`;
             }
             
+            // Save motivation data for Motivator type
+            if (newType === 'Motivator') {
+                const motivationLink = document.getElementById('motivationLink').value.trim();
+                const motivationLinkTime = document.getElementById('motivationLinkTime').value.trim();
+                
+                if (motivationLink) {
+                    editingNode.dataset.motivationLink = motivationLink;
+                    if (motivationLinkTime) {
+                        editingNode.dataset.motivationLinkTime = motivationLinkTime;
+                    } else {
+                        delete editingNode.dataset.motivationLinkTime;
+                    }
+                } else {
+                    delete editingNode.dataset.motivationLink;
+                    delete editingNode.dataset.motivationLinkTime;
+                }
+            } else {
+                delete editingNode.dataset.motivationLink;
+                delete editingNode.dataset.motivationLinkTime;
+            }
+            
             // Save dates and check-ins for Task and Goal types
             if (newType !== 'Motivator') {
                 const oldCheckInDates = JSON.parse(editingNode.dataset.checkInDates || '[]');
-                const newCheckInDates = Array.from(document.querySelectorAll('.check-in-date'))
-                    .map(input => input.value)
+                
+                const newCheckInDates = Array.from(document.querySelectorAll('#checkInDateList .check-in-date'))
+                    .map(input => input.value) // Date inputs will return YYYY-MM-DD format
                     .filter(date => date);
 
                 editingNode.dataset.deadline = document.getElementById('deadline').value;
@@ -597,6 +763,17 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 delete editingNode.dataset.gradeGoalClass;
                 delete editingNode.dataset.gradeGoalTarget;
+            }
+
+            // Generate embeddings if context changed and valid
+            const wordCount = newContextText.split(/\s+/).filter(Boolean).length;
+            if (wordCount > 0 && wordCount <= 1000 && newContextText !== editingNode.dataset.contextText) {
+                try {
+                    const data = await generateEmbeddings(editingNode.dataset.id, newContextText, nodes, edges);
+                    editingNode.dataset.contextEmbedding = JSON.stringify(data.embedding);
+                } catch (error) {
+                    // Error handling done in generateEmbeddings
+                }
             }
         }
 
@@ -831,98 +1008,150 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize chat functionality
     function initializeChat() {
-        const chatInput = document.getElementById('chatInput');
-        const sendButton = document.getElementById('sendMessage');
+        const chatContainer = document.querySelector('.chat-container');
+        if (!chatContainer) return;
 
-        function sendMessage() {
-            const message = chatInput.value.trim();
+        // Remove any existing semantic toggle buttons first
+        const existingToggles = chatContainer.querySelectorAll('.semantic-toggle');
+        existingToggles.forEach(toggle => toggle.remove());
+
+        // Add semantic context toggle button
+        const toggleContainer = document.createElement('div');
+        toggleContainer.className = 'semantic-toggle';
+        toggleContainer.innerHTML = `
+            <button id="semanticToggle" class="semantic-button">
+                <span class="material-icons">psychology</span>
+                Use semantic context
+            </button>
+        `;
+        chatContainer.insertBefore(toggleContainer, chatContainer.firstChild);
+
+        // Initialize toggle state
+        const semanticToggle = document.getElementById('semanticToggle');
+        let useSemanticContext = false;
+
+        // Add toggle functionality
+        semanticToggle.addEventListener('click', () => {
+            useSemanticContext = !useSemanticContext;
+            semanticToggle.classList.toggle('active', useSemanticContext);
+        });
+
+        async function sendMessage() {
+            const input = document.querySelector('.chat-input');
+            const message = input.value.trim();
             if (!message) return;
 
-            // Add user message
-            addChatMessage(message, 'user');
-            chatInput.value = '';
+            input.value = '';
 
-            // Show typing indicator
+            // Add user message to chat
+            addChatMessage(message, 'user');
             showTypingIndicator();
 
-            // Get node context for AI
-            const nodeContext = {
-                type: editingNode.dataset.type,
-                name: editingNode.querySelector('span').textContent,
-                deadline: editingNode.dataset.deadline || null,
-                targetDate: editingNode.dataset.targetDate || null,
-                notificationText: editingNode.dataset.notificationText || null,
-                notificationTimes: JSON.parse(editingNode.dataset.notificationTimes || '[]')
-            };
-
-            // Prepare messages for AI
-            const messages = [
-                {
-                    role: "system",
-                    content: `You are an AI assistant helping with a ${nodeContext.type} node named "${nodeContext.name}" in a TodoTree task management system. 
-                    ${nodeContext.deadline ? `The deadline is ${nodeContext.deadline}.` : ''}
-                    ${nodeContext.targetDate ? `The target date is ${nodeContext.targetDate}.` : ''}
-                    ${nodeContext.notificationText ? `The notification text is: ${nodeContext.notificationText}` : ''}
-                    ${nodeContext.notificationTimes.length > 0 ? `Notification times: ${nodeContext.notificationTimes.join(', ')}` : ''}
-                    
-                    For Tasks and Goals:
-                    - Help break down complex tasks into smaller steps
-                    - Suggest time management strategies
-                    - Provide motivation and accountability tips
-                    - Help set realistic deadlines and milestones
-                    
-                    For Motivators:
-                    - Help clarify the motivation
-                    - Suggest ways to stay inspired
-                    - Connect the motivation to concrete actions
-                    - Provide encouragement and perspective
-                    
-                    Be concise, practical, and encouraging in your responses.`
-                },
-                {
-                    role: "user",
-                    content: message
-                }
-            ];
-
-            // Get chat history
             try {
-                const history = JSON.parse(editingNode.dataset.chatHistory || '[]');
-                // Add relevant history (last 5 messages)
-                const recentHistory = history.slice(-10);
-                recentHistory.forEach(msg => {
-                    messages.splice(1, 0, {
-                        role: msg.type === 'user' ? 'user' : 'assistant',
-                        content: msg.text
+                let response;
+                
+                if (useSemanticContext) {
+                    // Get current node and its parent hierarchy
+                    const currentNode = editingNode;
+                    const parentNodes = findParentHierarchy(currentNode.dataset.id);
+                    
+                    console.log('Current node:', {
+                        id: currentNode.dataset.id,
+                        hasContext: !!currentNode.dataset.contextText,
+                        hasEmbedding: !!currentNode.dataset.contextEmbedding
                     });
-                });
-            } catch (e) {
-                console.error('Error parsing chat history:', e);
-            }
+                    
+                    console.log('Parent hierarchy:', parentNodes.map(parent => ({
+                        id: parent.id,
+                        type: parent.type,
+                        hasContext: !!parent.contextText,
+                        hasEmbedding: !!parent.contextEmbedding
+                    })));
+                    
+                    // Collect embeddings from current node and parents
+                    const nodeEmbeddings = [
+                        {
+                            node_id: currentNode.dataset.id,
+                            embedding: JSON.parse(currentNode.dataset.contextEmbedding || 'null'),
+                            context: currentNode.dataset.contextText || ''
+                        }
+                    ];
+                    
+                    // Add parent embeddings
+                    parentNodes.forEach(parent => {
+                        const parentElement = document.querySelector(`.circle[data-id="${parent.id}"]`);
+                        if (parentElement && parentElement.dataset.contextEmbedding) {
+                            nodeEmbeddings.push({
+                                node_id: parent.id,
+                                embedding: JSON.parse(parentElement.dataset.contextEmbedding),
+                                context: parentElement.dataset.contextText || ''
+                            });
+                        }
+                    });
 
-            // Send to backend
-            fetchRequest('/AI', {
-                data: messages
-            }).then(response => {
+                    // Filter out any null embeddings
+                    const validEmbeddings = nodeEmbeddings.filter(ne => ne.embedding !== null);
+                    console.log('Valid embeddings found:', validEmbeddings.length);
+
+                    if (validEmbeddings.length > 0) {
+                        // Use embeddings route
+                        console.log('Using /AI_embeddings route with', validEmbeddings.length, 'embeddings');
+                        const data = await fetchRequest('/AI_embeddings', {
+                            messages: [{
+                                role: 'user',
+                                content: message
+                            }],
+                            node_embeddings: validEmbeddings
+                        });
+                        response = data.response;
+                    } else {
+                        // Fallback to regular AI if no valid embeddings
+                        console.log('No valid embeddings found, falling back to /AI route');
+                        const data = await fetchRequest('/AI', {
+                            data: [{
+                                role: 'user',
+                                content: message
+                            }]
+                        });
+                        response = data;
+                    }
+                } else {
+                    // Use regular AI route
+                    console.log('Semantic context disabled, using /AI route');
+                    const data = await fetchRequest('/AI', {
+                        data: [{
+                            role: 'user',
+                            content: message
+                        }]
+                    });
+                    response = data;
+                }
+
                 hideTypingIndicator();
                 addChatMessage(response, 'ai');
                 
                 // Save chat history
-                try {
-                    const history = JSON.parse(editingNode.dataset.chatHistory || '[]');
-                    history.push({ text: message, type: 'user', timestamp: new Date().toISOString() });
-                    history.push({ text: response, type: 'ai', timestamp: new Date().toISOString() });
-                    editingNode.dataset.chatHistory = JSON.stringify(history);
-                    scheduleAutoSave();
-                } catch (e) {
-                    console.error('Error saving chat history:', e);
+                if (!editingNode.dataset.chatHistory) {
+                    editingNode.dataset.chatHistory = '[]';
                 }
-            }).catch(error => {
+                
+                const chatHistory = JSON.parse(editingNode.dataset.chatHistory);
+                chatHistory.push(
+                    { role: 'user', content: message },
+                    { role: 'assistant', content: response }
+                );
+                editingNode.dataset.chatHistory = JSON.stringify(chatHistory);
+                
+                scheduleAutoSave();
+            } catch (error) {
+                console.error('Error sending message:', error);
                 hideTypingIndicator();
-                addChatMessage('Sorry, I encountered an error. Please try again.', 'ai');
-                console.error('Error getting AI response:', error);
-            });
+                addChatMessage('Failed to send message. Please try again.', 'error');
+            }
         }
+
+        const chatInput = document.getElementById('chatInput');
+        const sendButton = document.getElementById('sendMessage');
 
         sendButton.addEventListener('click', sendMessage);
         chatInput.addEventListener('keypress', (e) => {
@@ -945,26 +1174,30 @@ document.addEventListener('DOMContentLoaded', function() {
         const clone = template.content.cloneNode(true);
         const messageText = clone.querySelector('.message-text');
 
+        // Handle both message formats (old format used content, new format uses text)
+        const messageContent = typeof text === 'object' ? text.content : text;
+
         // Process markdown-style formatting in AI messages
         if (type === 'ai') {
             // Find all child nodes that were broken off from this text
             const childNodes = Array.from(document.querySelectorAll('.circle')).filter(node => {
                 const breakOffText = node.dataset.breakOffText;
-                return breakOffText && text.includes(breakOffText);
+                return breakOffText && messageContent.includes(breakOffText);
             });
 
             // Add markers for each break-off point
+            let processedText = messageContent;
             childNodes.forEach(childNode => {
                 const breakOffText = childNode.dataset.breakOffText;
                 const markerHtml = `<span class="break-off-marker" data-node-id="${childNode.dataset.id}">
                     <span class="break-off-text">${breakOffText}</span>
                     <span class="material-icons break-off-icon" title="View broken-off task">call_split</span>
                 </span>`;
-                text = text.replace(breakOffText, markerHtml);
+                processedText = processedText.replace(breakOffText, markerHtml);
             });
 
             // Convert code blocks
-            text = text.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+            processedText = processedText.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
                 return `<div class="code-block${lang ? ' ' + lang : ''}">
                     <div class="code-header">
                         <span class="code-lang">${lang || 'plaintext'}</span>
@@ -977,24 +1210,27 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             // Convert inline code
-            text = text.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+            processedText = processedText.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
 
             // Convert bold text
-            text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            processedText = processedText.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 
             // Convert italic text
-            text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+            processedText = processedText.replace(/\*([^*]+)\*/g, '<em>$1</em>');
 
             // Convert bullet points
-            text = text.replace(/^- (.+)$/gm, '<li>$1</li>');
-            text = text.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+            processedText = processedText.replace(/^- (.+)$/gm, '<li>$1</li>');
+            processedText = processedText.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
 
             // Convert numbered lists
-            text = text.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
-            text = text.replace(/(<li>.*<\/li>)/s, '<ol>$1</ol>');
+            processedText = processedText.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+            processedText = processedText.replace(/(<li>.*<\/li>)/s, '<ol>$1</ol>');
+
+            messageText.innerHTML = processedText;
+        } else {
+            messageText.textContent = messageContent;
         }
 
-        messageText.innerHTML = text;
         clone.querySelector('.message-time').textContent = new Date().toLocaleTimeString();
 
         // Add selection handling for AI messages
@@ -1179,10 +1415,27 @@ document.addEventListener('DOMContentLoaded', function() {
             if (node.dataset.checkInDates) nodeData.checkInDates = JSON.parse(node.dataset.checkInDates);
             if (node.dataset.chatHistory) nodeData.chatHistory = JSON.parse(node.dataset.chatHistory);
             if (node.dataset.context) nodeData.context = node.dataset.context;
+            if (node.dataset.contextText) nodeData.contextText = node.dataset.contextText;
+            if (node.dataset.contextEmbedding) {
+                try {
+                    // Parse the embedding if it's a string, otherwise use as is
+                    nodeData.contextEmbedding = typeof node.dataset.contextEmbedding === 'string' 
+                        ? JSON.parse(node.dataset.contextEmbedding)
+                        : node.dataset.contextEmbedding;
+                } catch (e) {
+                    console.error('Error parsing contextEmbedding:', e);
+                }
+            }
             if (node.dataset.breakOffText) nodeData.breakOffText = node.dataset.breakOffText;
             if (node.dataset.gradeGoalClass) {
                 nodeData.gradeGoalClass = node.dataset.gradeGoalClass;
                 nodeData.gradeGoalTarget = node.dataset.gradeGoalTarget;
+            }
+            if (node.dataset.motivationLink) {
+                nodeData.motivationLink = node.dataset.motivationLink;
+                if (node.dataset.motivationLinkTime) {
+                    nodeData.motivationLinkTime = node.dataset.motivationLinkTime;
+                }
             }
 
             return nodeData;
@@ -1269,12 +1522,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (nodeData.deadline) circle.dataset.deadline = nodeData.deadline;
                 if (nodeData.targetDate) circle.dataset.targetDate = nodeData.targetDate;
                 if (nodeData.checkInDates) circle.dataset.checkInDates = JSON.stringify(nodeData.checkInDates);
-                if (nodeData.chatHistory) circle.dataset.chatHistory = JSON.stringify(nodeData.chatHistory);
-                if (nodeData.context) circle.dataset.context = nodeData.context;
+                if (nodeData.chatHistory) {
+                    // Ensure chat history is properly formatted
+                    const chatHistory = Array.isArray(nodeData.chatHistory) ? nodeData.chatHistory : [];
+                    circle.dataset.chatHistory = JSON.stringify(chatHistory.map(msg => ({
+                        text: msg.content || msg.text,
+                        type: msg.role === 'user' ? 'user' : 'ai'
+                    })));
+                }
+                if (nodeData.contextText) circle.dataset.contextText = nodeData.contextText;
+                if (nodeData.contextEmbedding) {
+                    // Ensure embedding is stored as a string
+                    circle.dataset.contextEmbedding = typeof nodeData.contextEmbedding === 'string'
+                        ? nodeData.contextEmbedding
+                        : JSON.stringify(nodeData.contextEmbedding);
+                }
                 if (nodeData.breakOffText) circle.dataset.breakOffText = nodeData.breakOffText;
                 if (nodeData.gradeGoalClass) {
                     circle.dataset.gradeGoalClass = nodeData.gradeGoalClass;
                     circle.dataset.gradeGoalTarget = nodeData.gradeGoalTarget;
+                }
+                if (nodeData.motivationLink) {
+                    circle.dataset.motivationLink = nodeData.motivationLink;
+                    if (nodeData.motivationLinkTime) {
+                        circle.dataset.motivationLinkTime = nodeData.motivationLinkTime;
+                    }
                 }
 
                 // Add orbital dots for Goal type
@@ -1947,4 +2219,412 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     `;
     document.head.appendChild(backButtonStyles);
+
+    function updateContextWordCount() {
+        const contextArea = document.getElementById('nodeContext');
+        const wordCountElement = document.getElementById('contextWordCount');
+        if (!contextArea || !wordCountElement) return;
+        
+        const wordCount = contextArea.value.trim().split(/\s+/).filter(Boolean).length;
+        wordCountElement.textContent = wordCount;
+        
+        // Visual feedback if over limit
+        if (wordCount > 1000) {
+            wordCountElement.style.color = '#e74c3c';
+        } else {
+            wordCountElement.style.color = '';
+        }
+    }
+
+    function updateEmbeddingStatus(status, message = '') {
+        const embeddingStatus = document.getElementById('embeddingStatus');
+        if (!embeddingStatus) return;
+        
+        const icon = embeddingStatus.querySelector('.material-icons');
+        const text = embeddingStatus.querySelector('.status-text');
+        
+        embeddingStatus.className = 'embedding-status ' + status;
+        
+        switch (status) {
+            case 'pending':
+                icon.textContent = 'refresh';
+                text.textContent = 'Generating embeddings...';
+                break;
+            case 'success':
+                icon.textContent = 'check_circle';
+                text.textContent = 'Embeddings up to date';
+                break;
+            case 'error':
+                icon.textContent = 'error';
+                text.textContent = message || 'Error generating embeddings';
+                break;
+            case 'none':
+                icon.textContent = 'info';
+                text.textContent = 'No embeddings generated';
+                break;
+        }
+    }
+
+    async function generateEmbeddings(nodeId, contextText) {
+        try {
+            updateEmbeddingStatus('pending');
+            
+            const response = await fetch('/generate_embedding', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    node_id: nodeId,
+                    context_text: contextText
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to generate embeddings');
+            }
+            
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to generate embeddings');
+            }
+
+            // Store embeddings in node's dataset
+            const node = document.querySelector(`.circle[data-id="${nodeId}"]`);
+            if (node) {
+                node.dataset.embedding = JSON.stringify(data.embedding);
+                node.dataset.contextText = contextText;
+                // Trigger save to persist embeddings
+                scheduleAutoSave();
+            }
+            
+            updateEmbeddingStatus('success');
+            return data;
+        } catch (error) {
+            console.error('Error generating embeddings:', error);
+            updateEmbeddingStatus('error', error.message);
+            throw error;
+        }
+    }
+
+    function findParentHierarchy(nodeId) {
+        // Get all nodes and edges from the current DOM state
+        const nodes = Array.from(document.querySelectorAll('.circle')).map(node => ({
+            id: node.dataset.id,
+            type: node.dataset.type,
+            position: {
+                y: parseFloat(node.style.top) || 0
+            }
+        }));
+        
+        const currentNode = nodes.find(node => node.id === nodeId);
+        if (!currentNode) return [];
+
+        // Find the highest motivator as root
+        const rootMotivator = nodes
+            .filter(node => node.type === "Motivator")
+            .sort((a, b) => a.position.y - b.position.y)[0];
+
+        if (!rootMotivator) return [];
+
+        // Build adjacency list for the graph
+        const graph = {};
+        nodes.forEach(node => {
+            graph[node.id] = [];
+        });
+        
+        edges.forEach(edge => {
+            graph[edge.from].push(edge.to);
+            graph[edge.to].push(edge.from); // Since edges are bidirectional
+        });
+
+        // Find path using BFS, preferring nodes with higher y position
+        const queue = [[rootMotivator.id]];
+        const visited = new Set([rootMotivator.id]);
+        
+        while (queue.length > 0) {
+            const path = queue.shift();
+            const currentId = path[path.length - 1];
+            
+            if (currentId === nodeId) {
+                // Convert path of IDs to array of nodes (excluding the target node)
+                return path.slice(0, -1).map(id => ({
+                    id: id,
+                    type: document.querySelector(`.circle[data-id="${id}"]`).dataset.type,
+                    contextText: document.querySelector(`.circle[data-id="${id}"]`).dataset.contextText || '',
+                    contextEmbedding: document.querySelector(`.circle[data-id="${id}"]`).dataset.contextEmbedding || null
+                }));
+            }
+            
+            // Get all neighbors
+            const neighbors = graph[currentId] || [];
+            
+            // Sort neighbors by y position (top to bottom)
+            const sortedNeighbors = neighbors
+                .map(id => nodes.find(node => node.id === id))
+                .sort((a, b) => a.position.y - b.position.y)
+                .map(node => node.id);
+            
+            // Add unvisited neighbors to queue
+            for (const neighborId of sortedNeighbors) {
+                if (!visited.has(neighborId)) {
+                    visited.add(neighborId);
+                    queue.push([...path, neighborId]);
+                }
+            }
+        }
+        
+        return []; // No path found
+    }
+
+    async function fetchOpportunitiesFromAI(goal) {
+        const response = await fetch('/api/opportunities', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ goal })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch opportunities');
+        }
+
+        return await response.json();
+    }
+
+    function displayOpportunities(opportunities) {
+        const container = document.querySelector('.opportunities-container');
+        container.innerHTML = ''; // Clear existing opportunities
+
+        // Add a container for selected opportunities at the bottom
+        const selectedContainer = document.createElement('div');
+        selectedContainer.className = 'selected-opportunities';
+        selectedContainer.innerHTML = '<h4>Selected Opportunities</h4>';
+        
+        opportunities.forEach(opportunity => {
+            const card = document.createElement('div');
+            card.className = 'opportunity-card';
+            card.dataset.id = opportunity.id;
+            
+            // Extract and validate links from title and description
+            const { title, description } = extractAndValidateLinks(opportunity.title, opportunity.description);
+            
+            card.innerHTML = `
+                <div class="opportunity-title">${title}</div>
+                <div class="opportunity-type">${escapeHtml(opportunity.type)}</div>
+                <div class="opportunity-description">${description}</div>
+                <div class="opportunity-actions">
+                    <button class="opportunity-button select" data-id="${opportunity.id}">Select</button>
+                </div>
+            `;
+
+            // Add event listener for select button
+            card.querySelector('.select').addEventListener('click', () => {
+                const button = card.querySelector('.select');
+                if (button.textContent === 'Select') {
+                    button.textContent = 'Selected';
+                    button.classList.add('selected');
+                    // Move to selected container
+                    const clone = card.cloneNode(true);
+                    clone.querySelector('.select').addEventListener('click', () => {
+                        card.querySelector('.select').textContent = 'Select';
+                        card.querySelector('.select').classList.remove('selected');
+                        clone.remove();
+                        updateDoneButton();
+                    });
+                    selectedContainer.appendChild(clone);
+                }
+                updateDoneButton();
+            });
+
+            container.appendChild(card);
+        });
+
+        // Add Done button below the opportunities list
+        const doneButton = document.createElement('button');
+        doneButton.className = 'control-btn done-btn';
+        doneButton.textContent = 'Create Motivator';
+        doneButton.style.display = 'none';
+        doneButton.addEventListener('click', async () => {
+            const selectedCards = selectedContainer.querySelectorAll('.opportunity-card');
+            if (selectedCards.length > 0) {
+                const goalInput = document.getElementById('goalInput').value.trim();
+                // Create motivator node
+                const motivatorNode = await createMotivatorNode(goalInput);
+                
+                // Create nodes for each selected opportunity and connect to motivator
+                for (const card of selectedCards) {
+                    const opportunityId = card.dataset.id;
+                    await createNodeFromOpportunity(opportunityId, motivatorNode.id);
+                }
+                
+                // Close the opportunities modal
+                const opportunitiesModal = document.getElementById('opportunitiesModal');
+                opportunitiesModal.classList.remove('show');
+                // Clear the input and hide the opportunities list
+                document.getElementById('goalInput').value = '';
+                document.getElementById('opportunitiesList').style.display = 'none';
+            }
+        });
+
+        // Append selected container and done button after the opportunities list
+        container.parentElement.appendChild(selectedContainer);
+        container.parentElement.appendChild(doneButton);
+
+        function updateDoneButton() {
+            const hasSelected = selectedContainer.querySelectorAll('.opportunity-card').length > 0;
+            doneButton.style.display = hasSelected ? 'block' : 'none';
+        }
+
+        // Helper function to extract and validate links
+        function extractAndValidateLinks(title, description) {
+            // URL regex pattern
+            const urlPattern = /(https?:\/\/[^\s]+)/g;
+            
+            // Function to validate and format URLs
+            const validateUrl = (url) => {
+                try {
+                    const validUrl = new URL(url);
+                    return `<a href="${validUrl.href}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+                } catch {
+                    return url;
+                }
+            };
+
+            // Process title and description
+            const processedTitle = escapeHtml(title).replace(urlPattern, url => validateUrl(url));
+            const processedDescription = escapeHtml(description).replace(urlPattern, url => validateUrl(url));
+
+            return {
+                title: processedTitle,
+                description: processedDescription
+            };
+        }
+
+        document.getElementById('opportunitiesList').style.display = 'block';
+    }
+
+    async function createMotivatorNode(goalText) {
+        const nodeId = generateUniqueNodeId();
+        const circle = document.createElement('div');
+        circle.className = 'circle';
+        circle.draggable = true;
+        circle.dataset.id = nodeId;
+        circle.dataset.type = 'Motivator';
+
+        const span = document.createElement('span');
+        span.textContent = goalText;
+        circle.appendChild(span);
+
+        // Position the node with random offset from center
+        const containerRect = container.getBoundingClientRect();
+        const centerX = containerWidth / 2;
+        const centerY = containerHeight / 2;
+        const randomOffset = () => Math.random() * 200 - 100;
+        
+        circle.style.left = `${centerX + randomOffset()}px`;
+        circle.style.top = `${centerY + randomOffset()}px`;
+
+        content.appendChild(circle);
+        initializeCircles();
+        drawEdges();
+
+        return { id: nodeId, element: circle };
+    }
+
+    async function createNodeFromOpportunity(opportunityId, parentId) {
+        const opportunities = document.querySelectorAll('.opportunity-card');
+        const opportunity = Array.from(opportunities).find(opp => opp.dataset.id === opportunityId);
+        
+        if (!opportunity) return;
+
+        const nodeId = generateUniqueNodeId();
+        const circle = document.createElement('div');
+        circle.className = 'circle';
+        circle.draggable = true;
+        circle.dataset.id = nodeId;
+        circle.dataset.type = 'Task';
+
+        const title = opportunity.querySelector('.opportunity-title').textContent;
+        const description = opportunity.querySelector('.opportunity-description').textContent;
+
+        const span = document.createElement('span');
+        span.textContent = title;
+        circle.appendChild(span);
+
+        // Position the node with random offset from parent
+        const parent = document.querySelector(`.circle[data-id="${parentId}"]`);
+        const parentRect = parent.getBoundingClientRect();
+        const randomOffset = () => Math.random() * 200 - 100;
+        
+        circle.style.left = `${parseFloat(parent.style.left) + randomOffset()}px`;
+        circle.style.top = `${parseFloat(parent.style.top) + 150 + randomOffset()}px`;
+
+        // Store the description as context
+        circle.dataset.description = description;
+
+        content.appendChild(circle);
+        
+        // Create edge connecting to parent
+        edges.push({ from: parentId, to: nodeId });
+        
+        initializeCircles();
+        drawEdges();
+        
+        return { id: nodeId, element: circle };
+    }
+
+    // Initialize opportunities functionality
+    const findOpportunitiesBtn = document.getElementById('findOpportunitiesBtn');
+    const opportunitiesModal = document.getElementById('opportunitiesModal');
+    const closeOpportunitiesBtn = opportunitiesModal.querySelector('.close-btn');
+    const searchOpportunitiesBtn = document.getElementById('searchOpportunitiesBtn');
+    const goalInput = document.getElementById('goalInput');
+    const opportunitiesList = document.getElementById('opportunitiesList');
+    const loadingOpportunities = document.getElementById('loadingOpportunities');
+
+    findOpportunitiesBtn.addEventListener('click', () => {
+        opportunitiesModal.classList.add('show');
+    });
+
+    closeOpportunitiesBtn.addEventListener('click', () => {
+        opportunitiesModal.classList.remove('show');
+        opportunitiesList.style.display = 'none';
+        goalInput.value = '';
+    });
+
+    searchOpportunitiesBtn.addEventListener('click', async () => {
+        const goal = goalInput.value.trim();
+        if (!goal) {
+            alert('Please enter a goal');
+            return;
+        }
+
+        // Show loading state
+        loadingOpportunities.style.display = 'flex';
+        opportunitiesList.style.display = 'none';
+        findOpportunitiesBtn.classList.add('processing');
+
+        try {
+            const opportunities = await fetchOpportunitiesFromAI(goal);
+            displayOpportunities(opportunities);
+        } catch (error) {
+            console.error('Error fetching opportunities:', error);
+            alert('Failed to fetch opportunities. Please try again.');
+        } finally {
+            loadingOpportunities.style.display = 'none';
+            findOpportunitiesBtn.classList.remove('processing');
+        }
+    });
+
+    // Helper function to escape HTML and prevent XSS
+    function escapeHtml(unsafe) {
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
 });

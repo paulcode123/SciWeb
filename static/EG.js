@@ -85,6 +85,10 @@ async function pullfromJupiter(){
     checkIcon.className = 'check-icon';
     checkDiv.appendChild(checkIcon);
     document.body.appendChild(checkDiv);
+    // if join classes was checked, remove the classes sheet from cache
+    if(addclasses){
+      localStorage.removeItem('Classes');
+    }
     
     setTimeout(() => {
       checkDiv.classList.add('fade-out');

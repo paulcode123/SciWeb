@@ -19,6 +19,7 @@
         <div class="dot"></div>
         <div class="dot"></div>
         <div class="dot"></div>
+        <!-- Dots will be added dynamically for each task -->
     </div>
     
     <div class="swipe-container">
@@ -61,6 +62,25 @@
             </button>
         </div>
 
+        <!-- Motivation Window -->
+        <div class="swipe-window animated-window" id="motivation-window">
+            <div class="window-header">
+                <h2>🌟 Daily Motivation</h2>
+                <div class="decoration-element sparkles"></div>
+            </div>
+            <div class="motivation-content">
+                <h3>Let's see what we're working towards...</h3>
+                <div class="form-group">
+                    <select id="motivation-select" class="motivation-dropdown">
+                        <option value="">Select a motivation</option>
+                    </select>
+                </div>
+                <div id="video-container" style="display: none;">
+                    <div id="youtube-player"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- TodoTree Tasks Window -->
         <div class="swipe-window animated-window" id="tasks-window">
             <div class="window-header">
@@ -70,32 +90,64 @@
             <div class="tasks-list"></div>
         </div>
 
-        <!-- Task Details Window -->
-        <div class="swipe-window animated-window" id="task-details-window">
-            <div class="window-header">
-                <h2>🎯 Task Details</h2>
-                <div class="decoration-element circles"></div>
+        <!-- Templates for dynamic task slides -->
+        <template id="task-checkin-template">
+            <div class="swipe-window animated-window task-checkin-window">
+                <div class="window-header">
+                    <h2 class="task-name">📝 Task Check-in</h2>
+                    <div class="decoration-element stars"></div>
+                </div>
+                <div class="task-checkin-content">
+                    <div class="task-hierarchy"></div>
+                    <div class="task-description"></div>
+                    <div class="checkin-form">
+                        <div class="chat-container">
+                            <div class="chat-messages"></div>
+                            <div class="chat-input-container">
+                                <textarea class="chat-input" placeholder="Type your message..." rows="2"></textarea>
+                                <button class="add-btn chat-send-btn">
+                                    <span class="material-icons">send</span>
+                                </button>
+                            </div>
+                        </div>
+                        <button class="add-btn bounce-animation save-checkin-btn">
+                            <span class="material-icons">event_available</span>
+                            Save and Continue to Follow-up
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div class="task-details">
-                <div class="task-header">
-                    <h3 class="task-name"></h3>
-                    <div class="task-type"></div>
+        </template>
+
+        <template id="task-followup-template">
+            <div class="swipe-window animated-window task-followup-window">
+                <div class="window-header">
+                    <h2>📅 Schedule Follow-up</h2>
+                    <div class="decoration-element circles"></div>
                 </div>
-                <div class="task-description"></div>
-                <div class="checkin-dates">
-                    <h4>📅 Check-in Dates</h4>
-                    <div class="dates-list"></div>
-                    <button class="add-btn bounce-animation" id="add-checkin-date-btn">
-                        <span class="material-icons">event_add</span>
-                        Add Check-in Date
-                    </button>
-                </div>
-                <div class="conversation-history">
-                    <h4>💭 Conversation History</h4>
-                    <div class="chat-messages"></div>
+                <div class="task-followup-content">
+                    <div class="task-name"></div>
+                    <div class="followup-form">
+                        <div class="form-group">
+                            <label>Next Check-in Date</label>
+                            <input type="date" class="next-checkin-date">
+                        </div>
+                        <div class="form-group">
+                            <label>Target Date</label>
+                            <input type="date" class="target-date">
+                        </div>
+                        <div class="form-group">
+                            <label>Deadline</label>
+                            <input type="date" class="deadline-date">
+                        </div>
+                        <button class="add-btn bounce-animation save-followup-btn">
+                            <span class="material-icons">event_available</span>
+                            Schedule Follow-up
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </template>
     </div>
 </div>
 
@@ -103,13 +155,66 @@
 <template id="assignment-template">
     <div class="assignment-item">
         <div class="assignment-header">
-            <span class="class-name"></span>
+            <div class="assignment-meta">
+                <span class="class-name"></span>
+                <span class="assignment-category"></span>
+            </div>
             <span class="due-date"></span>
         </div>
-        <div class="assignment-name"></div>
-        <div class="assignment-points"></div>
+        <div class="assignment-content">
+            <div class="assignment-name"></div>
+            <div class="assignment-description" style="display: none;"></div>
+        </div>
+        <div class="assignment-footer">
+            <div class="assignment-points"></div>
+        </div>
     </div>
 </template>
+
+<!-- Assignment Modal -->
+<div id="assignment-modal" class="modal">
+    <div class="modal-content">
+        <h3>New Assignment</h3>
+        <form id="assignment-form">
+            <div class="form-group">
+                <label for="assignment-name">Assignment Name*</label>
+                <input type="text" id="assignment-name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="assignment-class">Class*</label>
+                <select id="assignment-class" required></select>
+            </div>
+            
+            <div class="form-group">
+                <label for="assignment-category">Category*</label>
+                <select id="assignment-category" required disabled>
+                    <option value="">Select a class first</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="assignment-due">Due Date*</label>
+                <input type="date" id="assignment-due" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="assignment-points">Points*</label>
+                <input type="number" id="assignment-points" min="0" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="assignment-description">Description</label>
+                <textarea id="assignment-description" rows="3"></textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="document.getElementById('assignment-modal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn-primary">Create Assignment</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <template id="task-template">
     <div class="task-item">

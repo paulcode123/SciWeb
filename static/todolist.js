@@ -110,8 +110,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Sort tasks by date
             tasks.sort((a, b) => {
-                const dateA = a.deadline || a.targetDate || new Date('9999-12-31');
-                const dateB = b.deadline || b.targetDate || new Date('9999-12-31');
+                const dateA = a.targetDate || a.deadline || new Date('9999-12-31');
+                const dateB = b.targetDate || b.deadline || new Date('9999-12-31');
                 return dateA - dateB;
             });
 
@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let currentDate = null;
         
         tasks.forEach(task => {
-            const taskDate = task.deadline || task.targetDate;
+            const taskDate = task.targetDate || task.deadline;
             
             if (taskDate) {
                 const dateStr = taskDate.toDateString();
@@ -181,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         tasks.forEach(task => {
-            const taskDate = task.deadline || task.targetDate;
+            const taskDate = task.targetDate || task.deadline;
             const taskElement = createTaskElement(task);
             
             if (!taskDate) {
@@ -302,7 +302,7 @@ document.addEventListener('DOMContentLoaded', function() {
         taskElement.querySelector('.task-description').textContent = task.description || '';
         
         // Set date and type in meta section
-        const taskDate = task.deadline || task.targetDate;
+        const taskDate = task.targetDate || task.deadline;
         taskElement.querySelector('.task-date').textContent = taskDate ? formatDate(taskDate) : 'No date set';
         taskElement.querySelector('.task-type').textContent = task.type;
         
