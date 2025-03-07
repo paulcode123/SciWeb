@@ -10,9 +10,54 @@
 {% endblock %}
 
 {% block content %}
-<div class="tutoring-container">
+<!-- Floating Background Icons -->
+<i class="fas fa-pencil-alt floating-icon"></i>
+<i class="fas fa-laptop-code floating-icon"></i>
+<i class="fas fa-book floating-icon"></i>
+<i class="fas fa-calculator floating-icon"></i>
+<i class="fas fa-graduation-cap floating-icon"></i>
+<i class="fas fa-brain floating-icon"></i>
+
+<!-- Role Selection Screen -->
+<div class="role-selection" id="role-selection">
+    <h2><i class="fas fa-chalkboard-teacher"></i> Tutoring Portal</h2>
+    <p class="selection-description">Welcome to the SciWeb Tutoring System. Please select your role:</p>
+    
+    <div class="role-cards">
+        <div class="role-card" onclick="selectRole('student')">
+            <div class="role-icon">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+            <h3>Request Tutoring</h3>
+            <p>Get help from NHS tutors in your subjects</p>
+            <ul class="role-features">
+                <li><i class="fas fa-check"></i> Schedule one-on-one sessions</li>
+                <li><i class="fas fa-check"></i> Choose your preferred subjects</li>
+                <li><i class="fas fa-check"></i> Flexible timing options</li>
+            </ul>
+            <button class="select-role-btn">Get Started</button>
+        </div>
+
+        <div class="role-card" onclick="selectRole('tutor')">
+            <div class="role-icon">
+                <i class="fas fa-user-tie"></i>
+            </div>
+            <h3>I'm a Tutor</h3>
+            <p>NHS members can help fellow students</p>
+            <ul class="role-features">
+                <li><i class="fas fa-check"></i> Set your availability</li>
+                <li><i class="fas fa-check"></i> Choose subjects to tutor</li>
+                <li><i class="fas fa-check"></i> Track your tutoring hours</li>
+            </ul>
+            <button class="select-role-btn">Start Tutoring</button>
+        </div>
+    </div>
+</div>
+
+<!-- Main Tutoring Container (Initially Hidden) -->
+<div class="tutoring-container" id="tutoring-container" style="display: none;">
     <!-- Student Request Section -->
-    <section class="request-section">
+    <section class="request-section" id="student-section" style="display: none;">
         <h2><i class="fas fa-chalkboard-teacher"></i> Request Tutoring</h2>
         <form id="tutoring-request-form">
             <div class="form-group">
@@ -62,8 +107,8 @@
         </form>
     </section>
 
-    <!-- Tutor Availability Section -->
-    <section class="availability-section" id="tutorSection">
+    <!-- Tutor Section -->
+    <section class="tutor-section" id="tutor-section" style="display: none;">
         <h2><i class="fas fa-user-clock"></i> Set Your Tutoring Availability</h2>
         <div class="availability-grid">
             <div class="weekday-selector">
@@ -119,11 +164,10 @@
             </div>
         </div>
     </section>
-
-    <!-- Notification Container -->
-    <div id="notification-container"></div>
 </div>
 
+<!-- Notification Container -->
+<div id="notification-container"></div>
 {% endblock %}
 
 {% block js %}

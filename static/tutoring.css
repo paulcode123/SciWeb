@@ -1,33 +1,33 @@
 :root {
-    --primary-color: #7C4DFF;
-    --secondary-color: #651FFF;
+    --primary-color: #2196F3;
+    --secondary-color: #1976D2;
     --background-dark: #121212;
     --background-light: #1E1E1E;
     --text-color: #FFFFFF;
     --border-color: #2D2D2D;
     --hover-color: #2A2A2A;
-    --success-color: #00C853;
-    --warning-color: #FFD600;
-    --danger-color: #FF1744;
-    --gradient-primary: linear-gradient(135deg, #7C4DFF 0%, #651FFF 100%);
-    --gradient-secondary: linear-gradient(135deg, #00C853 0%, #009624 100%);
-    --gradient-warning: linear-gradient(135deg, #FFD600 0%, #FFC107 100%);
-    --gradient-danger: linear-gradient(135deg, #FF1744 0%, #D50000 100%);
+    --success-color: #00B8D4;
+    --warning-color: #0288D1;
+    --danger-color: #01579B;
+    --gradient-primary: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+    --gradient-secondary: linear-gradient(135deg, #00B8D4 0%, #0097A7 100%);
+    --gradient-warning: linear-gradient(135deg, #0288D1 0%, #0277BD 100%);
+    --gradient-danger: linear-gradient(135deg, #01579B 0%, #014377 100%);
     --gradient-dark: linear-gradient(145deg, rgba(30, 30, 30, 0.7), rgba(20, 20, 20, 0.7));
     --gradient-glow: linear-gradient(135deg, 
-        rgba(0, 200, 83, 0.3),
-        rgba(76, 175, 80, 0.2),
-        rgba(0, 200, 83, 0.3)
+        rgba(33, 150, 243, 0.3),
+        rgba(25, 118, 210, 0.2),
+        rgba(33, 150, 243, 0.3)
     );
 }
 
 body {
     background-color: var(--background-dark);
     background-image: 
-        radial-gradient(circle at 0% 0%, rgba(0, 200, 83, 0.4) 0%, transparent 50%),
-        radial-gradient(circle at 100% 0%, rgba(76, 175, 80, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 100% 100%, rgba(0, 200, 83, 0.4) 0%, transparent 50%),
-        radial-gradient(circle at 0% 100%, rgba(76, 175, 80, 0.3) 0%, transparent 50%);
+        radial-gradient(circle at 0% 0%, rgba(33, 150, 243, 0.4) 0%, transparent 50%),
+        radial-gradient(circle at 100% 0%, rgba(25, 118, 210, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 100% 100%, rgba(33, 150, 243, 0.4) 0%, transparent 50%),
+        radial-gradient(circle at 0% 100%, rgba(25, 118, 210, 0.3) 0%, transparent 50%);
     background-size: 200% 200%;
     background-position: 0% 0%;
     animation: gradientShift 15s ease-in-out infinite;
@@ -53,11 +53,11 @@ body {
     backdrop-filter: blur(10px);
     position: relative;
     overflow: hidden;
-    border: 1px solid rgba(0, 200, 83, 0.3);
+    border: 1px solid rgba(33, 150, 243, 0.3);
     box-shadow: 
-        0 0 20px rgba(0, 200, 83, 0.2),
-        0 0 60px rgba(0, 200, 83, 0.1),
-        inset 0 0 20px rgba(0, 200, 83, 0.2);
+        0 0 20px rgba(33, 150, 243, 0.2),
+        0 0 60px rgba(33, 150, 243, 0.1),
+        inset 0 0 20px rgba(33, 150, 243, 0.2);
 }
 
 .tutoring-container::before {
@@ -68,9 +68,9 @@ body {
     right: 0;
     bottom: 0;
     background: 
-        radial-gradient(circle at 30% 30%, rgba(0, 200, 83, 0.25) 0%, transparent 60%),
-        radial-gradient(circle at 70% 70%, rgba(76, 175, 80, 0.2) 0%, transparent 60%),
-        radial-gradient(circle at 50% 50%, rgba(0, 200, 83, 0.15) 0%, transparent 70%);
+        radial-gradient(circle at 30% 30%, rgba(33, 150, 243, 0.25) 0%, transparent 60%),
+        radial-gradient(circle at 70% 70%, rgba(25, 118, 210, 0.2) 0%, transparent 60%),
+        radial-gradient(circle at 50% 50%, rgba(33, 150, 243, 0.15) 0%, transparent 70%);
     z-index: -1;
     animation: backgroundPulse 10s ease-in-out infinite;
 }
@@ -709,8 +709,8 @@ input[type="date"] {
     border-radius: 15px;
     padding: 2rem;
     margin-top: 2rem;
-    box-shadow: 0 4px 6px rgba(0, 255, 0, 0.1);
-    border: 1px solid rgba(0, 255, 0, 0.2);
+    box-shadow: 0 4px 6px rgba(33, 150, 243, 0.1);
+    border: 1px solid rgba(33, 150, 243, 0.2);
 }
 
 .availability-grid {
@@ -728,7 +728,7 @@ input[type="date"] {
 
 .day-btn {
     padding: 0.5rem 1rem;
-    border: 1px solid rgba(0, 255, 0, 0.3);
+    border: 1px solid rgba(33, 150, 243, 0.3);
     background: rgba(0, 0, 0, 0.4);
     color: #fff;
     border-radius: 5px;
@@ -737,9 +737,9 @@ input[type="date"] {
 }
 
 .day-btn.selected {
-    background: rgba(0, 255, 0, 0.2);
-    border-color: rgba(0, 255, 0, 0.5);
-    box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+    background: rgba(33, 150, 243, 0.2);
+    border-color: rgba(33, 150, 243, 0.5);
+    box-shadow: 0 0 10px rgba(33, 150, 243, 0.3);
 }
 
 .time-slots {
@@ -757,16 +757,16 @@ input[type="date"] {
     padding: 0.5rem;
     text-align: center;
     background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(0, 255, 0, 0.2);
+    border: 1px solid rgba(33, 150, 243, 0.2);
     border-radius: 5px;
     cursor: pointer;
     transition: all 0.3s ease;
 }
 
 .time-slot.selected {
-    background: rgba(0, 255, 0, 0.2);
-    border-color: rgba(0, 255, 0, 0.5);
-    box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+    background: rgba(33, 150, 243, 0.2);
+    border-color: rgba(33, 150, 243, 0.5);
+    box-shadow: 0 0 10px rgba(33, 150, 243, 0.3);
 }
 
 .subject-checkboxes {
@@ -792,11 +792,11 @@ input[type="date"] {
 }
 
 .subject-checkbox:hover {
-    background: rgba(0, 255, 0, 0.1);
+    background: rgba(33, 150, 243, 0.1);
 }
 
 .subject-checkbox input[type="checkbox"] {
-    accent-color: #00ff00;
+    accent-color: #2196F3;
 }
 
 .availability-actions {
@@ -928,16 +928,221 @@ input[type="date"] {
 /* Animations */
 @keyframes glow {
     0%, 100% {
-        box-shadow: 0 0 15px rgba(124, 77, 255, 0.4),
-                    0 0 30px rgba(124, 77, 255, 0.2);
+        box-shadow: 0 0 15px rgba(33, 150, 243, 0.4),
+                    0 0 30px rgba(33, 150, 243, 0.2);
     }
     50% {
-        box-shadow: 0 0 25px rgba(124, 77, 255, 0.6),
-                    0 0 50px rgba(124, 77, 255, 0.3);
+        box-shadow: 0 0 25px rgba(33, 150, 243, 0.6),
+                    0 0 50px rgba(33, 150, 243, 0.3);
     }
 }
 
 .day-btn.selected,
 .time-slot.selected {
     animation: glow 2s infinite;
+}
+
+/* Role Selection Styles */
+.role-selection {
+    text-align: center;
+    padding: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    background: rgba(18, 18, 18, 0.7);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 200, 83, 0.3);
+    box-shadow: 
+        0 0 20px rgba(0, 200, 83, 0.2),
+        0 0 60px rgba(0, 200, 83, 0.1),
+        inset 0 0 20px rgba(0, 200, 83, 0.2);
+}
+
+.role-selection h2 {
+    color: var(--text-color);
+    font-size: 2.5em;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px rgba(124, 77, 255, 0.5);
+}
+
+.selection-description {
+    color: var(--text-color);
+    font-size: 1.2em;
+    margin-bottom: 40px;
+    opacity: 0.8;
+}
+
+.role-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    margin: 0 auto;
+    max-width: 900px;
+}
+
+.role-card {
+    background: rgba(30, 30, 30, 0.6);
+    padding: 30px;
+    border-radius: 16px;
+    border: 1px solid rgba(124, 77, 255, 0.2);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.role-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg,
+        rgba(124, 77, 255, 0.1),
+        rgba(0, 200, 83, 0.1)
+    );
+    z-index: 0;
+}
+
+.role-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(124, 77, 255, 0.2);
+    border-color: rgba(124, 77, 255, 0.4);
+}
+
+.role-icon {
+    font-size: 3em;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.role-card h3 {
+    color: var(--text-color);
+    font-size: 1.5em;
+    margin-bottom: 15px;
+    position: relative;
+    z-index: 1;
+}
+
+.role-card p {
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.role-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 25px 0;
+    text-align: left;
+    position: relative;
+    z-index: 1;
+}
+
+.role-features li {
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.role-features li i {
+    color: var(--success-color);
+}
+
+.select-role-btn {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.select-role-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(124, 77, 255, 0.3);
+}
+
+/* Add floating background elements */
+.role-selection::after,
+.tutoring-container::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0) rotate(0deg);
+    }
+    50% {
+        transform: translateY(-20px) rotate(5deg);
+    }
+}
+
+.floating-icon {
+    position: fixed;
+    opacity: 0.15;
+    pointer-events: none;
+    z-index: -1;
+    animation: float 6s ease-in-out infinite;
+    filter: drop-shadow(0 0 5px rgba(33, 150, 243, 0.3));
+}
+
+/* Create multiple floating icons with different positions and animations */
+.floating-icon:nth-child(1) {
+    top: 10%;
+    left: 5%;
+    font-size: 2em;
+    animation-delay: 0s;
+}
+
+.floating-icon:nth-child(2) {
+    top: 20%;
+    right: 10%;
+    font-size: 3em;
+    animation-delay: -1s;
+}
+
+.floating-icon:nth-child(3) {
+    bottom: 15%;
+    left: 15%;
+    font-size: 2.5em;
+    animation-delay: -2s;
+}
+
+.floating-icon:nth-child(4) {
+    bottom: 25%;
+    right: 15%;
+    font-size: 2em;
+    animation-delay: -3s;
+}
+
+.floating-icon:nth-child(5) {
+    top: 50%;
+    left: 10%;
+    font-size: 2.5em;
+    animation-delay: -4s;
+}
+
+.floating-icon:nth-child(6) {
+    top: 40%;
+    right: 5%;
+    font-size: 3em;
+    animation-delay: -5s;
 } 
