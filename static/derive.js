@@ -603,6 +603,20 @@ function setupEventListeners() {
     } else {
         log('Error: Could not add map control event listeners');
     }
+
+    // Set up include-desmos button
+    const includeDesmosBtn = document.getElementById('include-desmos');
+    if (includeDesmosBtn) {
+        includeDesmosBtn.addEventListener('click', () => {
+            const calculatorPanel = document.getElementById('calculator-panel');
+            const isVisible = calculatorPanel.style.display === 'block';
+            calculatorPanel.style.display = isVisible ? 'none' : 'block';
+            if (!isVisible) {
+                UI.calculator.resize();
+            }
+            includeDesmosBtn.classList.toggle('active');
+        });
+    }
 }
 
 /**
@@ -647,7 +661,7 @@ function addMessage(type, text) {
     
     const content = document.createElement('div');
     content.className = 'message-content';
-    content.textContent = text;
+    content.innerHTML = formatExplanation(text);
     message.appendChild(content);
     
     chatMessages.appendChild(message);
@@ -790,6 +804,19 @@ async function sendMessage() {
         // filter for the current unit and classID
         const existingUmap = umapsResponse.UMaps?.filter(umap => umap.unit === UI.currentMap.unit && umap.classID === UI.currentMap.classID)?.[0] || null;
 
+        // Get Desmos state if calculator is visible and initialized
+        let desmosState = null;
+        const calculatorPanel = document.getElementById('calculator-panel');
+        if (calculatorPanel && 
+            calculatorPanel.style.display !== 'none' && 
+            UI.calculator && 
+            typeof UI.calculator.getState === 'function') {
+            desmosState = getDesmosState();
+            log('Desmos state captured:', desmosState);
+        } else {
+            log('Calculator not visible or not initialized');
+        }
+
         // Send to backend
         const requestData = {
             concept: {
@@ -802,7 +829,8 @@ async function sendMessage() {
             prerequisites_completed: completedNodes,
             classID: UI.currentMap.classID,
             unit: UI.currentMap.unit,
-            existing_umap: existingUmap  // Pass the existing UMaps data
+            existing_umap: existingUmap,
+            desmos_state: desmosState
         };
         log('Sending request to backend:', requestData);
         
@@ -1401,43 +1429,210 @@ function initCalculator() {
 }
 
 function loadCalculatorExpressions(calculator, expressionsString) {
-    // Convert \n to semicolons for Desmos and filter out empty lines
-    const expressions = expressionsString
-        .replace(/\\n/g, ';')
-        .replace(/\\\\/g, '\\')
-        .split(';')
-        .filter(expr => expr.trim());
-        
-    expressions.forEach((expr, index) => {
-        // Check if this is a text field (starts with TEXT:)
-        if (expr.startsWith('TEXT:')) {
-            calculator.setExpression({
-                id: 'preset_' + index,
-                type: 'text',
-                text: expr.substring(5).trim(),
-                hidden: true
-            });
-        } 
-        // Check if this is a slider definition (starts with SLIDER:)
-        else if (expr.startsWith('SLIDER:')) {
-            const sliderDef = expr.substring(7).trim(); // Remove "SLIDER:"
-            const [variable, range] = sliderDef.split('=');
-            const [min, max] = range.split(':').map(Number);
+    if (!expressionsString) {
+        log('No expressions to load');
+        return;
+    }
+
+    try {
+        // Convert \n to semicolons for Desmos and filter out empty lines
+        const expressions = expressionsString
+            .replace(/\\n/g, ';')
+            .replace(/\\\\/g, '\\')
+            .split(';')
+            .filter(expr => expr.trim());
             
-            calculator.setExpression({
-                id: 'preset_' + index,
-                type: 'expression',
-                latex: variable + '=' + min,
-                sliderBounds: { min, max }
-            });
+        expressions.forEach((expr, index) => {
+            const id = 'preset_' + index;
+            
+            if (expr.startsWith('TEXT:')) {
+                calculator.setExpression({
+                    id: id,
+                    type: 'text',
+                    text: expr.substring(5).trim()
+                });
+            } 
+            else if (expr.startsWith('SLIDER:')) {
+                const sliderDef = expr.substring(7).trim(); // Remove "SLIDER:"
+                const [variable, range] = sliderDef.split('=');
+                const [min, max, step] = range.split(':').map(Number);
+                
+                calculator.setExpression({
+                    id: id,
+                    type: 'expression',
+                    latex: variable + '=' + min,
+                    sliderBounds: {
+                        min: min,
+                        max: max,
+                        step: step || undefined
+                    }
+                });
+            }
+            else if (expr.startsWith('TABLE:')) {
+                try {
+                    // Extract the array part of the string
+                    const tableStr = expr.substring(6).trim();
+                    
+                    // Parse the table data manually instead of using JSON.parse
+                    const matches = tableStr.match(/\[([^\]]+)\]/g);
+                    if (!matches) {
+                        throw new Error('Invalid table format');
+                    }
+                    
+                    // Convert each row string into an array
+                    const tableData = matches.map(row => {
+                        // Remove outer brackets and split by comma
+                        return row.slice(1, -1).split(',').map(item => item.trim());
+                    });
+                    
+                    if (!tableData.length || !tableData[0].length) {
+                        throw new Error('Invalid table format');
+                    }
+
+                    // Get headers from first row and data from remaining rows
+                    const [headerRow, ...data] = tableData;
+                    
+                    // Clean headers - remove any array notation and extra whitespace
+                    const headers = headerRow.map(header => 
+                        header.replace(/[\[\]]/g, '').trim()
+                    );
+                    
+                    // Create the table expression object
+                    const tableExpression = {
+                        id: id,
+                        type: 'table',
+                        columns: headers.map((header, colIndex) => ({
+                            latex: String(header),
+                            values: data.map(row => String(row[colIndex])),
+                            color: Desmos.Colors.BLUE,
+                            hidden: false,
+                            points: true,
+                            lines: true,
+                            dragMode: Desmos.DragModes.NONE,
+                            pointStyle: Desmos.Styles.POINT,
+                            lineStyle: Desmos.Styles.SOLID
+                        }))
+                    };
+
+                    calculator.setExpression(tableExpression);
+                    log('Successfully loaded table:', tableExpression);
+                } catch (error) {
+                    log('Error parsing table data:', error);
+                    // Fallback to old pipe-separated format
+                    const columns = expr.substring(6).split('|');
+                    calculator.setExpression({
+                        id: id,
+                        type: 'table',
+                        columns: columns.map(latex => ({
+                            latex: latex.trim(),
+                            values: [],
+                            color: Desmos.Colors.BLUE,
+                            hidden: false,
+                            points: true,
+                            lines: true
+                        }))
+                    });
+                }
+            }
+            else if (expr.startsWith('IMAGE:')) {
+                calculator.setExpression({
+                    id: id,
+                    type: 'image',
+                    image: {
+                        src: expr.substring(6).trim()
+                    }
+                });
+            }
+            else {
+                calculator.setExpression({
+                    id: id,
+                    type: 'expression',
+                    latex: expr.trim()
+                });
+            }
+        });
+        
+        log('Successfully loaded expressions');
+        
+    } catch (error) {
+        log('Error loading calculator expressions:', error);
+    }
+}
+
+function getDesmosState() {
+    if (!UI.calculator || typeof UI.calculator.getState !== 'function') {
+        log('Calculator not properly initialized');
+        return null;
+    }
+    
+    try {
+        const state = UI.calculator.getState();
+        log('Raw calculator state:', state);
+        
+        if (!state || !state.expressions || !state.expressions.list) {
+            log('Invalid calculator state structure');
+            return null;
         }
-        else {
-            calculator.setExpression({
-                id: 'preset_' + index,
-                type: 'expression',
-                latex: expr,
-                hidden: true
-            });
+        
+        // Filter out any invalid expressions and format them
+        const expressions = state.expressions.list
+            .filter(expr => {
+                return expr && 
+                       !expr.error && 
+                       expr.type && 
+                       !expr.hidden && 
+                       (expr.latex || expr.text || (expr.columns && expr.columns.length) || (expr.image && expr.image.src));
+            })
+            .map(expr => {
+                switch(expr.type) {
+                    case 'text':
+                        return expr.text ? `TEXT:${expr.text.trim()}` : null;
+                        
+                    case 'expression':
+                        if (expr.sliderBounds) {
+                            const step = expr.sliderBounds.step ? `:${expr.sliderBounds.step}` : '';
+                            return `SLIDER:${expr.latex.trim()}=${expr.sliderBounds.min}:${expr.sliderBounds.max}${step}`;
+                        } else if (expr.latex) {
+                            return expr.latex.trim();
+                        }
+                        return null;
+                        
+                    case 'table':
+                        if (expr.columns) {
+                            const columns = expr.columns
+                                .map(col => (col.latex || '').trim())
+                                .filter(latex => latex);
+                            return columns.length ? `TABLE:${columns.join('|')}` : null;
+                        }
+                        return null;
+                        
+                    case 'image':
+                        if (expr.image && expr.image.src) {
+                            return `IMAGE:${expr.image.src.trim()}`;
+                        }
+                        return null;
+                        
+                    default:
+                        return null;
+                }
+            })
+            .filter(expr => expr !== null && expr.trim() !== '');
+        
+        log('Formatted Desmos expressions:', expressions);
+        
+        if (expressions.length === 0) {
+            log('No valid expressions found');
+            return null;
         }
-    });
+        
+        const formattedState = expressions.join('\n');
+        log('Final Desmos state:', formattedState);
+        
+        return formattedState;
+        
+    } catch (error) {
+        log('Error getting Desmos state:', error);
+        console.error('Desmos state error:', error);
+        return null;
+    }
 }

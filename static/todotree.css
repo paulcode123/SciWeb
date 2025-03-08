@@ -5,10 +5,11 @@
 
 .controls {
     position: fixed;
-    top: 20px;
+    top: calc(var(--banner-height) + 20px); /* Add banner height to top position */
     left: 20px;
     display: flex;
     gap: 10px;
+    z-index: 1000;
 }
 
 .control-btn {
@@ -91,7 +92,7 @@
 @media screen and (max-width: 768px) {
     .controls {
         position: fixed;
-        top: 60px;
+        top: 60px; /* Keep original mobile positioning */
         left: 0;
         right: 0;
         height: 60px;
@@ -445,8 +446,6 @@
     height: 100%;
     background: rgba(0, 0, 0, 0.85);
     z-index: 2000;
-    opacity: 0;
-    transition: opacity 0.3s;
 }
 
 .modal.show {
@@ -466,6 +465,7 @@
     transition: transform 0.3s;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .modal.show .modal-content {
@@ -479,6 +479,9 @@
     justify-content: space-between;
     align-items: center;
     flex-shrink: 0;
+    background: #2c3e50;
+    position: relative;
+    z-index: 2000;
 }
 
 .modal-header h2 {
@@ -509,16 +512,24 @@
 }
 
 .modal-body {
-    padding: 32px;
-    flex-grow: 1;
+    flex: 1;
     overflow-y: auto;
+    padding: 32px;
+    padding-bottom: 100px; /* Add padding to prevent content from being hidden behind footer */
+    position: relative;
 }
 
 .modal-footer {
     padding: 24px 32px;
     border-top: 1px solid #34495e;
-    text-align: right;
-    flex-shrink: 0;
+    background: #2c3e50;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 2000;
+    display: flex;
+    justify-content: flex-end;
 }
 
 .modal-footer .control-btn {
@@ -641,31 +652,54 @@
 }
 
 /* Type-specific colors */
-.type-option[data-type="Motivator"] .material-icons {
+.circle[data-type="Motivator"] .material-icons {
     color: #D4AF37;
 }
 
-.type-option[data-type="Goal"] .material-icons {
-    color: #9C27B0;
+.circle[data-type="Challenge"] {
+    width: 300px;
+    height: auto;
+    min-height: 50px;
+    border-radius: 8px;
+    background: linear-gradient(
+        135deg,
+        #6b46c1,
+        #805ad5,
+        #9f7aea,
+        #805ad5,
+        #6b46c1
+    );
+    background-size: 400% 400%;
+    animation: challengeGradient 3s ease infinite;
 }
 
-.type-option[data-type="Task"] .material-icons {
-    color: #4CAF50;
+@keyframes challengeGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
-.type-option[data-type="Motivator"].selected {
-    background: rgba(212, 175, 55, 0.1);
-    border-color: #D4AF37;
+.circle[data-type="Challenge"] span {
+    max-width: none;
+    width: 100%;
+    font-size: 14px;
+    line-height: 1.4;
+    padding: 12px 16px;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: break-word;
 }
 
-.type-option[data-type="Goal"].selected {
-    background: rgba(156, 39, 176, 0.1);
-    border-color: #9C27B0;
-}
-
-.type-option[data-type="Task"].selected {
-    background: rgba(76, 175, 80, 0.1);
-    border-color: #4CAF50;
+/* Mobile styles */
+@media screen and (max-width: 768px) {
+    .circle[data-type="Challenge"] {
+        width: 240px;
+    }
+    
+    .circle[data-type="Challenge"] span {
+        font-size: 12px;
+        padding: 8px 12px;
+    }
 }
 
 .node-content {
@@ -1109,23 +1143,42 @@ input[type="datetime-local"] {
 @media screen and (max-width: 768px) {
     .modal-content {
         width: 100%;
-        height: 100vh;
+        height: 100%;
         border-radius: 0;
         margin: 0;
-        display: flex;
-        flex-direction: column;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        transform: none;
+    }
+
+    .modal-body {
+        padding: 16px;
+        padding-bottom: 90px;
     }
 
     .modal-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
         padding: 16px;
+        background: #1a1a1a;
+        z-index: 3000;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
 
     .modal-footer .control-btn {
-        width: 100%;
-        max-width: none;
+        width: 90%;
         height: 48px;
         font-size: 16px;
-        border-radius: 8px;
+        font-weight: bold;
         margin: 0;
     }
 
@@ -1134,6 +1187,7 @@ input[type="datetime-local"] {
         width: 100%;
         max-height: none;
         margin-top: 16px;
+        margin-bottom: 80px;
     }
 
     .node-content {

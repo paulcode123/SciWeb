@@ -71,35 +71,84 @@ const conceptData = {
 const options = {
     nodes: {
         shape: 'box',
-        margin: 10,
+        margin: 12,
         font: {
             size: 16,
-            face: 'Arial',
-            color: '#fff'
+            face: 'Inter, Arial, sans-serif',
+            color: '#fff',
+            strokeWidth: 2,
+            strokeColor: 'rgba(0, 0, 0, 0.5)'
         },
         borderWidth: 2,
-        shadow: true,
+        shadow: {
+            enabled: true,
+            color: 'rgba(0, 0, 0, 0.5)',
+            size: 10,
+            x: 0,
+            y: 5
+        },
         fixed: {
             x: false,
             y: false
+        },
+        widthConstraint: {
+            minimum: 120,
+            maximum: 200
+        },
+        heightConstraint: {
+            minimum: 40
+        },
+        borderRadius: 8,
+        chosen: {
+            node: function(values, id, selected, hovering) {
+                if (hovering) {
+                    values.shadow = true;
+                    values.shadowColor = 'rgba(41, 98, 255, 0.5)';
+                    values.shadowSize = 15;
+                    values.shadowX = 0;
+                    values.shadowY = 8;
+                    values.borderWidth = 3;
+                }
+            }
         }
     },
     edges: {
         width: 2,
+        selectionWidth: 3,
+        color: {
+            color: 'rgba(255, 255, 255, 0.2)',
+            highlight: '#2962FF',
+            hover: '#2962FF',
+            opacity: 0.8
+        },
         arrows: {
             to: {
                 enabled: true,
-                scaleFactor: 1
+                scaleFactor: 0.8,
+                type: 'arrow'
             }
         },
         smooth: {
             type: 'cubicBezier',
-            forceDirection: 'none',
+            forceDirection: 'horizontal',
             roundness: 0.5
         },
-        color: {
-            color: 'rgba(255, 255, 255, 0.5)',
-            highlight: '#3498db'
+        shadow: {
+            enabled: true,
+            color: 'rgba(0, 0, 0, 0.3)',
+            size: 10,
+            x: 0,
+            y: 5
+        },
+        chosen: {
+            edge: function(values, id, selected, hovering) {
+                if (hovering) {
+                    values.width = 3;
+                    values.color = '#2962FF';
+                    values.shadow = true;
+                    values.shadowColor = 'rgba(41, 98, 255, 0.5)';
+                }
+            }
         }
     },
     physics: {
@@ -112,12 +161,12 @@ const options = {
         },
         solver: 'forceAtlas2Based',
         forceAtlas2Based: {
-            gravitationalConstant: -50,
-            centralGravity: 0.01,
-            springLength: 100,
-            springConstant: 0.08,
+            gravitationalConstant: -100,
+            centralGravity: 0.015,
+            springLength: 150,
+            springConstant: 0.1,
             damping: 0.4,
-            avoidOverlap: 0.5
+            avoidOverlap: 1
         },
         minVelocity: 0.75,
         maxVelocity: 30
@@ -128,7 +177,10 @@ const options = {
         zoomView: true,
         hover: true,
         navigationButtons: true,
-        keyboard: true
+        keyboard: true,
+        tooltipDelay: 200,
+        hideEdgesOnDrag: true,
+        hideEdgesOnZoom: true
     },
     layout: {
         randomSeed: 2,
@@ -378,13 +430,13 @@ async function loadConceptMap(mapData) {
 function getNodeColor(status) {
     switch (status) {
         case 'completed':
-            return '#2196F3';
+            return '#2962FF';
         case 'in_progress':
-            return '#4CAF50';
+            return '#00C853';
         case 'pending':
-            return '#FFA500';
+            return '#FF6D00';
         default:
-            return '#999';
+            return '#757575';
     }
 }
 
@@ -392,29 +444,70 @@ function getNodeColor(status) {
 function getBorderColor(status) {
     switch (status) {
         case 'completed':
-            return '#1976D2';
+            return '#1565C0';
         case 'in_progress':
-            return '#388E3C';
+            return '#00B248';
         case 'pending':
             return '#F57C00';
         default:
-            return '#666';
+            return '#616161';
     }
+}
+
+// Format explanation text with markdown-like syntax
+function formatExplanation(text) {
+    if (!text) return '';
+    
+    // Replace math expressions between $ signs with styled spans
+    text = text.replace(/\$([^$]+)\$/g, '<span class="math-expression">$1</span>');
+    
+    // Replace ** ** with bold text
+    text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    
+    // Replace _ _ with italic text
+    text = text.replace(/_([^_]+)_/g, '<em>$1</em>');
+    
+    // Replace ``` ``` with code blocks
+    text = text.replace(/```([^`]+)```/g, '<code class="code-block">$1</code>');
+    
+    // Replace ` ` with inline code
+    text = text.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+    
+    // Replace newlines with <br>
+    text = text.replace(/\n/g, '<br>');
+    
+    return text;
 }
 
 // Update notes content with conversation history and animated bubbles
 function createChatHistory(chatHistory) {
     if (!chatHistory || chatHistory.length === 0) {
-        return '<p class="no-history">No derivation history available.</p>';
+        return `
+            <div class="no-history">
+                <span class="material-icons">chat_bubble_outline</span>
+                <p>No derivation history available.</p>
+                <p class="sub-text">Start a conversation to begin deriving this concept.</p>
+            </div>
+        `;
     }
 
     const messages = chatHistory.map((msg, index) => {
         const role = msg.role === 'human' ? 'user' : msg.role;
+        const icon = role === 'user' ? 'person' : 'smart_toy';
+        
         return `
             <div class="message ${role}-message" style="animation-delay: ${index * 0.1}s">
-                <div class="message-bubble">
-                    ${msg.content}
-                    <div class="bubble-tail"></div>
+                <div class="message-icon">
+                    <span class="material-icons">${icon}</span>
+                </div>
+                <div class="message-content">
+                    <div class="message-bubble">
+                        ${formatExplanation(msg.content)}
+                        <div class="bubble-tail"></div>
+                    </div>
+                    <div class="message-time">
+                        ${msg.timestamp || 'Just now'}
+                    </div>
                 </div>
             </div>
         `;

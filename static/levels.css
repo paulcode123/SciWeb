@@ -22,21 +22,51 @@
     min-height: 0;
     max-height: calc(100vh - 80px);
     padding: 24px;
-    background: var(--background-color);
+    background: linear-gradient(135deg, rgba(20, 23, 28, 0.95), rgba(30, 34, 42, 0.95));
     position: relative;
     overflow: hidden;
 }
 
+/* Add a subtle animated gradient background */
+.derive-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, 
+        rgba(76, 175, 80, 0.05) 0%,
+        rgba(33, 150, 243, 0.05) 50%,
+        rgba(156, 39, 176, 0.05) 100%);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
+    z-index: -1;
+}
+
+@keyframes gradientBG {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
 /* Left Panel */
 .left-panel {
-    background: rgba(30, 34, 42, 0.6);
+    background: rgba(30, 34, 42, 0.8);
     border-radius: 16px;
     padding: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(20px);
     height: auto;
     max-height: 100%;
     overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.left-panel:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
 }
 
 .class-selection h2 {
@@ -68,6 +98,20 @@
     margin-top: 24px;
     padding-top: 24px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+}
+
+.progress-section::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, #4CAF50, #2196F3);
+    transform: scaleX(var(--progress, 0));
+    transform-origin: left;
+    transition: transform 0.6s ease;
 }
 
 .progress-section h3 {
@@ -87,10 +131,29 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 16px;
-    background: rgba(20, 23, 28, 0.6);
+    padding: 16px;
+    background: rgba(20, 23, 28, 0.8);
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+
+.stat:hover::before {
+    transform: translateX(100%);
 }
 
 .stat-label {
@@ -100,7 +163,8 @@
 
 .stat-value {
     color: #fff;
-    font-weight: 500;
+    font-weight: 600;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Center Panel - Chat Interface */
@@ -545,6 +609,14 @@
     border-radius: 16px;
     padding: 24px;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    transform: perspective(1000px) rotateX(0deg);
+    transition: transform 0.6s ease, box-shadow 0.6s ease;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.problem-display:hover {
+    transform: perspective(1000px) rotateX(2deg);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
 }
 
 .problem-header {
@@ -605,11 +677,24 @@
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
 }
 
-.submit-button:hover:not(:disabled) {
-    background: #45a049;
-    transform: translateY(-2px);
+.submit-button::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.submit-button:hover::after {
+    opacity: 1;
 }
 
 .submit-button:disabled {
@@ -1052,4 +1137,103 @@
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* Achievement Styles */
+.achievement-unlocked {
+    position: relative;
+    animation: achievementPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.achievement-unlocked::after {
+    content: '🏆';
+    position: absolute;
+    top: -20px;
+    right: -10px;
+    font-size: 24px;
+    animation: trophyBounce 1s ease infinite;
+}
+
+@keyframes achievementPop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+@keyframes trophyBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+/* Mastery Level Indicators */
+.mastery-level {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(76, 175, 80, 0.1);
+    border-radius: 20px;
+    margin-top: 16px;
+}
+
+.mastery-icon {
+    font-size: 20px;
+    color: #4CAF50;
+}
+
+.mastery-text {
+    font-weight: 500;
+    background: linear-gradient(45deg, #4CAF50, #2196F3);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Success Animation */
+@keyframes successPulse {
+    0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+}
+
+.success-pulse {
+    animation: successPulse 2s infinite;
+}
+
+/* Motivational Messages */
+.motivation-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 20px 40px;
+    background: rgba(33, 150, 243, 0.9);
+    color: white;
+    border-radius: 12px;
+    font-size: 24px;
+    font-weight: 600;
+    text-align: center;
+    opacity: 0;
+    animation: motivationAppear 0.5s ease forwards;
+    z-index: 1000;
+}
+
+@keyframes motivationAppear {
+    0% { opacity: 0; transform: translate(-50%, -40%); }
+    100% { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+/* Progress Animation */
+.progress-animation {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #4CAF50, #2196F3);
+    animation: progressMove 2s ease-in-out infinite;
+}
+
+@keyframes progressMove {
+    0% { width: 0%; opacity: 1; }
+    50% { width: 100%; opacity: 1; }
+    100% { width: 100%; opacity: 0; }
 } 

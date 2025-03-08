@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const assignmentTemplate = document.getElementById('assignment-template');
     const taskTemplate = document.getElementById('task-template');
     const chatMessageTemplate = document.getElementById('chat-message-template');
+    const todayTaskTemplate = document.getElementById('today-task-template');
     
     // State
     let currentWindow = 0;
@@ -36,6 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let touchEndX = 0;
     let assignments = [];
     let tasks = [];
+    let todayTasks = [];
     let currentTask = null;
     let classes = []; // Store available classes
     let motivators = []; // Store available motivators
@@ -106,13 +108,56 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Process assignments
             const today = new Date();
-            const twoDaysFromNow = new Date();
-            twoDaysFromNow.setDate(today.getDate() + 2);
+            today.setHours(0, 0, 0, 0);
             
-            assignments = data.Assignments.filter(assignment => {
-                const dueDate = new Date(assignment.due);
-                return dueDate >= today && dueDate <= twoDaysFromNow;
-            }).sort((a, b) => new Date(a.due) - new Date(b.due));
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            const endOfWeek = new Date(today);
+            endOfWeek.setDate(today.getDate() + (6 - today.getDay())); // Get to end of current week
+            
+            console.log('Filtering assignments:', {
+                today: today.toISOString(),
+                tomorrow: tomorrow.toISOString(),
+                endOfWeek: endOfWeek.toISOString(),
+                allAssignments: data.Assignments
+            });
+            
+            // Split assignments into homework and assessments
+            const homeworkDueTomorrow = data.Assignments.filter(assignment => {
+                // Normalize the due date to start of day in local time
+                const dueDate = new Date(assignment.due + 'T00:00:00');
+                dueDate.setHours(0, 0, 0, 0);
+                
+                const isAssessment = /test|exam|quiz|assess/i.test(assignment.category);
+                const isTomorrow = dueDate.getTime() === tomorrow.getTime();
+                
+                console.log('Checking homework assignment:', {
+                    assignment,
+                    dueDate: dueDate.toISOString(),
+                    isAssessment,
+                    isTomorrow,
+                    tomorrowDate: tomorrow.toISOString(),
+                    dueDateString: dueDate.toISOString()
+                });
+                return !isAssessment && isTomorrow;
+            });
+
+            console.log('Homework due tomorrow:', homeworkDueTomorrow);
+
+            const assessmentsThisWeek = data.Assignments.filter(assignment => {
+                const dueDate = new Date(assignment.due + 'T00:00:00');
+                dueDate.setHours(0, 0, 0, 0);
+                const isAssessment = /test|exam|quiz|assess/i.test(assignment.category);
+                return isAssessment && 
+                       dueDate >= today && 
+                       dueDate <= endOfWeek;
+            }).sort((a, b) => new Date(a.due + 'T00:00:00') - new Date(b.due + 'T00:00:00'));
+
+            assignments = {
+                homework: homeworkDueTomorrow,
+                assessments: assessmentsThisWeek
+            };
             
             // Process tasks and motivators
             if (data.TodoTrees && data.TodoTrees[0]) {
@@ -132,8 +177,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     parentHierarchy: findParentHierarchy(task.id)
                 }));
 
+                // Filter tasks due today
+                todayTasks = todoTreeData.nodes.filter(node => {
+                    if (node.type === 'Motivator') return false;
+                    
+                    const targetDate = node.targetDate ? node.targetDate.split('T')[0] : null;
+                    return targetDate === todayStr;
+                }).map(task => ({
+                    ...task,
+                    parentHierarchy: findParentHierarchy(task.id),
+                    isDeadlineToday: task.deadline ? task.deadline.split('T')[0] === todayStr : false
+                }));
+
                 // Create dynamic slides for each task
                 createDynamicSlides(tasks);
+                
+                // Render today's tasks
+                renderTodayTasks();
                 
                 // Filter motivators with video links
                 motivators = data.TodoTrees[0].nodes.filter(node =>
@@ -197,6 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
             renderAssignments();
             renderTasks();
             updateSwipeIndicator();
+            renderRescheduleTasks();
         } catch (error) {
             console.error('Error loading data:', error);
         }
@@ -288,6 +349,7 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let i = 0; i < totalSlides; i++) {
             const dot = document.createElement('div');
             dot.className = 'dot' + (i === currentWindow ? ' active' : '');
+            dot.addEventListener('click', () => switchWindow(i));
             indicator.appendChild(dot);
         }
     }
@@ -571,14 +633,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function renderAssignments() {
         assignmentsList.innerHTML = '';
-        assignments.forEach(assignment => {
+
+        // Create homework section
+        const homeworkSection = document.createElement('div');
+        homeworkSection.className = 'assignments-section';
+        const homeworkTitle = document.createElement('h3');
+        homeworkTitle.textContent = '📚 HW for Tomorrow';
+        homeworkSection.appendChild(homeworkTitle);
+
+        assignments.homework.forEach(assignment => {
             const clone = assignmentTemplate.content.cloneNode(true);
             const item = clone.querySelector('.assignment-item');
             
-            // Add assignment ID as data attribute
             item.dataset.id = assignment.id;
-            
-            // Fill in all assignment details
             item.querySelector('.class-name').textContent = assignment.class_name;
             item.querySelector('.due-date').textContent = processDate(assignment.due);
             item.querySelector('.assignment-name').textContent = assignment.name;
@@ -591,8 +658,54 @@ document.addEventListener('DOMContentLoaded', function() {
                 desc.style.display = 'block';
             }
             
-            assignmentsList.appendChild(item);
+            homeworkSection.appendChild(item);
         });
+
+        // Create assessments section
+        const assessmentsSection = document.createElement('div');
+        assessmentsSection.className = 'assignments-section';
+        const assessmentsTitle = document.createElement('h3');
+        assessmentsTitle.textContent = '📝 Assessments This Week';
+        assessmentsSection.appendChild(assessmentsTitle);
+
+        assignments.assessments.forEach(assignment => {
+            const clone = assignmentTemplate.content.cloneNode(true);
+            const item = clone.querySelector('.assignment-item');
+            
+            item.dataset.id = assignment.id;
+            item.querySelector('.class-name').textContent = assignment.class_name;
+            item.querySelector('.due-date').textContent = processDate(assignment.due);
+            item.querySelector('.assignment-name').textContent = assignment.name;
+            item.querySelector('.assignment-points').textContent = `${assignment.points} points`;
+            item.querySelector('.assignment-category').textContent = assignment.category;
+            
+            if (assignment.description) {
+                const desc = item.querySelector('.assignment-description');
+                desc.textContent = assignment.description;
+                desc.style.display = 'block';
+            }
+            
+            assessmentsSection.appendChild(item);
+        });
+
+        // Add sections to the assignments list
+        assignmentsList.appendChild(homeworkSection);
+        assignmentsList.appendChild(assessmentsSection);
+
+        // Add empty state messages if needed
+        if (assignments.homework.length === 0) {
+            const emptyHW = document.createElement('p');
+            emptyHW.className = 'empty-message';
+            emptyHW.textContent = 'No homework due tomorrow';
+            homeworkSection.appendChild(emptyHW);
+        }
+
+        if (assignments.assessments.length === 0) {
+            const emptyAssessments = document.createElement('p');
+            emptyAssessments.className = 'empty-message';
+            emptyAssessments.textContent = 'No assessments this week';
+            assessmentsSection.appendChild(emptyAssessments);
+        }
     }
 
     function renderTasks() {
@@ -1000,4 +1113,269 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize
     loadData();
-}); 
+
+    // Todo functionality
+    const todosList = document.querySelector('.todos-list');
+    const newTodoInput = document.getElementById('new-todo-input');
+    const addTodoBtn = document.getElementById('add-todo-btn');
+    const todoTemplate = document.getElementById('todo-item-template');
+    let todos = JSON.parse(localStorage.getItem('dailyTodos') || '[]');
+
+    // Render initial todos
+    function renderTodos() {
+        todosList.innerHTML = '';
+        todos.forEach((todo, index) => {
+            const clone = todoTemplate.content.cloneNode(true);
+            const item = clone.querySelector('.todo-item');
+            
+            if (todo.completed) {
+                item.classList.add('completed');
+            }
+            
+            const checkbox = item.querySelector('.todo-checkbox');
+            checkbox.checked = todo.completed;
+            checkbox.addEventListener('change', () => toggleTodo(index));
+            
+            item.querySelector('.todo-text').textContent = todo.text;
+            
+            const deleteBtn = item.querySelector('.delete-todo-btn');
+            deleteBtn.addEventListener('click', () => deleteTodo(index));
+            
+            todosList.appendChild(item);
+        });
+    }
+
+    // Add new todo
+    function addTodo(text) {
+        todos.push({
+            text: text,
+            completed: false,
+            createdAt: new Date().toISOString()
+        });
+        localStorage.setItem('dailyTodos', JSON.stringify(todos));
+        renderTodos();
+    }
+
+    // Toggle todo completion
+    function toggleTodo(index) {
+        todos[index].completed = !todos[index].completed;
+        localStorage.setItem('dailyTodos', JSON.stringify(todos));
+        renderTodos();
+    }
+
+    // Delete todo
+    function deleteTodo(index) {
+        todos.splice(index, 1);
+        localStorage.setItem('dailyTodos', JSON.stringify(todos));
+        renderTodos();
+    }
+
+    // Event listeners for todo functionality
+    if (addTodoBtn && newTodoInput) {
+        addTodoBtn.addEventListener('click', () => {
+            const text = newTodoInput.value.trim();
+            if (text) {
+                addTodo(text);
+                newTodoInput.value = '';
+            }
+        });
+
+        newTodoInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const text = newTodoInput.value.trim();
+                if (text) {
+                    addTodo(text);
+                    newTodoInput.value = '';
+                }
+            }
+        });
+    }
+
+    // Initialize todos
+    renderTodos();
+
+    // Render today's tasks
+    function renderTodayTasks() {
+        const todayTasksList = document.querySelector('.today-tasks-list');
+        if (!todayTasksList) return;
+
+        todayTasksList.innerHTML = '';
+
+        if (todayTasks.length === 0) {
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'empty-message';
+            emptyMessage.textContent = 'No tasks due today';
+            todayTasksList.appendChild(emptyMessage);
+            return;
+        }
+
+        todayTasks.forEach(task => {
+            const clone = todayTaskTemplate.content.cloneNode(true);
+            const item = clone.querySelector('.today-task-item');
+            
+            item.querySelector('.task-name').textContent = task.name;
+            
+            if (task.description) {
+                item.querySelector('.task-description').textContent = task.description;
+            } else {
+                item.querySelector('.task-description').style.display = 'none';
+            }
+            
+            if (task.parentHierarchy && task.parentHierarchy.length > 0) {
+                const hierarchyText = task.parentHierarchy
+                    .map(parent => parent.name)
+                    .join(' › ');
+                item.querySelector('.task-hierarchy').textContent = hierarchyText;
+            } else {
+                item.querySelector('.task-hierarchy').style.display = 'none';
+            }
+            
+            const deadlineIndicator = item.querySelector('.deadline-indicator');
+            if (task.isDeadlineToday) {
+                deadlineIndicator.style.display = 'block';
+            } else {
+                deadlineIndicator.style.display = 'none';
+            }
+            
+            todayTasksList.appendChild(item);
+        });
+    }
+
+    function renderRescheduleTasks() {
+        const rescheduleList = document.querySelector('.reschedule-tasks-list');
+        rescheduleList.innerHTML = '';
+        
+        // Get today's date at start of day in local timezone
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        console.log('Today (for comparison):', today.toISOString());
+        
+        // Get all tasks from todoTreeData instead of just tasks with check-ins today
+        const allTasks = todoTreeData.nodes.filter(node => node.type !== 'Motivator')
+            .map(task => ({
+                ...task,
+                parentHierarchy: findParentHierarchy(task.id)
+            }));
+            
+        console.log('All tasks before filtering:', allTasks.map(task => ({
+            name: task.name,
+            targetDate: task.targetDate,
+            completed: task.completed,
+            parentHierarchy: task.parentHierarchy
+        })));
+        
+        const overdueTasks = allTasks.filter(task => {
+            if (!task.targetDate || task.completed) {
+                console.log(`Task "${task.name}" skipped:`, {
+                    hasTargetDate: !!task.targetDate,
+                    isCompleted: task.completed
+                });
+                return false;
+            }
+            
+            // Parse the target date and set to start of day for fair comparison
+            const targetDate = new Date(task.targetDate);
+            targetDate.setHours(0, 0, 0, 0);
+            
+            const isOverdue = targetDate < today;
+            console.log(`Task "${task.name}" date comparison:`, {
+                targetDate: targetDate.toISOString(),
+                isOverdue,
+                rawTargetDate: task.targetDate
+            });
+            
+            return isOverdue;
+        });
+        
+        console.log('Overdue tasks after filtering:', overdueTasks.map(task => ({
+            name: task.name,
+            targetDate: task.targetDate,
+            parentHierarchy: task.parentHierarchy
+        })));
+        
+        if (overdueTasks.length === 0) {
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'empty-message';
+            emptyMessage.textContent = 'No overdue tasks! 🎉';
+            rescheduleList.appendChild(emptyMessage);
+            return;
+        }
+        
+        const template = document.getElementById('reschedule-task-template');
+        
+        overdueTasks.forEach(task => {
+            const clone = template.content.cloneNode(true);
+            const taskItem = clone.querySelector('.reschedule-task-item');
+            
+            taskItem.querySelector('.task-name').textContent = task.name;
+            taskItem.querySelector('.task-description').textContent = task.description || '';
+            
+            if (task.parentHierarchy && task.parentHierarchy.length > 0) {
+                const hierarchyText = task.parentHierarchy
+                    .map(parent => parent.name)
+                    .join(' > ');
+                taskItem.querySelector('.task-hierarchy').textContent = hierarchyText;
+            } else {
+                taskItem.querySelector('.task-hierarchy').style.display = 'none';
+            }
+            
+            // Format the original target date
+            const originalDate = new Date(task.targetDate).toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            taskItem.querySelector('.date-value').textContent = originalDate;
+            
+            const dateInput = taskItem.querySelector('.new-target-date');
+            dateInput.min = new Date().toISOString().split('T')[0];
+            
+            const rescheduleBtn = taskItem.querySelector('.reschedule-btn');
+            rescheduleBtn.addEventListener('click', () => rescheduleTask(task.id, dateInput.value));
+            
+            rescheduleList.appendChild(taskItem);
+        });
+    }
+
+    async function rescheduleTask(taskId, newTargetDate) {
+        if (!newTargetDate) {
+            alert('Please select a new target date');
+            return;
+        }
+        
+        try {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+            
+            task.targetDate = newTargetDate;
+            
+            // Update the task in the backend
+            await fetch(`/api/tasks/${taskId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ targetDate: newTargetDate })
+            });
+            
+            // Refresh the tasks lists
+            await loadData();
+            renderRescheduleTasks();
+            renderTodayTasks();
+            
+            // Show success message
+            const successMessage = document.createElement('div');
+            successMessage.className = 'success-message';
+            successMessage.textContent = 'Task rescheduled successfully! 🎯';
+            document.body.appendChild(successMessage);
+            
+            setTimeout(() => {
+                successMessage.remove();
+            }, 3000);
+            
+        } catch (error) {
+            console.error('Error rescheduling task:', error);
+            alert('Failed to reschedule task. Please try again.');
+        }
+    }
+});

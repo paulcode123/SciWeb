@@ -2,6 +2,7 @@ import os
 from openai import OpenAI
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
+import re
 
 load_dotenv()
 
@@ -118,40 +119,139 @@ def chat_with_embeddings(messages: List[Dict[str, str]], node_embeddings: List[D
     client = OpenAI(api_key=vars['openAIAPI'])
     
     try:
-        # Format context from embeddings
-        context_text = "Relevant context from the task and its parent nodes:\n\n"
+        # Validate and format incoming messages
+        formatted_messages = []
+        for msg in messages:
+            if isinstance(msg, str):
+                formatted_messages.append({"role": "user", "content": msg})
+            elif isinstance(msg, dict):
+                if 'content' in msg:
+                    role = msg.get('role', 'user')
+                    formatted_messages.append({"role": role, "content": msg['content']})
+                elif 'text' in msg:
+                    # Convert type to role for consistency
+                    role = 'user' if msg.get('type', msg.get('role', '')) == 'user' else 'assistant'
+                    formatted_messages.append({"role": role, "content": msg['text']})
+
+        if not formatted_messages:
+            return "I apologize, but I couldn't process the message format. Please try rephrasing your message."
+
+        # Get embeddings for the last few messages for better context
+        recent_messages = formatted_messages[-10:]  # Consider last 10 messages for context
+        query_texts = [msg['content'] for msg in recent_messages]
+        
+        # Get embeddings for all query texts
+        query_embeddings = []
+        for text in query_texts:
+            response = client.embeddings.create(
+                model="text-embedding-ada-002",
+                input=text
+            )
+            query_embeddings.append(response.data[0].embedding)
+        
+        # Use the average of recent message embeddings as the query
+        query_embedding = combine_embeddings(query_embeddings)
+
+        def cosine_similarity(a, b):
+            dot_product = sum(x * y for x, y in zip(a, b))
+            norm_a = (sum(x * x for x in a) ** 0.5) or 1  # Avoid division by zero
+            norm_b = (sum(x * x for x in b) ** 0.5) or 1
+            return dot_product / (norm_a * norm_b)
+
+        # Process contexts with sliding windows for longer texts
+        WINDOW_SIZE = 3  # Number of sentences per window
+        OVERLAP = 1      # Number of sentences overlap between windows
+        
+        scored_segments = []
         for node in node_embeddings:
-            if node['context']:
-                context_text += f"- {node['context']}\n"
-        
-        # Create system message with context
-        system_message = {
-            "role": "system",
-            "content": f"""You are an AI assistant helping with task management. Use the following context to inform your responses:
+            if not (node.get('context') and node.get('embedding')):
+                continue
+                
+            # Split into sentences
+            sentences = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?|\!)\s', node['context'])
+            sentences = [s.strip() for s in sentences if len(s.strip()) > 10]
+            
+            # Create overlapping windows of sentences
+            for i in range(0, len(sentences), WINDOW_SIZE - OVERLAP):
+                window = sentences[i:i + WINDOW_SIZE]
+                if not window:
+                    continue
+                    
+                # Combine window sentences
+                window_text = ' '.join(window)
+                
+                # Get embedding for window
+                window_response = client.embeddings.create(
+                    model="text-embedding-ada-002",
+                    input=window_text
+                )
+                window_embedding = window_response.data[0].embedding
+                
+                # Calculate similarity
+                similarity = cosine_similarity(query_embedding, window_embedding)
+                
+                # Store with metadata
+                scored_segments.append({
+                    'text': window_text,
+                    'similarity': similarity,
+                    'node_id': node['node_id'],
+                    'position': i,  # Keep track of position for context
+                    'original_node': node  # Store reference to original node
+                })
 
-{context_text}
+        # Sort by similarity and apply a minimum threshold
+        SIMILARITY_THRESHOLD = 0.6
+        scored_segments.sort(key=lambda x: x['similarity'], reverse=True)
+        relevant_segments = [s for s in scored_segments if s['similarity'] > SIMILARITY_THRESHOLD][:5]
 
-When responding:
-1. Reference relevant information from the context when appropriate
-2. Keep responses focused and practical
-3. Provide specific suggestions based on the context
-4. Be encouraging and supportive
-"""
-        }
-        
-        # Combine messages with system context
-        all_messages = [system_message] + messages
-        
-        # Get response from OpenAI
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=all_messages,
-            temperature=0.7,
-            max_tokens=500
+        # Create system message with enhanced context
+        if relevant_segments:
+            context_text = "Relevant context from the knowledge base:\n\n"
+            for i, segment in enumerate(relevant_segments, 1):
+                node = segment['original_node']
+                context_text += f"{i}. From node {node.get('title', 'Untitled')}:\n"
+                context_text += f"{segment['text']}\n"
+                context_text += f"(Relevance: {segment['similarity']:.2f})\n\n"
+            
+            context_text += "\nPlease use this context to provide a detailed and accurate response.\n"
+            context_text += "If the context is not directly relevant to the question, rely on your general knowledge instead.\n"
+        else:
+            context_text = "No highly relevant context found. Providing response based on general knowledge.\n"
+
+        # Prepare messages for chat completion with proper roles
+        chat_messages = [
+            {"role": "system", "content": context_text}
+        ] + formatted_messages
+        print(chat_messages)
+
+        # Get chat completion with controlled parameters
+        chat_completion = client.chat.completions.create(
+            model="gpt-4",
+            messages=chat_messages,
+            temperature=0.7,  # Balance between creativity and accuracy
+            max_tokens=1000,  # Ensure comprehensive responses
+            top_p=0.9,       # Slightly reduce randomness
+            presence_penalty=0.3,  # Encourage some variety
+            frequency_penalty=0.3   # Discourage repetition
         )
-        
-        return response.choices[0].message.content
-        
+
+        return chat_completion.choices[0].message.content
+
     except Exception as e:
         print(f"Error in chat_with_embeddings: {str(e)}")
-        raise 
+        try:
+            # Fallback with simpler context
+            simple_messages = [
+                {"role": "system", "content": "Please provide a helpful response based on the available information."}
+            ] + formatted_messages
+            print(simple_messages)
+            
+            chat_completion = client.chat.completions.create(
+                model="gpt-4",
+                messages=simple_messages,
+                temperature=0.7
+            )
+            return chat_completion.choices[0].message.content
+        except Exception as fallback_error:
+            print(f"Fallback error: {str(fallback_error)}")
+            return "I apologize, but I encountered an error processing your request. Please try again or rephrase your question." 

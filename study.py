@@ -484,7 +484,7 @@ def map_problems(problems_data, concept_map, llm):
         print(f"Response content: {response}")
         raise
 
-def derive_concept(llm, concept, user_message, chat_history, prerequisites_completed):
+def derive_concept(llm, concept, user_message, chat_history, prerequisites_completed, desmos_state=None):
     """
     Handles the derivation conversation for a specific concept
     
@@ -494,6 +494,7 @@ def derive_concept(llm, concept, user_message, chat_history, prerequisites_compl
         user_message: The user's current message
         chat_history: List of previous messages in the conversation
         prerequisites_completed: List of completed prerequisite concepts
+        desmos_state: Optional string containing the current state of the Desmos calculator
         
     Returns:
         AI's response and whether the concept has been successfully derived
@@ -517,16 +518,19 @@ def derive_concept(llm, concept, user_message, chat_history, prerequisites_compl
     # Add the current message
     # formatted_history.append(HumanMessage(content=user_message))
     
-    # Create the system prompt with concept details
+    # Create the system prompt with concept details and Desmos state if available
+    desmos_context = f"\nCurrent Desmos graph state:\n{desmos_state}" if desmos_state else ""
     system_prompt = DERIVE_HELP_PROMPT.format(
         concept=f"{concept['label']}: {concept['description']}",
-        prerequisites=", ".join(prerequisites_completed)  # Just join the labels
+        prerequisites=", ".join(prerequisites_completed),  # Just join the labels
+        desmos_state=desmos_context
     )
     
     # Create messages array for the chat model
     messages = [
         SystemMessage(content=system_prompt),
-        *formatted_history
+        *formatted_history,
+        HumanMessage(content=user_message)  # Add current message
     ]
     
     try:

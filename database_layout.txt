@@ -311,7 +311,7 @@ Sheet name: TodoTrees
     nodes(array of objects containing:
         {
             id: str,
-            type: str (Motivator/Goal/Task),
+            type: str (Motivator/Challenge/Task),
             name: str,
             description: str (optional, detailed description of the node),
             position: {x: number, y: number},
@@ -326,8 +326,7 @@ Sheet name: TodoTrees
             breakOffText: str (optional, text in parent conversation that this task was broken off from),
             chatHistory: [{
                 text: str,
-                type: str (user/ai),
-                timestamp: str
+                type: str (user/ai)
             }],
             contextText: str (optional, large context text up to 1000 words),
             contextEmbedding: [float] (optional, OpenAI vector embedding for the context)

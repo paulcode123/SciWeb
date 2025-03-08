@@ -62,6 +62,22 @@
             </button>
         </div>
 
+        <!-- New Todos Window -->
+        <div class="swipe-window animated-window" id="todos-window">
+            <div class="window-header">
+                <h2>📝 New Todos</h2>
+                <div class="decoration-element sparkles"></div>
+            </div>
+            <div class="todos-list"></div>
+            <div class="add-todo-form">
+                <input type="text" id="new-todo-input" placeholder="Enter a new todo item..." class="todo-input">
+                <button class="add-btn" id="add-todo-btn">
+                    <span class="material-icons">add</span>
+                    Add Todo
+                </button>
+            </div>
+        </div>
+
         <!-- Motivation Window -->
         <div class="swipe-window animated-window" id="motivation-window">
             <div class="window-header">
@@ -81,6 +97,34 @@
             </div>
         </div>
 
+        <!-- Guarantee Window -->
+        <div class="swipe-window animated-window" id="guarantee-window">
+            <div class="guarantee-content">
+                <div class="guarantee-header">
+                    <h2 class="gradient-text">The SciWeb Guarantee</h2>
+                </div>
+                <div class="guarantee-main">
+                    <div class="guarantee-item score-guarantee">
+                        <span class="guarantee-number">96+</span>
+                        <span class="guarantee-text">in all STEM classes</span>
+                    </div>
+                    <div class="guarantee-separator">
+                        <span class="and-text">and</span>
+                    </div>
+                    <div class="guarantee-item ec-guarantee">
+                        <span class="guarantee-text">Stand-out</span>
+                        <span class="guarantee-emphasis">Extracurriculars</span>
+                    </div>
+                    <div class="guarantee-condition">
+                        <span class="with-daily">with daily use</span>
+                    </div>
+                </div>
+                <div class="guarantee-disclaimer">
+                    *This is not a guarantee. Results may vary. SciWeb makes no promises about academic performance or extracurricular achievements. Individual results depend on various factors including but not limited to personal effort, academic background, and dedication to using the platform. Use at your own discretion.
+                </div>
+            </div>
+        </div>
+
         <!-- TodoTree Tasks Window -->
         <div class="swipe-window animated-window" id="tasks-window">
             <div class="window-header">
@@ -88,6 +132,26 @@
                 <div class="decoration-element stars"></div>
             </div>
             <div class="tasks-list"></div>
+        </div>
+
+        <!-- Tasks for Today Window -->
+        <div class="swipe-window animated-window" id="today-tasks-window">
+            <div class="window-header">
+                <h2>📅 Tasks for Today</h2>
+                <div class="motivation-text">Let's knock these out today! 💪</div>
+                <div class="decoration-element stars"></div>
+            </div>
+            <div class="today-tasks-list"></div>
+        </div>
+
+        <!-- Reschedule Tasks Window -->
+        <div class="swipe-window animated-window" id="reschedule-window">
+            <div class="window-header">
+                <h2>🔄 Reschedule Tasks</h2>
+                <div class="motivation-text">Let's get back on track! 🎯</div>
+                <div class="decoration-element stars"></div>
+            </div>
+            <div class="reschedule-tasks-list"></div>
         </div>
 
         <!-- Templates for dynamic task slides -->
@@ -238,6 +302,55 @@
         <div class="message-meta">
             <span class="message-type"></span>
             <span class="message-time"></span>
+        </div>
+    </div>
+</template>
+
+<template id="todo-item-template">
+    <div class="todo-item">
+        <div class="todo-content">
+            <input type="checkbox" class="todo-checkbox">
+            <span class="todo-text"></span>
+        </div>
+        <button class="delete-todo-btn">
+            <span class="material-icons">delete</span>
+        </button>
+    </div>
+</template>
+
+<template id="today-task-template">
+    <div class="today-task-item">
+        <div class="task-content">
+            <div class="task-name"></div>
+            <div class="task-description"></div>
+            <div class="task-hierarchy"></div>
+        </div>
+        <div class="task-meta">
+            <div class="deadline-indicator">DEADLINE</div>
+        </div>
+    </div>
+</template>
+
+<template id="reschedule-task-template">
+    <div class="reschedule-task-item">
+        <div class="task-content">
+            <div class="task-name"></div>
+            <div class="task-description"></div>
+            <div class="task-hierarchy"></div>
+            <div class="task-dates">
+                <div class="original-target-date">
+                    <span class="date-label">Original Target:</span>
+                    <span class="date-value"></span>
+                </div>
+                <div class="date-input-group">
+                    <label>New Target Date:</label>
+                    <input type="date" class="new-target-date">
+                    <button class="reschedule-btn">
+                        <span class="material-icons">update</span>
+                        Reschedule
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </template>

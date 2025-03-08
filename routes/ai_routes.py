@@ -684,6 +684,7 @@ def derive_conversation():
         user_message = data['message']
         chat_history = data.get('chat_history', [])
         prerequisites_completed = data.get('prerequisites_completed', [])
+        desmos_state = data.get('desmos_state')  # Get Desmos state from request
         
         # Get response from derive_concept function
         result = derive_concept(
@@ -691,7 +692,8 @@ def derive_conversation():
             concept,
             user_message,
             chat_history,
-            prerequisites_completed
+            prerequisites_completed,
+            desmos_state  # Pass Desmos state to derive_concept
         )
         
         # If concept is derived, update UMaps

@@ -230,16 +230,36 @@ function onNodeDeselect() {
 }
 
 function updateNode() {
-    if (!selectedNode) return;
+    console.log('Update node called, selectedNode:', selectedNode);
+    
+    if (!selectedNode) {
+        console.warn('No node selected');
+        return;
+    }
+    
+    const labelInput = document.getElementById('nodeLabel');
+    const descriptionInput = document.getElementById('nodeDescription');
+    const promptInput = document.getElementById('starterPrompt');
+    
+    if (!labelInput || !descriptionInput || !promptInput) {
+        console.error('Required input elements not found:', {
+            labelInput: !!labelInput,
+            descriptionInput: !!descriptionInput,
+            promptInput: !!promptInput
+        });
+        return;
+    }
     
     const updatedNode = {
         ...selectedNode,
-        label: document.getElementById('nodeLabel').value,
-        description: document.getElementById('nodeDescription').value,
-        starterPrompt: document.getElementById('starterPrompt').value
+        label: labelInput.value,
+        description: descriptionInput.value,
+        starterPrompt: promptInput.value
     };
     
+    console.log('Updating node with:', updatedNode);
     nodes.update(updatedNode);
+    console.log('Node update complete');
 }
 
 function deleteNode() {

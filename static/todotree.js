@@ -73,26 +73,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to check and expand container if needed
     function checkAndExpandContainer() {
         let needsExpansion = false;
-        let expandRight = false;
-        let expandBottom = false;
-        let expandLeft = false;
-        let expandTop = false;
+        let expandRight = false, expandBottom = false, expandLeft = false, expandTop = false;
 
-        // Check active node position if dragging
         if (activeCircle) {
-            const rect = activeCircle.getBoundingClientRect();
-            const containerRect = container.getBoundingClientRect();
-            
-            // Calculate absolute position relative to container
             const absoluteX = parseFloat(activeCircle.style.left) || 0;
             const absoluteY = parseFloat(activeCircle.style.top) || 0;
+            const nodeType = activeCircle.getAttribute('data-type');
+            
+            // Adjust threshold based on node type
+            const nodeWidth = nodeType === 'Challenge' ? 300 : 120;
+            const nodeHeight = nodeType === 'Challenge' ? 100 : 120;
 
             // Check if too close to edges
-            if (containerWidth - absoluteX < EXPANSION_THRESHOLD + 120) { // Add node width
+            if (containerWidth - absoluteX < EXPANSION_THRESHOLD + nodeWidth) {
                 expandRight = true;
                 needsExpansion = true;
             }
-            if (containerHeight - absoluteY < EXPANSION_THRESHOLD + 120) { // Add node height
+            if (containerHeight - absoluteY < EXPANSION_THRESHOLD + nodeHeight) {
                 expandBottom = true;
                 needsExpansion = true;
             }
@@ -321,47 +318,55 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function drawEdges() {
+        const canvas = document.getElementById('edgeCanvas');
+        const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         edges.forEach(edge => {
-            const fromNode = document.querySelector(`.circle[data-id="${edge.from}"]`);
-            const toNode = document.querySelector(`.circle[data-id="${edge.to}"]`);
-            
+            const fromNode = document.querySelector(`[data-id="${edge.from}"]`);
+            const toNode = document.querySelector(`[data-id="${edge.to}"]`);
+
             if (fromNode && toNode) {
-                const fromRect = fromNode.getBoundingClientRect();
-                const toRect = toNode.getBoundingClientRect();
-                const containerRect = container.getBoundingClientRect();
+                const fromType = fromNode.getAttribute('data-type');
+                const toType = toNode.getAttribute('data-type');
+                
+                // Calculate dimensions based on node types
+                const fromWidth = fromType === 'Challenge' ? 300 : 120;
+                const fromHeight = fromType === 'Challenge' ? 100 : 120;
+                const toWidth = toType === 'Challenge' ? 300 : 120;
+                const toHeight = toType === 'Challenge' ? 100 : 120;
 
-                const fromX = fromRect.left - containerRect.left + fromRect.width/2 + container.scrollLeft;
-                const fromY = fromRect.top - containerRect.top + fromRect.height/2 + container.scrollTop;
-                const toX = toRect.left - containerRect.left + toRect.width/2 + container.scrollLeft;
-                const toY = toRect.top - containerRect.top + toRect.height/2 + container.scrollTop;
+                const fromX = parseFloat(fromNode.style.left) + fromWidth / 2;
+                const fromY = parseFloat(fromNode.style.top) + fromHeight / 2;
+                const toX = parseFloat(toNode.style.left) + toWidth / 2;
+                const toY = parseFloat(toNode.style.top) + toHeight / 2;
 
-                if (isDeleteMode && hoveredEdge && 
-                    hoveredEdge.from === edge.from && 
-                    hoveredEdge.to === edge.to) {
-                    ctx.strokeStyle = '#ff4444';
-                    ctx.lineWidth = 3;
-                } else {
-                    ctx.strokeStyle = '#ffffff';
-                    ctx.lineWidth = 2;
-                }
-
+                // Draw the edge
                 ctx.beginPath();
                 ctx.moveTo(fromX, fromY);
                 ctx.lineTo(toX, toY);
+                ctx.strokeStyle = '#4a5568';
+                ctx.lineWidth = 2;
                 ctx.stroke();
 
-                // Draw grade goal indicator if node has one
-                if (fromNode.dataset.gradeGoalClass) {
-                    const centerX = fromX;
-                    const centerY = fromY - fromRect.height/2 - 10;
-                    
-                    ctx.fillStyle = '#4CAF50';
-                    ctx.beginPath();
-                    ctx.arc(centerX, centerY, 5, 0, Math.PI * 2);
-                    ctx.fill();
-                }
+                // Draw arrow
+                const angle = Math.atan2(toY - fromY, toX - fromX);
+                const arrowLength = 10;
+                const arrowWidth = 8;
+
+                ctx.beginPath();
+                ctx.moveTo(toX, toY);
+                ctx.lineTo(
+                    toX - arrowLength * Math.cos(angle) + arrowWidth * Math.sin(angle),
+                    toY - arrowLength * Math.sin(angle) - arrowWidth * Math.cos(angle)
+                );
+                ctx.lineTo(
+                    toX - arrowLength * Math.cos(angle) - arrowWidth * Math.sin(angle),
+                    toY - arrowLength * Math.sin(angle) + arrowWidth * Math.cos(angle)
+                );
+                ctx.closePath();
+                ctx.fillStyle = '#4a5568';
+                ctx.fill();
             }
         });
     }
@@ -1028,12 +1033,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Initialize toggle state
         const semanticToggle = document.getElementById('semanticToggle');
-        let useSemanticContext = false;
+        const useSemanticContext = {
+            value: false
+        };
 
         // Add toggle functionality
         semanticToggle.addEventListener('click', () => {
-            useSemanticContext = !useSemanticContext;
-            semanticToggle.classList.toggle('active', useSemanticContext);
+            useSemanticContext.value = !useSemanticContext.value;
+            semanticToggle.classList.toggle('active', useSemanticContext.value);
+            console.log('Semantic context ' + (useSemanticContext.value ? 'enabled' : 'disabled'));
         });
 
         async function sendMessage() {
@@ -1042,6 +1050,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!message) return;
 
             input.value = '';
+            input.style.height = 'auto';
 
             // Add user message to chat
             addChatMessage(message, 'user');
@@ -1050,10 +1059,19 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 let response;
                 
-                if (useSemanticContext) {
+                if (useSemanticContext.value) {
                     // Get current node and its parent hierarchy
                     const currentNode = editingNode;
                     const parentNodes = findParentHierarchy(currentNode.dataset.id);
+                    
+                    // Get last 4 messages from chat history
+                    const chatHistory = JSON.parse(editingNode.dataset.chatHistory || '[]');
+                    const recentMessages = chatHistory.slice(-4).map(msg => ({
+                        role: msg.role,
+                        content: msg.content
+                    }));
+                    
+                    console.log('Using chat history:', recentMessages);
                     
                     console.log('Current node:', {
                         id: currentNode.dataset.id,
@@ -1089,15 +1107,23 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     });
 
-                    // Filter out any null embeddings
-                    const validEmbeddings = nodeEmbeddings.filter(ne => ne.embedding !== null);
+                    // Filter out any null embeddings and optimize data sent
+                    const validEmbeddings = nodeEmbeddings
+                        .filter(ne => ne.embedding !== null)
+                        .map(ne => ({
+                            node_id: ne.node_id,
+                            embedding: ne.embedding,
+                            context: ne.context,
+                            title: document.querySelector(`.circle[data-id="${ne.node_id}"]`)?.querySelector('span')?.textContent || ''
+                        }));
+
                     console.log('Valid embeddings found:', validEmbeddings.length);
 
                     if (validEmbeddings.length > 0) {
-                        // Use embeddings route
+                        // Use embeddings route with chat history
                         console.log('Using /AI_embeddings route with', validEmbeddings.length, 'embeddings');
                         const data = await fetchRequest('/AI_embeddings', {
-                            messages: [{
+                            messages: [...recentMessages, {
                                 role: 'user',
                                 content: message
                             }],
@@ -1105,10 +1131,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                         response = data.response;
                     } else {
-                        // Fallback to regular AI if no valid embeddings
-                        console.log('No valid embeddings found, falling back to /AI route');
+                        // Use regular AI route with chat history
+                        console.log('Semantic context disabled, using /AI route');
+                        const chatHistory = JSON.parse(editingNode.dataset.chatHistory || '[]');
+                        const recentMessages = chatHistory.slice(-4).map(msg => ({
+                            role: msg.role,
+                            content: msg.content
+                        }));
+                        
+                        console.log('Using chat history:', recentMessages);
+                        
                         const data = await fetchRequest('/AI', {
-                            data: [{
+                            messages: [...recentMessages, {
                                 role: 'user',
                                 content: message
                             }]
@@ -1118,8 +1152,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     // Use regular AI route
                     console.log('Semantic context disabled, using /AI route');
+                    const chatHistory = JSON.parse(editingNode.dataset.chatHistory || '[]');
+                    const recentMessages = chatHistory.slice(-4).map(msg => ({
+                        role: msg.type === 'user' ? 'user' : 'assistant',
+                        content: msg.text
+                    }));
+                    
                     const data = await fetchRequest('/AI', {
-                        data: [{
+                        data: [...recentMessages, {
                             role: 'user',
                             content: message
                         }]
@@ -1137,8 +1177,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 const chatHistory = JSON.parse(editingNode.dataset.chatHistory);
                 chatHistory.push(
-                    { role: 'user', content: message },
-                    { role: 'assistant', content: response }
+                    { text: message, type: 'user' },
+                    { text: response, type: 'ai' }
                 );
                 editingNode.dataset.chatHistory = JSON.stringify(chatHistory);
                 
@@ -1170,15 +1210,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function addChatMessage(text, type) {
         const chatHistory = document.getElementById('chatHistory');
-        const template = document.getElementById(type === 'user' ? 'userMessageTemplate' : 'aiMessageTemplate');
+        // Ensure type is either 'user' or 'ai'
+        const messageType = (type === 'user' || type === 'assistant' || type === 'ai') ? 
+            (type === 'user' ? 'user' : 'ai') : 'ai';
+        
+        const template = document.getElementById(messageType === 'user' ? 'userMessageTemplate' : 'aiMessageTemplate');
         const clone = template.content.cloneNode(true);
         const messageText = clone.querySelector('.message-text');
 
         // Handle both message formats (old format used content, new format uses text)
-        const messageContent = typeof text === 'object' ? text.content : text;
+        const messageContent = typeof text === 'object' ? text.content || text.text : text;
 
         // Process markdown-style formatting in AI messages
-        if (type === 'ai') {
+        if (messageType === 'ai') {
             // Find all child nodes that were broken off from this text
             const childNodes = Array.from(document.querySelectorAll('.circle')).filter(node => {
                 const breakOffText = node.dataset.breakOffText;
@@ -1234,7 +1278,7 @@ document.addEventListener('DOMContentLoaded', function() {
         clone.querySelector('.message-time').textContent = new Date().toLocaleTimeString();
 
         // Add selection handling for AI messages
-        if (type === 'ai') {
+        if (messageType === 'ai') {
             messageText.addEventListener('mouseup', handleAIMessageSelection);
             messageText.addEventListener('mousedown', () => {
                 // Remove any existing break task buttons when starting a new selection
@@ -1527,7 +1571,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const chatHistory = Array.isArray(nodeData.chatHistory) ? nodeData.chatHistory : [];
                     circle.dataset.chatHistory = JSON.stringify(chatHistory.map(msg => ({
                         text: msg.content || msg.text,
-                        type: msg.role === 'user' ? 'user' : 'ai'
+                        type: msg.role === 'user' || msg.type === 'user' ? 'user' : 'ai'
                     })));
                 }
                 if (nodeData.contextText) circle.dataset.contextText = nodeData.contextText;
@@ -2013,6 +2057,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const addGradeGoalBtn = document.getElementById('addGradeGoalBtn');
         const gradeGoalForm = document.getElementById('gradeGoalForm');
         const gradeGoalClass = document.getElementById('gradeGoalClass');
+        const dateNotificationSection = document.getElementById('dateNotificationSection');
+        
+        // Show/hide date notification section based on type
+        if (type !== 'Motivator') {
+            dateNotificationSection.classList.add('show');
+        } else {
+            dateNotificationSection.classList.remove('show');
+        }
         
         if (type === 'Goal') {
             gradeGoalSection.classList.add('show');
@@ -2269,6 +2321,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             updateEmbeddingStatus('pending');
             
+            // Only send essential data for embedding generation
             const response = await fetch('/generate_embedding', {
                 method: 'POST',
                 headers: {
@@ -2292,9 +2345,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Store embeddings in node's dataset
             const node = document.querySelector(`.circle[data-id="${nodeId}"]`);
             if (node) {
-                node.dataset.embedding = JSON.stringify(data.embedding);
+                node.dataset.contextEmbedding = JSON.stringify(data.embedding);
                 node.dataset.contextText = contextText;
-                // Trigger save to persist embeddings
                 scheduleAutoSave();
             }
             
