@@ -19,6 +19,8 @@
         rgba(25, 118, 210, 0.2),
         rgba(33, 150, 243, 0.3)
     );
+    --panel-bg: rgba(30, 30, 30, 0.6);
+    --panel-border: 1px solid rgba(124, 77, 255, 0.2);
 }
 
 body {
@@ -31,6 +33,8 @@ body {
     background-size: 200% 200%;
     background-position: 0% 0%;
     animation: gradientShift 15s ease-in-out infinite;
+    color: var(--text-color);
+    line-height: 1.6;
 }
 
 @keyframes gradientShift {
@@ -1145,4 +1149,145 @@ input[type="date"] {
     right: 5%;
     font-size: 3em;
     animation-delay: -5s;
+}
+
+/* Tutor Availability Section */
+.availability-panel {
+    background: var(--panel-bg);
+    padding: 15px;
+    border-radius: 10px;
+    border: var(--panel-border);
+}
+
+.weekday-buttons {
+    display: flex;
+    gap: 8px;
+    margin: 10px 0;
+}
+
+.day-btn {
+    padding: 6px 12px;
+    border: 1px solid rgba(124, 77, 255, 0.2);
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--text-color);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.day-btn.selected {
+    background: var(--primary-color);
+    border-color: var(--secondary-color);
+}
+
+.time-slots {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+}
+
+.time-slot {
+    padding: 6px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8em;
+}
+
+.time-slot.selected {
+    background: var(--primary-color);
+    color: white;
+}
+
+.subjects-panel,
+.schedule-panel {
+    background: var(--panel-bg);
+    padding: 15px;
+    border-radius: 10px;
+    border: var(--panel-border);
+}
+
+.subject-checkboxes {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+}
+
+.subject-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px;
+    cursor: pointer;
+}
+
+/* Buttons */
+.primary-btn,
+.secondary-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9em;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.primary-btn {
+    background: var(--gradient-primary);
+    color: white;
+}
+
+.secondary-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-color);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Notifications */
+.notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    font-size: 0.9em;
+    z-index: 1000;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .tutor-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 3px;
 } 

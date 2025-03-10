@@ -12,93 +12,78 @@
 {% block content %}
 <!-- Floating Background Icons -->
 <i class="fas fa-pencil-alt floating-icon"></i>
-<i class="fas fa-laptop-code floating-icon"></i>
 <i class="fas fa-book floating-icon"></i>
-<i class="fas fa-calculator floating-icon"></i>
 <i class="fas fa-graduation-cap floating-icon"></i>
-<i class="fas fa-brain floating-icon"></i>
 
 <!-- Role Selection Screen -->
 <div class="role-selection" id="role-selection">
     <h2><i class="fas fa-chalkboard-teacher"></i> Tutoring Portal</h2>
-    <p class="selection-description">Welcome to the SciWeb Tutoring System. Please select your role:</p>
-    
     <div class="role-cards">
         <div class="role-card" onclick="selectRole('student')">
-            <div class="role-icon">
-                <i class="fas fa-user-graduate"></i>
-            </div>
+            <div class="role-icon"><i class="fas fa-user-graduate"></i></div>
             <h3>Request Tutoring</h3>
-            <p>Get help from NHS tutors in your subjects</p>
             <ul class="role-features">
                 <li><i class="fas fa-check"></i> Schedule one-on-one sessions</li>
                 <li><i class="fas fa-check"></i> Choose your preferred subjects</li>
-                <li><i class="fas fa-check"></i> Flexible timing options</li>
             </ul>
             <button class="select-role-btn">Get Started</button>
         </div>
 
         <div class="role-card" onclick="selectRole('tutor')">
-            <div class="role-icon">
-                <i class="fas fa-user-tie"></i>
-            </div>
+            <div class="role-icon"><i class="fas fa-user-tie"></i></div>
             <h3>I'm a Tutor</h3>
-            <p>NHS members can help fellow students</p>
             <ul class="role-features">
                 <li><i class="fas fa-check"></i> Set your availability</li>
                 <li><i class="fas fa-check"></i> Choose subjects to tutor</li>
-                <li><i class="fas fa-check"></i> Track your tutoring hours</li>
             </ul>
             <button class="select-role-btn">Start Tutoring</button>
         </div>
     </div>
 </div>
 
-<!-- Main Tutoring Container (Initially Hidden) -->
+<!-- Main Tutoring Container -->
 <div class="tutoring-container" id="tutoring-container" style="display: none;">
     <!-- Student Request Section -->
     <section class="request-section" id="student-section" style="display: none;">
         <h2><i class="fas fa-chalkboard-teacher"></i> Request Tutoring</h2>
-        <form id="tutoring-request-form">
-            <div class="form-group">
-                <label for="subject"><i class="fas fa-book"></i> Subject</label>
-                <select id="subject" name="subject" required>
-                    <option value="" disabled selected>Select a class</option>
-                </select>
+        <form id="tutoring-request-form" class="compact-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="subject"><i class="fas fa-book"></i> Subject</label>
+                    <select id="subject" name="subject" required>
+                        <option value="" disabled selected>Select a class</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="topic"><i class="fas fa-tag"></i> Topic</label>
+                    <input type="text" id="topic" name="topic" required placeholder="e.g., Derivatives">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="preferred-date"><i class="fas fa-calendar"></i> Date</label>
+                    <input type="date" id="preferred-date" name="preferred-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="preferred-time"><i class="fas fa-clock"></i> Time</label>
+                    <input type="time" id="preferred-time" name="preferred-time" required>
+                </div>
+                <div class="form-group">
+                    <label for="duration"><i class="fas fa-hourglass-half"></i> Duration</label>
+                    <select id="duration" name="duration" required>
+                        <option value="30">30 min</option>
+                        <option value="45">45 min</option>
+                        <option value="60" selected>1 hour</option>
+                        <option value="90">1.5 hours</option>
+                    </select>
+                </div>
             </div>
 
             <div class="form-group">
-                <label for="topic"><i class="fas fa-tag"></i> Specific Topic</label>
-                <input type="text" id="topic" name="topic" required 
-                    placeholder="e.g., Calculus - Derivatives">
-            </div>
-
-            <div class="form-group">
-                <label for="preferred-date"><i class="fas fa-calendar"></i> Preferred Date</label>
-                <input type="date" id="preferred-date" name="preferred-date" required>
-            </div>
-
-            <div class="form-group">
-                <label for="preferred-time"><i class="fas fa-clock"></i> Preferred Time</label>
-                <input type="time" id="preferred-time" name="preferred-time" required>
-                <small class="form-text">Available hours: 8:00 AM - 6:00 PM</small>
-            </div>
-
-            <div class="form-group">
-                <label for="duration"><i class="fas fa-hourglass-half"></i> Duration (minutes)</label>
-                <select id="duration" name="duration" required>
-                    <option value="30">30 minutes</option>
-                    <option value="45">45 minutes</option>
-                    <option value="60" selected>1 hour</option>
-                    <option value="90">1.5 hours</option>
-                    <option value="120">2 hours</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="description"><i class="fas fa-align-left"></i> Description of Help Needed</label>
-                <textarea id="description" name="description" rows="4" required 
-                    placeholder="Please describe what you need help with and any specific questions you have..."></textarea>
+                <label for="description"><i class="fas fa-align-left"></i> Description</label>
+                <textarea id="description" name="description" rows="3" required 
+                    placeholder="Describe what you need help with..."></textarea>
             </div>
 
             <button type="submit" class="primary-btn">
@@ -109,11 +94,22 @@
 
     <!-- Tutor Section -->
     <section class="tutor-section" id="tutor-section" style="display: none;">
-        <h2><i class="fas fa-user-clock"></i> Set Your Tutoring Availability</h2>
-        <div class="availability-grid">
-            <div class="weekday-selector">
-                <div class="form-group">
-                    <label><i class="fas fa-calendar-week"></i> Select Days</label>
+        <div class="tutor-header">
+            <h2><i class="fas fa-user-clock"></i> Tutoring Dashboard</h2>
+            <div class="tutor-actions">
+                <button type="button" class="primary-btn" id="saveAvailability">
+                    <i class="fas fa-save"></i> Save
+                </button>
+                <button type="button" class="secondary-btn" id="clearAvailability">
+                    <i class="fas fa-trash-alt"></i> Clear
+                </button>
+            </div>
+        </div>
+
+        <div class="tutor-grid">
+            <div class="availability-panel">
+                <div class="weekday-selector">
+                    <label><i class="fas fa-calendar-week"></i> Available Days</label>
                     <div class="weekday-buttons">
                         <button type="button" class="day-btn" data-day="monday">Mon</button>
                         <button type="button" class="day-btn" data-day="tuesday">Tue</button>
@@ -122,45 +118,27 @@
                         <button type="button" class="day-btn" data-day="friday">Fri</button>
                     </div>
                 </div>
-            </div>
 
-            <div class="time-selector">
-                <div class="form-group">
-                    <label><i class="fas fa-clock"></i> Available Times</label>
+                <div class="time-selector">
+                    <label><i class="fas fa-clock"></i> Time Slots</label>
                     <div class="time-slots">
                         <!-- Time slots will be populated by JavaScript -->
                     </div>
                 </div>
             </div>
 
-            <div class="subjects-selector">
-                <div class="form-group">
-                    <label><i class="fas fa-book"></i> Subjects You Can Tutor</label>
-                    <div class="subject-checkboxes">
-                        <!-- Will be populated with user's classes -->
-                    </div>
+            <div class="subjects-panel">
+                <label><i class="fas fa-book"></i> Subjects</label>
+                <div class="subject-checkboxes">
+                    <!-- Will be populated with user's classes -->
                 </div>
             </div>
-        </div>
 
-        <div class="availability-actions">
-            <button type="button" class="primary-btn" id="saveAvailability">
-                <i class="fas fa-save"></i> Save Availability
-            </button>
-            <button type="button" class="secondary-btn" id="clearAvailability">
-                <i class="fas fa-trash-alt"></i> Clear All
-            </button>
-            <button type="button" class="refresh-btn" id="refreshAvailability">
-                <i class="fas fa-sync-alt"></i>
-                <span class="glow-effect"></span>
-            </button>
-        </div>
-
-        <!-- Current Schedule Display -->
-        <div class="current-schedule">
-            <h3><i class="fas fa-calendar-alt"></i> Your Current Schedule</h3>
-            <div class="schedule-grid">
-                <!-- Will be populated with current availability -->
+            <div class="schedule-panel">
+                <label><i class="fas fa-calendar-alt"></i> Current Schedule</label>
+                <div class="schedule-grid">
+                    <!-- Will be populated with current availability -->
+                </div>
             </div>
         </div>
     </section>

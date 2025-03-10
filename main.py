@@ -41,10 +41,15 @@ def init():
 
   vars['DISCOVERY_SERVICE_URL'] = 'https://sheets.googleapis.com/$discovery/rest?version=v4'
 
-  vars['service'] = build('sheets',
-                  'v4',
-                  developerKey=vars['gSheet_api_key'],
-  discoveryServiceUrl=vars['DISCOVERY_SERVICE_URL'])
+  try:
+      vars['service'] = build('sheets',
+                      'v4',
+                      developerKey=vars['gSheet_api_key'],
+                      discoveryServiceUrl=vars['DISCOVERY_SERVICE_URL'])
+  except Exception as e:
+      print(f"Warning: Failed to initialize Google Sheets API: {e}")
+      # Fallback to None - application should handle this gracefully
+      vars['service'] = None
   vars['max_column'] = "O"
   vars['AppSecretKey'] = keys["AppSecretKey"]
   # firebase or gsheet
@@ -57,13 +62,13 @@ def init():
   vars['llm'] = ChatOpenAI(
       api_key=vars['openAIAPI'],
       temperature=0.7,
-      model_name="gpt-4o-mini"
+      model_name="gpt-4"
   )
 
   vars['vision_llm'] = ChatOpenAI(
       api_key=vars['openAIAPI'],
       temperature=0.7,
-      model_name="gpt-4o"
+      model_name="gpt-4"
   )
   
   # Initialize memory for different conversation contexts

@@ -176,6 +176,7 @@ def todo_list():
     return render_template('TodoList.html')
 
 @page_init.route('/Tutoring')
+@login_required
 def tutoring():
     return render_template('tutoring.html')
 
