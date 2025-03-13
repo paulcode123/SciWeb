@@ -168,16 +168,83 @@ async function initializeTutoring() {
 }
 
 function initializeTutorSection() {
-    const tutorSection = document.getElementById('tutorSection');
-    if (tutorSection) {
-        tutorSection.style.display = 'block';
-        initializeTimeSlots();
-        initializeDayButtons();
-        loadSavedAvailability();
+    const tutorSection = document.getElementById('tutor-section');
+    if (!tutorSection) {
+        console.error('Tutor section not found');
+        return;
+    }
+
+    // Initialize availability section
+    initializeAvailabilitySection();
+    
+    // Load tutor stats
+    loadTutorStats();
+    
+    // Load active tutoring requests
+    loadTutoringRequests();
+
+    // Add event listeners for availability actions
+    const saveBtn = document.getElementById('saveAvailability');
+    const clearBtn = document.getElementById('clearAvailability');
+    
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveAvailability);
+    }
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearAvailability);
+    }
+}
+
+function initializeAvailabilitySection() {
+    const availabilityPanel = document.querySelector('.availability-panel');
+    if (!availabilityPanel) return;
+
+    // Initialize time slots
+    initializeTimeSlots();
+    
+    // Initialize day buttons
+    initializeDayButtons();
+    
+    // Load saved availability
+    loadSavedAvailability();
+    
+    // Initialize subjects panel
+    initializeSubjectsPanel();
+}
+
+async function initializeSubjectsPanel() {
+    try {
+        const userData = await fetchRequest('/data', { data: 'Name' });
+        const userClasses = await ClassDataManager.fetchUserClasses(userData.Name.osis.toString());
+        const subjects = ClassDataManager.getUniqueSubjects(userClasses);
         
-        // Add event listeners for availability actions
-        document.getElementById('saveAvailability').addEventListener('click', saveAvailability);
-        document.getElementById('clearAvailability').addEventListener('click', clearAvailability);
+        const subjectCheckboxes = document.querySelector('.subject-checkboxes');
+        if (!subjectCheckboxes) return;
+
+        subjectCheckboxes.innerHTML = '';
+        subjects.forEach(subject => {
+            const checkbox = document.createElement('label');
+            checkbox.className = 'subject-checkbox';
+            checkbox.innerHTML = `
+                <input type="checkbox" value="${subject.value}">
+                <span>${subject.name}</span>
+            `;
+            
+            const input = checkbox.querySelector('input');
+            input.checked = selectedSubjects.has(subject.value);
+            input.addEventListener('change', () => {
+                if (input.checked) {
+                    selectedSubjects.add(subject.value);
+                } else {
+                    selectedSubjects.delete(subject.value);
+                }
+            });
+            
+            subjectCheckboxes.appendChild(checkbox);
+        });
+    } catch (error) {
+        console.error('Error initializing subjects panel:', error);
+        showNotification('Error loading subjects', 'error');
     }
 }
 
@@ -388,14 +455,27 @@ async function loadTutorStats() {
             fetchRequest('/data', { data: 'TutorRatings' })
         ]);
 
-        const userSessions = sessions.TutoringSessions.filter(session => session.tutorOSIS === osis);
-        const userRatings = ratings.TutorRatings.filter(rating => rating.tutorOSIS === osis);
+        const userData = await fetchRequest('/data', { data: 'Name' });
+        const userOsis = userData.Name.osis.toString();
 
-        tutorStats.completedSessions = userSessions.filter(session => session.status === 'completed').length;
-        tutorStats.upcomingSessions = userSessions.filter(session => session.status === 'scheduled').length;
+        const userSessions = sessions.TutoringSessions.filter(session => 
+            session.tutorOSIS === userOsis
+        );
+        const userRatings = ratings.TutorRatings.filter(rating => 
+            rating.tutorOSIS === userOsis
+        );
+
+        // Update tutor stats
+        tutorStats.completedSessions = userSessions.filter(session => 
+            session.status === 'completed'
+        ).length;
+        tutorStats.upcomingSessions = userSessions.filter(session => 
+            session.status === 'scheduled'
+        ).length;
         tutorStats.totalHours = calculateTotalHours(userSessions);
         tutorStats.averageRating = calculateAverageRating(userRatings);
 
+        // Display stats
         updateStatsDisplay();
     } catch (error) {
         console.error('Error loading tutor stats:', error);
@@ -804,80 +884,71 @@ function closeModal() {
 
 async function loadClassData() {
     try {
-        const userClasses = await ClassDataManager.fetchUserClasses(osis);
-        const subjectSelect = document.getElementById('subject');
-        const subjectCheckboxes = document.querySelector('.subject-checkboxes');
+        // Get user's OSIS from the session
+        const userData = await fetchRequest('/data', { data: 'Name' });
+        const userOsis = userData.Name.osis.toString();
         
-        // Clear existing options and checkboxes
+        // Fetch user's classes
+        const userClasses = await ClassDataManager.fetchUserClasses(userOsis);
+        const subjectSelect = document.getElementById('subject');
+        
+        if (!subjectSelect) {
+            console.error('Subject select element not found');
+            return;
+        }
+
+        // Clear existing options except the default one
         while (subjectSelect.options.length > 1) {
             subjectSelect.remove(1);
         }
-        if (subjectCheckboxes) {
-            subjectCheckboxes.innerHTML = '';
-        }
 
         // Group classes by subject
-        const subjectGroups = {};
+        const subjectGroups = {
+            'Mathematics': [],
+            'Physics': [],
+            'Chemistry': [],
+            'Biology': [],
+            'Computer Science': []
+        };
+
         userClasses.forEach(cls => {
             const className = cls.name.toLowerCase();
             if (className.includes('math')) {
-                if (!subjectGroups.mathematics) subjectGroups.mathematics = [];
-                subjectGroups.mathematics.push(cls);
+                subjectGroups['Mathematics'].push(cls);
             } else if (className.includes('physics')) {
-                if (!subjectGroups.physics) subjectGroups.physics = [];
-                subjectGroups.physics.push(cls);
+                subjectGroups['Physics'].push(cls);
             } else if (className.includes('chemistry')) {
-                if (!subjectGroups.chemistry) subjectGroups.chemistry = [];
-                subjectGroups.chemistry.push(cls);
+                subjectGroups['Chemistry'].push(cls);
             } else if (className.includes('biology')) {
-                if (!subjectGroups.biology) subjectGroups.biology = [];
-                subjectGroups.biology.push(cls);
+                subjectGroups['Biology'].push(cls);
             } else if (className.includes('computer')) {
-                if (!subjectGroups['computer-science']) subjectGroups['computer-science'] = [];
-                subjectGroups['computer-science'].push(cls);
+                subjectGroups['Computer Science'].push(cls);
             }
         });
 
-        // Create option groups and checkboxes for each subject
+        // Create option groups for each subject
         Object.entries(subjectGroups).forEach(([subject, classes]) => {
-            // Create option group for request form
-            const optgroup = document.createElement('optgroup');
-            optgroup.label = subject.charAt(0).toUpperCase() + subject.slice(1).replace('-', ' ');
-            
-            classes.forEach(cls => {
-                // Add option to request form
-                const option = document.createElement('option');
-                option.value = `${subject}:${cls.id}`;
-                option.textContent = cls.name;
-                optgroup.appendChild(option);
-
-                // Add checkbox to tutor availability section
-                if (subjectCheckboxes) {
-                    const checkbox = document.createElement('label');
-                    checkbox.className = 'subject-checkbox';
-                    checkbox.innerHTML = `
-                        <input type="checkbox" value="${cls.id}">
-                        <span>${cls.name}</span>
-                    `;
-                    checkbox.querySelector('input').addEventListener('change', (e) => {
-                        if (e.target.checked) {
-                            selectedSubjects.add(cls.id);
-                        } else {
-                            selectedSubjects.delete(cls.id);
-                        }
-                    });
-                    subjectCheckboxes.appendChild(checkbox);
-                }
-            });
-
-            subjectSelect.appendChild(optgroup);
+            if (classes.length > 0) {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = subject;
+                
+                classes.forEach(cls => {
+                    const option = document.createElement('option');
+                    option.value = cls.id;
+                    option.textContent = `${cls.name} - Period ${cls.period}`;
+                    optgroup.appendChild(option);
+                });
+                
+                subjectSelect.appendChild(optgroup);
+            }
         });
 
-        // Update topic suggestions based on selected class
+        // Add event listener for subject change
         subjectSelect.addEventListener('change', (e) => {
-            const [subject, classId] = e.target.value.split(':');
-            const selectedClass = userClasses.find(cls => cls.id === classId);
-            updateTopicSuggestions(subject, selectedClass);
+            const selectedClass = userClasses.find(cls => cls.id === e.target.value);
+            if (selectedClass) {
+                updateTopicSuggestions(selectedClass);
+            }
         });
 
     } catch (error) {
@@ -886,42 +957,44 @@ async function loadClassData() {
     }
 }
 
-function updateTopicSuggestions(subject, classData) {
+function updateTopicSuggestions(classData) {
     const topicInput = document.getElementById('topic');
-    const topicsBySubject = {
-        mathematics: ['Algebra', 'Geometry', 'Calculus - Derivatives', 'Calculus - Integrals', 'Statistics', 'Trigonometry'],
-        physics: ['Mechanics', 'Electricity & Magnetism', 'Waves & Optics', 'Thermodynamics', 'Modern Physics'],
-        chemistry: ['Organic Chemistry', 'Inorganic Chemistry', 'Physical Chemistry', 'Biochemistry'],
-        biology: ['Cell Biology', 'Genetics', 'Ecology', 'Evolution', 'Physiology'],
-        'computer-science': ['Programming Basics', 'Data Structures', 'Algorithms', 'Web Development', 'Database Design']
-    };
-
-    // Create or update datalist
-    let datalist = document.getElementById('topic-suggestions');
-    if (!datalist) {
-        datalist = document.createElement('datalist');
-        datalist.id = 'topic-suggestions';
-        document.body.appendChild(datalist);
-    }
+    const datalist = document.getElementById('topic-suggestions') || document.createElement('datalist');
+    datalist.id = 'topic-suggestions';
     datalist.innerHTML = '';
 
-    // Add subject-specific topics
-    const topics = topicsBySubject[subject] || [];
-    topics.forEach(topic => {
-        const option = document.createElement('option');
-        option.value = `${classData.name} - ${topic}`;
-        datalist.appendChild(option);
-    });
-
-    // Add class categories if available
+    // Add class-specific topics
     if (classData.categories) {
         const categories = ClassDataManager.getClassCategories(classData);
         categories.forEach(category => {
             const option = document.createElement('option');
-            option.value = `${classData.name} - ${category}`;
+            option.value = category;
             datalist.appendChild(option);
         });
     }
 
+    // Add general subject topics based on class name
+    const className = classData.name.toLowerCase();
+    let generalTopics = [];
+
+    if (className.includes('math')) {
+        generalTopics = ['Algebra', 'Geometry', 'Trigonometry', 'Calculus', 'Statistics', 'Probability'];
+    } else if (className.includes('physics')) {
+        generalTopics = ['Mechanics', 'Kinematics', 'Forces', 'Energy', 'Waves', 'Electricity', 'Magnetism'];
+    } else if (className.includes('chemistry')) {
+        generalTopics = ['Chemical Reactions', 'Stoichiometry', 'Atomic Structure', 'Periodic Table', 'Solutions', 'Acids and Bases'];
+    } else if (className.includes('biology')) {
+        generalTopics = ['Cell Biology', 'Genetics', 'Evolution', 'Ecology', 'Human Body Systems', 'Molecular Biology'];
+    } else if (className.includes('computer')) {
+        generalTopics = ['Programming Basics', 'Data Structures', 'Algorithms', 'Web Development', 'Databases'];
+    }
+
+    generalTopics.forEach(topic => {
+        const option = document.createElement('option');
+        option.value = topic;
+        datalist.appendChild(option);
+    });
+
+    document.body.appendChild(datalist);
     topicInput.setAttribute('list', 'topic-suggestions');
 } 

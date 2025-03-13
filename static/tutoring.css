@@ -45,25 +45,310 @@ body {
 }
 
 .tutoring-container {
-    padding: 30px;
-    max-width: 1400px;
+    max-width: 1200px;
     margin: 0 auto;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
-    min-height: calc(100vh - 60px);
-    background: rgba(18, 18, 18, 0.7);
-    border-radius: 20px;
-    backdrop-filter: blur(10px);
-    position: relative;
-    overflow: hidden;
-    border: 1px solid rgba(33, 150, 243, 0.3);
-    box-shadow: 
-        0 0 20px rgba(33, 150, 243, 0.2),
-        0 0 60px rgba(33, 150, 243, 0.1),
-        inset 0 0 20px rgba(33, 150, 243, 0.2);
+    padding: 2rem;
 }
 
+/* Role Selection */
+.role-selection {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.role-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.role-btn {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 8px;
+    background: var(--primary-color);
+    color: white;
+    cursor: pointer;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.role-btn:hover {
+    transform: translateY(-2px);
+    background: var(--primary-color-dark);
+}
+
+/* Student Section */
+#student-section {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+.form-group select,
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--input-bg);
+    color: var(--text-color);
+}
+
+.form-group textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.suggestions {
+    position: absolute;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-top: 4px;
+    display: none;
+}
+
+/* Tutor Section */
+.tutor-dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+/* Stats Panel */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.stat-card {
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--text-color-light);
+}
+
+/* Availability Panel */
+.availability-panel {
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 12px;
+}
+
+.day-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.day-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+.day-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.time-slots {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.time-slot {
+    padding: 0.5rem;
+    text-align: center;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.time-slot.selected {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.subject-selection {
+    margin-top: 1.5rem;
+}
+
+.subject-checkboxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.subject-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.availability-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.action-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#saveAvailability {
+    background: var(--success-color);
+    color: white;
+}
+
+#clearAvailability {
+    background: var(--danger-color);
+    color: white;
+}
+
+/* Requests Panel */
+.requests-panel {
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 12px;
+}
+
+.requests-grid {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.request-card {
+    background: var(--bg-color);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.request-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.request-subject {
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.request-time {
+    font-size: 0.9rem;
+    color: var(--text-color-light);
+}
+
+.request-description {
+    margin: 0.5rem 0;
+}
+
+.request-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.request-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.accept-btn {
+    background: var(--success-color);
+    color: white;
+}
+
+.decline-btn {
+    background: var(--danger-color);
+    color: white;
+}
+
+/* Notification Container */
+#notification-container {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1000;
+}
+
+.notification {
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 6px;
+    color: white;
+    animation: slideIn 0.3s ease-out;
+}
+
+.notification.success {
+    background: var(--success-color);
+}
+
+.notification.error {
+    background: var(--danger-color);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Tutoring-container Styles */
 .tutoring-container::before {
     content: '';
     position: absolute;
@@ -146,119 +431,11 @@ body {
     text-shadow: 0 0 10px rgba(124, 77, 255, 0.5);
 }
 
-.form-group {
-    position: relative;
-    margin-bottom: 20px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 8px;
-    color: var(--text-color);
-    font-weight: 500;
-    text-shadow: 0 0 5px rgba(124, 77, 255, 0.3);
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--text-color);
-    font-size: 16px;
-    transition: all 0.3s ease;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 10px rgba(0, 200, 83, 0.2);
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.form-group input:hover,
-.form-group select:hover,
-.form-group textarea:hover {
-    background: rgba(255, 255, 255, 0.08);
-}
-
-.form-group select {
-    cursor: pointer;
-    appearance: none;
-    padding-right: 30px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 8px center;
-    background-size: 16px;
-}
-
-.form-group textarea {
-    resize: vertical;
-    min-height: 100px;
-}
-
-/* Make sure inputs aren't disabled or readonly */
-.form-group input:not([type="submit"]):not([type="button"]):not([type="reset"]),
-.form-group select,
-.form-group textarea {
-    pointer-events: auto;
-    -webkit-user-select: auto;
-    user-select: auto;
-    -webkit-appearance: none;
-    appearance: none;
-}
-
-/* Style the time input specifically */
-input[type="time"] {
-    padding-right: 8px;
-}
-
-/* Style the date input specifically */
-input[type="date"] {
-    padding-right: 8px;
-}
-
-/* Style form text helper */
 .form-text {
     display: block;
     margin-top: 5px;
     font-size: 0.875em;
     color: rgba(255, 255, 255, 0.6);
-}
-
-/* Style submit button */
-.primary-btn {
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-}
-
-.primary-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 200, 83, 0.3);
-}
-
-/* Add focus styles for accessibility */
-.primary-btn:focus,
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.3);
 }
 
 /* Tutor Section Styles */
@@ -276,77 +453,11 @@ input[type="date"] {
     z-index: 1;
 }
 
-.tutor-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(145deg,
-        rgba(124, 77, 255, 0.1),
-        rgba(0, 200, 83, 0.1)
-    );
-    z-index: -1;
-}
-
 .tutor-controls {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 15px;
     margin-bottom: 25px;
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 15px;
-    margin-bottom: 20px;
-}
-
-.stat-card {
-    background: rgba(124, 77, 255, 0.1);
-    padding: 15px;
-    border-radius: 12px;
-    text-align: center;
-    border: 1px solid rgba(124, 77, 255, 0.2);
-    transition: all 0.3s ease;
-    backdrop-filter: blur(5px);
-    position: relative;
-    overflow: hidden;
-}
-
-.stat-card::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(
-        circle at center,
-        rgba(124, 77, 255, 0.2),
-        transparent 70%
-    );
-    animation: rotateBG 20s linear infinite;
-    z-index: 0;
-}
-
-.stat-value {
-    position: relative;
-    z-index: 1;
-    font-size: 1.8em;
-    font-weight: bold;
-    color: #fff;
-    text-shadow: 0 0 10px rgba(124, 77, 255, 0.5);
-    margin-bottom: 5px;
-}
-
-.stat-label {
-    position: relative;
-    z-index: 1;
-    font-size: 0.9em;
-    color: rgba(255, 255, 255, 0.9);
 }
 
 /* Calendar Styles */

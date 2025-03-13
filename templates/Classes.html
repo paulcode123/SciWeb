@@ -2,64 +2,160 @@
 
 <!-- title block -->
 {% block title %}
-<title>SciWeb | Classes</title>
+SciWeb | Classes
 {% endblock %}
 
 <!-- css block -->
 {% block css %}
-<link rel="stylesheet" href="/static/Classes.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='Classes.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.css">
 {% endblock %}
 
 {% block content %}
-<div id="particles-js"></div>
-<div id="notification" class="notification"></div>
+<div class="classes-container">
+    <!-- Header Section -->
+    <div class="page-header">
+        <h1>Classes</h1>
+        <div class="header-actions">
+            <button id="joinClassBtn" class="primary-btn">
+                <i class="fas fa-plus"></i> Join Class
+            </button>
+            <button id="createClassBtn" class="primary-btn">
+                <i class="fas fa-chalkboard"></i> Create Class
+            </button>
+            <button id="courseSelectionBtn" class="primary-btn">
+                <i class="fas fa-book"></i> Course Selection Tool
+            </button>
+        </div>
+    </div>
 
-<h1>My Classes</h1>
-<p>Planning next year's courses? Try out our <a href="/CourseSelection" target="_blank">Course Selection Tool</a></p>
-<div id="classList">
-    <!-- Classes will be dynamically added here by JavaScript -->
-</div>
-<button id="joinButton" class="button">Join or Create Class</button>
-
-<!-- Modal Overlay -->
-<div class="modal-overlay">
-    <form id="classForm">
-        <button type="button" class="modal-close">&times;</button>
-        <div class="row gtr-uniform">
-            <div class="col-6 col-12-xsmall">
-                <label for="periodInput">Period:</label>
-                <input type="number" id="periodInput" autocomplete="off">
+    <!-- Class Management Section -->
+    <div class="class-management">
+        <div class="filters">
+            <div class="search-box">
+                <input type="text" id="classSearch" placeholder="Search by class name or teacher...">
             </div>
-            <div class="col-6 col-12-xsmall">
-                <label for="teacherInput">Teacher:</label>
-                <input type="text" id="teacherInput" autocomplete="off">
-            </div>
-            <div class="col-12">
-                <label for="nameInput">Class Name:</label>
-                <input type="text" id="nameInput" autocomplete="off">
-            </div>
-            <div class="col-12">
-                <label for="categories">Grading Categories:</label>
-                <input type="text" id="categories" placeholder="ex. Participation: 20%, Assessments: 60%, Homework: 20%">
-            </div>
-            <div class="col-12">
-                <ul id="classOptions"></ul>
-            </div>
-            <div class="col-12">
-                <input type="submit" value="Submit" class="primary">
+            <div class="filter-group">
+                <select id="periodFilter">
+                    <option value="">All Periods</option>
+                    {% for i in range(1, 10) %}
+                    <option value="{{ i }}">Period {{ i }}</option>
+                    {% endfor %}
+                </select>
+                <select id="subjectFilter">
+                    <option value="">All Subjects</option>
+                    <option value="math">Mathematics</option>
+                    <option value="science">Science</option>
+                    <option value="english">English</option>
+                    <option value="history">History</option>
+                    <option value="language">Language</option>
+                </select>
             </div>
         </div>
-    </form>
-</div>
+    </div>
 
-<!-- Confirmation Dialog -->
-<div class="confirm-dialog">
-    <h3>Class Action</h3>
-    <p class="confirm-message"></p>
-    <div class="confirm-buttons">
-        <button class="confirm-btn join">Join Class</button>
-        <button class="confirm-btn create">Create Class</button>
-        <button class="confirm-btn cancel">Cancel</button>
+    <!-- Join/Create Class Modal -->
+    <div id="classModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Join/Create Class</h2>
+            <form id="classForm">
+                <div class="form-group">
+                    <label for="period">Period (1-9)*</label>
+                    <select id="period" required>
+                        {% for i in range(1, 10) %}
+                        <option value="{{ i }}">Period {{ i }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="teacher">Teacher*</label>
+                    <input type="text" id="teacher" required>
+                </div>
+                <div class="form-group">
+                    <label for="className">Class Name*</label>
+                    <input type="text" id="className" required>
+                </div>
+                <div class="form-group">
+                    <label for="subject">Subject*</label>
+                    <select id="subject" required>
+                        <option value="">Select a subject...</option>
+                        <option value="math">Mathematics</option>
+                        <option value="science">Science</option>
+                        <option value="english">English</option>
+                        <option value="history">History</option>
+                        <option value="language">Language</option>
+                    </select>
+                </div>
+                <div id="gradingCategories" class="form-group">
+                    <label>Grading Categories</label>
+                    <div id="categoryInputs">
+                        <div class="category-input">
+                            <input type="text" placeholder="Category name" class="category-name">
+                            <input type="number" placeholder="Weight %" class="category-weight" min="0" max="100">
+                            <button type="button" class="remove-category">×</button>
+                        </div>
+                    </div>
+                    <button type="button" id="addCategory" class="secondary-btn">Add Category</button>
+                </div>
+                <div class="form-group">
+                    <label for="classColor">Class Color</label>
+                    <input type="color" id="classColor" value="#7c5dfa">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="primary-btn">Submit</button>
+                    <button type="button" class="secondary-btn" id="cancelModal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Course Selection Tool Modal -->
+    <div id="courseToolModal" class="modal">
+        <div class="modal-content">
+            <h2>Course Selection Tool</h2>
+            <div class="course-filters">
+                <select id="gradeLevel">
+                    <option value="">Select Grade Level</option>
+                    <option value="9">Grade 9</option>
+                    <option value="10">Grade 10</option>
+                    <option value="11">Grade 11</option>
+                    <option value="12">Grade 12</option>
+                </select>
+                <select id="courseSubject">
+                    <option value="">Select Subject Area</option>
+                    <option value="math">Mathematics</option>
+                    <option value="science">Science</option>
+                    <option value="english">English</option>
+                    <option value="history">History</option>
+                    <option value="language">Language</option>
+                </select>
+            </div>
+            <div class="course-recommendations">
+                <!-- Course recommendations will be populated here -->
+            </div>
+            <button class="secondary-btn" id="closeCourseToolModal">Close</button>
+        </div>
+    </div>
+
+    <!-- Enrolled Classes Section -->
+    <div id="enrolled-classes" class="enrolled-classes-section">
+        <h2>Your Enrolled Classes</h2>
+        <div class="enrolled-classes-grid">
+            <!-- Enrolled classes will be populated here -->
+        </div>
+    </div>
+
+    <!-- Confirmation Dialog -->
+    <div id="confirmDialog" class="modal">
+        <div class="modal-content">
+            <h3>Confirm Action</h3>
+            <p id="confirmMessage"></p>
+            <div class="dialog-actions">
+                <button id="confirmYes" class="primary-btn">Yes</button>
+                <button id="confirmNo" class="secondary-btn">No</button>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -67,6 +163,7 @@
 <!-- js block -->
 {% block js %}
 <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-<script src="/static/Classes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+<script src="{{ url_for('static', filename='Classes.js') }}"></script>
 {% endblock %}
     
