@@ -66,32 +66,34 @@ function selectRole(role) {
     const studentSection = document.getElementById('student-section');
     const tutorSection = document.getElementById('tutor-section');
 
-    // Fade out role selection
+    // Animate out role selection
     roleSelection.style.opacity = '0';
     roleSelection.style.transform = 'translateY(-20px)';
     
     setTimeout(() => {
         roleSelection.style.display = 'none';
+        
+        // Set up tutoring container before animation
         tutoringContainer.style.display = 'block';
+        tutoringContainer.style.opacity = '0';
+        tutoringContainer.style.transform = 'translateY(20px)';
         
-        // Show appropriate section based on role
-        if (role === 'student') {
-            studentSection.style.display = 'block';
-            tutorSection.style.display = 'none';
-        } else {
-            studentSection.style.display = 'none';
-            tutorSection.style.display = 'block';
-            // Initialize tutor section if needed
-            if (typeof initializeTutorSection === 'function') {
-                initializeTutorSection();
-            }
-        }
-        
-        // Fade in the container
-        setTimeout(() => {
+        // Trigger animation
+        requestAnimationFrame(() => {
             tutoringContainer.style.opacity = '1';
             tutoringContainer.style.transform = 'translateY(0)';
-        }, 50);
+        });
+
+        // Show appropriate section
+        const showSection = role === 'student' ? studentSection : tutorSection;
+        const hideSection = role === 'student' ? tutorSection : studentSection;
+        
+        showSection.style.display = 'block';
+        hideSection.style.display = 'none';
+        
+        if (role === 'tutor' && typeof initializeTutorSection === 'function') {
+            initializeTutorSection();
+        }
     }, 300);
 }
 
@@ -103,12 +105,15 @@ document.addEventListener('DOMContentLoaded', function() {
             transition: opacity 0.3s ease, transform 0.3s ease;
         }
         .tutoring-container {
-            opacity: 0;
-            transform: translateY(20px);
             transition: opacity 0.3s ease, transform 0.3s ease;
         }
     `;
     document.head.appendChild(styleSheet);
+    
+    // Set initial states
+    const tutoringContainer = document.getElementById('tutoring-container');
+    tutoringContainer.style.opacity = '0';
+    tutoringContainer.style.transform = 'translateY(20px)';
     
     initializeTutoring();
 });

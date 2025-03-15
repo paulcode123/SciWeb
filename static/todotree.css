@@ -122,8 +122,10 @@
     }
 
     .circle span {
-        font-size: 14px;
-        padding: 8px;
+        word-break: keep-all !important;
+        overflow-wrap: normal !important;
+        white-space: normal !important;
+        hyphens: none !important;
     }
 
     .infinite-container {
@@ -159,8 +161,52 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    text-align: center;
+    overflow: hidden;
+    padding: 10px;
+    box-sizing: border-box;
     user-select: none;
     transition: all 0.2s;
+    /* Adjust brightness range: 1.2 (highest) to 0.6 (lowest) */
+    --node-brightness: calc(1.2 - (var(--relative-y, 0.5) * 0.6));
+    filter: brightness(var(--node-brightness));
+}
+
+.circle span {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    max-width: 100px !important;
+    word-break: keep-all !important;
+    overflow-wrap: normal !important;
+    white-space: normal !important;
+    hyphens: none !important;
+    line-height: 1.2;
+    font-size: var(--node-font-size, 16px);
+    max-height: 100px;
+    overflow: hidden;
+    color: white;
+    font-weight: bold;
+    pointer-events: none;
+    text-align: center;
+}
+
+/* Override for Challenge nodes to allow full text */
+.circle[data-type="Challenge"] span {
+    display: block !important;
+    max-width: none !important;
+    width: 100% !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+    padding: 12px 16px !important;
+    text-align: left !important;
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+    word-break: normal !important;
+    hyphens: auto !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
 }
 
 /* Node type colors and animations */
@@ -183,15 +229,9 @@
 }
 
 @keyframes motivatorGlow {
-    0% {
-        filter: brightness(1);
-    }
-    50% {
-        filter: brightness(1.2);
-    }
-    100% {
-        filter: brightness(1);
-    }
+    0% { filter: brightness(var(--node-brightness)); }
+    50% { filter: brightness(calc(var(--node-brightness) * 1.2)); }
+    100% { filter: brightness(var(--node-brightness)); }
 }
 
 @keyframes taskRipple {
@@ -227,7 +267,7 @@
     transform: scale(1.05);
     box-shadow: 0 0 30px 10px rgba(212, 175, 55, 0.5),
                 0 0 60px 15px rgba(212, 175, 55, 0.3);
-    filter: brightness(1.2);
+    filter: brightness(calc(var(--node-brightness) * 1.2));
 }
 
 @keyframes orbit {
@@ -356,16 +396,6 @@
 .circle[data-type="Task"].dragging {
     animation: none;
     background: #4CAF50;
-}
-
-.circle span {
-    color: white;
-    font-weight: bold;
-    text-align: center;
-    pointer-events: none;
-    padding: 10px;
-    word-wrap: break-word;
-    max-width: 100px;
 }
 
 /* Initial tree position for first 10 nodes */
@@ -677,29 +707,6 @@
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
-}
-
-.circle[data-type="Challenge"] span {
-    max-width: none;
-    width: 100%;
-    font-size: 14px;
-    line-height: 1.4;
-    padding: 12px 16px;
-    text-align: left;
-    white-space: normal;
-    overflow-wrap: break-word;
-}
-
-/* Mobile styles */
-@media screen and (max-width: 768px) {
-    .circle[data-type="Challenge"] {
-        width: 240px;
-    }
-    
-    .circle[data-type="Challenge"] span {
-        font-size: 12px;
-        padding: 8px 12px;
-    }
 }
 
 .node-content {
@@ -1247,8 +1254,10 @@ input[type="datetime-local"] {
     }
 
     .circle span {
-        font-size: 14px;
-        padding: 8px;
+        word-break: keep-all !important;
+        overflow-wrap: normal !important;
+        white-space: normal !important;
+        hyphens: none !important;
     }
 
     .infinite-container {
@@ -1657,4 +1666,81 @@ input[type="datetime-local"] {
 
 .done-btn:active {
     transform: translateY(0);
+}
+
+.circle[data-type="Image"] {
+    background: transparent;
+    border: none;
+    width: auto;
+    height: auto;
+    max-width: 300px;
+    max-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.circle[data-type="Image"]:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.circle[data-type="Image"] img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.circle[data-type="Image"].dragging {
+    opacity: 0.7;
+    transform: scale(1.02);
+}
+
+/* Image upload modal styles */
+.image-url-input {
+    width: 100%;
+    padding: 12px;
+    background: #1a1a1a;
+    border: 2px solid #34495e;
+    border-radius: 6px;
+    color: white;
+    font-size: 14px;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+}
+
+.image-url-input:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.image-preview {
+    max-width: 100%;
+    max-height: 300px;
+    margin: 16px 0;
+    border-radius: 8px;
+    display: none;
+}
+
+.image-preview.show {
+    display: block;
+}
+
+/* Add to your existing .type-options styles */
+.type-option[data-type="Image"] .type-icon .material-icons {
+    color: #4CAF50;
+}
+
+/* Add to your existing controls section */
+.control-btn.image-btn {
+    background: linear-gradient(135deg, #4CAF50, #2E7D32);
+}
+
+.control-btn.image-btn:hover {
+    background: linear-gradient(135deg, #2E7D32, #1B5E20);
 }

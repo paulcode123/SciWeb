@@ -522,8 +522,9 @@ def derive_concept(llm, concept, user_message, chat_history, prerequisites_compl
     desmos_context = f"\nCurrent Desmos graph state:\n{desmos_state}" if desmos_state else ""
     system_prompt = DERIVE_HELP_PROMPT.format(
         concept=f"{concept['label']}: {concept['description']}",
-        prerequisites=", ".join(prerequisites_completed),  # Just join the labels
-        desmos_state=desmos_context
+        prerequisites=", ".join(prerequisites_completed),
+        desmos_state=desmos_context,
+        trajectory=concept.get('trajectory', 'No trajectory available')
     )
     
     # Create messages array for the chat model

@@ -1,0 +1,222 @@
+[
+  {
+    "type": "log",
+    "text": "New User ID: 7339",
+    "location": {
+      "url": "http://localhost:8080/static/user_data.js",
+      "lineNumber": 66,
+      "columnNumber": 20
+    },
+    "timestamp": "2025-03-09T15:57:08.322558"
+  },
+  {
+    "type": "log",
+    "text": "New User ID: 7339",
+    "location": {
+      "url": "http://localhost:8080/static/user_data.js",
+      "lineNumber": 71,
+      "columnNumber": 20
+    },
+    "timestamp": "2025-03-09T15:57:08.327142"
+  },
+  {
+    "type": "log",
+    "text": "grades_key is null",
+    "location": {
+      "url": "http://localhost:8080/static/user_data.js",
+      "lineNumber": 14,
+      "columnNumber": 12
+    },
+    "timestamp": "2025-03-09T15:57:08.339192"
+  },
+  {
+    "type": "log",
+    "text": "0",
+    "location": {
+      "url": "http://localhost:8080/static/user_data.js",
+      "lineNumber": 147,
+      "columnNumber": 8
+    },
+    "timestamp": "2025-03-09T15:57:08.350509"
+  },
+  {
+    "type": "log",
+    "text": "loginscript ip:7339",
+    "location": {
+      "url": "http://localhost:8080/static/Loginscript.js",
+      "lineNumber": 5,
+      "columnNumber": 8
+    },
+    "timestamp": "2025-03-09T15:57:08.991798"
+  },
+  {
+    "type": "log",
+    "text": "in counselor.js",
+    "location": {
+      "url": "http://localhost:8080/static/counselor.js",
+      "lineNumber": 4,
+      "columnNumber": 8
+    },
+    "timestamp": "2025-03-09T15:57:09.003975"
+  },
+  {
+    "type": "log",
+    "text": "Found User ID: 7339",
+    "location": {
+      "url": "http://localhost:8080/static/user_data.js",
+      "lineNumber": 60,
+      "columnNumber": 20
+    },
+    "timestamp": "2025-03-09T15:57:18.770966"
+  },
+  {
+    "type": "log",
+    "text": "grades_key is null",
+    "location": {
+      "url": "http://localhost:8080/static/user_data.js",
+      "lineNumber": 14,
+      "columnNumber": 12
+    },
+    "timestamp": "2025-03-09T15:57:18.784540"
+  },
+  {
+    "type": "log",
+    "text": "0",
+    "location": {
+      "url": "http://localhost:8080/static/user_data.js",
+      "lineNumber": 147,
+      "columnNumber": 8
+    },
+    "timestamp": "2025-03-09T15:57:18.797886"
+  },
+  {
+    "type": "log",
+    "text": "6592991",
+    "location": {
+      "url": "http://localhost:8080/static/user_data.js",
+      "lineNumber": 131,
+      "columnNumber": 12
+    },
+    "timestamp": "2025-03-09T15:57:19.087103"
+  },
+  {
+    "type": "log",
+    "text": "11",
+    "location": {
+      "url": "http://localhost:8080/static/user_data.js",
+      "lineNumber": 133,
+      "columnNumber": 12
+    },
+    "timestamp": "2025-03-09T15:57:19.100869"
+  },
+  {
+    "type": "log",
+    "text": "6592991",
+    "location": {
+      "url": "http://localhost:8080/static/user_data.js",
+      "lineNumber": 138,
+      "columnNumber": 12
+    },
+    "timestamp": "2025-03-09T15:57:19.114284"
+  },
+  {
+    "type": "log",
+    "text": "in counselor.js",
+    "location": {
+      "url": "http://localhost:8080/static/counselor.js",
+      "lineNumber": 4,
+      "columnNumber": 8
+    },
+    "timestamp": "2025-03-09T15:57:19.414217"
+  },
+  {
+    "type": "log",
+    "text": "fetching data",
+    "location": {
+      "url": "http://localhost:8080/static/Home.js",
+      "lineNumber": 91,
+      "columnNumber": 10
+    },
+    "timestamp": "2025-03-09T15:57:19.588952"
+  },
+  {
+    "type": "log",
+    "text": "cachedSheets {}",
+    "location": {
+      "url": "http://localhost:8080/static/util.js",
+      "lineNumber": 97,
+      "columnNumber": 20
+    },
+    "timestamp": "2025-03-09T15:57:19.603015"
+  },
+  {
+    "type": "log",
+    "text": "Fetching sheets: [Name, Chat, Classes, Assignments, Aspirations, Friends, Users] with prev_sheets {}",
+    "location": {
+      "url": "http://localhost:8080/static/util.js",
+      "lineNumber": 106,
+      "columnNumber": 24
+    },
+    "timestamp": "2025-03-09T15:57:19.618682"
+  },
+  {
+    "type": "log",
+    "text": "cachedSheets {}",
+    "location": {
+      "url": "http://localhost:8080/static/util.js",
+      "lineNumber": 97,
+      "columnNumber": 20
+    },
+    "timestamp": "2025-03-09T15:57:19.700010"
+  },
+  {
+    "type": "log",
+    "text": "Fetching sheets: [Name, Tokens, Classes] with prev_sheets {}",
+    "location": {
+      "url": "http://localhost:8080/static/util.js",
+      "lineNumber": 106,
+      "columnNumber": 24
+    },
+    "timestamp": "2025-03-09T15:57:19.715578"
+  },
+  {
+    "type": "log",
+    "text": "cachedSheets {}",
+    "location": {
+      "url": "http://localhost:8080/static/util.js",
+      "lineNumber": 97,
+      "columnNumber": 20
+    },
+    "timestamp": "2025-03-09T15:57:19.729594"
+  },
+  {
+    "type": "log",
+    "text": "Fetching sheets: [Name, Tokens, Classes] with prev_sheets {}",
+    "location": {
+      "url": "http://localhost:8080/static/util.js",
+      "lineNumber": 106,
+      "columnNumber": 24
+    },
+    "timestamp": "2025-03-09T15:57:19.743811"
+  },
+  {
+    "type": "log",
+    "text": "typeOutText Hey there, Paul! 50 JSHandle@node",
+    "location": {
+      "url": "http://localhost:8080/static/counselor.js",
+      "lineNumber": 8,
+      "columnNumber": 12
+    },
+    "timestamp": "2025-03-09T15:57:19.756939"
+  },
+  {
+    "type": "log",
+    "text": "typeOutText Hello, I am your SciWeb Counselor. How can I help you today? 50 JSHandle@node",
+    "location": {
+      "url": "http://localhost:8080/static/counselor.js",
+      "lineNumber": 8,
+      "columnNumber": 12
+    },
+    "timestamp": "2025-03-09T15:57:20.569129"
+  }
+]

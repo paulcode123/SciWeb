@@ -1,0 +1,323 @@
+{% extends "darkThemeTemplate.html" %}
+
+{% block title %}
+<title>NHS - National Honor Society</title>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="/static/nhs.css">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+
+
+{% endblock %}
+
+{% block content %}
+<div class="nhs-container">
+    <div class="nhs-header">
+        <div class="nhs-title">
+            <h1>National Honor Society</h1>
+            <div class="title-decoration"></div>
+        </div>
+        <p class="subtitle">Excellence in Character, Scholarship, Leadership, and Service</p>
+    </div>
+
+    <div id="status-message"></div>
+
+    <!-- Current Status Bubble -->
+    <div class="status-bubble">
+        <span class="status-label">Current Status:</span>
+        <span id="current-status-badge" class="status-badge">Loading...</span>
+    </div>
+
+    <!-- Student Content -->
+    <div id="student-content" style="display: none;">
+        <!-- Main Action Buttons -->
+        <div class="main-actions">
+            <button onclick="verifyStatus('applicant')" class="main-action-btn apply-btn">
+                <span class="btn-title">Apply to NHS</span>
+                <span class="btn-subtitle">Start your journey of excellence</span>
+            </button>
+            <button onclick="window.location.href='/Tutoring'" class="main-action-btn tutoring-btn">
+                <span class="btn-title">Request Tutoring</span>
+                <span class="btn-subtitle">Get help from NHS members</span>
+            </button>
+        </div>
+
+        <!-- Verification Section -->
+        <div class="verification-section">
+            <h2>Account Verification</h2>
+            <p class="verification-intro">Select the appropriate option to verify your account status:</p>
+            
+            <div class="verification-cards">
+                <!-- Teacher Verification -->
+                <div class="verification-card" id="teacher-verification">
+                    <div class="card-icon teacher-icon">👩‍🏫</div>
+                    <h3>Teacher Verification</h3>
+                    <p>Verify your status to post SGI tutoring opportunities</p>
+                    <button onclick="verifyStatus('teacher')" class="verify-btn">Verify Status</button>
+                </div>
+
+                <!-- NHS Member Verification -->
+                <div class="verification-card" id="member-verification">
+                    <div class="card-icon member-icon">🎓</div>
+                    <h3>Member Verification</h3>
+                    <p>Current NHS member? Verify your membership</p>
+                    <button onclick="verifyStatus('member')" class="verify-btn">Verify Status</button>
+                </div>
+
+                <!-- NHS Admin Verification -->
+                <div class="verification-card" id="admin-verification">
+                    <div class="card-icon admin-icon">⚡</div>
+                    <h3>Admin Verification</h3>
+                    <p>NHS administrator? Verify your credentials</p>
+                    <button onclick="verifyStatus('admin')" class="verify-btn">Verify Status</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Member Content -->
+    <div id="member-content" style="display: none;">
+        <!-- Credits Table -->
+        <div class="credits-section">
+            <h2>NHS Credit Requirements</h2>
+            <div class="table-container">
+                <table class="credits-table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Required Credits</th>
+                            <th>Fulfilled Credits</th>
+                            <th>Progress</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Tutoring</td>
+                            <td>10</td>
+                            <td id="tutoring-credits">0</td>
+                            <td><div class="progress-bar" id="tutoring-progress"></div></td>
+                        </tr>
+                        <tr>
+                            <td>Service</td>
+                            <td>10</td>
+                            <td id="service-credits">0</td>
+                            <td><div class="progress-bar" id="service-progress"></div></td>
+                        </tr>
+                        <tr>
+                            <td>Project</td>
+                            <td>2</td>
+                            <td id="project-credits">0</td>
+                            <td><div class="progress-bar" id="project-progress"></div></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Completed Credits Table -->
+        <div class="completed-credits-section">
+            <h2>Completed Credits History</h2>
+            <div class="table-container">
+                <table class="completed-credits-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Opportunity</th>
+                            <th>Credits</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="completed-credits-body">
+                        <!-- Will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Opportunities Table -->
+        <div class="opportunities-section">
+            <h2>Upcoming Opportunities</h2>
+            <div class="table-container">
+                <table class="opportunities-table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Name</th>
+                            <th>Date</th>
+                            <th>Credits</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="opportunities-body">
+                        <!-- Opportunities will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Content -->
+    <div id="admin-content" style="display: none;">
+        <div class="admin-section">
+            <h2>Create New Opportunity</h2>
+            <div class="form-container">
+                <form id="create-opportunity-form">
+                    <div class="form-group">
+                        <label for="opp-name">Name:</label>
+                        <input type="text" id="opp-name" name="name" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="opp-date">Date:</label>
+                            <input type="date" id="opp-date" name="date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="opp-start-time">Start Time:</label>
+                            <input type="time" id="opp-start-time" name="start_time" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="opp-end-time">End Time:</label>
+                            <input type="time" id="opp-end-time" name="end_time" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="opp-category">Category:</label>
+                            <select id="opp-category" name="category" required>
+                                <option value="Tutoring">Tutoring</option>
+                                <option value="Service">Service</option>
+                                <option value="Project">Project</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="opp-credits">Credits:</label>
+                            <input type="number" id="opp-credits" name="credits" min="0.5" step="0.5" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="opp-members">Members Needed:</label>
+                            <input type="number" id="opp-members" name="members_needed" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="opp-deadline">Signup Deadline:</label>
+                            <input type="date" id="opp-deadline" name="signup_deadline" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="opp-location">Location:</label>
+                        <input type="text" id="opp-location" name="location" required>
+                    </div>
+
+                    <button type="submit" class="submit-btn">Create Opportunity</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="admin-section">
+            <h2>Manage Opportunities</h2>
+            <div class="table-container">
+                <table class="opportunities-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Credits</th>
+                            <th>Signups</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-opportunities-body">
+                        <!-- Will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Teacher Verification Modal -->
+<div id="teacherVerificationModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Teacher Verification</h2>
+        
+        <!-- Email Input Section -->
+        <div id="teacherEmailSection">
+            <p>Please enter your @schools.nyc.gov email address:</p>
+            <input type="email" id="teacherEmail" placeholder="example@schools.nyc.gov">
+            <button onclick="verifyEmail('teacher')" class="verify-btn">Send Verification Code</button>
+            <p id="teacherError" class="error-message"></p>
+        </div>
+
+        <!-- Verification Code Section -->
+        <div id="teacherCodeSection" style="display: none;">
+            <p>A verification code has been sent to your email. Please enter it below:</p>
+            <input type="text" id="teacherVerificationCode" placeholder="Enter 6-digit code">
+            <button onclick="verifyCodeForType('teacher')" class="verify-btn">Verify Code</button>
+            <p id="teacherCodeError" class="error-message"></p>
+        </div>
+    </div>
+</div>
+
+<!-- Member Verification Modal -->
+<div id="memberVerificationModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>NHS Member Verification</h2>
+        
+        <!-- Email Input Section -->
+        <div id="memberEmailSection">
+            <p>Please enter your NHS member email address:</p>
+            <input type="email" id="memberEmail" placeholder="Enter your email">
+            <button onclick="verifyEmail('member')" class="verify-btn">Send Verification Code</button>
+            <p id="memberError" class="error-message"></p>
+        </div>
+
+        <!-- Verification Code Section -->
+        <div id="memberCodeSection" style="display: none;">
+            <p>A verification code has been sent to your email. Please enter it below:</p>
+            <input type="text" id="memberVerificationCode" placeholder="Enter 6-digit code">
+            <button onclick="verifyCodeForType('member')" class="verify-btn">Verify Code</button>
+            <p id="memberCodeError" class="error-message"></p>
+        </div>
+    </div>
+</div>
+
+<!-- Admin Verification Modal -->
+<div id="adminVerificationModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>NHS Administrator Verification</h2>
+        
+        <!-- Email Input Section -->
+        <div id="adminEmailSection">
+            <p>Please enter your NHS administrator email address:</p>
+            <input type="email" id="adminEmail" placeholder="Enter your email">
+            <button onclick="verifyEmail('admin')" class="verify-btn">Send Verification Code</button>
+            <p id="adminError" class="error-message"></p>
+        </div>
+
+        <!-- Verification Code Section -->
+        <div id="adminCodeSection" style="display: none;">
+            <p>A verification code has been sent to your email. Please enter it below:</p>
+            <input type="text" id="adminVerificationCode" placeholder="Enter 6-digit code">
+            <button onclick="verifyCodeForType('admin')" class="verify-btn">Verify Code</button>
+            <p id="adminCodeError" class="error-message"></p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block js %}
+<script src="/static/nhs.js"></script>
+{% endblock %} 

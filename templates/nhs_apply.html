@@ -1,0 +1,171 @@
+{% extends "darkThemeTemplate.html" %}
+
+{% block title %}
+<title>NHS Application - Bronx Science</title>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="/static/nhs_apply.css">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="save-progress-container">
+    <button id="save-progress-btn" onclick="saveProgress()" class="save-progress-btn">
+        <span class="save-icon">💾</span>
+        <span class="save-text">Save Progress</span>
+        <span id="last-saved" class="last-saved"></span>
+    </button>
+    <div id="save-indicator" class="save-indicator">
+        <div class="save-spinner"></div>
+        <span>Saving...</span>
+    </div>
+</div>
+
+<div class="application-container">
+    <div class="application-header">
+        <h1>NHS Application</h1>
+        <p class="subtitle">Begin your journey to excellence</p>
+    </div>
+
+    <form id="nhs-application-form" class="application-form">
+        <!-- Personal Information Section -->
+        <section class="form-section personal-info">
+            <h2>Personal Information</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="firstName">First Name*</label>
+                    <input type="text" id="firstName" name="firstName" required>
+                </div>
+                <div class="form-group">
+                    <label for="lastName">Last Name*</label>
+                    <input type="text" id="lastName" name="lastName" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">DOE Email*</label>
+                    <input type="email" id="email" name="email" pattern=".*@schools\.nyc\.gov$" 
+                           placeholder="username@nycstudents.net" required>
+                </div>
+                <div class="form-group">
+                    <label for="entryGrade">Grade Entered Bronx Science*</label>
+                    <select id="entryGrade" name="entryGrade" required onchange="updateRequirements()">
+                        <option value="">Select Entry Grade</option>
+                        <option value="9">9th Grade</option>
+                        <option value="10">10th Grade</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="grade">Current Grade*</label>
+                    <select id="grade" name="grade" required onchange="updateRequirements()">
+                        <option value="">Select Current Grade</option>
+                        <option value="11">11th Grade (Junior)</option>
+                        <option value="12">12th Grade (Senior)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="homeroom">Homeroom*</label>
+                    <input type="text" id="homeroom" name="homeroom" required>
+                </div>
+                <div class="form-group">
+                    <label for="gpaRequirement">Is your GPA as of your last report card <span id="requiredGpa">93</span> or greater?*</label>
+                    <div class="toggle-group">
+                        <input type="radio" id="gpaYes" name="meetsGpa" value="yes" required>
+                        <label for="gpaYes" class="toggle-label">Yes</label>
+                        <input type="radio" id="gpaNo" name="meetsGpa" value="no" required>
+                        <label for="gpaNo" class="toggle-label">No</label>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Requirements Table Section -->
+        <section class="form-section requirements-section">
+            <h2>Credit Requirements</h2>
+            <div id="requirements-table" class="requirements-table">
+                <!-- Will be populated by JavaScript based on grade -->
+            </div>
+            <div class="requirements-progress">
+                <h3>Your Progress</h3>
+                <div class="progress-grid">
+                    <div class="progress-item">
+                        <div class="progress-label">Service Credits</div>
+                        <div class="progress-bar">
+                            <div id="service-progress" class="progress" style="width: 0%"></div>
+                        </div>
+                        <span id="service-count">0/0</span>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-label">Leadership + Citizenship</div>
+                        <div class="progress-bar">
+                            <div id="leadership-citizenship-progress" class="progress" style="width: 0%"></div>
+                        </div>
+                        <span id="leadership-citizenship-count">0/0</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Add Credits Section -->
+        <section class="form-section add-credits-section">
+            <h2>Add Credits</h2>
+            <div id="add-credit-section" class="form-section">
+                <h3>Add Credits</h3>
+                <div class="credit-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="creditType">Credit Type*</label>
+                            <select id="creditType" required onchange="updateActivityCodes()">
+                                <option value="">Select Type</option>
+                                <option value="service">Service</option>
+                                <option value="leadership">Leadership</option>
+                                <option value="citizenship">Citizenship</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="activityCode">Activity*</label>
+                            <select id="activityCode" required onchange="updateActivityDetails()">
+                                <option value="">Select Activity</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="activity-details" class="activity-details"></div>
+                    
+                    <div class="add-credit-container">
+                        <button type="button" id="add-credit-btn" onclick="addCredit()" class="primary-button">
+                            Add Credit
+                        </button>
+                        <span id="completion-icon" class="completion-icon incomplete">○</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Credits Summary Section -->
+        <section class="form-section credits-summary-section">
+            <h2>Credits Summary</h2>
+            <div id="credits-summary" class="form-section">
+                <h3>Credits Summary</h3>
+                <div id="credits-list" class="credits-list"></div>
+            </div>
+        </section>
+
+        <!-- Submit Section -->
+        <section class="form-section submit-section">
+            <div class="requirements-check">
+                <h3>Application Status</h3>
+                <div id="requirements-status">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+            <button type="submit" id="submit-application" class="submit-btn" disabled>
+                Submit Application
+            </button>
+        </section>
+    </form>
+</div>
+{% endblock %}
+
+{% block js %}
+<script src="/static/nhs_apply.js"></script>
+{% endblock %} 

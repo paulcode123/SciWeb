@@ -258,15 +258,12 @@ def delete_data(row_val, row_name, collection):
     return delete_data_gsheet(collection, row_val, row_name, session)
   return delete_data_firebase(row_val, row_name, collection)
 
-def get_name():
-    # Implementation of get_name function here
-    pass
 
 def get_user_data(sheet, prev_sheets=[]):
   print("sheet", sheet)
   # if trying to get just the user's data, call the get_name function
   if sheet=="Name":
-    return get_name()
+    return get_name(update=True)
   
   # if session['user_data'] is not defined, throw an error
   if 'user_data' not in session:
@@ -282,6 +279,10 @@ def get_user_data(sheet, prev_sheets=[]):
     return get_data("Users")
   if sheet=="Battles":
     return get_data("Battles")
+  if sheet=="Opportunities":
+    return get_data("Opportunities")
+  if sheet=="FULLNHSMembers":
+    return get_data("NHSMembers")
   if sheet=="Users":
     #only include the first 3 columns of the Users sheet, first_name, last_name, and osis
     data = get_data(sheet)

@@ -1,0 +1,633 @@
+.application-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.application-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.application-header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    color: #fff;
+}
+
+.application-header .subtitle {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.1rem;
+}
+
+/* Form Sections */
+.form-section {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.form-section h2 {
+    color: #fff;
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Form Grid */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Form Groups */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #3f51b5;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.form-group input[type="file"] {
+    padding: 0.5rem;
+    background: none;
+    border: none;
+}
+
+.help-text {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 0.25rem;
+}
+
+/* GPA Toggle */
+.toggle-group {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.toggle-group input[type="radio"] {
+    display: none;
+}
+
+.toggle-label {
+    flex: 1;
+    padding: 0.75rem;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.toggle-label:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+input[type="radio"]:checked + .toggle-label {
+    background: #3f51b5;
+    border-color: #3f51b5;
+}
+
+input[type="radio"][value="no"]:checked + .toggle-label {
+    background: #f44336;
+    border-color: #f44336;
+}
+
+#requiredGpa {
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+/* Requirements Table */
+.requirements-table {
+    overflow-x: auto;
+    margin-bottom: 2rem;
+}
+
+.requirements-table table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-bottom: 2rem;
+    background: rgba(48, 48, 48, 0.5);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.requirements-table th,
+.requirements-table td {
+    padding: 1.25rem 1.5rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: #e0e0e0;
+}
+
+.requirements-table th {
+    background: rgba(48, 48, 48, 0.8);
+    font-weight: 500;
+    font-size: 1.1rem;
+}
+
+.requirements-table td {
+    font-size: 1rem;
+}
+
+.requirements-table tr:last-child td {
+    border-bottom: none;
+}
+
+.requirements-table td:not(:first-child) {
+    text-align: center;
+}
+
+/* Dark theme specific adjustments */
+.requirements-table {
+    background: transparent;
+}
+
+.requirements-table tr {
+    background: rgba(48, 48, 48, 0.5);
+}
+
+.requirements-table tr:hover {
+    background: rgba(48, 48, 48, 0.7);
+}
+
+/* Progress Bars */
+.requirements-progress {
+    margin-top: 2rem;
+}
+
+.progress-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.progress-item {
+    display: grid;
+    grid-template-columns: 150px 1fr auto;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.progress-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #e0e0e0;
+}
+
+.progress-bar {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.25rem;
+}
+
+.progress-bar .progress {
+    height: 100%;
+    background: linear-gradient(90deg, #4a90e2, #357abd);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.progress-bar .progress.complete {
+    background: linear-gradient(90deg, #2ecc71, #27ae60);
+}
+
+#service-count, #leadership-citizenship-count {
+    font-size: 0.875rem;
+    color: #a0a0a0;
+}
+
+/* Activity Details */
+.activity-details {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+}
+
+/* Credits List */
+.credits-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.credit-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.credit-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateX(2px);
+}
+
+.credit-info {
+    flex-grow: 1;
+    color: #e0e0e0;
+}
+
+.credit-info strong {
+    color: #fff;
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.credit-info div {
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
+}
+
+.credit-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-left: 1.5rem;
+}
+
+.edit-btn, .remove-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.edit-btn {
+    background: rgba(33, 150, 243, 0.2);
+    color: #64B5F6;
+    border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.edit-btn:hover {
+    background: rgba(33, 150, 243, 0.3);
+    transform: translateY(-1px);
+}
+
+.remove-btn {
+    background: rgba(244, 67, 54, 0.2);
+    color: #EF5350;
+    border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.remove-btn:hover {
+    background: rgba(244, 67, 54, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Submit Section */
+.submit-section {
+    text-align: center;
+}
+
+.requirements-check {
+    margin-bottom: 2rem;
+    text-align: left;
+}
+
+.submit-btn {
+    background: linear-gradient(135deg, #4CAF50, #2E7D32);
+    color: white;
+    border: none;
+    padding: 1rem 3rem;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.submit-btn:disabled {
+    background: linear-gradient(135deg, #9E9E9E, #616161);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.submit-btn:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .application-container {
+        padding: 1rem;
+    }
+
+    .form-section {
+        padding: 1.5rem;
+    }
+
+    .progress-item {
+        grid-template-columns: 1fr;
+    }
+
+    .credit-item {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.form-section {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.add-credit-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.primary-button {
+    background: linear-gradient(135deg, #2196F3, #1976D2);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.primary-button:hover {
+    background: linear-gradient(135deg, #1976D2, #1565C0);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.completion-icon {
+    font-size: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.completion-icon.complete {
+    color: #4CAF50;
+}
+
+.completion-icon.incomplete {
+    color: #9E9E9E;
+}
+
+.credit-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.credit-header strong {
+    margin-bottom: 0;
+    flex-grow: 1;
+    font-size: 1.1rem;
+    color: #fff;
+}
+
+.completion-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 14px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: help;
+    position: relative;
+}
+
+.completion-icon::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 130%;
+    right: -10px;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    visibility: hidden;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.completion-icon:hover::after {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(-5px);
+}
+
+.completion-icon.complete {
+    background: rgba(76, 175, 80, 0.15);
+    color: #4CAF50;
+    border: 2px solid rgba(76, 175, 80, 0.3);
+}
+
+.completion-icon.complete:hover {
+    background: rgba(76, 175, 80, 0.25);
+    transform: scale(1.1);
+    box-shadow: 0 0 12px rgba(76, 175, 80, 0.3);
+}
+
+.completion-icon.incomplete {
+    background: rgba(255, 193, 7, 0.15);
+    color: #FFC107;
+    border: 2px solid rgba(255, 193, 7, 0.3);
+}
+
+.completion-icon.incomplete:hover {
+    background: rgba(255, 193, 7, 0.25);
+    transform: scale(1.1);
+    box-shadow: 0 0 12px rgba(255, 193, 7, 0.3);
+}
+
+/* Add a subtle pulse animation for incomplete items */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.completion-icon.incomplete {
+    animation: pulse 2s infinite;
+}
+
+.completion-icon.incomplete:hover {
+    animation: none;
+}
+
+/* Style for the add credit button completion indicator */
+.add-credit-container .completion-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+    margin-left: 0.5rem;
+}
+
+/* Update missing value styling */
+.credit-info div:not(.credit-header) {
+    color: rgba(255, 255, 255, 0.7);
+    transition: color 0.3s ease;
+}
+
+.credit-info div:has(> span.missing) {
+    color: rgba(255, 193, 7, 0.8);
+    padding-left: 0.5rem;
+    border-left: 2px solid rgba(255, 193, 7, 0.3);
+}
+
+/* Save Progress Button */
+.save-progress-container {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.save-progress-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(33, 150, 243, 0.15);
+    border: 2px solid rgba(33, 150, 243, 0.3);
+    color: #64B5F6;
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    font-size: 0.95rem;
+    min-width: 160px;
+}
+
+.save-progress-btn:hover {
+    background: rgba(33, 150, 243, 0.25);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.2);
+}
+
+.save-progress-btn .save-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.save-progress-btn .save-text {
+    font-weight: 600;
+}
+
+.save-progress-btn .last-saved {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    margin-left: 0.5rem;
+    white-space: nowrap;
+}
+
+.save-indicator {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    color: #64B5F6;
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+    background: rgba(33, 150, 243, 0.1);
+    border-radius: 6px;
+}
+
+.save-indicator.visible {
+    display: flex;
+}
+
+.save-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(33, 150, 243, 0.3);
+    border-top-color: #64B5F6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Save button states */
+.save-progress-btn.saving {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.save-progress-btn.saved {
+    background: rgba(76, 175, 80, 0.15);
+    border-color: rgba(76, 175, 80, 0.3);
+    color: #4CAF50;
+    animation: savedPulse 0.5s ease;
+}
+
+@keyframes savedPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+} 

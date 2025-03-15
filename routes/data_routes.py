@@ -240,4 +240,11 @@ def get_home_ip():
   # return the user's data given their IP address
   return json.dumps({'Name': get_name(str(session['ip_add']))})
 
+# /send_email route that calls send_email function in database.py
+@data_routes.route('/send_email', methods=['POST'])
+def send_email_route():
+  data = request.json
+  send_email(data['email'], data['message'])
+  return json.dumps({"message": "success"})
+
 

@@ -1,0 +1,83 @@
+﻿Goal: to create a concept map for a given scientific or mathematical topic or unit
+
+
+The purpose: when learning, whether it be by reading a textbook, taking a class or watching a video, the instructor or writer usually tells you exactly what it is that you need to know. What is often glossed over is why that is true, and more importantly, how one gets there. That's why we created SciWeb, an AI powered study service for students. In the SciWeb system, the Concept Map is the core framework.
+
+
+The idea of concept map, which includes nodes(concepts) and edges(prerequisite relationships), is that the knowledge can be structured in a way such that the user is never explicitly told anything related to what they're learning. Instead, they go through a process of sequentially deriving each concept based on what they already derived from prerequisite nodes, and their own logic.
+
+
+In SciWeb the user begins at the root node, they have a conversation with the AI where the AI guides them from the starter prompt through the trajectory to the concept. When the user demonstrates a strong understanding of the concept, the AI identifies that and moves them on to the next concept.
+
+Concept Selection:
+    - Each concept should be a narrow well defined concept
+    - It can consist of multiple interdependent parts
+    - It should be fully derivable from the prerequisite concepts
+    - The first concepts should lead the user to understand the basis for what the unit is trying to understand and why it's important
+    - They should be in order of increasing complexity
+    - Each node should be so well supported by it's prerequisite nodes that it quickly becomes obvious where it's going with the derivation.
+    - Utilize the fact that knowledge is only worth knowing if it can be derived from something else.
+    - The trajectory shouldn't end with the minimal interpretation of the concept, but rather a deeper understanding that is useful in application.
+
+Structurally, each node has a:
+1. number(in order of derivation)
+2. prerequisite concepts(array of their numbers)
+3. Label(1-3 word description of the concept)
+4. Trajectory (Should be a multi-turn conversation demonstrating the ideal derivation path):
+5. Concept(explicit Theorem, Law, Equation, or key realization)
+6. Preloaded Desmos text/functions(optional).
+
+
+Desmos calculator usage:
+    The desmos graphing calculator is embedded into the derivation page. For each concept, some desmos syntax for the concept can be automatically loaded into the graph. Given that most concepts should involve the user manipulating the graph somehow, this can serve as a description or kickstart to that task
+
+    Importantly, there's a button that the student can press that plugs their desmos logs back into their response to the AI. This means that a starter prompt should ask the user to graphically complete a proof or manipulation or write an equation as a basis for understanding the concept.
+
+    When writing the maps you should provide the desmos functions with the correct notation
+    Example:
+        TEXT:This is some text specifying what you want the user to do in this graph for this concept\n
+        (4x^2+3)^2\n
+
+    1. \n at the end of each function/text block
+    2. Keep a light touch with preloaded desmos, letting the user fully experience the derivation.
+    3. Latex notation for functions(variables must be x and y for the graphs)
+    4. TEXT:for text blocks(don't give anything away here, should only be used if necessary and should be provoking, not informational)
+    5. SLIDER:c=0:10 for sliders
+    6. TABLE: [[X, Y], [1, 2], [3, 4]] for tables
+
+
+Trajectory:
+Format:
+   USER: [Initial inquiry or observation]
+   AI: [Guiding response/question]
+   USER: [Logical next step]
+   AI: [Next guidance]
+   ... [Continues until concept is derived]
+   
+   Requirements:
+   - Must demonstrate complete derivation path from zero knowledge
+   - Average 5-8 exchanges per concept
+   - Include scaffolding for fundamental concepts
+   - Add analogies to everyday experiences
+   - Explicitly connect to prerequisite knowledge
+   
+   Example:
+   USER: I see this graph changes when I move the 'a' slider. The lines get closer together.
+   AI: Good observation! What familiar shapes do these curves remind you of?
+   USER: Maybe like... the arches in bridges or something?
+   AI: Interesting comparison! What property do you think 'a' represents in our bridge analogy?
+   USER: Maybe how strong the materials need to be?
+   AI: Let's test that hypothesis. Calculate the maximum height at different 'a' values...
+   USER: When a=2, max height is 4. When a=3, it's 9. Wait, that's a squared relationship!
+   AI: Excellent pattern recognition! Now let's formalize this as...
+   USER: So the strength requirement grows quadratically with span length!
+   AI: Precisely! This demonstrates... (formal concept)
+   
+   The trajectory should:
+   - Begin with concrete observation from Desmos graph
+   - Progress through logical reasoning steps
+   - Include Socratic questioning
+   - Culminate in formal statement of concept
+   - Anticipate and address common errors through negative examples
+
+It's crucial that each node has a clear purpose and a clear logical connection, to get from a to b. Again, a student with no prior knowledge should be able to state the concept from the starter prompt, graph, and prerequisite concepts.

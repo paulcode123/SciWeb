@@ -1,0 +1,18 @@
+Goal: To redo the NHS organizational platform on SciWeb
+
+Requirements:
+    - NHS applicants can apply to NHS
+    - NHS admin can review, accept, and reject applicants
+    - Teachers can add tutoring opportunities
+    - NHS admin can add tutoring opportunities
+    - NHS members can sign up for tutoring opportunities
+    - All users can request in person or online tutoring
+
+Pages:
+    - NHS landing page(Connect >> NHS)
+    - Teacher SGI tutoring page
+
+Steps:
+    -Account type setting and verification:
+        - When someone goes to the Teacher SGI tutoring page whos account type is not a teacher, they will be asked to enter their @schools.nyc.gov email, it will send a verification code to their email, and they will be asked to enter the code to verify their account.
+

@@ -327,3 +327,11 @@ def security():
 def beta_tester():
     return redirect('https://docs.google.com/forms/d/e/1FAIpQLScJG1bzeTOFa5dXEQUmCOJTAWMhtEWhSASPkQcRO4dwH2_o8Q/viewform?usp=dialog')
 
+@page_init.route('/nhs')
+def nhs_page():
+    return render_template('nhs.html')
+
+@page_init.route('/nhs/apply')
+def nhs_apply():
+    return render_template('nhs_apply.html')
+

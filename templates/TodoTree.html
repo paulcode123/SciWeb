@@ -110,6 +110,9 @@
         <span class="material-icons">smart_toy</span>
         <div class="ai-pulse"></div>
     </button>
+    <button class="control-btn image-btn" id="addImageBtn" title="Add Image">
+        <span class="material-icons">image</span>
+    </button>
 </div>
 <div class="infinite-container" id="infiniteContainer">
     <div class="infinite-content">
@@ -354,6 +357,28 @@
         </div>
         <div class="modal-footer">
             <button class="control-btn" id="searchOpportunitiesBtn">Search Opportunities</button>
+        </div>
+    </div>
+</div>
+
+<!-- Add the image upload modal -->
+<div class="modal" id="imageModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add Image</h2>
+            <button class="close-btn" id="closeImageModal">
+                <span class="material-icons">close</span>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="imageUrl">Image URL</label>
+                <input type="text" id="imageUrl" class="image-url-input" placeholder="Enter image URL">
+                <img id="imagePreview" class="image-preview" alt="Image preview">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="control-btn" id="addImageNode">Add Image</button>
         </div>
     </div>
 </div>

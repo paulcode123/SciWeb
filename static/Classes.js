@@ -231,37 +231,40 @@ function display_classes(classList, user_data){
       const cons = classData.cons || [];
 
       classItem.innerHTML = `
-        <h3>${classData.name}</h3>
-        <p>Period ${classData.period} - ${classData.teacher}</p>
+        <div class="class-content" data-class-id="${classData.id}">
+          <h3>${classData.name}</h3>
+          <p>Period ${classData.period} - ${classData.teacher}</p>
+          <div class="feedback-summary">
+              ${pros.length > 0 ? `
+                  <div class="pros-summary">
+                      <h4>Pros:</h4>
+                      <ul>${pros.slice(0, 3).map(pro => `<li>${pro}</li>`).join('')}</ul>
+                  </div>
+              ` : ''}
+              ${cons.length > 0 ? `
+                  <div class="cons-summary">
+                      <h4>Cons:</h4>
+                      <ul>${cons.slice(0, 3).map(pro => `<li>${pro}</li>`).join('')}</ul>
+                  </div>
+              ` : ''}
+          </div>
+        </div>
         <div class="rating-display">
             <div class="stars">
                 ${getStarDisplay(avgRating)}
             </div>
             <span class="rating-number">${typeof avgRating === 'number' ? avgRating : 'No ratings'}</span>
-        </div>
-        <div class="feedback-summary">
-            ${pros.length > 0 ? `
-                <div class="pros-summary">
-                    <h4>Pros:</h4>
-                    <ul>${pros.slice(0, 3).map(pro => `<li>${pro}</li>`).join('')}</ul>
-                </div>
-            ` : ''}
-            ${cons.length > 0 ? `
-                <div class="cons-summary">
-                    <h4>Cons:</h4>
-                    <ul>${cons.slice(0, 3).map(con => `<li>${con}</li>`).join('')}</ul>
-                </div>
-            ` : ''}
-        </div>
-      `;
-      // if the class is clicked, go to the class page
-      classItem.addEventListener('click', () => {
-        showReviewModal(classData.id, classData.name);
+        </div>`;
+
+      // Add click event listener to the class content
+      const classContent = classItem.querySelector('.class-content');
+      classContent.addEventListener('click', (e) => {
+        // Navigate to the class page
+        window.location.href = `/class/${classData.id}`;
       });
-      //add the class element to the class list container
+
       classListContainer.appendChild(classItem);
     });
-  
 }
 
 //wait before running the function to ensure that the user's osis is defined

@@ -20,7 +20,7 @@ async function initializeClassPage() {
   });
   
   // Get class ID from URL
-  const classId = window.location.href.slice(-4);
+  const classId = window.location.pathname.split('/').pop();
   
   // Set current user
   currentUser = data.Name.osis;
@@ -52,6 +52,9 @@ async function initializeClassPage() {
   chatMessages = data.Chat?.filter(m => m.location === classData.id) || [];
   setupChatFeatures();
   updateChatMessages();
+
+  // Initialize online users tracking
+  initializeOnlineUsers(data.Users);
 }
 
 // Get current user data
@@ -103,104 +106,74 @@ function renderResources(resources) {
   resourcesList.innerHTML = '';
 
   if (!resources || resources.length === 0) {
-    resourcesList.innerHTML = '<p class="empty-state">No resources shared yet</p>';
+    resourcesList.innerHTML = '<div class="empty-state">No resources shared yet</div>';
     return;
   }
 
   resources.forEach(resource => {
-    const resourceEl = createResourceElement(resource);
-    resourcesList.appendChild(resourceEl);
+    const resourceElement = createResourceElement(resource);
+    resourcesList.appendChild(resourceElement);
   });
 }
 
 function createResourceElement(resource) {
-  const div = document.createElement('div');
-  div.className = 'resource-item';
-  div.dataset.resourceId = resource.id;
-  div.dataset.type = resource.type;
-  div.dataset.createdAt = resource.created_at;
-  div.dataset.likes = resource.likes?.length || 0;
-  div.dataset.downloads = resource.downloads || 0;
+  const element = document.createElement('div');
+  element.className = 'resource-item';
   
-  const typeIcons = {
-    notes: '📝',
-    practice: '✏️',
-    guide: '📚',
-    link: '��',
-    file: '📎'
-  };
-
-  // Track resource view
-  trackResourceView(resource.id);
-
-  // Format file size if present
-  const formatFileSize = (bytes) => {
-    if (!bytes) return '';
-    const units = ['B', 'KB', 'MB', 'GB'];
-    let size = bytes;
-    let unitIndex = 0;
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024;
-      unitIndex++;
-    }
-    return `${size.toFixed(1)} ${units[unitIndex]}`;
-  };
-
-  // Generate content HTML based on resource type
-  const getContentHTML = () => {
-    if (resource.type === 'link') {
-      return `<a href="${resource.content}" target="_blank" class="resource-link">${resource.content}</a>`;
-    } else if (resource.type === 'file') {
-      const fileInfo = resource.content;
-      return `
-        <div class="file-resource">
-          <div class="file-info">
-            <span class="file-name">${fileInfo.filename}</span>
-            <span class="file-size">${formatFileSize(fileInfo.size)}</span>
-          </div>
-          <button class="action-button download-btn" onclick="downloadResource('${resource.id}', '${fileInfo.url}', '${fileInfo.filename}')">
-            Download
-          </button>
-        </div>
-      `;
-    } else {
-      const content = typeof resource.content === 'object' ? resource.content.preview : resource.content;
-      return `<p class="resource-text">${content}</p>`;
-    }
-  };
-
-  div.innerHTML = `
+  const timeAgo = formatTimeAgo(new Date(resource.created_at));
+  
+  element.innerHTML = `
     <div class="resource-header">
-      <h4 class="resource-title">${typeIcons[resource.type]} ${resource.title}</h4>
+      <h4 class="resource-title">${resource.title}</h4>
       <div class="resource-meta">
-        <span class="resource-likes" data-resource-id="${resource.id}">👍 ${resource.likes?.length || 0}</span>
-        <span class="resource-comments" data-resource-id="${resource.id}">💬 ${resource.comments?.length || 0}</span>
-        <span class="resource-views">👁️ ${resource.views || 0}</span>
-        ${resource.type === 'file' ? `<span class="resource-downloads">⬇️ ${resource.downloads || 0}</span>` : ''}
+        <span onclick="handleResourceLike('${resource.id}')" style="cursor: pointer;">
+          ❤️ ${resource.likes || 0}
+        </span>
+        <span onclick="showResourceComments(${JSON.stringify(resource)})" style="cursor: pointer;">
+          💬 ${resource.comments?.length || 0}
+        </span>
       </div>
     </div>
+    
     <div class="resource-content">
-      ${getContentHTML()}
+      ${getResourceContent(resource)}
     </div>
+    
     <div class="resource-footer">
       <div class="resource-tags">
-        ${(resource.tags || []).map(tag => `<span class="resource-tag">${tag}</span>`).join('')}
+        ${resource.tags.map(tag => `<span class="resource-tag">${tag}</span>`).join('')}
       </div>
       <div class="resource-info">
-        <span class="resource-author">Shared by ${resource.shared_by}</span>
-        <span class="resource-time">${formatTimeAgo(resource.created_at)}</span>
+        <span class="resource-author">Shared by: ${resource.shared_by}</span>
+        <span class="resource-time">${timeAgo}</span>
       </div>
     </div>
   `;
 
-  // Add click handlers for likes and comments
-  const likesBtn = div.querySelector('.resource-likes');
-  likesBtn.addEventListener('click', () => handleResourceLike(resource.id));
+  return element;
+}
 
-  const commentsBtn = div.querySelector('.resource-comments');
-  commentsBtn.addEventListener('click', () => showResourceComments(resource));
-
-  return div;
+function getResourceContent(resource) {
+  if (resource.fileUrl) {
+    const fileSize = formatFileSize(resource.fileSize);
+    return `
+      <div class="file-resource">
+        <div class="file-info">
+          <span class="file-name">${resource.fileName}</span>
+          <span class="file-size">${fileSize}</span>
+        </div>
+        <button class="action-button download-btn" onclick="downloadResource('${resource.id}', '${resource.fileUrl}', '${resource.fileName}')">
+          Download
+        </button>
+      </div>
+    `;
+  }
+  
+  if (resource.type === 'link') {
+    return `<a href="${resource.content}" target="_blank" class="resource-link">${resource.content}</a>`;
+  }
+  
+  return `<div class="resource-text">${resource.content}</div>`;
 }
 
 async function handleResourceLike(resourceId) {
@@ -320,47 +293,78 @@ function setupChatFeatures() {
   const clearButton = document.getElementById('clear');
   const fileUpload = document.getElementById('upload');
   const emojiTrigger = document.querySelector('.emoji-trigger');
-  const pollBtn = document.getElementById('pollBtn');
+  const pollButton = document.getElementById('pollBtn');
 
+  // Initialize chat tabs
+  const chatTabs = document.querySelectorAll('.chat-tab');
+  chatTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      chatTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      switchChatTab(tab.dataset.tab);
+    });
+  });
+
+  // Send message on button click or Enter key
   sendButton.addEventListener('click', sendMessage);
-  clearButton.addEventListener('click', clearChat);
-  fileUpload.addEventListener('change', handleFileUpload);
-  emojiTrigger.addEventListener('click', showEmojiPicker);
-  pollBtn.addEventListener('click', showPollCreator);
-
-  // Enter key to send message
   messageInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
   });
+
+  // Clear chat
+  clearButton.addEventListener('click', clearChat);
+
+  // File upload
+  fileUpload.addEventListener('change', handleFileUpload);
+
+  // Emoji picker
+  emojiTrigger.addEventListener('click', showEmojiPicker);
+
+  // Poll creation
+  if (pollButton) {
+    pollButton.addEventListener('click', showPollCreator);
+  }
+
+  // Initial chat load
+  updateChatMessages();
+  
+  // Set up periodic updates
+  setInterval(updateChatMessages, 5000);
 }
 
 async function sendMessage() {
-  const input = document.getElementById('message-input');
-  const text = input.value.trim();
+  const messageInput = document.getElementById('message-input');
+  const text = messageInput.value.trim();
   
   if (!text) return;
   
-  const message = {
-    text: text,
-    sender: currentUser,
-    location: classData.id,
-    timestamp: new Date().toISOString(),
-    type: 'message'
-  };
-  
   try {
-    await fetchRequest('/post_data', {
-      data: message,
-      sheet: 'Chat'
-    });
+    startLoading();
     
-    input.value = '';
+    const messageData = {
+      text,
+      sender: currentUser,
+      location: classData.id,
+      timestamp: new Date().toISOString(),
+      id: Math.floor(Math.random() * 9000) + 1000
+    };
+
+    await fetchRequest('/post_data', {
+      sheet: 'Chat',
+      data: messageData
+    });
+
+    messageInput.value = '';
     await updateChatMessages();
+    
   } catch (error) {
     console.error('Error sending message:', error);
+    showNotification('Error sending message', 'error');
+  } finally {
+    endLoading();
   }
 }
 
@@ -374,53 +378,207 @@ async function handleFileUpload(e) {
   if (!file) return;
   
   try {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('class_id', classData.id);
+    startLoading();
     
-    const response = await fetch('/upload_file', {
-      method: 'POST',
-      body: formData
+    // Upload file and get URL
+    const fileUrl = await uploadFile(file);
+    
+    // Create message with file attachment
+    const messageData = {
+      text: `Shared a file: ${file.name}`,
+      sender: currentUser,
+      location: classData.id,
+      timestamp: new Date().toISOString(),
+      id: Math.floor(Math.random() * 9000) + 1000,
+      attachment: {
+        url: fileUrl,
+        name: file.name,
+        type: file.type,
+        size: file.size
+      }
+    };
+
+    await fetchRequest('/post_data', {
+      sheet: 'Chat',
+      data: messageData
     });
+
+    await updateChatMessages();
     
-    if (response.ok) {
-      const data = await response.json();
-      await sendMessage(`Shared file: ${data.filename}`);
-    }
   } catch (error) {
     console.error('Error uploading file:', error);
+    showNotification('Error uploading file', 'error');
+  } finally {
+    endLoading();
+    e.target.value = ''; // Reset file input
   }
 }
 
 function showEmojiPicker(e) {
-  const picker = document.createElement('div');
+  const button = e.target.closest('.emoji-trigger');
+  let picker = document.querySelector('.emoji-picker');
+  
+  if (picker) {
+    picker.remove();
+    return;
+  }
+  
+  picker = document.createElement('div');
   picker.className = 'emoji-picker';
-  const emojis = ['😊', '👍', '❤️', '🎉', '🤔', '👋', '✨', '🔥', '📚', '✅'];
   
-  picker.innerHTML = emojis.map(emoji => 
-    `<span class="emoji-option">${emoji}</span>`
-  ).join('');
+  const emojis = ['😊', '👍', '❤️', '🎉', '👏', '🤔', '📚', '✨', '💡', '🔥'];
   
-  const rect = e.target.getBoundingClientRect();
-  picker.style.position = 'absolute';
-  picker.style.top = `${rect.top - picker.offsetHeight}px`;
-  picker.style.left = `${rect.left}px`;
-  
-  document.body.appendChild(picker);
-  
-  picker.addEventListener('click', (e) => {
-    if (e.target.classList.contains('emoji-option')) {
+  emojis.forEach(emoji => {
+    const option = document.createElement('div');
+    option.className = 'emoji-option';
+    option.textContent = emoji;
+    option.addEventListener('click', () => {
       const messageInput = document.getElementById('message-input');
-      messageInput.value += e.target.textContent;
+      messageInput.value += emoji;
       picker.remove();
-    }
+      messageInput.focus();
+    });
+    picker.appendChild(option);
   });
   
+  button.parentNode.appendChild(picker);
+  
+  // Close picker when clicking outside
   document.addEventListener('click', (e) => {
-    if (!picker.contains(e.target) && e.target !== picker) {
+    if (!e.target.closest('.emoji-picker') && !e.target.closest('.emoji-trigger')) {
       picker.remove();
     }
   }, { once: true });
+}
+
+async function updateChatMessages() {
+  const messageList = document.getElementById('message-list');
+  if (!messageList) return;
+  
+  try {
+    const data = await fetchRequest('/data', { data: 'Chat' });
+    const messages = data.Chat.filter(m => m.location === classData.id)
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    
+    // Only update if there are new messages
+    if (messages.length === chatMessages.length) return;
+    
+    messageList.innerHTML = '';
+    messages.forEach(message => {
+      const messageElement = createMessageElement(message);
+      messageList.appendChild(messageElement);
+    });
+    
+    // Store current messages
+    chatMessages = messages;
+    
+    // Scroll to bottom
+    messageList.scrollTop = messageList.scrollHeight;
+    
+  } catch (error) {
+    console.error('Error updating chat:', error);
+  }
+}
+
+function createMessageElement(message) {
+  const element = document.createElement('div');
+  element.className = `message ${message.sender === currentUser ? 'sent' : 'received'}`;
+  
+  const timeAgo = formatTimeAgo(new Date(message.timestamp));
+  
+  let content = message.text;
+  if (message.attachment) {
+    const fileSize = formatFileSize(message.attachment.size);
+    content += `
+      <div class="file-attachment">
+        <div class="file-info">
+          <span class="file-name">${message.attachment.name}</span>
+          <span class="file-size">${fileSize}</span>
+        </div>
+        <a href="${message.attachment.url}" target="_blank" class="action-button download-btn">
+          Download
+        </a>
+      </div>
+    `;
+  }
+  
+  element.innerHTML = `
+    <div class="message-header">
+      <span class="message-sender">${message.sender}</span>
+      <span class="message-time">${timeAgo}</span>
+    </div>
+    <div class="message-content">${content}</div>
+  `;
+  
+  return element;
+}
+
+function initializeOnlineUsers(users) {
+  const userList = document.getElementById('user-list');
+  if (!userList) return;
+  
+  // Filter users in this class
+  const classUsers = users.filter(user => 
+    classData.OSIS.split(',').map(id => id.trim()).includes(user.osis.toString())
+  );
+  
+  // Update member stats
+  const memberStats = document.querySelector('.member-stats');
+  if (memberStats) {
+    memberStats.innerHTML = `
+      <span class="online-count">0 Online</span>
+      <span class="total-count">${classUsers.length} Total</span>
+    `;
+  }
+  
+  // Render user list
+  userList.innerHTML = '';
+  classUsers.forEach(user => {
+    const userElement = document.createElement('div');
+    userElement.className = 'user-bubble';
+    userElement.innerHTML = `
+      <span class="status-indicator offline"></span>
+      <span class="user-name">${user.first_name} ${user.last_name}</span>
+    `;
+    userList.appendChild(userElement);
+  });
+  
+  // Set up periodic online status updates
+  setInterval(() => updateOnlineStatus(classUsers), 10000);
+}
+
+async function updateOnlineStatus(users) {
+  try {
+    const data = await fetchRequest('/data', { data: 'ClassStats' });
+    const stats = data.ClassStats.find(s => s.class_id === classData.id);
+    
+    if (!stats) return;
+    
+    const onlineUsers = stats.active_users || [];
+    const userElements = document.querySelectorAll('.user-bubble');
+    let onlineCount = 0;
+    
+    userElements.forEach(element => {
+      const userName = element.querySelector('.user-name').textContent;
+      const user = users.find(u => `${u.first_name} ${u.last_name}` === userName);
+      
+      if (user && onlineUsers.includes(user.osis)) {
+        element.querySelector('.status-indicator').className = 'status-indicator online';
+        onlineCount++;
+      } else {
+        element.querySelector('.status-indicator').className = 'status-indicator offline';
+      }
+    });
+    
+    // Update online count
+    const onlineCountElement = document.querySelector('.online-count');
+    if (onlineCountElement) {
+      onlineCountElement.textContent = `${onlineCount} Online`;
+    }
+    
+  } catch (error) {
+    console.error('Error updating online status:', error);
+  }
 }
 
 // Helper Functions
@@ -485,29 +643,35 @@ function setupEventListeners() {
   });
 
   // Study group creation
-  document.getElementById('createGroupBtn').addEventListener('click', createStudyGroup);
+  const createGroupBtn = document.getElementById('createGroupBtn');
+  if (createGroupBtn) {
+    createGroupBtn.addEventListener('click', () => showStudyGroupModal());
+  }
 
   // Resource sharing
-  document.getElementById('shareResourceBtn').addEventListener('click', showResourceModal);
-  document.querySelectorAll('.resource-tag').forEach(tag => {
-    tag.addEventListener('click', (e) => {
-      document.querySelectorAll('.resource-tag').forEach(t => t.classList.remove('active'));
-      e.target.classList.add('active');
-      filterResources(e.target.textContent.toLowerCase());
-    });
-  });
+  const shareResourceBtn = document.getElementById('shareResourceBtn');
+  if (shareResourceBtn) {
+    shareResourceBtn.addEventListener('click', showResourceModal);
+  }
 
-  // Chat tabs
-  document.querySelectorAll('.chat-tab').forEach(tab => {
-    tab.addEventListener('click', (e) => {
-      document.querySelectorAll('.chat-tab').forEach(t => t.classList.remove('active'));
-      e.target.classList.add('active');
-      switchChatTab(e.target.dataset.tab);
+  // Resource type filtering
+  const resourceTags = document.querySelectorAll('.resource-tag');
+  resourceTags.forEach(tag => {
+    tag.addEventListener('click', () => {
+      resourceTags.forEach(t => t.classList.remove('active'));
+      tag.classList.add('active');
+      filterResources(tag.textContent.toLowerCase());
     });
   });
 
   // Resource search and sorting
   setupResourceSearch();
+
+  // Video conference
+  const startMeetingBtn = document.getElementById('startMeeting');
+  if (startMeetingBtn) {
+    startMeetingBtn.addEventListener('click', initializeVideoConference);
+  }
 }
 
 // Assignment form handling
@@ -713,14 +877,6 @@ function isClassOwner(classData) {
   return currentUser === classData.owner;
 }
 
-// Update chat messages
-async function updateChatMessages() {
-  const activeTab = document.querySelector('.chat-tab.active');
-  if (activeTab) {
-    await switchChatTab(activeTab.dataset.tab);
-  }
-}
-
 // Show poll creator
 function showPollCreator() {
   const modal = document.createElement('div');
@@ -811,221 +967,333 @@ async function createPoll(pollData) {
 }
 
 // Study Group Functions
-async function createStudyGroup() {
+function showStudyGroupModal() {
   const modal = document.createElement('div');
   modal.className = 'modal';
   modal.innerHTML = `
     <div class="modal-content">
+      <h3>Create Study Group</h3>
       <form id="studyGroupForm" class="study-group-form">
-        <h3>Create Study Group</h3>
         <div class="form-group">
           <label for="groupName">Group Name</label>
           <input type="text" id="groupName" required>
         </div>
+        
         <div class="form-group">
           <label for="groupDescription">Description</label>
-          <textarea id="groupDescription" required></textarea>
+          <textarea id="groupDescription" rows="3" required></textarea>
         </div>
+        
         <div class="form-group">
           <label for="nextSession">Next Session</label>
-          <input type="datetime-local" id="nextSession" required>
+          <input type="datetime-local" id="nextSession">
         </div>
+        
         <div class="form-group">
-          <label for="groupSchedule">Recurring Schedule (Optional)</label>
-          <select id="groupSchedule">
+          <label for="schedule">Recurring Schedule (Optional)</label>
+          <select id="schedule">
             <option value="">No recurring schedule</option>
             <option value="weekly">Weekly</option>
             <option value="biweekly">Bi-weekly</option>
             <option value="monthly">Monthly</option>
           </select>
         </div>
+        
         <div class="form-actions">
-          <button type="submit" class="action-button">Create</button>
-          <button type="button" class="action-button secondary" id="cancelGroupBtn">Cancel</button>
+          <button type="submit" class="action-button">Create Group</button>
+          <button type="button" class="action-button secondary" onclick="this.closest('.modal').remove()">Cancel</button>
         </div>
       </form>
     </div>
   `;
-  
+
   document.body.appendChild(modal);
-  
+
   const form = modal.querySelector('#studyGroupForm');
-  const cancelBtn = modal.querySelector('#cancelGroupBtn');
-  
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const groupData = {
-      name: document.getElementById('groupName').value,
-      description: document.getElementById('groupDescription').value,
-      nextSession: document.getElementById('nextSession').value,
-      schedule: document.getElementById('groupSchedule').value,
-      class_id: classData.id,
-      members: [currentUser],
-      id: Math.floor(Math.random() * 10000),
-      created_at: new Date().toISOString(),
-      resources: [],
-      chat_history: []
-    };
+    const formData = new FormData(form);
     
-    await postStudyGroup(groupData);
-    document.body.removeChild(modal);
-    await initializeStudyGroups();
-    
-    // Add to activity feed
-    await postActivity({
-      type: 'study_group',
-      content: `Created study group: ${groupData.name}`,
-      related_id: groupData.id
-    });
-  });
-  
-  cancelBtn.addEventListener('click', () => {
-    document.body.removeChild(modal);
-  });
-  
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      document.body.removeChild(modal);
+    try {
+      startLoading();
+      
+      const groupData = {
+        name: formData.get('groupName'),
+        description: formData.get('groupDescription'),
+        nextSession: formData.get('nextSession'),
+        schedule: formData.get('schedule'),
+        class_id: classData.id,
+        members: [currentUser],
+        created_at: new Date().toISOString(),
+        id: Math.floor(Math.random() * 9000) + 1000,
+        resources: [],
+        chat_history: []
+      };
+
+      await postStudyGroup(groupData);
+      showNotification('Study group created successfully!', 'success');
+      modal.remove();
+      
+      // Add to activity feed
+      const activityData = {
+        type: 'collaboration',
+        class_id: classData.id,
+        user: currentUser,
+        content: `created a new study group: ${groupData.name}`,
+        timestamp: new Date().toISOString()
+      };
+      await postActivity(activityData);
+      
+      // Refresh study groups
+      const data = await fetchRequest('/data', { data: 'StudyGroups' });
+      const groups = data.StudyGroups.filter(g => g.class_id === classData.id);
+      renderStudyGroups(groups);
+      
+    } catch (error) {
+      console.error('Error creating study group:', error);
+      showNotification('Error creating study group', 'error');
+    } finally {
+      endLoading();
     }
   });
 }
 
-async function initializeStudyGroups() {
-  try {
-    const response = await fetchRequest('/data', {
-      data: 'StudyGroups',
-      filters: { class_id: classData.id }
-    });
-    activeStudyGroups = response.StudyGroups || [];
-    renderStudyGroups(activeStudyGroups);
-  } catch (error) {
-    console.error('Error initializing study groups:', error);
-  }
-}
-
 function renderStudyGroups(groups) {
-  const groupsList = document.getElementById('studyGroupsList');
-  if (!groupsList) return;
-  
-  groupsList.innerHTML = '';
-  
-  if (groups.length === 0) {
-    groupsList.innerHTML = '<p class="empty-state">No study groups yet</p>';
+  const studyGroupsList = document.getElementById('studyGroupsList');
+  if (!studyGroupsList) return;
+
+  if (!groups || groups.length === 0) {
+    studyGroupsList.innerHTML = '<div class="empty-state">No study groups yet</div>';
     return;
   }
-  
+
+  studyGroupsList.innerHTML = '';
   groups.forEach(group => {
-    const groupEl = createStudyGroupElement(group);
-    groupsList.appendChild(groupEl);
+    const groupElement = createStudyGroupElement(group);
+    studyGroupsList.appendChild(groupElement);
   });
 }
 
 function createStudyGroupElement(group) {
-  const div = document.createElement('div');
-  div.className = 'study-group-item';
-  div.dataset.groupId = group.id;
+  const element = document.createElement('div');
+  element.className = 'study-group-item';
   
-  const nextSession = new Date(group.nextSession);
-  const isUpcoming = nextSession > new Date();
+  const isUserMember = group.members.includes(currentUser);
+  const nextSession = group.nextSession ? new Date(group.nextSession) : null;
+  const timeUntilSession = nextSession ? formatTimeUntil(nextSession) : 'No session scheduled';
   
-  div.innerHTML = `
+  element.innerHTML = `
     <div class="group-header">
       <h4>${group.name}</h4>
       <span class="member-count">${group.members.length} members</span>
     </div>
+    
     <p class="group-description">${group.description}</p>
+    
     <div class="group-schedule">
-      <span class="schedule-icon">📅</span>
-      <span>${isUpcoming ? 'Next session:' : 'Last session:'} ${formatDate(group.nextSession)}</span>
-      ${group.schedule ? `<span class="recurring-badge">Recurring: ${group.schedule}</span>` : ''}
+      <span>Next session: ${timeUntilSession}</span>
+      ${group.schedule ? `<span>(${group.schedule})</span>` : ''}
     </div>
+    
     <div class="group-actions">
-      ${group.members.includes(currentUser)
-        ? `<button class="action-button leave-group-btn">Leave Group</button>
-           <button class="action-button join-session-btn" ${!isUpcoming ? 'disabled' : ''}>
-             ${isUpcoming ? 'Join Next Session' : 'No Upcoming Session'}
-           </button>`
-        : `<button class="action-button join-group-btn">Join Group</button>`
-      }
+      ${isUserMember ? `
+        <button class="action-button" onclick="handleJoinSession('${group.id}')">Join Session</button>
+        <button class="action-button secondary" onclick="handleLeaveGroup('${group.id}')">Leave Group</button>
+      ` : `
+        <button class="action-button" onclick="handleJoinGroup('${group.id}')">Join Group</button>
+      `}
     </div>
   `;
-  
-  // Add event listeners
-  const joinBtn = div.querySelector('.join-group-btn');
-  const leaveBtn = div.querySelector('.leave-group-btn');
-  const sessionBtn = div.querySelector('.join-session-btn');
-  
-  if (joinBtn) {
-    joinBtn.addEventListener('click', () => handleJoinGroup(group.id));
-  }
-  
-  if (leaveBtn) {
-    leaveBtn.addEventListener('click', () => handleLeaveGroup(group.id));
-  }
-  
-  if (sessionBtn) {
-    sessionBtn.addEventListener('click', () => handleJoinSession(group.id));
-  }
-  
-  return div;
+
+  return element;
 }
 
 async function handleJoinGroup(groupId) {
   try {
-    const group = activeStudyGroups.find(g => g.id === groupId);
-    if (!group) return;
+    startLoading();
+    
+    const data = await fetchRequest('/data', { data: 'StudyGroups' });
+    const group = data.StudyGroups.find(g => g.id === groupId);
+    
+    if (!group) {
+      throw new Error('Group not found');
+    }
     
     group.members.push(currentUser);
+    
     await fetchRequest('/update_data', {
       sheet: 'StudyGroups',
-      row_value: groupId,
+      data: group,
       row_name: 'id',
-      data: group
+      row_value: groupId
     });
     
-    await postActivity({
-      type: 'study_group',
-      content: `Joined study group: ${group.name}`,
-      related_id: groupId
-    });
+    // Add to activity feed
+    const activityData = {
+      type: 'collaboration',
+      class_id: classData.id,
+      user: currentUser,
+      content: `joined the study group: ${group.name}`,
+      timestamp: new Date().toISOString()
+    };
+    await postActivity(activityData);
     
-    await initializeStudyGroups();
+    showNotification('Successfully joined the group!', 'success');
+    
+    // Refresh study groups
+    const updatedData = await fetchRequest('/data', { data: 'StudyGroups' });
+    const groups = updatedData.StudyGroups.filter(g => g.class_id === classData.id);
+    renderStudyGroups(groups);
+    
   } catch (error) {
     console.error('Error joining group:', error);
+    showNotification('Error joining group', 'error');
+  } finally {
+    endLoading();
   }
 }
 
 async function handleLeaveGroup(groupId) {
   try {
-    const group = activeStudyGroups.find(g => g.id === groupId);
-    if (!group) return;
+    startLoading();
+    
+    const data = await fetchRequest('/data', { data: 'StudyGroups' });
+    const group = data.StudyGroups.find(g => g.id === groupId);
+    
+    if (!group) {
+      throw new Error('Group not found');
+    }
     
     group.members = group.members.filter(member => member !== currentUser);
+    
     await fetchRequest('/update_data', {
       sheet: 'StudyGroups',
-      row_value: groupId,
+      data: group,
       row_name: 'id',
-      data: group
+      row_value: groupId
     });
     
-    await postActivity({
-      type: 'study_group',
-      content: `Left study group: ${group.name}`,
-      related_id: groupId
-    });
+    // Add to activity feed
+    const activityData = {
+      type: 'collaboration',
+      class_id: classData.id,
+      user: currentUser,
+      content: `left the study group: ${group.name}`,
+      timestamp: new Date().toISOString()
+    };
+    await postActivity(activityData);
     
-    await initializeStudyGroups();
+    showNotification('Successfully left the group', 'success');
+    
+    // Refresh study groups
+    const updatedData = await fetchRequest('/data', { data: 'StudyGroups' });
+    const groups = updatedData.StudyGroups.filter(g => g.class_id === classData.id);
+    renderStudyGroups(groups);
+    
   } catch (error) {
     console.error('Error leaving group:', error);
+    showNotification('Error leaving group', 'error');
+  } finally {
+    endLoading();
   }
 }
 
 async function handleJoinSession(groupId) {
-  const group = activeStudyGroups.find(g => g.id === groupId);
-  if (!group) return;
+  try {
+    const data = await fetchRequest('/data', { data: 'StudyGroups' });
+    const group = data.StudyGroups.find(g => g.id === groupId);
+    
+    if (!group) {
+      throw new Error('Group not found');
+    }
+    
+    // Initialize video conference for the study group
+    initializeVideoConference(`study-group-${groupId}`);
+    
+  } catch (error) {
+    console.error('Error joining session:', error);
+    showNotification('Error joining session', 'error');
+  }
+}
+
+function initializeVideoConference(roomName = null) {
+  const domain = 'meet.jit.si';
+  const options = {
+    roomName: roomName || `class-${classData.id}`,
+    width: '100%',
+    height: '600px',
+    parentNode: document.querySelector('#meet'),
+    userInfo: {
+      displayName: currentUser
+    },
+    configOverwrite: {
+      startWithAudioMuted: true,
+      startWithVideoMuted: true,
+      enableWelcomePage: false,
+      enableClosePage: false
+    },
+    interfaceConfigOverwrite: {
+      TOOLBAR_BUTTONS: [
+        'microphone', 'camera', 'closedcaptions', 'desktop', 'fullscreen',
+        'fodeviceselection', 'hangup', 'profile', 'chat', 'recording',
+        'livestreaming', 'etherpad', 'sharedvideo', 'settings', 'raisehand',
+        'videoquality', 'filmstrip', 'invite', 'feedback', 'stats', 'shortcuts',
+        'tileview', 'videobackgroundblur', 'download', 'help', 'mute-everyone',
+        'security'
+      ],
+    }
+  };
   
-  // Redirect to video conference for the study group
-  window.location.href = `/study-session/${groupId}`;
+  const api = new JitsiMeetExternalAPI(domain, options);
+  
+  // Update participant count
+  api.addEventListener('participantJoined', () => {
+    const count = api.getNumberOfParticipants();
+    document.getElementById('participantCount').textContent = `${count} participants`;
+  });
+  
+  api.addEventListener('participantLeft', () => {
+    const count = api.getNumberOfParticipants();
+    document.getElementById('participantCount').textContent = `${count} participants`;
+  });
+  
+  // Handle video conference features
+  document.querySelector('.feature-btn[title="Share Screen"]').addEventListener('click', () => {
+    api.executeCommand('toggleShareScreen');
+  });
+  
+  document.querySelector('.feature-btn[title="Whiteboard"]').addEventListener('click', () => {
+    api.executeCommand('toggleShareScreen', {
+      shareOptions: {
+        desktopSharingSourceDevice: 'whiteboard'
+      }
+    });
+  });
+  
+  document.querySelector('.feature-btn[title="Record Session"]').addEventListener('click', () => {
+    api.executeCommand('toggleRecording');
+  });
+}
+
+function formatTimeUntil(date) {
+  const now = new Date();
+  const diff = date - now;
+  
+  if (diff < 0) {
+    return 'Session ended';
+  }
+  
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  
+  if (days > 0) {
+    return `in ${days} day${days > 1 ? 's' : ''}`;
+  } else if (hours > 0) {
+    return `in ${hours} hour${hours > 1 ? 's' : ''}`;
+  } else {
+    return `in ${minutes} minute${minutes > 1 ? 's' : ''}`;
+  }
 }
 
 // Activity Feed Functions
@@ -1229,18 +1497,17 @@ async function addActivityComment(activityId, comment) {
 
 // Resource Modal Function
 function showResourceModal() {
-  const modalContainer = document.createElement('div');
-  modalContainer.className = 'modal';
-  modalContainer.id = 'resourceModal';
-  
-  modalContainer.innerHTML = `
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `
     <div class="modal-content">
+      <h3>Share Resource</h3>
       <form id="resourceForm" class="resource-form">
-        <h3>Share Resource</h3>
         <div class="form-group">
           <label for="resourceTitle">Title</label>
-          <input type="text" id="resourceTitle" required maxlength="100">
+          <input type="text" id="resourceTitle" required>
         </div>
+        
         <div class="form-group">
           <label for="resourceType">Type</label>
           <select id="resourceType" required>
@@ -1248,168 +1515,89 @@ function showResourceModal() {
             <option value="practice">Practice Problems</option>
             <option value="guide">Study Guide</option>
             <option value="link">External Link</option>
-            <option value="file">File Upload</option>
           </select>
         </div>
-        <div class="form-group" id="contentGroup">
-          <label for="resourceContent">Content</label>
-          <textarea id="resourceContent" required maxlength="5000"></textarea>
-        </div>
-        <div class="form-group" id="fileGroup" style="display: none;">
-          <label for="resourceFile">File</label>
-          <input type="file" id="resourceFile" accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png">
-          <p class="file-info">Max size: 10MB. Supported formats: PDF, DOC, DOCX, TXT, JPG, PNG</p>
-        </div>
+        
         <div class="form-group">
-          <label for="resourceTags">Tags (comma separated)</label>
+          <label for="resourceContent">Content</label>
+          <textarea id="resourceContent" rows="4"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="resourceFile">Or Upload File</label>
+          <input type="file" id="resourceFile">
+          <div class="file-info"></div>
+        </div>
+        
+        <div class="form-group">
+          <label for="resourceTags">Tags (comma-separated)</label>
           <input type="text" id="resourceTags" placeholder="e.g., homework, chapter 1, review">
         </div>
-        <div class="form-group">
-          <label for="resourceVisibility">Visibility</label>
-          <select id="resourceVisibility" required>
-            <option value="class">Class Only</option>
-            <option value="public">Public</option>
-          </select>
-        </div>
+        
         <div class="form-actions">
           <button type="submit" class="action-button">Share</button>
-          <button type="button" class="action-button secondary" id="cancelResourceBtn">Cancel</button>
+          <button type="button" class="action-button secondary" onclick="this.closest('.modal').remove()">Cancel</button>
         </div>
       </form>
     </div>
   `;
-  
-  document.body.appendChild(modalContainer);
-  
-  const form = modalContainer.querySelector('#resourceForm');
-  const cancelBtn = modalContainer.querySelector('#cancelResourceBtn');
-  const typeSelect = document.getElementById('resourceType');
-  const contentGroup = document.getElementById('contentGroup');
-  const fileGroup = document.getElementById('fileGroup');
-  
-  // Toggle between content and file upload based on type
-  typeSelect.addEventListener('change', (e) => {
-    if (e.target.value === 'file') {
-      contentGroup.style.display = 'none';
-      fileGroup.style.display = 'block';
-      document.getElementById('resourceContent').removeAttribute('required');
-      document.getElementById('resourceFile').setAttribute('required', 'required');
-    } else if (e.target.value === 'link') {
-      contentGroup.style.display = 'block';
-      fileGroup.style.display = 'none';
-      document.getElementById('resourceContent').setAttribute('required', 'required');
-      document.getElementById('resourceFile').removeAttribute('required');
-      document.getElementById('resourceContent').placeholder = 'Enter URL here';
-    } else {
-      contentGroup.style.display = 'block';
-      fileGroup.style.display = 'none';
-      document.getElementById('resourceContent').setAttribute('required', 'required');
-      document.getElementById('resourceFile').removeAttribute('required');
-      document.getElementById('resourceContent').placeholder = 'Enter content here';
-    }
-  });
-  
-  const closeModal = () => {
-    const modal = document.getElementById('resourceModal');
-    if (modal && modal.parentNode) {
-      modal.parentNode.removeChild(modal);
-    }
-  };
-  
+
+  document.body.appendChild(modal);
+
+  // Handle form submission
+  const form = modal.querySelector('#resourceForm');
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    startLoading();
+    const formData = new FormData(form);
     
     try {
+      startLoading();
+      
       const resourceData = {
-        title: document.getElementById('resourceTitle').value,
-        type: document.getElementById('resourceType').value,
-        tags: document.getElementById('resourceTags').value
-          .split(',')
-          .map(tag => tag.trim())
-          .filter(tag => tag.length > 0),
-        visibility: document.getElementById('resourceVisibility').value,
+        title: formData.get('resourceTitle'),
+        type: formData.get('resourceType'),
+        content: formData.get('resourceContent'),
+        tags: formData.get('resourceTags').split(',').map(tag => tag.trim()),
         class_id: classData.id,
         shared_by: currentUser,
-        id: Math.floor(Math.random() * 10000),
         created_at: new Date().toISOString(),
-        likes: [],
-        comments: [],
-        downloads: 0,
-        views: 0
+        likes: 0,
+        comments: []
       };
 
-      // Handle file upload
-      if (resourceData.type === 'file') {
-        const file = document.getElementById('resourceFile').files[0];
-        if (!file) throw new Error('Please select a file');
-        
-        if (file.size > 10 * 1024 * 1024) { // 10MB limit
-          throw new Error('File size exceeds 10MB limit');
-        }
-        
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        const uploadResponse = await fetch('/upload-file', {
-          method: 'POST',
-          body: formData
-        });
-        
-        if (!uploadResponse.ok) throw new Error('File upload failed');
-        
-        const { fileUrl, fileType } = await uploadResponse.json();
-        resourceData.content = {
-          url: fileUrl,
-          type: fileType,
-          filename: file.name,
-          size: file.size
-        };
-      } else {
-        resourceData.content = document.getElementById('resourceContent').value;
-        
-        // Validate URL for link type
-        if (resourceData.type === 'link') {
-          try {
-            new URL(resourceData.content);
-          } catch {
-            throw new Error('Please enter a valid URL');
-          }
-        }
-        
-        // Compress content if it's too long
-        if (typeof resourceData.content === 'string' && resourceData.content.length > 1000) {
-          resourceData.content = {
-            full: resourceData.content,
-            preview: resourceData.content.substring(0, 997) + '...'
-          };
-        }
+      const file = formData.get('resourceFile');
+      if (file && file.size > 0) {
+        // Handle file upload here
+        const fileUrl = await uploadFile(file);
+        resourceData.fileUrl = fileUrl;
+        resourceData.fileName = file.name;
+        resourceData.fileSize = file.size;
       }
-      
+
       await postResource(resourceData);
+      showNotification('Resource shared successfully!', 'success');
+      modal.remove();
       
       // Add to activity feed
-      await postActivity({
+      const activityData = {
         type: 'resource',
-        content: `Shared a new ${resourceData.type}: ${resourceData.title}`,
-        related_id: resourceData.id
-      });
+        class_id: classData.id,
+        user: currentUser,
+        content: `shared a new ${resourceData.type}: ${resourceData.title}`,
+        timestamp: new Date().toISOString()
+      };
+      await postActivity(activityData);
       
-      closeModal();
-      await initializeResources();
+      // Refresh resources
+      const data = await fetchRequest('/data', { data: 'Resources' });
+      const resources = data.Resources.filter(r => r.class_id === classData.id);
+      renderResources(resources);
+      
     } catch (error) {
       console.error('Error sharing resource:', error);
-      alert(error.message || 'Failed to share resource. Please try again.');
+      showNotification('Error sharing resource', 'error');
     } finally {
       endLoading();
-    }
-  });
-  
-  cancelBtn.addEventListener('click', closeModal);
-  
-  modalContainer.addEventListener('click', (e) => {
-    if (e.target === modalContainer) {
-      closeModal();
     }
   });
 }
