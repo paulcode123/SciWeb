@@ -613,7 +613,7 @@ async function saveProgress() {
 
     const applicationData = {
         id: applicationId,
-        OSIS: null, // Will be filled by backend
+        OSIS: osis, // Will be filled by backend
         status: 'draft',
         grade: parseInt(grade) || null,
         entry_grade: parseInt(entryGrade) || null,

@@ -988,4 +988,116 @@ def get_opportunities():
         print(f"Error generating opportunities: {str(e)}")
         return jsonify({'error': 'Failed to generate opportunities'}), 500
 
+@ai_routes.route('/why', methods=['POST'])
+def why_explanation():
+    """Generate explanations for why something is true/happens"""
+    try:
+        data = request.get_json()
+        content = data.get('content')
+        generate_title = data.get('generate_title', False)
+        is_root = data.get('is_root', False)
+        
+        if not content:
+            return jsonify({'error': 'No content provided'}), 400
+
+        if is_root:
+            # Just generate a title for the root node
+            function_schema = {
+                "name": "generate_title",
+                "description": "Generate a short title for the concept",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "title": {
+                            "type": "string",
+                            "description": "A concise title (max 7 words) that captures the main idea"
+                        }
+                    },
+                    "required": ["title"]
+                }
+            }
+
+            prompt = f"""Generate a very concise title (maximum 7 words) that captures the essence of this concept:
+            "{content}"
+            The title should be clear and descriptive but as short as possible."""
+
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[{"role": "user", "content": prompt}],
+                tools=[{"type": "function", "function": function_schema}],
+                tool_choice={"type": "function", "function": {"name": "generate_title"}}
+            )
+
+            function_args = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
+            return jsonify({"title": function_args["title"]})
+
+        # Define the function schema for structured output with titles
+        function_schema = {
+            "name": "explain_why",
+            "description": "Generate explanations for why something is true or happens",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "explanations": {
+                        "type": "array",
+                        "description": "List of explanations with titles",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "content": {
+                                    "type": "string",
+                                    "description": "A clear explanation that contributes to understanding why"
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "description": "A concise title (max 7 words) that captures the main idea of this explanation"
+                                }
+                            },
+                            "required": ["content", "title"]
+                        },
+                        "minItems": 1,
+                        "maxItems": 3
+                    }
+                },
+                "required": ["explanations"]
+            }
+        }
+
+        # Create the prompt
+        prompt = f"""You are a knowledgeable expert who helps people understand why things happen or are true.
+        
+For the following statement/phenomenon, provide 1-3 clear, direct explanations that help explain WHY it occurs or is true:
+
+"{content}"
+
+For each explanation:
+1. Provide a clear, detailed explanation
+2. Include a very concise title (maximum 7 words) that captures the main idea
+
+Focus on the most fundamental, direct causes. Each explanation should be clear and concise, avoiding technical jargon unless necessary.
+If the statement contains multiple parts, focus on the most important aspect."""
+
+        # Generate explanations using OpenAI with function calling
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[{
+                "role": "user",
+                "content": prompt
+            }],
+            tools=[{
+                "type": "function",
+                "function": function_schema
+            }],
+            tool_choice={"type": "function", "function": {"name": "explain_why"}}
+        )
+
+        # Extract the function call arguments
+        function_args = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
+        
+        return jsonify(function_args)
+        
+    except Exception as e:
+        print(f"Error generating why explanations: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 

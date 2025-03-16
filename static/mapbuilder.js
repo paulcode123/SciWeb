@@ -154,7 +154,7 @@ async function loadSelectedMap() {
                     id: node.id,
                     label: node.label,
                     description: node.description,
-                    starterPrompt: node.starter_prompt,
+                    trajectory: node.trajectory,
                     youtube: node.youtube,
                     x: position?.x,
                     y: position?.y
@@ -197,7 +197,7 @@ function addNode() {
         id,
         label: 'New Node',
         description: '',
-        starterPrompt: '',
+        trajectory: '',
         youtube: [],
         prerequisites: []
     });
@@ -211,7 +211,7 @@ function onNodeSelect(params) {
     selectedNode = nodes.get(params.nodes[0]);
     document.getElementById('nodeLabel').value = selectedNode.label;
     document.getElementById('nodeDescription').value = selectedNode.description || '';
-    document.getElementById('starterPrompt').value = selectedNode.starterPrompt || '';
+    document.getElementById('trajectory').value = selectedNode.trajectory || '';
     
     // Update YouTube list
     updateYoutubeList();
@@ -224,7 +224,7 @@ function onNodeDeselect() {
     selectedNode = null;
     document.getElementById('nodeLabel').value = '';
     document.getElementById('nodeDescription').value = '';
-    document.getElementById('starterPrompt').value = '';
+    document.getElementById('trajectory').value = '';
     document.getElementById('youtubeList').innerHTML = '';
     document.getElementById('prerequisitesList').innerHTML = '';
 }
@@ -239,13 +239,13 @@ function updateNode() {
     
     const labelInput = document.getElementById('nodeLabel');
     const descriptionInput = document.getElementById('nodeDescription');
-    const promptInput = document.getElementById('starterPrompt');
+    const trajectoryInput = document.getElementById('trajectory');
     
-    if (!labelInput || !descriptionInput || !promptInput) {
+    if (!labelInput || !descriptionInput || !trajectoryInput) {
         console.error('Required input elements not found:', {
             labelInput: !!labelInput,
             descriptionInput: !!descriptionInput,
-            promptInput: !!promptInput
+            trajectoryInput: !!trajectoryInput
         });
         return;
     }
@@ -254,7 +254,7 @@ function updateNode() {
         ...selectedNode,
         label: labelInput.value,
         description: descriptionInput.value,
-        starterPrompt: promptInput.value
+        trajectory: trajectoryInput.value
     };
     
     console.log('Updating node with:', updatedNode);
@@ -398,7 +398,7 @@ async function saveMap() {
             label: node.label,
             description: node.description || '',
             prerequisites: nodePrerequisites[node.id] || [],
-            starter_prompt: node.starterPrompt || '',
+            trajectory: node.trajectory || '',
             youtube: node.youtube || []
         })),
         structure: structure,
@@ -467,7 +467,7 @@ async function updateMap() {
             label: node.label,
             description: node.description || '',
             prerequisites: nodePrerequisites[node.id] || [],
-            starter_prompt: node.starterPrompt || '',
+            trajectory: node.trajectory || '',
             youtube: node.youtube || []
         })),
         structure: structure,

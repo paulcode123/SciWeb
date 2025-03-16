@@ -3,7 +3,7 @@ let currentUser = null;
 let isAdmin = false;
 let verificationCode = null;
 let emailTest = true; // Set to true to allow any email domain for testing
-let ForceAcctType = 'member'; // Can be 'none', 'student', 'teacher', 'member', or 'admin'
+let ForceAcctType = 'admin'; // Can be 'none', 'student', 'teacher', 'member', or 'admin'
 
 // Test email lists - replace these with actual email lists
 const memberEmails = emailTest ? ['pauln30@nycstudents.net'] : [
@@ -15,6 +15,9 @@ const adminEmails = emailTest ? ['pauln30@nycstudents.net'] : [
     'admin1@schools.nyc.gov',
     'admin2@schools.nyc.gov'
 ];
+
+// Global variable to store current member being viewed
+let currentMemberOSIS = null;
 
 // Initialize the page
 async function initializePage() {
@@ -119,16 +122,16 @@ function updateVisibleCards(status) {
         }
         
         // Show all verification cards
-        Object.values(cards).forEach(card => {
+    Object.values(cards).forEach(card => {
             if (card) card.style.display = 'block';
         });
         return;
     }
     
     // Hide all cards for other statuses
-    Object.values(cards).forEach(card => {
+            Object.values(cards).forEach(card => {
         if (card) card.style.display = 'none';
-    });
+            });
 }
 
 async function verifyStatus(type) {
@@ -202,16 +205,16 @@ async function verifyEmail(type) {
         case 'teacher':
             isValidEmail = emailTest || email.endsWith('@schools.nyc.gov');
             errorMessage = 'Please enter a valid @schools.nyc.gov email address';
-            break;
-        case 'member':
+                break;
+            case 'member':
             isValidEmail = emailTest || memberEmails.includes(email);
             errorMessage = 'This email is not registered as an NHS member';
-            break;
-        case 'admin':
+                break;
+            case 'admin':
             isValidEmail = emailTest || adminEmails.includes(email);
             errorMessage = 'This email is not registered as an NHS administrator';
-            break;
-    }
+                break;
+        }
 
     if (!isValidEmail) {
         emailError.textContent = errorMessage;
@@ -1097,6 +1100,490 @@ async function submitShowUps(opportunityId) {
     function updateProgress(percentage) {
         progressFill.style.width = `${percentage}%`;
         progressText.textContent = Math.round(percentage);
+    }
+}
+
+// Function to search members
+async function searchMembers() {
+    startLoading();
+    try {
+        const searchInput = document.getElementById('member-search').value.toLowerCase();
+        
+        // Get all NHS members
+        const membersData = await fetchRequest('/data', {
+            data: 'FULLNHSMembers'
+        });
+
+        // Find member by OSIS or name
+        const member = membersData.FULLNHSMembers.find(m => 
+            m.OSIS.toString() === searchInput ||
+            (m.first_name + ' ' + m.last_name).toLowerCase().includes(searchInput)
+        );
+
+        if (!member) {
+            showError('Member not found');
+            document.getElementById('member-details').style.display = 'none';
+            return;
+        }
+
+        // Store current member OSIS
+        currentMemberOSIS = member.OSIS;
+
+        // Display member details
+        displayMemberDetails(member);
+        
+    } catch (error) {
+        console.error('Error searching members:', error);
+        showError('Failed to search members');
+    } finally {
+        endLoading();
+    }
+}
+
+// Function to display member details
+async function displayMemberDetails(member) {
+    try {
+        // Update basic info
+        document.getElementById('member-name').textContent = `${member.first_name} ${member.last_name}`;
+        document.getElementById('member-osis').textContent = member.OSIS;
+        document.getElementById('member-email').textContent = member.email;
+
+        // Calculate and display credits
+        const credits = {
+            tutoring: 0,
+            service: 0,
+            project: 0
+        };
+        const completedCount = {
+            tutoring: 0,
+            service: 0,
+            project: 0
+        };
+
+        // Get opportunities data for names
+        const opportunitiesData = await fetchRequest('/data', {
+            data: 'Opportunities'
+        });
+        const opportunitiesMap = {};
+        opportunitiesData.Opportunities.forEach(opp => {
+            opportunitiesMap[opp.id] = opp;
+        });
+
+        // Process credits and opportunities
+        member.credits = member.credits || [];
+        member.credits.forEach(credit => {
+            if (credit.status === 'attended') {
+                credits[credit.category] += credit.credits;
+                completedCount[credit.category]++;
+            }
+        });
+
+        // Update credit displays and progress bars
+        document.getElementById('member-tutoring-credits').textContent = credits.tutoring;
+        document.getElementById('member-service-credits').textContent = credits.service;
+        document.getElementById('member-project-credits').textContent = credits.project;
+
+        updateProgressBar('member-tutoring-progress', credits.tutoring, 10, completedCount.tutoring, 5);
+        updateProgressBar('member-service-progress', credits.service, 10, completedCount.service, 5);
+        updateProgressBar('member-project-progress', credits.project, 2, completedCount.project, 1);
+
+        // Display probations
+        const probationsList = document.getElementById('probations-list');
+        probationsList.innerHTML = (member.probations || []).map((prob, index) => `
+            <div class="probation-item">
+                <span class="reason">${prob.reason}</span>
+                <div class="actions">
+                    <button onclick="editProbation(${index})" class="action-btn">Edit</button>
+                    <button onclick="deleteProbation(${index})" class="action-btn delete-btn">Delete</button>
+                </div>
+            </div>
+        `).join('');
+
+        // Display opportunities
+        const opportunitiesBody = document.getElementById('member-opportunities-body');
+        opportunitiesBody.innerHTML = member.credits.map(credit => {
+            const opportunity = opportunitiesMap[credit.id];
+            if (!opportunity) return '';
+            
+            return `
+                <tr>
+                    <td>${new Date(opportunity.date).toLocaleDateString()}</td>
+                    <td>${opportunity.name}</td>
+                    <td>${opportunity.category}</td>
+                    <td>${credit.credits}</td>
+                    <td>
+                        <select onchange="updateCreditStatus('${credit.id}', this.value)">
+                            <option value="signed_up" ${credit.status === 'signed_up' ? 'selected' : ''}>Signed Up</option>
+                            <option value="attended" ${credit.status === 'attended' ? 'selected' : ''}>Attended</option>
+                            <option value="no_show" ${credit.status === 'no_show' ? 'selected' : ''}>No Show</option>
+                        </select>
+                    </td>
+                    <td>
+                        <button onclick="editCredit('${credit.id}')" class="action-btn">Edit</button>
+                        <button onclick="deleteCredit('${credit.id}')" class="action-btn delete-btn">Delete</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // Show the details section
+        document.getElementById('member-details').style.display = 'block';
+
+    } catch (error) {
+        console.error('Error displaying member details:', error);
+        showError('Failed to display member details');
+    }
+}
+
+// Function to add a probation
+async function addProbation() {
+    const reason = prompt('Enter probation reason:');
+    if (!reason) return;
+
+    startLoading();
+    try {
+        // Get current member data
+        const memberData = await fetchRequest('/data', {
+            data: 'FULLNHSMembers'
+        });
+        const member = memberData.FULLNHSMembers.find(m => m.OSIS === currentMemberOSIS);
+        
+        if (!member) {
+            throw new Error('Member not found');
+        }
+
+        // Add new probation
+        const probations = member.probations || [];
+        probations.push({ reason });
+
+        // Update member data
+        await fetchRequest('/update_data', {
+            data: {
+                sheet: 'NHSMembers',
+                data: { probations },
+                row_name: 'OSIS',
+                row_value: currentMemberOSIS
+            }
+        });
+
+        // Refresh display
+        displayMemberDetails(member);
+        showSuccess('Probation added successfully');
+
+    } catch (error) {
+        console.error('Error adding probation:', error);
+        showError('Failed to add probation');
+    } finally {
+        endLoading();
+    }
+}
+
+// Function to edit a probation
+async function editProbation(index) {
+    const memberData = await fetchRequest('/data', {
+        data: 'FULLNHSMembers'
+    });
+    const member = memberData.FULLNHSMembers.find(m => m.OSIS === currentMemberOSIS);
+    
+    if (!member || !member.probations || !member.probations[index]) {
+        showError('Probation not found');
+        return;
+    }
+
+    const newReason = prompt('Edit probation reason:', member.probations[index].reason);
+    if (!newReason) return;
+
+    startLoading();
+    try {
+        member.probations[index].reason = newReason;
+
+        await fetchRequest('/update_data', {
+            data: {
+                sheet: 'NHSMembers',
+                data: { probations: member.probations },
+                row_name: 'OSIS',
+                row_value: currentMemberOSIS
+            }
+        });
+
+        displayMemberDetails(member);
+        showSuccess('Probation updated successfully');
+
+    } catch (error) {
+        console.error('Error updating probation:', error);
+        showError('Failed to update probation');
+    } finally {
+        endLoading();
+    }
+}
+
+// Function to delete a probation
+async function deleteProbation(index) {
+    if (!confirm('Are you sure you want to delete this probation?')) return;
+
+    startLoading();
+    try {
+        const memberData = await fetchRequest('/data', {
+            data: 'FULLNHSMembers'
+        });
+        const member = memberData.FULLNHSMembers.find(m => m.OSIS === currentMemberOSIS);
+        
+        if (!member || !member.probations) {
+            throw new Error('Member or probations not found');
+        }
+
+        member.probations.splice(index, 1);
+
+        await fetchRequest('/update_data', {
+            data: {
+                sheet: 'NHSMembers',
+                data: { probations: member.probations },
+                row_name: 'OSIS',
+                row_value: currentMemberOSIS
+            }
+        });
+
+        displayMemberDetails(member);
+        showSuccess('Probation deleted successfully');
+
+    } catch (error) {
+        console.error('Error deleting probation:', error);
+        showError('Failed to delete probation');
+    } finally {
+        endLoading();
+    }
+}
+
+// Function to update credit status
+async function updateCreditStatus(opportunityId, newStatus) {
+    startLoading();
+    try {
+        const memberData = await fetchRequest('/data', {
+            data: 'FULLNHSMembers'
+        });
+        const member = memberData.FULLNHSMembers.find(m => m.OSIS === currentMemberOSIS);
+        
+        if (!member || !member.credits) {
+            throw new Error('Member or credits not found');
+        }
+
+        // Find and update the credit
+        const creditIndex = member.credits.findIndex(c => c.id === opportunityId);
+        if (creditIndex === -1) {
+            throw new Error('Credit not found');
+        }
+
+        member.credits[creditIndex].status = newStatus;
+
+        // Update member data
+        await fetchRequest('/update_data', {
+            data: {
+                sheet: 'NHSMembers',
+                data: { credits: member.credits },
+                row_name: 'OSIS',
+                row_value: currentMemberOSIS
+            }
+        });
+
+        // If status changed to attended/no_show, update the opportunity's showupOSIS
+        if (newStatus === 'attended' || newStatus === 'no_show') {
+            const opportunityData = await fetchRequest('/data', {
+                data: 'Opportunities'
+            });
+            const opportunity = opportunityData.Opportunities.find(opp => opp.id === opportunityId);
+            
+            if (opportunity) {
+                let showupOSIS = opportunity.showupOSIS || [];
+                if (newStatus === 'attended' && !showupOSIS.includes(currentMemberOSIS)) {
+                    showupOSIS.push(currentMemberOSIS);
+                } else if (newStatus === 'no_show') {
+                    showupOSIS = showupOSIS.filter(osis => osis !== currentMemberOSIS);
+                }
+
+                await fetchRequest('/update_data', {
+                    data: {
+                        sheet: 'Opportunities',
+                        data: { showupOSIS },
+                        row_name: 'id',
+                        row_value: opportunityId
+                    }
+                });
+            }
+        }
+
+        displayMemberDetails(member);
+        showSuccess('Credit status updated successfully');
+
+    } catch (error) {
+        console.error('Error updating credit status:', error);
+        showError('Failed to update credit status');
+    } finally {
+        endLoading();
+    }
+}
+
+// Function to edit a credit
+async function editCredit(opportunityId) {
+    startLoading();
+    try {
+        const memberData = await fetchRequest('/data', {
+            data: 'FULLNHSMembers'
+        });
+        const member = memberData.FULLNHSMembers.find(m => m.OSIS === currentMemberOSIS);
+        
+        if (!member || !member.credits) {
+            throw new Error('Member or credits not found');
+        }
+
+        const credit = member.credits.find(c => c.id === opportunityId);
+        if (!credit) {
+            throw new Error('Credit not found');
+        }
+
+        // Create edit modal
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Edit Credit</h2>
+                <div class="edit-credit-modal">
+                    <div>
+                        <label>Credits:</label>
+                        <input type="number" id="edit-credit-amount" value="${credit.credits}" step="0.5">
+                    </div>
+                    <div>
+                        <label>Category:</label>
+                        <select id="edit-credit-category">
+                            <option value="tutoring" ${credit.category === 'tutoring' ? 'selected' : ''}>Tutoring</option>
+                            <option value="service" ${credit.category === 'service' ? 'selected' : ''}>Service</option>
+                            <option value="project" ${credit.category === 'project' ? 'selected' : ''}>Project</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Status:</label>
+                        <select id="edit-credit-status">
+                            <option value="signed_up" ${credit.status === 'signed_up' ? 'selected' : ''}>Signed Up</option>
+                            <option value="attended" ${credit.status === 'attended' ? 'selected' : ''}>Attended</option>
+                            <option value="no_show" ${credit.status === 'no_show' ? 'selected' : ''}>No Show</option>
+                        </select>
+                    </div>
+                    <button onclick="saveCredit('${opportunityId}')" class="action-btn">Save Changes</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        modal.style.display = 'block';
+
+        // Add close button functionality
+        const closeBtn = modal.querySelector('.close');
+        closeBtn.onclick = () => modal.remove();
+        window.onclick = (event) => {
+            if (event.target === modal) modal.remove();
+        };
+
+    } catch (error) {
+        console.error('Error editing credit:', error);
+        showError('Failed to edit credit');
+    } finally {
+        endLoading();
+    }
+}
+
+// Function to save credit changes
+async function saveCredit(opportunityId) {
+    startLoading();
+    try {
+        const memberData = await fetchRequest('/data', {
+            data: 'FULLNHSMembers'
+        });
+        const member = memberData.FULLNHSMembers.find(m => m.OSIS === currentMemberOSIS);
+        
+        if (!member || !member.credits) {
+            throw new Error('Member or credits not found');
+        }
+
+        const creditIndex = member.credits.findIndex(c => c.id === opportunityId);
+        if (creditIndex === -1) {
+            throw new Error('Credit not found');
+        }
+
+        // Get values from modal
+        const newCredits = parseFloat(document.getElementById('edit-credit-amount').value);
+        const newCategory = document.getElementById('edit-credit-category').value;
+        const newStatus = document.getElementById('edit-credit-status').value;
+
+        // Update credit
+        member.credits[creditIndex] = {
+            ...member.credits[creditIndex],
+            credits: newCredits,
+            category: newCategory,
+            status: newStatus
+        };
+
+        // Update member data
+        await fetchRequest('/update_data', {
+            data: {
+                sheet: 'NHSMembers',
+                data: { credits: member.credits },
+                row_name: 'OSIS',
+                row_value: currentMemberOSIS
+            }
+        });
+
+        // Remove modal
+        document.querySelector('.modal').remove();
+
+        // Refresh display
+        displayMemberDetails(member);
+        showSuccess('Credit updated successfully');
+
+    } catch (error) {
+        console.error('Error saving credit:', error);
+        showError('Failed to save credit');
+    } finally {
+        endLoading();
+    }
+}
+
+// Function to delete a credit
+async function deleteCredit(opportunityId) {
+    if (!confirm('Are you sure you want to delete this credit?')) return;
+
+    startLoading();
+    try {
+        const memberData = await fetchRequest('/data', {
+            data: 'FULLNHSMembers'
+        });
+        const member = memberData.FULLNHSMembers.find(m => m.OSIS === currentMemberOSIS);
+        
+        if (!member || !member.credits) {
+            throw new Error('Member or credits not found');
+        }
+
+        // Remove credit
+        member.credits = member.credits.filter(c => c.id !== opportunityId);
+
+        // Update member data
+        await fetchRequest('/update_data', {
+            data: {
+                sheet: 'NHSMembers',
+                data: { credits: member.credits },
+                row_name: 'OSIS',
+                row_value: currentMemberOSIS
+            }
+        });
+
+        // Refresh display
+        displayMemberDetails(member);
+        showSuccess('Credit deleted successfully');
+
+    } catch (error) {
+        console.error('Error deleting credit:', error);
+        showError('Failed to delete credit');
+    } finally {
+        endLoading();
     }
 }
 

@@ -143,6 +143,10 @@ def schedule():
 def study_hub():
     return render_template('StudyHub.html')
 
+@page_init.route('/WhyTree')
+def why_tree():
+    return render_template('WhyTree.html')
+
 @page_init.route('/PromptLibrary')
 def prompt_library():
     return render_template('PromptLibrary.html')

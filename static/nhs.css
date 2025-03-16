@@ -579,33 +579,19 @@
     padding: 8px 16px;
     cursor: pointer;
     transition: all 0.2s ease;
-    user-select: none;
 }
 
 .member-bubble:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-1px);
-}
-
-.member-bubble:active {
-    transform: translateY(0);
+    background: rgba(255, 255, 255, 0.15);
 }
 
 .member-bubble input[type="checkbox"] {
     margin-right: 8px;
-    cursor: pointer;
 }
 
 .member-bubble span {
     color: white;
     font-size: 0.9rem;
-    cursor: pointer;
-}
-
-/* Style for checked bubbles */
-.member-bubble input[type="checkbox"]:checked + span {
-    color: #4CAF50;
-    font-weight: 500;
 }
 
 .progress-container {
@@ -638,4 +624,30 @@
 .submit-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+/* Member Lookup Specific Styles */
+.member-search-container {
+    margin: 20px 0;
+}
+
+.member-search-container input {
+    width: 300px;
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+}
+
+.member-details {
+    display: none;
+    margin-top: 20px;
+}
+
+.credit-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #007bff;
+    margin: 10px 0;
 }

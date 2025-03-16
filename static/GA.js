@@ -1596,11 +1596,77 @@ function initializeGoalModal() {
   const addGoalBtn = document.getElementById('addGoal');
   const clickToAddBtn = document.getElementById('clickToAddGoal');
   const goalForm = document.getElementById('goalForm');
+  const classSelect = document.getElementById('goalClass');
+  const categorySelect = document.getElementById('goalCategory');
+
+  // Populate class dropdown
+  function populateClassDropdown() {
+    // Clear existing options except the first one
+    classSelect.innerHTML = '<option value="">Select a class</option>';
+    
+    // Get unique class names from grade_spreads
+    const classes = Object.keys(grade_spreads);
+    console.log("Available classes:", classes);
+    
+    // Add each class as an option
+    classes.forEach(className => {
+      const option = document.createElement('option');
+      option.value = className;  // Keep original case for matching
+      option.textContent = className;
+      classSelect.appendChild(option);
+    });
+  }
+
+  // Populate category dropdown
+  function populateCategoryDropdown(selectedClass) {
+    console.log("Populating categories for class:", selectedClass);
+    console.log("grade_spreads:", grade_spreads);
+    
+    // Clear existing options except the first one
+    categorySelect.innerHTML = '<option value="">Select a category</option>';
+    
+    if (!selectedClass) {
+      console.log("No class selected");
+      return;
+    }
+
+    // Find the exact class name with correct case
+    const exactClassName = Object.keys(grade_spreads).find(
+      className => className.toLowerCase() === selectedClass.toLowerCase()
+    );
+
+    console.log("Exact class name found:", exactClassName);
+    
+    if (exactClassName && grade_spreads[exactClassName]) {
+      const categories = Object.keys(grade_spreads[exactClassName]);
+      console.log("Available categories:", categories);
+      
+      // Add each category as an option
+      categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+        categorySelect.appendChild(option);
+      });
+    } else {
+      console.log("No categories found for class:", selectedClass);
+    }
+  }
+
+  // Update categories when class is selected
+  classSelect.addEventListener('change', function() {
+    console.log("Class selected:", this.value);
+    populateCategoryDropdown(this.value);
+  });
 
   // Add click handler for manual goal entry
   addGoalBtn.addEventListener('click', () => {
     // Reset form and show modal
     goalForm.reset();
+    
+    // Populate the dropdowns
+    populateClassDropdown();
+    populateCategoryDropdown(''); // Reset categories
     
     // Set minimum date to today
     const today = new Date().toISOString().split('T')[0];
@@ -1618,7 +1684,14 @@ function initializeGoalModal() {
     modal.style.display = 'block';
   });
 
+  // Add click handler for close button
+  closeBtn.addEventListener('click', closeModal);
+
   // Rest of the initialization code remains the same...
+}
+function closeModal(){
+  const modal = document.getElementById('goalModal');
+  modal.style.display = 'none';
 }
 
 function formatDueDate(dateString) {

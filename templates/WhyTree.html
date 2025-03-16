@@ -1,0 +1,28 @@
+{% extends "darkThemeTemplate.html" %}
+
+{% block title %}
+<title>Why Tree - Understanding Through Questions</title>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="/static/whytree.css">
+{% endblock %}
+
+{% block content %}
+<div class="tree-container">
+    <div class="input-container">
+        <input type="text" id="concept-input" placeholder="Enter something you want to understand...">
+        <button id="submit-concept">Create Node</button>
+    </div>
+    <div id="tree-visualization"></div>
+    <div class="zoom-controls">
+        <button class="zoom-button" id="zoom-in">+</button>
+        <button class="zoom-button" id="zoom-out">-</button>
+        <button class="zoom-button" id="reset-zoom">Reset</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script src="/static/whytree.js"></script>
+{% endblock %} 

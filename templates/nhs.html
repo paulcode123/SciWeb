@@ -159,9 +159,70 @@
     </div>
 
     <!-- Admin Content -->
-    <div id="admin-content" style="display: none;">
+    <div id="admin-content" class="content-section" style="display: none;">
+        <h2>NHS Admin Dashboard</h2>
+        
+        <!-- Member Lookup Section -->
         <div class="admin-section">
-            <h2>Create New Opportunity</h2>
+            <h3>Member Lookup</h3>
+            <div class="search-container">
+                <input type="text" id="member-search" placeholder="Name">
+                <button onclick="searchMembers()" class="action-btn">Search</button>
+            </div>
+            <div id="member-details" style="display: none;">
+                <div class="member-info">
+                    <h4>Member Information</h4>
+                    <p>Name: <span id="member-name"></span></p>
+                    <p>OSIS: <span id="member-osis"></span></p>
+                    <p>Email: <span id="member-email"></span></p>
+                </div>
+                
+                <div class="member-credits">
+                    <h4>Credits</h4>
+                    <div class="credit-summary">
+                        <div>
+                            <p>Tutoring: <span id="member-tutoring-credits">0</span></p>
+                            <div class="progress-bar" id="member-tutoring-progress"></div>
+                        </div>
+                        <div>
+                            <p>Service: <span id="member-service-credits">0</span></p>
+                            <div class="progress-bar" id="member-service-progress"></div>
+                        </div>
+                        <div>
+                            <p>Project: <span id="member-project-credits">0</span></p>
+                            <div class="progress-bar" id="member-project-progress"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="member-probations">
+                    <h4>Probations</h4>
+                    <button onclick="addProbation()" class="action-btn">Add Probation</button>
+                    <div id="probations-list"></div>
+                </div>
+
+                <div class="member-opportunities">
+                    <h4>Opportunities</h4>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Credits</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="member-opportunities-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Existing Opportunities Management Section -->
+        <div class="admin-section">
+            <h3>Manage Opportunities</h3>
             <div class="form-container">
                 <form id="create-opportunity-form">
                     <div class="form-group">
