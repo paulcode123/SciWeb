@@ -165,6 +165,14 @@ async function initializeTutoring() {
 
     // Initialize subject-specific topics
     initializeSubjectTopics();
+
+    // Initialize class selection
+    await initializeClassSelect();
+    
+    // Initialize subjects panel for tutors
+    if (userRole === 'tutor') {
+        await initializeSubjectsPanel();
+    }
 }
 
 function initializeTutorSection() {
@@ -213,34 +221,43 @@ function initializeAvailabilitySection() {
 }
 
 async function initializeSubjectsPanel() {
-    try {
-        const userData = await fetchRequest('/data', { data: 'Name' });
-        const userClasses = await ClassDataManager.fetchUserClasses(userData.Name.osis.toString());
-        const subjects = ClassDataManager.getUniqueSubjects(userClasses);
-        
-        const subjectCheckboxes = document.querySelector('.subject-checkboxes');
-        if (!subjectCheckboxes) return;
+    const subjectCheckboxes = document.querySelector('.subject-checkboxes');
+    if (!subjectCheckboxes) return;
 
-        subjectCheckboxes.innerHTML = '';
+    try {
+        // Fetch user's classes
+        const response = await fetchRequest('/data', { data: 'Classes' });
+        const classes = response.Classes || [];
+        
+        // Get unique subjects from classes
+        const subjects = new Set(classes.map(cls => cls.subject).filter(Boolean));
+        
+        // Create checkboxes for each subject
         subjects.forEach(subject => {
-            const checkbox = document.createElement('label');
-            checkbox.className = 'subject-checkbox';
-            checkbox.innerHTML = `
-                <input type="checkbox" value="${subject.value}">
-                <span>${subject.name}</span>
-            `;
+            const checkboxDiv = document.createElement('div');
+            checkboxDiv.className = 'subject-checkbox';
             
-            const input = checkbox.querySelector('input');
-            input.checked = selectedSubjects.has(subject.value);
-            input.addEventListener('change', () => {
-                if (input.checked) {
-                    selectedSubjects.add(subject.value);
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `subject-${subject}`;
+            checkbox.value = subject;
+            checkbox.checked = selectedSubjects.has(subject);
+            
+            const label = document.createElement('label');
+            label.htmlFor = `subject-${subject}`;
+            label.textContent = subject;
+            
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                    selectedSubjects.add(subject);
                 } else {
-                    selectedSubjects.delete(subject.value);
+                    selectedSubjects.delete(subject);
                 }
             });
             
-            subjectCheckboxes.appendChild(checkbox);
+            checkboxDiv.appendChild(checkbox);
+            checkboxDiv.appendChild(label);
+            subjectCheckboxes.appendChild(checkboxDiv);
         });
     } catch (error) {
         console.error('Error initializing subjects panel:', error);
@@ -997,4 +1014,81 @@ function updateTopicSuggestions(classData) {
 
     document.body.appendChild(datalist);
     topicInput.setAttribute('list', 'topic-suggestions');
+}
+
+// Add event listener for tutor registration
+document.getElementById('submitTutorProfile')?.addEventListener('click', async () => {
+    if (selectedSubjects.size === 0) {
+        showNotification('Please select at least one subject you can tutor', 'error');
+        return;
+    }
+
+    try {
+        const tutorData = {
+            osis: osis,
+            subjects: Array.from(selectedSubjects),
+            schedule: availabilityData,
+            active: true,
+            rating: 0,
+            sessions_completed: 0,
+            total_hours: 0,
+            last_updated: new Date().toISOString()
+        };
+
+        // Save tutor profile to database
+        await fetchRequest('/post_data', {
+            sheet: 'TutorAvailability',
+            data: tutorData
+        });
+
+        showNotification('Successfully registered as a tutor!', 'success');
+        
+        // Update UI to show tutor dashboard
+        document.getElementById('tutor-section').style.display = 'block';
+        
+    } catch (error) {
+        console.error('Error registering as tutor:', error);
+        showNotification('Error registering as tutor. Please try again.', 'error');
+    }
+});
+
+// Improve class selection for tutoring requests
+async function initializeClassSelect() {
+    const subjectSelect = document.getElementById('subject');
+    if (!subjectSelect) return;
+
+    try {
+        // Fetch user's classes
+        const response = await fetchRequest('/data', { data: 'Classes' });
+        const classes = response.Classes || [];
+        
+        // Get user's enrolled classes
+        const userClasses = classes.filter(cls => 
+            cls.OSIS && cls.OSIS.toString().includes(osis)
+        );
+
+        // Clear existing options
+        subjectSelect.innerHTML = '<option value="" disabled selected>Select a class</option>';
+        
+        // Add options for each class
+        userClasses.forEach(cls => {
+            const option = document.createElement('option');
+            option.value = cls.name;
+            option.textContent = `${cls.name} (Period ${cls.period})`;
+            subjectSelect.appendChild(option);
+        });
+
+        // Add event listener for subject change
+        subjectSelect.addEventListener('change', () => {
+            const selectedClass = userClasses.find(cls => cls.name === subjectSelect.value);
+            if (selectedClass) {
+                // Pre-fill topic with class subject
+                document.getElementById('topic').value = selectedClass.subject || '';
+            }
+        });
+
+    } catch (error) {
+        console.error('Error initializing class select:', error);
+        showNotification('Error loading classes', 'error');
+    }
 } 

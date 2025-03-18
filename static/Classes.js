@@ -751,21 +751,10 @@ const ClassDataManager = {
 
     // Get unique subjects from classes
     getUniqueSubjects(classes) {
-        const subjectMap = {
-            'Math': 'mathematics',
-            'Physics': 'physics',
-            'Chemistry': 'chemistry',
-            'Biology': 'biology',
-            'Computer Science': 'computer-science'
-        };
-
         const subjects = new Set();
         classes.forEach(cls => {
-            const className = cls.name.toLowerCase();
-            for (const [subject, value] of Object.entries(subjectMap)) {
-                if (className.includes(subject.toLowerCase())) {
-                    subjects.add({ name: subject, value: value });
-                }
+            if (cls.subject) {
+                subjects.add(cls.subject);
             }
         });
         return Array.from(subjects);
@@ -1037,520 +1026,126 @@ document.getElementById('courseToolButton').addEventListener('click', () => {
 
 function showCourseSelectionTool() {
     const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
+    modal.className = 'modal';
     modal.innerHTML = `
-        <div class="modal-content course-tool">
-            <div class="modal-header">
-                <h2><i class="fas fa-tools"></i> Course Selection Tool</h2>
-                <button class="modal-close"><i class="fas fa-times"></i></button>
+        <div class="modal-content">
+            <h2>Course Selection Tool</h2>
+            <div class="course-filters">
+                <div class="filter-group">
+                    <label>Grade Level</label>
+                    <select id="gradeFilter">
+                        <option value="">All Grades</option>
+                        <option value="9">Grade 9</option>
+                        <option value="10">Grade 10</option>
+                        <option value="11">Grade 11</option>
+                        <option value="12">Grade 12</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Subject Area</label>
+                    <select id="subjectFilter">
+                        <option value="">All Subjects</option>
+                        <option value="Mathematics">Mathematics</option>
+                        <option value="Science">Science</option>
+                        <option value="English">English</option>
+                        <option value="History">History</option>
+                        <option value="Language">Language</option>
+                    </select>
+                </div>
             </div>
-            <div class="modal-body">
-                <div class="course-filters">
-                    <div class="filter-group">
-                        <label>Grade Level</label>
-                        <select id="gradeFilter">
-                            <option value="">All Grades</option>
-                            <option value="9">Grade 9</option>
-                            <option value="10">Grade 10</option>
-                            <option value="11">Grade 11</option>
-                            <option value="12">Grade 12</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Subject Area</label>
-                        <select id="courseSubjectFilter">
-                            <option value="">All Subjects</option>
-                            <option value="Mathematics">Mathematics</option>
-                            <option value="Science">Science</option>
-                            <option value="English">English</option>
-                            <option value="Social Studies">Social Studies</option>
-                            <option value="Computer Science">Computer Science</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="course-recommendations">
-                    <!-- Will be populated dynamically -->
-                </div>
+            <div class="course-recommendations"></div>
+            <div class="modal-actions">
+                <button class="action-button secondary" onclick="this.closest('.modal').remove()">Close</button>
             </div>
         </div>
     `;
-
     document.body.appendChild(modal);
-    setTimeout(() => modal.classList.add('show'), 10);
-
-    // Initialize course tool functionality
     initializeCourseSelectionTool(modal);
 }
 
-// Initialize course selection tool
-function initializeCourseSelectionTool(modal) {
+// Initialize Course Selection Tool
+async function initializeCourseSelectionTool(modal) {
     const gradeFilter = modal.querySelector('#gradeFilter');
-    const subjectFilter = modal.querySelector('#courseSubjectFilter');
+    const subjectFilter = modal.querySelector('#subjectFilter');
     const recommendationsContainer = modal.querySelector('.course-recommendations');
 
-    // Add event listeners
-    gradeFilter.addEventListener('change', updateRecommendations);
-    subjectFilter.addEventListener('change', updateRecommendations);
-    modal.querySelector('.modal-close').addEventListener('click', () => {
-        modal.remove();
-    });
-
-    // Initial recommendations
-    updateRecommendations();
-
-    function updateRecommendations() {
+    // Load all available classes
+    const classes = await ClassDataManager.fetchAllClasses();
+    
+    function filterAndDisplayCourses() {
         const grade = gradeFilter.value;
         const subject = subjectFilter.value;
         
-        // Filter classes based on selection
-        const recommendations = classList.filter(cls => {
-            const matchesGrade = !grade || cls.grade === grade;
-            const matchesSubject = !subject || cls.subject === subject;
+        const filteredCourses = classes.filter(course => {
+            const matchesGrade = !grade || course.grade === grade;
+            const matchesSubject = !subject || course.subject === subject;
             return matchesGrade && matchesSubject;
         });
 
-        displayRecommendations(recommendations);
+        displayCourseRecommendations(filteredCourses, recommendationsContainer);
     }
 
-    function displayRecommendations(recommendations) {
-        recommendationsContainer.innerHTML = recommendations.length ? '' : `
+    gradeFilter.addEventListener('change', filterAndDisplayCourses);
+    subjectFilter.addEventListener('change', filterAndDisplayCourses);
+
+    // Initial display
+    filterAndDisplayCourses();
+}
+
+function displayCourseRecommendations(courses, container) {
+    if (courses.length === 0) {
+        container.innerHTML = `
             <div class="no-recommendations">
                 <i class="fas fa-info-circle"></i>
-                <p>No courses found matching your criteria</p>
+                <p>No courses found matching your criteria.</p>
             </div>
         `;
-
-        recommendations.forEach(course => {
-            const card = document.createElement('div');
-            card.className = 'course-card';
-            card.innerHTML = `
-                <h3>${course.name}</h3>
-                <p class="course-info">
-                    <span><i class="fas fa-clock"></i> Period ${course.period}</span>
-                    <span><i class="fas fa-user-tie"></i> ${course.teacher}</span>
-                </p>
-                <p class="course-description">${course.description || 'No description available'}</p>
-                <div class="course-stats">
-                    <div class="stat">
-                        <span class="stat-label">Average Grade</span>
-                        <span class="stat-value">${calculateAverageGrade(course)}</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-label">Class Size</span>
-                        <span class="stat-value">${calculateClassSize(course)}</span>
-                    </div>
-                </div>
-                <button onclick="handleClassAction('join', ${course.id})" class="action-button primary">
-                    <i class="fas fa-plus"></i> Join Class
-                </button>
-            `;
-            recommendationsContainer.appendChild(card);
-        });
+        return;
     }
+
+    container.innerHTML = courses.map(course => `
+        <div class="course-card">
+            <h3>${course.name}</h3>
+            <div class="course-info">
+                <span><i class="fas fa-chalkboard"></i> Period ${course.period}</span>
+                <span><i class="fas fa-user-tie"></i> ${course.teacher}</span>
+            </div>
+            <div class="course-stats">
+                <div class="stat">
+                    <span class="stat-label">Class Size</span>
+                    <span class="stat-value">${calculateClassSize(course)}</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Average Grade</span>
+                    <span class="stat-value">${calculateAverageGrade(course)}%</span>
+                </div>
+            </div>
+            <button class="action-button" onclick="handleClassAction('join', '${course.id}')">
+                Join Class
+            </button>
+        </div>
+    `).join('');
+}
+
+function calculateClassSize(course) {
+    return course.students ? course.students.length : 0;
 }
 
 function calculateAverageGrade(course) {
     if (!course.grades || course.grades.length === 0) return 'N/A';
-    const avg = course.grades.reduce((a, b) => a + b, 0) / course.grades.length;
-    return `${avg.toFixed(1)}%`;
+    const sum = course.grades.reduce((a, b) => a + b, 0);
+    return (sum / course.grades.length).toFixed(1);
 }
 
-function calculateClassSize(course) {
-    if (!course.OSIS) return '0';
-    return course.OSIS.toString().split(',').length;
-}
-
-// Initialize the page
-document.addEventListener('DOMContentLoaded', () => {
-    initializeFilters();
-    createMovingLines();
-});
-
-async function loadClassData() {
-    try {
-        // Get user's OSIS from the session
-        const userData = await fetchRequest('/data', { data: 'Name' });
-        const userOsis = userData.Name.osis.toString();
-        
-        // Fetch user's classes
-        const userClasses = await ClassDataManager.fetchUserClasses(userOsis);
-        const subjectSelect = document.getElementById('subject');
-        
-        if (!subjectSelect) {
-            console.error('Subject select element not found');
-            return;
-        }
-
-        // Clear existing options except the default one
-        while (subjectSelect.options.length > 1) {
-            subjectSelect.remove(1);
-        }
-
-        // Sort classes by period
-        userClasses.sort((a, b) => {
-            const periodA = parseInt(a.period) || 0;
-            const periodB = parseInt(b.period) || 0;
-            return periodA - periodB;
-        });
-
-        // Group classes by period (1-9)
-        const periodGroups = {};
-        for (let i = 1; i <= 9; i++) {
-            periodGroups[i] = [];
-        }
-
-        userClasses.forEach(cls => {
-            const period = parseInt(cls.period);
-            if (period >= 1 && period <= 9) {
-                periodGroups[period].push(cls);
-            }
-        });
-
-        // Create option groups for each period
-        Object.entries(periodGroups).forEach(([period, classes]) => {
-            if (classes.length > 0) {
-                const optgroup = document.createElement('optgroup');
-                optgroup.label = `Period ${period}`;
-                
-                classes.forEach(cls => {
-                    const option = document.createElement('option');
-                    option.value = cls.id;
-                    option.textContent = cls.name;
-                    optgroup.appendChild(option);
-                });
-                
-                subjectSelect.appendChild(optgroup);
-            }
-        });
-
-        // Add event listener for subject change
-        subjectSelect.addEventListener('change', (e) => {
-            const selectedClass = userClasses.find(cls => cls.id === e.target.value);
-            if (selectedClass) {
-                updateTopicSuggestions(selectedClass);
-            }
-        });
-
-    } catch (error) {
-        console.error('Error loading class data:', error);
-        showNotification('Error loading classes. Please try again.', 'error');
-    }
-}
-
-// Add function to display enrolled classes at the bottom
-async function displayEnrolledClasses() {
-    try {
-        const userData = await fetchRequest('/data', { data: 'Name' });
-        const userOsis = userData.Name.osis.toString();
-        const userClasses = await ClassDataManager.fetchUserClasses(userOsis);
-
-        // Create or get the enrolled classes section
-        let enrolledSection = document.getElementById('enrolled-classes');
-        if (!enrolledSection) {
-            enrolledSection = document.createElement('div');
-            enrolledSection.id = 'enrolled-classes';
-            enrolledSection.className = 'enrolled-classes-section';
-            document.querySelector('.classes-container').appendChild(enrolledSection);
-        }
-
-        // Sort classes by period
-        userClasses.sort((a, b) => {
-            const periodA = parseInt(a.period) || 0;
-            const periodB = parseInt(b.period) || 0;
-            return periodA - periodB;
-        });
-
-        // Create the HTML for enrolled classes
-        enrolledSection.innerHTML = `
-            <h2>Your Enrolled Classes</h2>
-            <div class="enrolled-classes-grid">
-                ${userClasses.map(cls => `
-                    <div class="enrolled-class-card">
-                        <div class="class-period">Period ${cls.period}</div>
-                        <div class="class-name">${cls.name}</div>
-                        <div class="class-teacher">${cls.teacher}</div>
-                        <button onclick="window.location.href='/Class/${cls.id}'" class="view-class-btn">
-                            View Class
-                        </button>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-
-    } catch (error) {
-        console.error('Error displaying enrolled classes:', error);
-        showNotification('Error loading enrolled classes', 'error');
-    }
-}
-
-// Update the initialization function to include enrolled classes
-async function initializeClassPage() {
-    try {
-        await loadClassData();
-        await displayEnrolledClasses();
-        setupEventListeners();
-    } catch (error) {
-        console.error('Error initializing class page:', error);
-        showNotification('Error initializing page', 'error');
-    }
-}
-
-// Call the initialization function when the page loads
-document.addEventListener('DOMContentLoaded', initializeClassPage);
-
-// Initialize event listeners for main buttons
-document.addEventListener('DOMContentLoaded', function() {
-    const joinClassBtn = document.getElementById('joinClassBtn');
-    const createClassBtn = document.getElementById('createClassBtn');
+// Setup event listeners
+function setupEventListeners() {
     const courseSelectionBtn = document.getElementById('courseSelectionBtn');
-    const classModal = document.getElementById('classModal');
-    const courseToolModal = document.getElementById('courseToolModal');
-    const closeCourseToolModal = document.getElementById('closeCourseToolModal');
-
-    // Join Class button
-    joinClassBtn.addEventListener('click', () => {
-        classModal.style.display = 'flex';
-        document.getElementById('modalTitle').textContent = 'Join Class';
-    });
-
-    // Create Class button
-    createClassBtn.addEventListener('click', () => {
-        classModal.style.display = 'flex';
-        document.getElementById('modalTitle').textContent = 'Create Class';
-    });
-
-    // Course Selection button
-    courseSelectionBtn.addEventListener('click', () => {
-        courseToolModal.style.display = 'flex';
-    });
-
-    // Close modals when clicking outside
-    window.addEventListener('click', (e) => {
-        if (e.target === classModal) {
-            classModal.style.display = 'none';
-        }
-        if (e.target === courseToolModal) {
-            courseToolModal.style.display = 'none';
-        }
-    });
-
-    // Close course tool modal button
-    closeCourseToolModal.addEventListener('click', () => {
-        courseToolModal.style.display = 'none';
-    });
-
-    // Initialize the class list display
-    initializeClassPage();
-});
-
-async function initializeClassPage() {
-    try {
-        // Fetch user data and classes
-        const userData = await fetchRequest('/data', { data: 'Name' });
-        const userOsis = userData.Name.osis.toString();
-        const classes = await ClassDataManager.fetchAllClasses();
-        
-        // Initialize filters
-        await initializeFilters();
-        
-        // Display enrolled classes
-        const userClasses = await ClassDataManager.fetchUserClasses(userOsis);
-        displayEnrolledClasses(userClasses);
-        
-        // Display all available classes
-        displayFilteredClasses(classes);
-        
-    } catch (error) {
-        console.error('Error initializing class page:', error);
-        showNotification('Error loading classes', 'error');
+    if (courseSelectionBtn) {
+        courseSelectionBtn.addEventListener('click', showCourseSelectionTool);
     }
 }
 
-function displayFilteredClasses(classes) {
-    const container = document.createElement('div');
-    container.className = 'class-grid';
-    
-    classes.forEach(classData => {
-        const classCard = createClassCard(classData);
-        container.appendChild(classCard);
-    });
-    
-    // Add the class grid after the enrolled classes section
-    const enrolledClassesSection = document.getElementById('enrolled-classes');
-    enrolledClassesSection.parentNode.insertBefore(container, enrolledClassesSection.nextSibling);
-}
-
-function createClassCard(classData) {
-    const card = document.createElement('div');
-    card.className = 'class-item';
-    card.innerHTML = `
-        <h3>${classData.name}</h3>
-        <div class="class-info">
-            <span><i class="fas fa-clock"></i> Period ${classData.period}</span>
-            <span><i class="fas fa-user-tie"></i> ${classData.teacher}</span>
-        </div>
-        <div class="class-stats">
-            <div class="stat-item">
-                <span class="stat-value">${classData.students?.length || 0}</span>
-                <span class="stat-label">Students</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-value">${classData.averageGrade || '--'}</span>
-                <span class="stat-label">Avg. Grade</span>
-            </div>
-        </div>
-    `;
-    
-    return card;
-}
-
-// Initialize modals and buttons
-function initializeModals() {
-    const modals = {
-        joinClass: document.getElementById('joinClassModal'),
-        createClass: document.getElementById('createClassModal'),
-        courseSelection: document.getElementById('courseSelectionModal')
-    };
-    
-    const buttons = {
-        joinClass: document.getElementById('joinClassBtn'),
-        createClass: document.getElementById('createClassBtn'),
-        courseSelection: document.getElementById('courseSelectionBtn')
-    };
-    
-    // Add click event listeners to buttons
-    Object.keys(buttons).forEach(key => {
-        if (buttons[key] && modals[key]) {
-            buttons[key].addEventListener('click', () => {
-                modals[key].style.display = 'block';
-            });
-        }
-    });
-    
-    // Close modals when clicking outside
-    window.addEventListener('click', (event) => {
-        Object.values(modals).forEach(modal => {
-            if (modal && event.target === modal) {
-                modal.style.display = 'none';
-            }
-        });
-    });
-    
-    // Close buttons for modals
-    document.querySelectorAll('.close-modal').forEach(closeBtn => {
-        closeBtn.addEventListener('click', () => {
-            closeBtn.closest('.modal').style.display = 'none';
-        });
-    });
-}
-
-// Display enrolled classes in a grid layout
-async function displayEnrolledClasses() {
-    try {
-        const response = await fetch('/api/classes/enrolled');
-        const enrolledClasses = await response.json();
-        
-        const enrolledClassesContainer = document.getElementById('enrolled-classes');
-        if (!enrolledClassesContainer) return;
-        
-        enrolledClassesContainer.innerHTML = '';
-        
-        if (enrolledClasses.length === 0) {
-            enrolledClassesContainer.innerHTML = '<p class="no-classes">No enrolled classes found.</p>';
-            return;
-        }
-        
-        const classesGrid = document.createElement('div');
-        classesGrid.className = 'enrolled-classes-grid';
-        
-        enrolledClasses.sort((a, b) => a.period - b.period).forEach(classData => {
-            const classCard = document.createElement('div');
-            classCard.className = 'enrolled-class-card';
-            classCard.innerHTML = `
-                <h3>${classData.name}</h3>
-                <p>Period ${classData.period}</p>
-                <p>Teacher: ${classData.teacher}</p>
-                <p>Students: ${classData.studentCount}</p>
-                <p>Average Grade: ${classData.averageGrade || 'N/A'}</p>
-                <button class="view-class-btn" data-class-id="${classData.id}">View Class</button>
-            `;
-            classesGrid.appendChild(classCard);
-        });
-        
-        enrolledClassesContainer.appendChild(classesGrid);
-        
-        // Add click handlers for view class buttons
-        document.querySelectorAll('.view-class-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                window.location.href = `/class/${btn.dataset.classId}`;
-            });
-        });
-    } catch (error) {
-        console.error('Error loading enrolled classes:', error);
-        showNotification('Error loading enrolled classes. Please try again.', 'error');
-    }
-}
-
-// Initialize the page
-async function initializeClassPage() {
-    try {
-        initializeModals();
-        await displayEnrolledClasses();
-        
-        // Initialize filters and search
-        const searchInput = document.getElementById('classSearch');
-        const periodFilter = document.getElementById('periodFilter');
-        const subjectFilter = document.getElementById('subjectFilter');
-        
-        if (searchInput) {
-            searchInput.addEventListener('input', filterClasses);
-        }
-        if (periodFilter) {
-            periodFilter.addEventListener('change', filterClasses);
-        }
-        if (subjectFilter) {
-            subjectFilter.addEventListener('change', filterClasses);
-        }
-        
-    } catch (error) {
-        console.error('Error initializing class page:', error);
-        showNotification('Error loading page. Please refresh and try again.', 'error');
-    }
-}
-
-// Filter classes based on search and filter inputs
-function filterClasses() {
-    const searchTerm = document.getElementById('classSearch')?.value.toLowerCase() || '';
-    const selectedPeriod = document.getElementById('periodFilter')?.value || 'all';
-    const selectedSubject = document.getElementById('subjectFilter')?.value || 'all';
-    
-    const classCards = document.querySelectorAll('.enrolled-class-card');
-    classCards.forEach(card => {
-        const className = card.querySelector('h3').textContent.toLowerCase();
-        const period = card.querySelector('p').textContent.match(/Period (\d+)/)[1];
-        const subject = card.dataset.subject;
-        
-        const matchesSearch = className.includes(searchTerm);
-        const matchesPeriod = selectedPeriod === 'all' || period === selectedPeriod;
-        const matchesSubject = selectedSubject === 'all' || subject === selectedSubject;
-        
-        card.style.display = matchesSearch && matchesPeriod && matchesSubject ? 'block' : 'none';
-    });
-}
-
-// Show notification
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
-    
-    const container = document.getElementById('notification-container') || document.body;
-    container.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.remove();
-    }, 5000);
-}
-
-// Initialize the page when DOM is loaded
+// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', initializeClassPage);
+
+// ... rest of existing code ...
