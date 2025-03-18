@@ -1,0 +1,653 @@
+.nhs-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.nhs-header {
+    text-align: center;
+    margin-bottom: 4rem;
+    padding: 3rem 2rem;
+    background: linear-gradient(135deg, #1a237e, #283593);
+    border-radius: 20px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(26, 35, 126, 0.2);
+}
+
+.nhs-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%) 0 0,
+        linear-gradient(-45deg, rgba(255,255,255,0.05) 25%, transparent 25%) 0 0,
+        linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.05) 75%) 0 0,
+        linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.05) 75%) 0 0;
+    background-size: 20px 20px;
+    pointer-events: none;
+}
+
+.nhs-title {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 1.5rem;
+}
+
+.nhs-header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 3.5rem;
+    margin-bottom: 0.5rem;
+    letter-spacing: 1px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.title-decoration {
+    width: 80%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #fff, transparent);
+    margin: 1rem auto;
+}
+
+.subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+}
+
+.nhs-sections {
+    display: grid;
+    gap: 2rem;
+}
+
+.nhs-section {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.nhs-section h2 {
+    margin-bottom: 1.5rem;
+    color: #fff;
+    border-bottom: 2px solid #3f51b5;
+    padding-bottom: 0.5rem;
+}
+
+.admin-only {
+    display: none;
+}
+
+.admin-tabs, .tutoring-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.tab-btn {
+    padding: 0.75rem 1.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.tab-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.tab-btn.active {
+    background: #3f51b5;
+}
+
+.tutoring-request-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+#tutoring-mode {
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+    color: white;
+    width: 100%;
+    max-width: 300px;
+}
+
+/* Main Action Buttons */
+.main-actions {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    margin: 3rem 0 4rem;
+}
+
+.main-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem 2.5rem;
+    border: none;
+    border-radius: 15px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 250px;
+    text-align: center;
+}
+
+.apply-btn {
+    background: linear-gradient(135deg, #4CAF50, #2E7D32);
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.tutoring-btn {
+    background: linear-gradient(135deg, #2196F3, #1565C0);
+    box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+}
+
+.main-action-btn:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.btn-title {
+    font-size: 1.4rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.btn-subtitle {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* Status Message */
+#status-message {
+    text-align: center;
+    margin: 2rem auto;
+    padding: 1rem;
+    border-radius: 10px;
+    max-width: 800px;
+    font-size: 1.1rem;
+}
+
+#status-message.verified {
+    background: rgba(76, 175, 80, 0.1);
+    color: #4CAF50;
+    border: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+#status-message.pending {
+    background: rgba(255, 152, 0, 0.1);
+    color: #FF9800;
+    border: 1px solid rgba(255, 152, 0, 0.2);
+}
+
+/* Verification Section */
+.verification-section {
+    margin-top: 4rem;
+    padding-top: 3rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.verification-section h2 {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.verification-intro {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 2rem;
+}
+
+.verification-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.verification-card {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 15px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.verification-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-3px);
+}
+
+.card-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+}
+
+.verification-card h3 {
+    color: #fff;
+    margin-bottom: 0.75rem;
+    font-size: 1.3rem;
+}
+
+.verification-card p {
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+    font-size: 0.95rem;
+}
+
+.verify-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.verify-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Loading States */
+.loading {
+    position: relative;
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 30px;
+    height: 30px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+/* Responsive Design */
+@media (min-width: 768px) {
+    .nhs-sections {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .nhs-header h1 {
+        font-size: 2.5rem;
+    }
+    
+    .main-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .main-action-btn {
+        width: 100%;
+        max-width: 400px;
+    }
+    
+    .verification-cards {
+        grid-template-columns: 1fr;
+    }
+} 
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: #1a1a1a;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    width: 80%;
+    max-width: 500px;
+    position: relative;
+}
+
+.close {
+    color: var(--text-color);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.error-message {
+    color: #ff4444;
+    margin-top: 10px;
+    display: none;
+}
+
+.modal input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--input-background);
+    color: var(--text-color);
+}
+
+.modal button {
+    margin-top: 10px;
+    width: 100%;
+}
+
+.status-bubble {
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 12px 20px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.status-label {
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.status-badge {
+    background-color: #2a2a2a;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.9em;
+    color: var(--text-color);
+}
+
+.status-badge.none {
+    background-color: #555;
+}
+
+.status-badge.teacher {
+    background-color: #2c5282;
+}
+
+.status-badge.member {
+    background-color: #2f6f4f;
+}
+
+.status-badge.admin {
+    background-color: #822c2c;
+}
+
+/* Admin Styles */
+.admin-section {
+    margin-bottom: 40px;
+}
+
+.form-container {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 15px;
+}
+
+.form-group {
+    flex: 1;
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--text-color);
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--input-background);
+    color: var(--text-color);
+    border-radius: 4px;
+}
+
+.submit-btn {
+    background: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    margin-top: 10px;
+}
+
+.submit-btn:hover {
+    background: #45a049;
+}
+
+.action-btn {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 0 2px;
+}
+
+.edit-btn {
+    background: #2196F3;
+    color: white;
+}
+
+.delete-btn {
+    background: #f44336;
+    color: white;
+}
+
+.completed-credits-section {
+    margin-top: 2rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
+.completed-credits-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.completed-credits-table th,
+.completed-credits-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.completed-credits-table tr.status-attended {
+    background-color: rgba(76, 175, 80, 0.1);
+}
+
+.completed-credits-table tr.status-signed_up {
+    background-color: rgba(33, 150, 243, 0.1);
+}
+
+.completed-credits-table tr.status-no_show {
+    background-color: rgba(244, 67, 54, 0.1);
+}
+
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.status-badge.attended {
+    background-color: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+}
+
+.status-badge.signed_up {
+    background-color: rgba(33, 150, 243, 0.2);
+    color: #2196F3;
+}
+
+.status-badge.no_show {
+    background-color: rgba(244, 67, 54, 0.2);
+    color: #F44336;
+}
+
+.progress-bar {
+    position: relative;
+    height: 24px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    margin: 10px 0;
+}
+
+.show-ups-btn {
+    background: #9c27b0;
+    color: white;
+}
+
+.member-bubbles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 20px 0;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.member-bubble {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.member-bubble:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.member-bubble input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.member-bubble span {
+    color: white;
+    font-size: 0.9rem;
+}
+
+.progress-container {
+    margin: 20px 0;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #4CAF50;
+    width: 0;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    text-align: center;
+    margin-top: 5px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+}
+
+/* Style for disabled submit button */
+.submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Member Lookup Specific Styles */
+.member-search-container {
+    margin: 20px 0;
+}
+
+.member-search-container input {
+    width: 300px;
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+}
+
+.member-details {
+    display: none;
+    margin-top: 20px;
+}
+
+.credit-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #007bff;
+    margin: 10px 0;
+}

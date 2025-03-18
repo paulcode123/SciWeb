@@ -1,6 +1,7 @@
 ---
 description: fetchRequest and Loading Icon
 globs: .js
+alwaysApply: false
 ---
 
 In Javascript, always use the fetchRequest function when communicating with the backend
@@ -10,5 +11,7 @@ data = fetchRequest('/data', {"data": "Classes, Assignments, Grades"});
 let a = data.Assignments;
 let c = data.Classes;
 let g = data.Grades;
+
+/data does NOT have a sheet property, nor is there a way to only get some rows. For most sheets with an OSIS property, it will return the rows that have the user osis in the OSIS property.
 
 use startLoading() and endLoading() to toggle the loading icon while waiting on backend processes

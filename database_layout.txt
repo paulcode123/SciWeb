@@ -110,6 +110,7 @@ Sheet name: Users
     grade(user's grade)
     IP(id of the cookie set on the user's device)
     password(password)
+    nhs_status(str: blank/member/admin/teacher - indicates NHS membership status)
     
 
 Sheet name: Aspirations
@@ -240,7 +241,7 @@ Sheet name: CMaps (Class-Specific Concept Maps and Starter Prompts)
             label: str,
             description: str,
             prerequisites: [str],  // Array of node IDs that must be derived first
-            starter_prompt: str  // Prompt to start deriving this concept
+            trajectory: str  // Model conversation demonstrating ideal derivation path
             youtube: [str, str]  // Array of [youtube link, time range(06:00-07:00)]
         }
     structure(JSON): Object containing the structure of the concept map
@@ -311,7 +312,7 @@ Sheet name: TodoTrees
     nodes(array of objects containing:
         {
             id: str,
-            type: str (Motivator/Challenge/Task),
+            type: str (Motivator/Challenge/Task/Image),
             name: str,
             description: str (optional, detailed description of the node),
             position: {x: number, y: number},
@@ -329,7 +330,9 @@ Sheet name: TodoTrees
                 type: str (user/ai)
             }],
             contextText: str (optional, large context text up to 1000 words),
-            contextEmbedding: [float] (optional, OpenAI vector embedding for the context)
+            contextEmbedding: [float] (optional, OpenAI vector embedding for the context),
+            imageUrl: str (optional, URL of the image for Image type nodes),
+            imageSize: { width: number, height: number } (optional, dimensions for Image type nodes)
         }
     )
     edges(array of objects containing:
@@ -371,3 +374,74 @@ Sheet name: TutorAvailability
     rating(float: average rating from 1-5)
     sessions_completed(int: number of completed tutoring sessions)
     total_hours(float: total hours spent tutoring)
+
+Sheet name: NHSApplications
+
+    id(5 digit number)
+    OSIS(7 digit number)
+    status(str: draft/submitted/approved/rejected)
+    created_at(ISO timestamp)
+    last_saved(ISO timestamp)
+    grade(int: current grade)
+    entry_grade(int: grade entered Bronx Science)
+    meets_gpa(boolean)
+    credits(array of objects containing:
+        {
+            id: number,
+            type: str (service/leadership/citizenship),
+            code: str,
+            name: str,
+            credits: number,
+            startDate: str (YYYY-MM-DD),
+            endDate: str (YYYY-MM-DD),
+            timeValue: number (optional),
+            advisor: str,
+            advisorEmail: str,
+            additionalDetail: str,
+            verificationFile: str (optional)
+        }
+    )
+    total_credits(object containing:
+        {
+            service: number,
+            leadership: number,
+            citizenship: number
+        }
+    )
+
+Sheet name: Opportunities
+
+    id(6 digit number)
+    name(str: name of the opportunity)
+    date(YYYY-MM-DD)
+    start_time(HH:MM in 24hr format)
+    end_time(HH:MM in 24hr format)
+    category(str: Tutoring/Service/Project)
+    credits(float: number of credits awarded)
+    members_needed(int: maximum number of members that can sign up)
+    signupOSIS(array of OSIS numbers who signed up)
+    showupOSIS(array of OSIS numbers who showed up)
+    location(str: where the opportunity takes place)
+    signup_deadline(YYYY-MM-DD)
+    created_by(OSIS of admin who created it)
+    status(str: upcoming/ongoing/completed/cancelled)
+
+Sheet name: NHSMembers
+
+    OSIS(7 digit number)
+    first_name(str)
+    last_name(str)
+    email(str)
+    probations(array of objects containing:
+        {
+            reason: str
+        }
+    )
+    credits(array of objects containing:
+        {
+            category: str (service/tutoring/project),
+            id: number (6 digit opportunity id),
+            credits: float,
+            status: str (attended/signed_up/no_show)
+        }
+    )

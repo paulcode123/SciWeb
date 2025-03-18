@@ -473,6 +473,128 @@ def map_problems_route():
     
     return json.dumps({"message": "success"})
 
+def map_problems(problems_data, concept_map, llm):
+    """Map problems to their required concepts using the concept map"""
+    from main import init
+    vars = init()
+    client = OpenAI(api_key=vars['openAIAPI'])
+    
+    # Filter out problems that already have concept mappings
+    unmapped_problems = [prob for prob in problems_data if not prob.get('concepts')]
+    
+    # If all problems are already mapped, return early
+    if not unmapped_problems:
+        return "All problems already have concept mappings"
+    
+    # Format the concept map data: get all concept names and descriptions
+    concept_info = {}
+    for node in concept_map['nodes']:
+        concept_info[node['label']] = {
+            'id': node['id'],
+            'description': node['description']
+        }
+    
+    # Format only the unmapped problems
+    formatted_problems = []
+    for prob in unmapped_problems:
+        formatted_problems.append({
+            "problem_id": prob['id'],
+            "text": prob['problem']
+        })
+
+    # Define the function schema for structured output
+    function_schema = {
+        "name": "map_concepts",
+        "description": "Map each problem to its required concepts",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "problem_mappings": {
+                    "type": "array",
+                    "description": "List of problems and their required concepts",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "problem_id": {
+                                "type": "string",
+                                "description": "ID of the problem"
+                            },
+                            "required_concepts": {
+                                "type": "array",
+                                "description": "Names of concepts required to solve this problem",
+                                "items": {
+                                    "type": "string",
+                                    "enum": list(concept_info.keys())
+                                }
+                            }
+                        },
+                        "required": ["problem_id", "required_concepts"]
+                    }
+                }
+            },
+            "required": ["problem_mappings"]
+        }
+    }
+
+    # Format the prompt
+    prompt = f"""You are an expert at analyzing physics problems and identifying the concepts required to solve them.
+
+For each problem, select ALL concepts from the available list that are required to solve it. Choose concepts that are directly needed - don't include prerequisites or related concepts that aren't actually used.
+
+Available concepts:
+{json.dumps([{"name": name, "description": info['description']} for name, info in concept_info.items()], indent=2)}
+
+Problems to analyze:
+{json.dumps(formatted_problems, indent=2)}"""
+
+    # Generate mappings using OpenAI with function calling
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{
+            "role": "user",
+            "content": prompt
+        }],
+        tools=[{
+            "type": "function",
+            "function": function_schema
+        }],
+        tool_choice={"type": "function", "function": {"name": "map_concepts"}}
+    )
+
+    try:
+        # Extract the function call arguments
+        function_args = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
+        
+        # Validate the response format
+        if not isinstance(function_args, dict) or 'problem_mappings' not in function_args:
+            print("Invalid response structure:", function_args)
+            raise ValueError("Response missing 'problem_mappings' key")
+            
+        mappings = function_args['problem_mappings']
+        
+        # Update each problem with its concept mappings
+        problems_updated = 0
+        for mapping in mappings:
+            problem_id = mapping['problem_id']
+            concept_names = mapping['required_concepts']
+            
+            # Convert concept names to IDs
+            concept_ids = [concept_info[name]['id'] for name in concept_names if name in concept_info]
+            
+            # Update the problem in the database
+            for prob in unmapped_problems:
+                if prob['id'] == problem_id:
+                    prob['concepts'] = concept_ids
+                    update_data(prob['id'], 'id', prob, "Problems")
+                    problems_updated += 1
+                    break
+        
+        return f"Successfully mapped {problems_updated} problems to concepts"
+        
+    except Exception as e:
+        print(f"Error processing response: {e}")
+        print(f"Raw response:", response)
+        raise
 
 
 
@@ -765,129 +887,6 @@ def get_concept_explanation():
         print(f"Error in get_concept_explanation: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-def map_problems(problems_data, concept_map, llm):
-    """Map problems to their required concepts using the concept map"""
-    from main import init
-    vars = init()
-    client = OpenAI(api_key=vars['openAIAPI'])
-    
-    # Filter out problems that already have concept mappings
-    unmapped_problems = [prob for prob in problems_data if not prob.get('concepts')]
-    
-    # If all problems are already mapped, return early
-    if not unmapped_problems:
-        return "All problems already have concept mappings"
-    
-    # Format the concept map data: get all concept names and descriptions
-    concept_info = {}
-    for node in concept_map['nodes']:
-        concept_info[node['label']] = {
-            'id': node['id'],
-            'description': node['description']
-        }
-    
-    # Format only the unmapped problems
-    formatted_problems = []
-    for prob in unmapped_problems:
-        formatted_problems.append({
-            "problem_id": prob['id'],
-            "text": prob['problem']
-        })
-
-    # Define the function schema for structured output
-    function_schema = {
-        "name": "map_concepts",
-        "description": "Map each problem to its required concepts",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "problem_mappings": {
-                    "type": "array",
-                    "description": "List of problems and their required concepts",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "problem_id": {
-                                "type": "string",
-                                "description": "ID of the problem"
-                            },
-                            "required_concepts": {
-                                "type": "array",
-                                "description": "Names of concepts required to solve this problem",
-                                "items": {
-                                    "type": "string",
-                                    "enum": list(concept_info.keys())
-                                }
-                            }
-                        },
-                        "required": ["problem_id", "required_concepts"]
-                    }
-                }
-            },
-            "required": ["problem_mappings"]
-        }
-    }
-
-    # Format the prompt
-    prompt = f"""You are an expert at analyzing physics problems and identifying the concepts required to solve them.
-
-For each problem, select ALL concepts from the available list that are required to solve it. Choose concepts that are directly needed - don't include prerequisites or related concepts that aren't actually used.
-
-Available concepts:
-{json.dumps([{"name": name, "description": info['description']} for name, info in concept_info.items()], indent=2)}
-
-Problems to analyze:
-{json.dumps(formatted_problems, indent=2)}"""
-
-    # Generate mappings using OpenAI with function calling
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{
-            "role": "user",
-            "content": prompt
-        }],
-        tools=[{
-            "type": "function",
-            "function": function_schema
-        }],
-        tool_choice={"type": "function", "function": {"name": "map_concepts"}}
-    )
-
-    try:
-        # Extract the function call arguments
-        function_args = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
-        
-        # Validate the response format
-        if not isinstance(function_args, dict) or 'problem_mappings' not in function_args:
-            print("Invalid response structure:", function_args)
-            raise ValueError("Response missing 'problem_mappings' key")
-            
-        mappings = function_args['problem_mappings']
-        
-        # Update each problem with its concept mappings
-        problems_updated = 0
-        for mapping in mappings:
-            problem_id = mapping['problem_id']
-            concept_names = mapping['required_concepts']
-            
-            # Convert concept names to IDs
-            concept_ids = [concept_info[name]['id'] for name in concept_names if name in concept_info]
-            
-            # Update the problem in the database
-            for prob in unmapped_problems:
-                if prob['id'] == problem_id:
-                    prob['concepts'] = concept_ids
-                    update_data(prob['id'], 'id', prob, "Problems")
-                    problems_updated += 1
-                    break
-        
-        return f"Successfully mapped {problems_updated} problems to concepts"
-        
-    except Exception as e:
-        print(f"Error processing response: {e}")
-        print(f"Raw response:", response)
-        raise
-
 
 
 # TodoTree routes
@@ -988,5 +987,117 @@ def get_opportunities():
     except Exception as e:
         print(f"Error generating opportunities: {str(e)}")
         return jsonify({'error': 'Failed to generate opportunities'}), 500
+
+@ai_routes.route('/why', methods=['POST'])
+def why_explanation():
+    """Generate explanations for why something is true/happens"""
+    try:
+        data = request.get_json()
+        content = data.get('content')
+        generate_title = data.get('generate_title', False)
+        is_root = data.get('is_root', False)
+        
+        if not content:
+            return jsonify({'error': 'No content provided'}), 400
+
+        if is_root:
+            # Just generate a title for the root node
+            function_schema = {
+                "name": "generate_title",
+                "description": "Generate a short title for the concept",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "title": {
+                            "type": "string",
+                            "description": "A concise title (max 7 words) that captures the main idea"
+                        }
+                    },
+                    "required": ["title"]
+                }
+            }
+
+            prompt = f"""Generate a very concise title (maximum 7 words) that captures the essence of this concept:
+            "{content}"
+            The title should be clear and descriptive but as short as possible."""
+
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[{"role": "user", "content": prompt}],
+                tools=[{"type": "function", "function": function_schema}],
+                tool_choice={"type": "function", "function": {"name": "generate_title"}}
+            )
+
+            function_args = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
+            return jsonify({"title": function_args["title"]})
+
+        # Define the function schema for structured output with titles
+        function_schema = {
+            "name": "explain_why",
+            "description": "Generate explanations for why something is true or happens",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "explanations": {
+                        "type": "array",
+                        "description": "List of explanations with titles",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "content": {
+                                    "type": "string",
+                                    "description": "A clear explanation that contributes to understanding why"
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "description": "A concise title (max 7 words) that captures the main idea of this explanation"
+                                }
+                            },
+                            "required": ["content", "title"]
+                        },
+                        "minItems": 1,
+                        "maxItems": 3
+                    }
+                },
+                "required": ["explanations"]
+            }
+        }
+
+        # Create the prompt
+        prompt = f"""You are a knowledgeable expert who helps people understand why things happen or are true.
+        
+For the following statement/phenomenon, provide 1-3 clear, direct explanations that help explain WHY it occurs or is true:
+
+"{content}"
+
+For each explanation:
+1. Provide a clear, detailed explanation
+2. Include a very concise title (maximum 7 words) that captures the main idea
+
+Focus on the most fundamental, direct causes. Each explanation should be clear and concise, avoiding technical jargon unless necessary.
+If the statement contains multiple parts, focus on the most important aspect."""
+
+        # Generate explanations using OpenAI with function calling
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[{
+                "role": "user",
+                "content": prompt
+            }],
+            tools=[{
+                "type": "function",
+                "function": function_schema
+            }],
+            tool_choice={"type": "function", "function": {"name": "explain_why"}}
+        )
+
+        # Extract the function call arguments
+        function_args = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
+        
+        return jsonify(function_args)
+        
+    except Exception as e:
+        print(f"Error generating why explanations: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 

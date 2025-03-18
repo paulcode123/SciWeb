@@ -256,7 +256,7 @@ async function loadConceptMap(mapData) {
                 borderColor: getBorderColor(status),
                 font: { color: '#fff' },
                 prerequisites: node.prerequisites || [],
-                starter_prompt: node.starter_prompt,
+                trajectory: node.trajectory,
                 chat_history: nodeProgress.chat_history || [],
                 widthConstraint: {
                     minimum: 120,
@@ -357,7 +357,7 @@ async function loadConceptMap(mapData) {
             borderColor: getBorderColor('pending'),
             font: { color: '#fff' },
             prerequisites: node.prerequisites || [],
-            starter_prompt: node.starter_prompt,
+            trajectory: node.trajectory,
             chat_history: [],
             widthConstraint: {
                 minimum: 120,
@@ -455,10 +455,10 @@ function startDerivation(concept) {
         addMessage('system', 'Previous conversation loaded. You can continue from where you left off.');
     } else {
         // Add system message with starter prompt if available
-        if (concept.starter_prompt) {
-            log('Using starter prompt:', concept.starter_prompt);
+        if (concept.trajectory) {
+            log('Using trajectory:', concept.trajectory);
             // Extract and handle Desmos expressions if present
-            const { expressions, cleanPrompt } = extractDesmosExpressions(concept.starter_prompt);
+            const { expressions, cleanPrompt } = extractDesmosExpressions(concept.trajectory);
             
             if (expressions && UI.calculator) {
                 log('Loading Desmos expressions:', expressions);
@@ -470,7 +470,7 @@ function startDerivation(concept) {
             
             addMessage('system', cleanPrompt);
         } else {
-            log('No starter prompt, using default');
+            log('No trajectory, using default');
             addMessage('system', `Let's derive the concept of ${concept.label}. I'll guide you through the historical development and reasoning behind this concept.`);
         }
     }

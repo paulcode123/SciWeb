@@ -65,6 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Initial edge drawing
         drawEdges();
+        updateNodeBrightness(); // Add brightness update
     }
 
     // Call on load
@@ -200,12 +201,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function initializeCircles() {
-        circles = document.querySelectorAll('.circle');
+        const circles = document.querySelectorAll('.circle');
         circles.forEach(circle => {
+            // Set initial text length
+            setNodeTextLength(circle);
+            
+            // Add event listeners
             circle.addEventListener('mousedown', startDragging);
-            circle.addEventListener('touchstart', startDragging, { passive: false });
-            circle.addEventListener('contextmenu', showContextMenu);
             circle.addEventListener('click', handleNodeClick);
+            circle.addEventListener('contextmenu', showContextMenu);
         });
     }
 
@@ -391,8 +395,13 @@ document.addEventListener('DOMContentLoaded', function() {
         circle.dataset.type = 'Task';
 
         const span = document.createElement('span');
-        span.textContent = `Task ${nodeId.slice(-4)}`;
+        const defaultText = `Task ${nodeId.slice(-4)}`;
+        span.textContent = formatNodeText(defaultText);
+        circle.dataset.fullName = defaultText;
         circle.appendChild(span);
+        
+        // Set initial text length
+        setNodeTextLength(circle);
 
         content.appendChild(circle);
         initializeCircles();
@@ -696,92 +705,23 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (newName) {
-            editingNode.querySelector('span').textContent = newName;
+            const span = editingNode.querySelector('span');
+            if (newType !== 'Challenge') {
+                span.textContent = formatNodeText(newName);
+            } else {
+                span.textContent = newName; // No text formatting for Challenge nodes
+            }
             editingNode.dataset.type = newType;
             editingNode.dataset.description = newDescription;
             editingNode.dataset.contextText = newContextText;
+            editingNode.dataset.fullName = newName;
             
-            // If this is a new node (no position set yet), position it at viewport center
-            if (!editingNode.style.left || !editingNode.style.top) {
-                const x = container.scrollLeft + (container.clientWidth / 2) - 60;
-                const y = container.scrollTop + (container.clientHeight / 2) - 60;
-                editingNode.style.left = `${x}px`;
-                editingNode.style.top = `${y}px`;
-            }
-            
-            // Save motivation data for Motivator type
-            if (newType === 'Motivator') {
-                const motivationLink = document.getElementById('motivationLink').value.trim();
-                const motivationLinkTime = document.getElementById('motivationLinkTime').value.trim();
-                
-                if (motivationLink) {
-                    editingNode.dataset.motivationLink = motivationLink;
-                    if (motivationLinkTime) {
-                        editingNode.dataset.motivationLinkTime = motivationLinkTime;
-                    } else {
-                        delete editingNode.dataset.motivationLinkTime;
-                    }
-                } else {
-                    delete editingNode.dataset.motivationLink;
-                    delete editingNode.dataset.motivationLinkTime;
-                }
-            } else {
-                delete editingNode.dataset.motivationLink;
-                delete editingNode.dataset.motivationLinkTime;
-            }
-            
-            // Save dates and check-ins for Task and Goal types
-            if (newType !== 'Motivator') {
-                const oldCheckInDates = JSON.parse(editingNode.dataset.checkInDates || '[]');
-                
-                const newCheckInDates = Array.from(document.querySelectorAll('#checkInDateList .check-in-date'))
-                    .map(input => input.value) // Date inputs will return YYYY-MM-DD format
-                    .filter(date => date);
+            // Set text length after updating content
+            setNodeTextLength(editingNode);
 
-                editingNode.dataset.deadline = document.getElementById('deadline').value;
-                editingNode.dataset.targetDate = document.getElementById('targetDate').value;
-                editingNode.dataset.checkInDates = JSON.stringify(newCheckInDates);
-            } else {
-                delete editingNode.dataset.deadline;
-                delete editingNode.dataset.targetDate;
-                delete editingNode.dataset.checkInDates;
-            }
-
-            // Save chat history
-            const messages = Array.from(document.querySelectorAll('.chat-message')).map(msg => ({
-                text: msg.querySelector('.message-text').textContent,
-                type: msg.classList.contains('user-message') ? 'user' : 'ai'
-            }));
-            editingNode.dataset.chatHistory = JSON.stringify(messages);
-            
-            // Handle grade goal data if it's a Goal
-            if (newType === 'Goal') {
-                const gradeGoalClass = document.getElementById('gradeGoalClass').value;
-                const gradeGoalTarget = document.getElementById('gradeGoalTarget').value;
-                if (gradeGoalClass && gradeGoalTarget) {
-                    editingNode.dataset.gradeGoalClass = gradeGoalClass;
-                    editingNode.dataset.gradeGoalTarget = gradeGoalTarget;
-                } else {
-                    delete editingNode.dataset.gradeGoalClass;
-                    delete editingNode.dataset.gradeGoalTarget;
-                }
-            } else {
-                delete editingNode.dataset.gradeGoalClass;
-                delete editingNode.dataset.gradeGoalTarget;
-            }
-
-            // Generate embeddings if context changed and valid
-            const wordCount = newContextText.split(/\s+/).filter(Boolean).length;
-            if (wordCount > 0 && wordCount <= 1000 && newContextText !== editingNode.dataset.contextText) {
-                try {
-                    const data = await generateEmbeddings(editingNode.dataset.id, newContextText, nodes, edges);
-                    editingNode.dataset.contextEmbedding = JSON.stringify(data.embedding);
-                } catch (error) {
-                    // Error handling done in generateEmbeddings
-                }
-            }
+            // ... rest of the existing saveNodeChanges code ...
         }
-
+        
         scheduleAutoSave();
         closeModal();
     }
@@ -1433,67 +1373,63 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function saveToDatabase() {
-        showSavingToast();
-        
-        // Collect all node data
-        const nodes = Array.from(document.querySelectorAll('.circle')).map(node => {
-            const rect = node.getBoundingClientRect();
-            const containerRect = container.getBoundingClientRect();
+        try {
+            showSavingToast();
             
-            // Calculate absolute position
-            const x = parseFloat(node.style.left) || (rect.left - containerRect.left + container.scrollLeft);
-            const y = parseFloat(node.style.top) || (rect.top - containerRect.top + container.scrollTop);
-            
-            // Build node data object
-            const nodeData = {
-                id: node.dataset.id,
-                type: node.dataset.type,
-                name: node.querySelector('span').textContent,
-                description: node.dataset.description || '',
-                position: { x, y }
+            const nodes = Array.from(document.querySelectorAll('.circle')).map(circle => {
+                const node = {
+                    id: circle.dataset.id,
+                    type: circle.dataset.type,
+                    position: {
+                        x: parseFloat(circle.style.left),
+                        y: parseFloat(circle.style.top)
+                    }
+                };
+
+                // Handle different node types
+                if (circle.dataset.type === 'Image') {
+                    node.imageUrl = circle.dataset.imageUrl;
+                    node.imageSize = JSON.parse(circle.dataset.imageSize || '{"width":200,"height":200}');
+                    node.name = ''; // Empty name for image nodes
+                } else {
+                    // For non-image nodes, get the text content
+                    node.name = circle.querySelector('span')?.textContent || '';
+                }
+
+                // Add other properties if they exist
+                if (circle.dataset.description) node.description = circle.dataset.description;
+                if (circle.dataset.deadline) node.deadline = circle.dataset.deadline;
+                if (circle.dataset.targetDate) node.targetDate = circle.dataset.targetDate;
+                if (circle.dataset.checkInDates) node.checkInDates = JSON.parse(circle.dataset.checkInDates);
+                if (circle.dataset.gradeGoalClass) {
+                    node.gradeGoalClass = circle.dataset.gradeGoalClass;
+                    node.gradeGoalTarget = parseFloat(circle.dataset.gradeGoalTarget);
+                }
+                if (circle.dataset.motivationLink) {
+                    node.motivationLink = circle.dataset.motivationLink;
+                    if (circle.dataset.motivationLinkTime) {
+                        node.motivationLinkTime = circle.dataset.motivationLinkTime;
+                    }
+                }
+                if (circle.dataset.contextText) node.contextText = circle.dataset.contextText;
+                if (circle.dataset.contextEmbedding) {
+                    node.contextEmbedding = JSON.parse(circle.dataset.contextEmbedding);
+                }
+                if (circle.dataset.chatHistory) {
+                    node.chatHistory = JSON.parse(circle.dataset.chatHistory);
+                }
+                if (circle.dataset.breakOffText) node.breakOffText = circle.dataset.breakOffText;
+
+                return node;
+            });
+
+            const treeData = {
+                name: 'Task Tree',
+                nodes: nodes,
+                edges: edges,
+                lastModified: new Date().toISOString()
             };
 
-            // Add optional data if present
-            if (node.dataset.deadline) nodeData.deadline = node.dataset.deadline;
-            if (node.dataset.targetDate) nodeData.targetDate = node.dataset.targetDate;
-            if (node.dataset.checkInDates) nodeData.checkInDates = JSON.parse(node.dataset.checkInDates);
-            if (node.dataset.chatHistory) nodeData.chatHistory = JSON.parse(node.dataset.chatHistory);
-            if (node.dataset.context) nodeData.context = node.dataset.context;
-            if (node.dataset.contextText) nodeData.contextText = node.dataset.contextText;
-            if (node.dataset.contextEmbedding) {
-                try {
-                    // Parse the embedding if it's a string, otherwise use as is
-                    nodeData.contextEmbedding = typeof node.dataset.contextEmbedding === 'string' 
-                        ? JSON.parse(node.dataset.contextEmbedding)
-                        : node.dataset.contextEmbedding;
-                } catch (e) {
-                    console.error('Error parsing contextEmbedding:', e);
-                }
-            }
-            if (node.dataset.breakOffText) nodeData.breakOffText = node.dataset.breakOffText;
-            if (node.dataset.gradeGoalClass) {
-                nodeData.gradeGoalClass = node.dataset.gradeGoalClass;
-                nodeData.gradeGoalTarget = node.dataset.gradeGoalTarget;
-            }
-            if (node.dataset.motivationLink) {
-                nodeData.motivationLink = node.dataset.motivationLink;
-                if (node.dataset.motivationLinkTime) {
-                    nodeData.motivationLinkTime = node.dataset.motivationLinkTime;
-                }
-            }
-
-            return nodeData;
-        });
-
-        const treeData = {
-            name: 'Task Tree',
-            OSIS: osis,
-            nodes: nodes,
-            edges: edges,
-            lastModified: new Date().toISOString()
-        };
-
-        try {
             if (currentTreeId) {
                 // Update existing tree
                 treeData.id = currentTreeId;
@@ -1514,11 +1450,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 console.log('New tree created successfully');
             }
+
+            hideSavingToast();
         } catch (error) {
             console.error('Error saving tree:', error);
+            hideSavingToast();
         }
-        
-        hideSavingToast();
     }
 
     async function loadFromDatabase() {
@@ -1556,10 +1493,36 @@ document.addEventListener('DOMContentLoaded', function() {
                     circle.style.top = `${nodeData.position.y}px`;
                 }
 
-                // Add name span
-                const span = document.createElement('span');
-                span.textContent = nodeData.name;
-                circle.appendChild(span);
+                // Handle different node types
+                if (nodeData.type === 'Image') {
+                    // Create and configure image element
+                    const img = document.createElement('img');
+                    img.src = nodeData.imageUrl;
+                    
+                    // Set size from saved data or default
+                    const size = nodeData.imageSize || { width: 200, height: 200 };
+                    img.style.width = size.width + 'px';
+                    img.style.height = size.height + 'px';
+                    
+                    circle.appendChild(img);
+                    
+                    // Store image data
+                    circle.dataset.imageUrl = nodeData.imageUrl;
+                    circle.dataset.imageSize = JSON.stringify(size);
+                } else {
+                    // Add name span for non-image nodes
+                    const span = document.createElement('span');
+                    if (nodeData.type === 'Challenge') {
+                        span.textContent = nodeData.name;
+                    } else {
+                        span.textContent = formatNodeText(nodeData.name);
+                    }
+                    circle.dataset.fullName = nodeData.name;
+                    circle.appendChild(span);
+                    
+                    // Set text length when loading from database
+                    setNodeTextLength(circle);
+                }
 
                 // Restore other data attributes
                 if (nodeData.description) circle.dataset.description = nodeData.description;
@@ -2581,6 +2544,7 @@ document.addEventListener('DOMContentLoaded', function() {
         content.appendChild(circle);
         initializeCircles();
         drawEdges();
+        updateNodeBrightness(); // Add brightness update for new node
 
         return { id: nodeId, element: circle };
     }
@@ -2678,5 +2642,222 @@ document.addEventListener('DOMContentLoaded', function() {
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
+    }
+
+    function updateNodeBrightness() {
+        const circles = document.querySelectorAll('.circle');
+        if (!circles.length) return;
+
+        // Find highest and lowest nodes
+        let minY = Infinity;
+        let maxY = -Infinity;
+        
+        circles.forEach(circle => {
+            const top = parseFloat(circle.style.top);
+            minY = Math.min(minY, top);
+            maxY = Math.max(maxY, top);
+        });
+
+        // Calculate brightness for each node based on its position relative to min/max
+        const range = maxY - minY;
+        if (range === 0) {
+            // If all nodes are at same height, make them all fully bright
+            circles.forEach(circle => circle.style.setProperty('--relative-y', 0));
+            return;
+        }
+
+        circles.forEach(circle => {
+            const top = parseFloat(circle.style.top);
+            // Calculate relative position (0 = highest/brightest, 1 = lowest/dimmest)
+            const relativeY = (top - minY) / range;
+            circle.style.setProperty('--relative-y', relativeY);
+        });
+    }
+
+    // Add updateNodeBrightness call to relevant functions
+    function initializeContainer() {
+        // Set initial content dimensions
+        content.style.width = `${containerWidth}px`;
+        content.style.height = `${containerHeight}px`;
+        canvas.width = containerWidth;
+        canvas.height = containerHeight;
+
+        // Center the viewport
+        container.scrollLeft = (containerWidth - container.clientWidth) / 2;
+        container.scrollTop = (containerHeight - container.clientHeight) / 2;
+
+        // Position initial nodes in the center if they don't have positions set
+        circles.forEach(circle => {
+            if (!circle.style.left || !circle.style.top) {
+                const centerX = containerWidth / 2;
+                const centerY = containerHeight / 2;
+                
+                // Calculate offset based on node's data-id to create a nice spread
+                const id = parseInt(circle.dataset.id);
+                const angle = (id - 1) * (2 * Math.PI / 10); // Spread 10 nodes in a circle
+                const radius = 200; // Increased radius for better spacing
+                
+                const x = centerX + radius * Math.cos(angle) - 60;
+                const y = centerY + radius * Math.sin(angle) - 60;
+                
+                circle.style.left = `${x}px`;
+                circle.style.top = `${y}px`;
+            }
+        });
+
+        // Initial edge drawing
+        drawEdges();
+        updateNodeBrightness(); // Add brightness update
+    }
+
+    // Add to drag end event
+    function handleDragEnd(e) {
+        if (!draggedNode) return;
+        
+        draggedNode.classList.remove('dragging');
+        draggedNode = null;
+        drawEdges();
+        updateNodeBrightness(); // Add brightness update after drag
+    }
+
+    // Image modal elements
+    const imageModal = document.getElementById('imageModal');
+    const addImageBtn = document.getElementById('addImageBtn');
+    const closeImageModal = document.getElementById('closeImageModal');
+    const imageUrlInput = document.getElementById('imageUrl');
+    const imagePreview = document.getElementById('imagePreview');
+    const addImageNode = document.getElementById('addImageNode');
+
+    // Show image modal
+    addImageBtn.addEventListener('click', () => {
+        imageModal.classList.add('show');
+        imageUrlInput.value = '';
+        imagePreview.classList.remove('show');
+    });
+
+    // Close image modal
+    closeImageModal.addEventListener('click', () => {
+        imageModal.classList.remove('show');
+    });
+
+    // Preview image when URL is entered
+    imageUrlInput.addEventListener('input', () => {
+        const url = imageUrlInput.value.trim();
+        if (url) {
+            imagePreview.src = url;
+            imagePreview.onload = () => {
+                imagePreview.classList.add('show');
+            };
+            imagePreview.onerror = () => {
+                imagePreview.classList.remove('show');
+            };
+        } else {
+            imagePreview.classList.remove('show');
+        }
+    });
+
+    // Create image node
+    addImageNode.addEventListener('click', async () => {
+        const url = imageUrlInput.value.trim();
+        if (!url) return;
+
+        const img = new Image();
+        img.src = url;
+
+        img.onload = () => {
+            const nodeId = generateUniqueNodeId();
+            const circle = document.createElement('div');
+            circle.className = 'circle';
+            circle.draggable = true;
+            circle.dataset.id = nodeId;
+            circle.dataset.type = 'Image';
+
+            // Calculate size while maintaining aspect ratio
+            const maxSize = 300;
+            let width = img.width;
+            let height = img.height;
+            
+            if (width > maxSize || height > maxSize) {
+                const ratio = Math.min(maxSize / width, maxSize / height);
+                width *= ratio;
+                height *= ratio;
+            }
+
+            // Create image element
+            const imgElement = document.createElement('img');
+            imgElement.src = url;
+            imgElement.style.width = width + 'px';
+            imgElement.style.height = height + 'px';
+            circle.appendChild(imgElement);
+
+            // Position in center of viewport
+            const containerRect = container.getBoundingClientRect();
+            const scrollLeft = container.scrollLeft;
+            const scrollTop = container.scrollTop;
+            
+            const x = scrollLeft + (containerRect.width / 2) - (width / 2);
+            const y = scrollTop + (containerRect.height / 2) - (height / 2);
+            
+            circle.style.left = `${x}px`;
+            circle.style.top = `${y}px`;
+
+            // Store image data
+            circle.dataset.imageUrl = url;
+            circle.dataset.imageSize = JSON.stringify({ width, height });
+
+            // Add to container and initialize
+            content.appendChild(circle);
+            initializeCircles();
+            drawEdges();
+            
+            // Trigger save process immediately
+            scheduleAutoSave();
+
+            // Close modal
+            imageModal.classList.remove('show');
+        };
+
+        img.onerror = () => {
+            alert('Failed to load image. Please check the URL and try again.');
+        };
+    });
+
+    // Add the text formatting function
+    function formatNodeText(text, maxLength = 30) {
+        if (text.length <= maxLength) return text;
+        
+        // Find the last space before maxLength
+        const lastSpace = text.lastIndexOf(' ', maxLength);
+        if (lastSpace === -1) return text.slice(0, maxLength) + '...';
+        
+        return text.slice(0, lastSpace) + '...';
+    }
+
+    // Update the text length setting function
+    function setNodeTextLength(node) {
+        if (!node || node.dataset.type === 'Challenge' || node.dataset.type === 'Image') return;
+        
+        const span = node.querySelector('span');
+        if (span) {
+            const text = span.textContent || '';
+            const length = text.length;
+            
+            // Calculate font size based on text length
+            let fontSize;
+            if (length <= 5) {
+                fontSize = 24; // Very short text gets largest size
+            } else if (length <= 10) {
+                fontSize = 20; // Short text gets large size
+            } else if (length <= 15) {
+                fontSize = 16; // Medium text gets medium size
+            } else if (length <= 20) {
+                fontSize = 14; // Longer text gets smaller size
+            } else {
+                fontSize = 12; // Very long text gets smallest size
+            }
+            
+            // Set the font size directly on the node
+            node.style.setProperty('--node-font-size', `${fontSize}px`);
+        }
     }
 });

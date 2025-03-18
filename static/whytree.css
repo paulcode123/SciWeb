@@ -1,0 +1,151 @@
+.tree-container {
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    overflow: auto;
+    position: relative;
+}
+
+.input-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    background: rgba(30, 41, 59, 0.8);
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#concept-input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+#submit-concept {
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#tree-visualization {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 100px;
+}
+
+.tree-node {
+    background-color: #2c3e50;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 10px;
+    width: 250px;
+    position: absolute;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.tree-node.minimized {
+    width: 150px;
+    padding: 10px;
+}
+
+.node-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.node-title {
+    color: white;
+    font-weight: bold;
+    font-size: 0.9em;
+    margin-right: 10px;
+    display: none;
+}
+
+.minimized .node-title {
+    display: block;
+}
+
+.minimized .node-content {
+    display: none;
+}
+
+.minimize-button {
+    background: none;
+    border: none;
+    color: #95a5a6;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px;
+    transition: color 0.2s;
+}
+
+.minimize-button:hover {
+    color: white;
+}
+
+.node-content {
+    color: white;
+    margin-bottom: 10px;
+    word-wrap: break-word;
+}
+
+.node-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.why-button, .how-button {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 20px;
+    padding: 5px;
+    transition: transform 0.2s;
+}
+
+.why-button:hover, .how-button:hover {
+    transform: scale(1.1);
+}
+
+.node-connection {
+    position: absolute;
+    background-color: #95a5a6;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.zoom-controls {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+    z-index: 1000;
+}
+
+.zoom-button {
+    padding: 10px;
+    background: #2c3e50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+} 

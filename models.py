@@ -120,7 +120,7 @@ class ConceptMapNode(BaseModel):
     label: str
     description: str
     prerequisites: List[str]
-    starter_prompts: List[str]
+    trajectory: str
 
 class ConceptMap(BaseModel):
     classID: int

@@ -26,7 +26,7 @@ def jupiter_auth():
         'addclasses': data.get('addclasses'),
         'updateLeagues': data.get('updateLeagues')
     }
-    print("jupiter_creds", session['jupiter_creds'])
+    
     return jsonify({'status': 'ok'})
 
 @analyze_routes.route('/jupiter_process_classes', methods=['POST'])
