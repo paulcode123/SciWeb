@@ -3,7 +3,7 @@ let currentUser = null;
 let isAdmin = false;
 let verificationCode = null;
 let emailTest = true; // Set to true to allow any email domain for testing
-let ForceAcctType = 'admin'; // Can be 'none', 'student', 'teacher', 'member', or 'admin'
+let ForceAcctType = 'student'; // Can be 'none', 'student', 'teacher', 'member', or 'admin'
 
 // Test email lists - replace these with actual email lists
 const memberEmails = emailTest ? ['pauln30@nycstudents.net'] : [

@@ -1,3 +1,77 @@
+// Initialize particles.js
+document.addEventListener('DOMContentLoaded', function() {
+    particlesJS('particles-js', {
+        particles: {
+            number: {
+                value: 80,
+                density: {
+                    enable: true,
+                    value_area: 800
+                }
+            },
+            color: {
+                value: '#ffffff'
+            },
+            shape: {
+                type: 'circle'
+            },
+            opacity: {
+                value: 0.5,
+                random: false,
+                anim: {
+                    enable: false
+                }
+            },
+            size: {
+                value: 3,
+                random: true
+            },
+            line_linked: {
+                enable: true,
+                distance: 150,
+                color: '#ffffff',
+                opacity: 0.4,
+                width: 1
+            },
+            move: {
+                enable: true,
+                speed: 2,
+                direction: 'none',
+                random: false,
+                straight: false,
+                out_mode: 'out',
+                bounce: false
+            }
+        },
+        interactivity: {
+            detect_on: 'canvas',
+            events: {
+                onhover: {
+                    enable: true,
+                    mode: 'grab'
+                },
+                onclick: {
+                    enable: true,
+                    mode: 'push'
+                },
+                resize: true
+            },
+            modes: {
+                grab: {
+                    distance: 140,
+                    line_linked: {
+                        opacity: 1
+                    }
+                },
+                push: {
+                    particles_nb: 4
+                }
+            }
+        },
+        retina_detect: true
+    });
+});
+
 const pushList = [];
 
 var classList = 0;
@@ -296,54 +370,6 @@ async function post_classes(data, update){
   location.reload();
   
 }
-
-// Initialize particles.js
-particlesJS('particles-js', {
-    particles: {
-        number: { value: 80, density: { enable: true, value_area: 800 } },
-        color: { value: '#4a90e2' },
-        shape: { type: 'circle' },
-        opacity: {
-            value: 0.5,
-            random: false,
-            animation: { enable: true, speed: 1, minimumValue: 0.1, sync: false }
-        },
-        size: {
-            value: 3,
-            random: true,
-            animation: { enable: true, speed: 2, minimumValue: 0.1, sync: false }
-        },
-        line_linked: {
-            enable: true,
-            distance: 150,
-            color: '#4a90e2',
-            opacity: 0.4,
-            width: 1
-        },
-        move: {
-            enable: true,
-            speed: 1,
-            direction: 'none',
-            random: false,
-            straight: false,
-            outModes: { default: 'bounce' },
-            attract: { enable: false, rotateX: 600, rotateY: 1200 }
-        }
-    },
-    interactivity: {
-        detectsOn: 'canvas',
-        events: {
-            onhover: { enable: true, mode: 'repulse' },
-            onclick: { enable: true, mode: 'push' },
-            resize: true
-        },
-        modes: {
-            repulse: { distance: 100, duration: 0.4 },
-            push: { particles_nb: 4 }
-        }
-    },
-    retina_detect: true
-});
 
 // Show notification function
 function showNotification(message, type = 'info') {
@@ -1146,9 +1172,160 @@ function setupEventListeners() {
     if (courseSelectionBtn) {
         courseSelectionBtn.addEventListener('click', showCourseSelectionTool);
     }
+    
+    // Initialize schedule grid
+    initializeScheduleGrid();
 }
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', initializeClassPage);
+
+// Initialize schedule grid
+async function initializeScheduleGrid() {
+    try {
+        const response = await fetchRequest('/data', { data: 'Classes' });
+        const classes = response.Classes || [];
+        const userClasses = classes.filter(cls => 
+            cls.OSIS && cls.OSIS.toString().includes(osis)
+        );
+
+        // Get all available classes for dropdowns
+        const allClasses = classes.filter(cls => !cls.OSIS || !cls.OSIS.toString().includes(osis));
+
+        document.querySelectorAll('.schedule-cell').forEach(cell => {
+            const period = cell.dataset.period;
+            const day = cell.dataset.day;
+
+            // Find class for this period and day
+            const classForCell = userClasses.find(cls => 
+                cls.period === period && cls.days && cls.days.includes(parseInt(day))
+            );
+
+            if (classForCell) {
+                cell.classList.add('has-class');
+                cell.innerHTML = `
+                    <div class="class-info">
+                        <div class="class-name">${classForCell.name}</div>
+                        <div class="teacher-name">${classForCell.teacher || 'TBA'}</div>
+                    </div>
+                `;
+            }
+
+            // Create dropdown for class selection
+            const dropdown = document.createElement('div');
+            dropdown.className = 'class-dropdown';
+            
+            // Add available classes for this period
+            const availableClasses = allClasses.filter(cls => cls.period === period);
+            dropdown.innerHTML = `
+                ${availableClasses.map(cls => `
+                    <div class="class-option" data-class-id="${cls.id}">
+                        <i class="fas fa-${getSubjectIcon(cls.subject)}"></i>
+                        ${cls.name}
+                    </div>
+                `).join('')}
+                ${availableClasses.length === 0 ? '<div class="class-option">No classes available</div>' : ''}
+            `;
+
+            // Add click handlers for class options
+            dropdown.querySelectorAll('.class-option').forEach(option => {
+                option.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const classId = option.dataset.classId;
+                    if (classId) {
+                        await handleClassAction('join', classId);
+                        initializeScheduleGrid(); // Refresh the grid
+                    }
+                });
+            });
+
+            cell.appendChild(dropdown);
+        });
+    } catch (error) {
+        console.error('Error initializing schedule grid:', error);
+        showNotification('Error loading schedule', 'error');
+    }
+}
+
+function getSubjectIcon(subject) {
+    const icons = {
+        'math': 'calculator',
+        'science': 'flask',
+        'english': 'book',
+        'history': 'landmark',
+        'language': 'language',
+        'computer science': 'laptop-code',
+        'art': 'palette',
+        'music': 'music',
+        'physical education': 'running'
+    };
+    return icons[subject.toLowerCase()] || 'book';
+}
+
+function showClassDetails(classInfo) {
+    // Create and show a modal with class details
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h2>${classInfo.name}</h2>
+            <div class="class-details">
+                <p><i class="fas fa-user-tie"></i> Teacher: ${classInfo.teacher || 'TBD'}</p>
+                <p><i class="fas fa-clock"></i> Period: ${classInfo.period}</p>
+                <p><i class="fas fa-users"></i> Students: ${classInfo.students ? classInfo.students.length : 0}</p>
+                ${classInfo.averageGrade ? `<p><i class="fas fa-chart-line"></i> Average Grade: ${classInfo.averageGrade}%</p>` : ''}
+            </div>
+            <div class="form-actions">
+                <button class="secondary-btn" onclick="this.closest('.modal').remove()">Close</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.classList.add('active');
+}
+
+async function showAvailableClasses(period) {
+    try {
+        const response = await fetchRequest('/data', { data: 'Classes' });
+        const classes = response.Classes || [];
+        
+        // Filter classes for the selected period
+        const availableClasses = classes.filter(cls => 
+            cls.period.toString() === period.toString() &&
+            (!cls.OSIS || !cls.OSIS.toString().includes(osis))
+        );
+
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h2>Available Classes - Period ${period}</h2>
+                <div class="available-classes">
+                    ${availableClasses.map(cls => `
+                        <div class="available-class">
+                            <div class="class-info">
+                                <h3>${cls.name}</h3>
+                                <p><i class="fas fa-user-tie"></i> ${cls.teacher || 'TBD'}</p>
+                                <p><i class="fas fa-users"></i> ${cls.students ? cls.students.length : 0} students</p>
+                            </div>
+                            <button class="primary-btn" onclick="handleClassAction('join', '${cls.id}')">
+                                Join Class
+                            </button>
+                        </div>
+                    `).join('') || '<p>No classes available for this period</p>'}
+                </div>
+                <div class="form-actions">
+                    <button class="secondary-btn" onclick="this.closest('.modal').remove()">Close</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.classList.add('active');
+
+    } catch (error) {
+        console.error('Error loading available classes:', error);
+        showNotification('Error loading available classes', 'error');
+    }
+}
 
 // ... rest of existing code ...

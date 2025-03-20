@@ -19,15 +19,25 @@
     --text-muted: #888888;
 }
 
-/* Enhanced Background */
+/* Global Styles */
 body {
-    background: linear-gradient(135deg, var(--background-dark) 0%, #2c2c4a 100%);
-    color: var(--text-color);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.6;
-    position: relative;
-    min-height: 100vh;
+    margin: 0;
+    padding: 0;
     overflow-x: hidden;
+    background: #000000;
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    position: relative;
+    animation: pageTransition 1.5s ease-out forwards;
+}
+
+@keyframes pageTransition {
+    0% {
+        background: #000000;
+    }
+    100% {
+        background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+    }
 }
 
 body::before {
@@ -38,55 +48,363 @@ body::before {
     right: 0;
     bottom: 0;
     background: 
-        radial-gradient(circle at 20% 30%, rgba(124, 93, 250, 0.15) 0%, transparent 70%),
-        radial-gradient(circle at 80% 70%, rgba(80, 200, 120, 0.15) 0%, transparent 70%),
-        radial-gradient(circle at 50% 50%, rgba(74, 144, 226, 0.1) 0%, transparent 60%);
-    z-index: -1;
-    pointer-events: none;
+        radial-gradient(circle at 20% 30%, rgba(41, 98, 255, 0.15) 0%, transparent 70%),
+        radial-gradient(circle at 80% 70%, rgba(0, 150, 255, 0.15) 0%, transparent 70%);
+    z-index: 0;
     animation: gradientShift 15s ease infinite;
+    opacity: 0;
+    animation: fadeInGradient 2s ease-out forwards;
+    animation-delay: 0.5s;
 }
 
-body::after {
-    content: '';
+@keyframes fadeInGradient {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+#particles-js {
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-        linear-gradient(45deg, rgba(0, 0, 0, 0.2) 25%, transparent 25%) -50px 0,
-        linear-gradient(-45deg, rgba(0, 0, 0, 0.2) 25%, transparent 25%) -50px 0,
-        linear-gradient(45deg, transparent 75%, rgba(0, 0, 0, 0.2) 75%) -50px 0,
-        linear-gradient(-45deg, transparent 75%, rgba(0, 0, 0, 0.2) 75%) -50px 0;
-    background-size: 100px 100px;
-    opacity: 0.05;
-    z-index: -1;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
     pointer-events: none;
-    animation: patternShift 20s linear infinite;
 }
 
-@keyframes gradientShift {
-    0% {
-        transform: scale(1);
-        opacity: 0.8;
+/* Main Container */
+.classes-container {
+    position: relative;
+    z-index: 2;
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* Header Styles */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.page-header h1 {
+    color: #ffffff;
+    margin: 0;
+    font-size: 2.5rem;
+    font-weight: 600;
+}
+
+.header-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+/* Button Styles */
+.primary-btn {
+    background: #4a90e2;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.primary-btn:hover {
+    background: #357abd;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+}
+
+.secondary-btn {
+    background: transparent;
+    color: #ffffff;
+    border: 2px solid #4a90e2;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.secondary-btn:hover {
+    background: rgba(74, 144, 226, 0.1);
+    transform: translateY(-2px);
+}
+
+/* Search and Filter Styles */
+.class-management {
+    margin-bottom: 2rem;
+}
+
+.filters {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.search-box {
+    flex: 1;
+    position: relative;
+}
+
+.search-box i {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #4a90e2;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border: none;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 1rem;
+}
+
+.search-box input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.filter-group {
+    display: flex;
+    gap: 1rem;
+}
+
+.filter-group select {
+    padding: 0.75rem 2rem 0.75rem 1rem;
+    border: none;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.7rem center;
+    background-size: 1em;
+}
+
+/* Enrolled Classes Grid */
+.enrolled-classes-section {
+    margin-top: 2rem;
+}
+
+.enrolled-classes-section h2 {
+    color: #ffffff;
+    margin: 0 0 2rem 0;
+    font-size: 3rem;
+    font-weight: 600;
+    text-align: center;
+    position: relative;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding-bottom: 1rem;
+}
+
+.enrolled-classes-section h2::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 150px;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, #4a90e2, transparent);
+    border-radius: 2px;
+}
+
+.enrolled-classes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.class-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.class-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.class-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.class-card:hover::before {
+    opacity: 1;
+}
+
+.class-card h3 {
+    color: white;
+    margin: 0 0 1rem 0;
+    font-size: 1.4rem;
+    font-weight: 500;
+}
+
+.class-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+}
+
+.class-info span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.class-info i {
+    width: 1rem;
+    text-align: center;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    position: relative;
+    background: #1a237e;
+    border-radius: 15px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 600px;
+    margin: 2rem auto;
+    color: white;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.modal-content h2 {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.8rem;
+    font-weight: 500;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 1rem;
+}
+
+.form-group input[type="color"] {
+    height: 40px;
+    padding: 0.25rem;
+    cursor: pointer;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+/* Course Selection Tool Styles */
+.course-tool {
+    max-width: 800px;
+}
+
+.course-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.course-recommendations {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 1rem;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
     }
-    50% {
-        transform: scale(1.1);
+    to {
         opacity: 1;
-    }
-    100% {
-        transform: scale(1);
-        opacity: 0.8;
+        transform: translateY(0);
     }
 }
 
-@keyframes patternShift {
-    0% {
-        transform: translateX(0) translateY(0);
-    }
-    100% {
-        transform: translateX(100px) translateY(100px);
-    }
+.modal-content {
+    animation: slideUp 0.3s ease-out;
+}
+
+.class-card {
+    animation: fadeIn 0.3s ease-out;
 }
 
 /* Glowing effect for cards */
@@ -129,18 +447,6 @@ body::after {
 }
 
 /* Enhanced container background */
-.classes-container {
-    position: relative;
-    background: rgba(42, 43, 54, 0.7);
-    backdrop-filter: blur(10px);
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    padding: 2rem;
-    margin: 2rem auto;
-    max-width: 1400px;
-}
-
 .classes-container::before {
     content: '';
     position: absolute;
@@ -1330,4 +1636,152 @@ body {
         transform: translateX(0);
         opacity: 1;
     }
+}
+
+/* Schedule Grid Section */
+.schedule-section {
+    margin-top: 3rem;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.schedule-section h2 {
+    color: #ffffff;
+    margin-bottom: 2rem;
+    font-size: 1.8rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.schedule-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.schedule-header {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    border-radius: 8px;
+    color: #ffffff;
+    font-weight: 500;
+    text-align: center;
+}
+
+.schedule-cell {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1rem;
+    border-radius: 8px;
+    color: #ffffff;
+    min-height: 100px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: visible;
+}
+
+.schedule-cell .class-selector {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.schedule-cell:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.schedule-cell.has-class {
+    background: rgba(74, 144, 226, 0.2);
+    border: 1px solid rgba(74, 144, 226, 0.3);
+}
+
+.class-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 200px;
+    background: rgba(28, 29, 38, 0.95);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+}
+
+.schedule-cell:hover .class-dropdown {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(5px);
+}
+
+.class-option {
+    padding: 0.75rem 1rem;
+    color: #ffffff;
+    transition: background 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.class-option:hover {
+    background: rgba(74, 144, 226, 0.2);
+}
+
+.class-option i {
+    width: 20px;
+    text-align: center;
+    color: #4a90e2;
+}
+
+.class-info {
+    font-size: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.class-info .class-name {
+    font-weight: 500;
+    color: #ffffff;
+}
+
+.class-info .teacher-name {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.8rem;
+}
+
+.schedule-legend {
+    display: flex;
+    gap: 2rem;
+    margin-top: 2rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #ffffff;
+    font-size: 0.9rem;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
 }

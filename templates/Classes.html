@@ -7,21 +7,24 @@
 
 <!-- css block -->
 {% block css %}
-<link rel="stylesheet" href="/static/Classes.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='Classes.css') }}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 {% endblock %}
 
 {% block content %}
+<!-- Particles.js Container -->
+<div id="particles-js"></div>
+
 <div class="classes-container">
     <!-- Header Section -->
     <div class="page-header">
-        <h1><i class="fas fa-graduation-cap"></i> Classes</h1>
+        <h1>Classes</h1>
         <div class="header-actions">
             <button id="joinClassBtn" class="primary-btn">
                 <i class="fas fa-plus"></i> Join Class
             </button>
             <button id="createClassBtn" class="primary-btn">
-                <i class="fas fa-plus-circle"></i> Create Class
+                <i class="fas fa-chalkboard"></i> Create Class
             </button>
             <button id="courseSelectionBtn" class="primary-btn">
                 <i class="fas fa-book"></i> Course Selection Tool
@@ -38,20 +41,25 @@
             </div>
             <div class="filter-group">
                 <select id="periodFilter">
-                    <option value="all">All Periods</option>
-                    {% for i in range(1, 10) %}
-                    <option value="{{ i }}">Period {{ i }}</option>
-                    {% endfor %}
+                    <option value="">All Periods</option>
+                    <option value="1">Period 1</option>
+                    <option value="2">Period 2</option>
+                    <option value="3">Period 3</option>
+                    <option value="4">Period 4</option>
+                    <option value="5">Period 5</option>
+                    <option value="6">Period 6</option>
+                    <option value="7">Period 7</option>
+                    <option value="8">Period 8</option>
+                    <option value="9">Period 9</option>
+                    <option value="10">Period 10</option>
                 </select>
-            </div>
-            <div class="filter-group">
                 <select id="subjectFilter">
-                    <option value="all">All Subjects</option>
-                    <option value="Mathematics">Mathematics</option>
-                    <option value="Science">Science</option>
-                    <option value="English">English</option>
-                    <option value="History">History</option>
-                    <option value="Language">Language</option>
+                    <option value="">All Subjects</option>
+                    <option value="math">Mathematics</option>
+                    <option value="science">Science</option>
+                    <option value="english">English</option>
+                    <option value="history">History</option>
+                    <option value="language">Language</option>
                 </select>
             </div>
         </div>
@@ -61,86 +69,161 @@
     <div id="enrolled-classes" class="enrolled-classes-section">
         <h2>Your Enrolled Classes</h2>
         <div class="enrolled-classes-grid">
-            <!-- Will be populated by JavaScript -->
+            <!-- Enrolled classes will be populated here -->
         </div>
     </div>
 
-    <!-- Join Class Modal -->
-    <div id="joinClassModal" class="modal">
-        <div class="modal-content">
-            <h2>Join Class</h2>
-            <form id="joinClassForm">
-                <div class="form-group">
-                    <label for="classCode">Class Code</label>
-                    <input type="text" id="classCode" required>
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="primary-btn">Join</button>
-                    <button type="button" class="secondary-btn close-modal">Cancel</button>
-                </div>
-            </form>
+    <!-- Schedule Section -->
+    <div class="schedule-section">
+        <h2><i class="fas fa-calendar-alt"></i> Class Schedule</h2>
+        <div class="schedule-grid">
+            <div class="schedule-header">Period</div>
+            <div class="schedule-header">Monday</div>
+            <div class="schedule-header">Tuesday</div>
+            <div class="schedule-header">Wednesday</div>
+            <div class="schedule-header">Thursday</div>
+            <div class="schedule-header">Friday</div>
+            
+            <!-- Generate period rows -->
+            {% for period in range(1, 11) %}
+            <div class="schedule-header">{{ period }}</div>
+            {% for day in range(5) %}
+            <div class="schedule-cell" data-period="{{ period }}" data-day="{{ day }}">
+                <!-- Class info will be populated by JavaScript -->
+            </div>
+            {% endfor %}
+            {% endfor %}
         </div>
-    </div>
 
-    <!-- Create Class Modal -->
-    <div id="createClassModal" class="modal">
-        <div class="modal-content">
-            <h2>Create Class</h2>
-            <form id="createClassForm">
-                <div class="form-group">
-                    <label for="className">Class Name</label>
-                    <input type="text" id="className" required>
-                </div>
-                <div class="form-group">
-                    <label for="classSubject">Subject</label>
-                    <select id="classSubject" required>
-                        <option value="">Select Subject</option>
-                        <option value="Mathematics">Mathematics</option>
-                        <option value="Science">Science</option>
-                        <option value="English">English</option>
-                        <option value="History">History</option>
-                        <option value="Language">Language</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="classPeriod">Period</label>
-                    <select id="classPeriod" required>
-                        <option value="">Select Period</option>
-                        {% for i in range(1, 10) %}
-                        <option value="{{ i }}">Period {{ i }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="classCategories">Grading Categories</label>
-                    <div id="categoryContainer">
-                        <div class="category-row">
-                            <input type="text" class="category-name" placeholder="Category Name" required>
-                            <input type="number" class="category-weight" placeholder="Weight %" required min="0" max="100">
-                            <button type="button" class="remove-category secondary-btn">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <button type="button" id="addCategory" class="secondary-btn">
-                        <i class="fas fa-plus"></i> Add Category
-                    </button>
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="primary-btn">Create</button>
-                    <button type="button" class="secondary-btn close-modal">Cancel</button>
-                </div>
-            </form>
+        <div class="schedule-legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: rgba(74, 144, 226, 0.2);"></div>
+                <span>Your Classes</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: rgba(255, 255, 255, 0.05);"></div>
+                <span>Available</span>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Notification Container -->
-<div id="notification-container"></div>
+<!-- Join Class Modal -->
+<div id="joinClassModal" class="modal">
+    <div class="modal-content">
+        <h2>Join Class</h2>
+        <form id="joinClassForm">
+            <div class="form-group">
+                <label for="classCode">Class Code</label>
+                <input type="text" id="classCode" required>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="primary-btn">Join</button>
+                <button type="button" class="secondary-btn" id="cancelJoinModal">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Create Class Modal -->
+<div id="createClassModal" class="modal">
+    <div class="modal-content">
+        <h2>Create Class</h2>
+        <form id="createClassForm">
+            <div class="form-group">
+                <label for="className">Class Name</label>
+                <input type="text" id="className" required>
+            </div>
+            <div class="form-group">
+                <label for="period">Period</label>
+                <select id="period" required>
+                    <option value="">Select Period</option>
+                    <option value="1">Period 1</option>
+                    <option value="2">Period 2</option>
+                    <option value="3">Period 3</option>
+                    <option value="4">Period 4</option>
+                    <option value="5">Period 5</option>
+                    <option value="6">Period 6</option>
+                    <option value="7">Period 7</option>
+                    <option value="8">Period 8</option>
+                    <option value="9">Period 9</option>
+                    <option value="10">Period 10</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="subject">Subject</label>
+                <select id="subject" required>
+                    <option value="">Select Subject</option>
+                    <option value="math">Mathematics</option>
+                    <option value="science">Science</option>
+                    <option value="english">English</option>
+                    <option value="history">History</option>
+                    <option value="language">Language</option>
+                </select>
+            </div>
+            <div id="gradingCategories" class="form-group">
+                <label>Grading Categories</label>
+                <div id="categoryInputs">
+                    <div class="category-input">
+                        <input type="text" placeholder="Category name" class="category-name">
+                        <input type="number" placeholder="Weight %" class="category-weight" min="0" max="100">
+                        <button type="button" class="remove-category">×</button>
+                    </div>
+                </div>
+                <button type="button" id="addCategory" class="secondary-btn">Add Category</button>
+            </div>
+            <div class="form-group">
+                <label for="classColor">Class Color</label>
+                <input type="color" id="classColor" value="#4a90e2">
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="primary-btn">Create</button>
+                <button type="button" class="secondary-btn" id="cancelCreateModal">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Course Selection Tool Modal -->
+<div id="courseToolModal" class="modal">
+    <div class="modal-content course-tool">
+        <h2>Course Selection Tool</h2>
+        <div class="course-filters">
+            <div class="filter-group">
+                <label for="gradeLevel">Grade Level</label>
+                <select id="gradeLevel">
+                    <option value="">All Grades</option>
+                    <option value="9">Grade 9</option>
+                    <option value="10">Grade 10</option>
+                    <option value="11">Grade 11</option>
+                    <option value="12">Grade 12</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="courseSubject">Subject Area</label>
+                <select id="courseSubject">
+                    <option value="">All Subjects</option>
+                    <option value="math">Mathematics</option>
+                    <option value="science">Science</option>
+                    <option value="english">English</option>
+                    <option value="history">History</option>
+                    <option value="language">Language</option>
+                </select>
+            </div>
+        </div>
+        <div class="course-recommendations">
+            <!-- Course recommendations will be populated here -->
+        </div>
+        <div class="form-actions">
+            <button type="button" class="secondary-btn" id="closeCourseToolModal">Close</button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 <!-- js block -->
 {% block js %}
-<script src="/static/Classes.js"></script>
+<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+<script src="{{ url_for('static', filename='Classes.js') }}"></script>
 {% endblock %}
     
