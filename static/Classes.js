@@ -1,124 +1,196 @@
-// Initialize particles.js
-document.addEventListener('DOMContentLoaded', function() {
-    particlesJS('particles-js', {
-        particles: {
-            number: {
-                value: 80,
-                density: {
-                    enable: true,
-                    value_area: 800
-                }
-            },
-            color: {
-                value: '#ffffff'
-            },
-            shape: {
-                type: 'circle'
-            },
-            opacity: {
-                value: 0.5,
-                random: false,
-                anim: {
-                    enable: false
-                }
-            },
-            size: {
-                value: 3,
-                random: true
-            },
-            line_linked: {
-                enable: true,
-                distance: 150,
-                color: '#ffffff',
-                opacity: 0.4,
-                width: 1
-            },
-            move: {
-                enable: true,
-                speed: 2,
-                direction: 'none',
-                random: false,
-                straight: false,
-                out_mode: 'out',
-                bounce: false
+// Utility functions for class data management
+const ClassDataManager = {
+    // Fetch all classes
+    async fetchAllClasses() {
+        try {
+            const data = await fetchRequest('/data', { data: 'Classes' });
+            return data.Classes || [];
+        } catch (error) {
+            console.error('Error fetching classes:', error);
+            throw error;
+        }
+    },
+
+    // Fetch user's classes
+    async fetchUserClasses(userOsis) {
+        try {
+            const classes = await this.fetchAllClasses();
+            return classes.filter(cls => cls.OSIS.toString().includes(userOsis));
+        } catch (error) {
+            console.error('Error fetching user classes:', error);
+            throw error;
+        }
+    },
+
+    // Get unique subjects from classes
+    getUniqueSubjects(classes) {
+        const subjects = new Set();
+        classes.forEach(cls => {
+            if (cls.subject) {
+                subjects.add(cls.subject);
             }
-        },
-        interactivity: {
-            detect_on: 'canvas',
-            events: {
-                onhover: {
+        });
+        return Array.from(subjects);
+    },
+
+    // Populate a select element with class options
+    populateClassSelect(selectElement, classes, includeDefault = true) {
+        // Clear existing options
+        selectElement.innerHTML = '';
+        
+        // Add default option if requested
+        if (includeDefault) {
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Select a class';
+            defaultOption.disabled = true;
+            defaultOption.selected = true;
+            selectElement.appendChild(defaultOption);
+        }
+
+        // Add class options
+        classes.forEach(cls => {
+            const option = document.createElement('option');
+            option.value = cls.id;
+            option.textContent = cls.name;
+            selectElement.appendChild(option);
+        });
+    },
+
+    // Populate a select element with subject options
+    populateSubjectSelect(selectElement, subjects, includeDefault = true) {
+        // Clear existing options
+        selectElement.innerHTML = '';
+        
+        // Add default option if requested
+        if (includeDefault) {
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Select a subject';
+            defaultOption.disabled = true;
+            defaultOption.selected = true;
+            selectElement.appendChild(defaultOption);
+        }
+
+        // Add subject options
+        subjects.forEach(subject => {
+            const option = document.createElement('option');
+            option.value = subject.value;
+            option.textContent = subject.name;
+            selectElement.appendChild(option);
+        });
+    },
+
+    // Get class categories
+    getClassCategories(classData) {
+        try {
+            if (!classData.categories) return [];
+            const categories = typeof classData.categories === 'string' 
+                ? JSON.parse(classData.categories) 
+                : classData.categories;
+            return categories.filter((_, index) => index % 2 === 0); // Filter out weights
+        } catch (error) {
+            console.error('Error parsing categories:', error);
+            return [];
+        }
+    },
+
+    // Populate a select element with category options
+    populateCategorySelect(selectElement, categories, includeDefault = true) {
+        // Clear existing options
+        selectElement.innerHTML = '';
+        
+        // Add default option if requested
+        if (includeDefault) {
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Select a category';
+            defaultOption.disabled = true;
+            defaultOption.selected = true;
+            selectElement.appendChild(defaultOption);
+        }
+
+        // Add category options
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category;
+            option.textContent = category;
+            selectElement.appendChild(option);
+        });
+    }
+};
+
+// Show notification function
+function showNotification(message, type = 'info') {
+    // Create notification container if it doesn't exist
+    let notificationContainer = document.getElementById('notification-container');
+    if (!notificationContainer) {
+        notificationContainer = document.createElement('div');
+        notificationContainer.id = 'notification-container';
+        document.body.appendChild(notificationContainer);
+    }
+
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    notificationContainer.appendChild(notification);
+
+    // Remove notification after 3 seconds
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// Initialize particles.js and page when DOM is loaded
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        // Initialize particles.js
+        particlesJS('particles-js', {
+            particles: {
+                number: { value: 80, density: { enable: true, value_area: 800 } },
+                color: { value: '#ffffff' },
+                shape: { type: 'circle' },
+                opacity: { value: 0.5, random: false, anim: { enable: false } },
+                size: { value: 3, random: true },
+                line_linked: {
                     enable: true,
-                    mode: 'grab'
+                    distance: 150,
+                    color: '#ffffff',
+                    opacity: 0.4,
+                    width: 1
                 },
-                onclick: {
+                move: {
                     enable: true,
-                    mode: 'push'
-                },
-                resize: true
-            },
-            modes: {
-                grab: {
-                    distance: 140,
-                    line_linked: {
-                        opacity: 1
-                    }
-                },
-                push: {
-                    particles_nb: 4
+                    speed: 2,
+                    direction: 'none',
+                    random: false,
+                    straight: false,
+                    out_mode: 'out',
+                    bounce: false
                 }
-            }
-        },
-        retina_detect: true
-    });
+            },
+            interactivity: {
+                detect_on: 'canvas',
+                events: {
+                    onhover: { enable: true, mode: 'grab' },
+                    onclick: { enable: true, mode: 'push' },
+                    resize: true
+                },
+                modes: {
+                    grab: { distance: 140, line_linked: { opacity: 1 } },
+                    push: { particles_nb: 4 }
+                }
+            },
+            retina_detect: true
+        });
 
-    // Add event listeners for top buttons
-    const joinClassBtn = document.getElementById('joinClassBtn');
-    const createClassBtn = document.getElementById('createClassBtn');
-    const courseSelectionBtn = document.getElementById('courseSelectionBtn');
-    const joinClassModal = document.getElementById('joinClassModal');
-    const createClassModal = document.getElementById('createClassModal');
-    const courseToolModal = document.getElementById('courseToolModal');
-
-    // Join Class button
-    joinClassBtn.addEventListener('click', () => {
-        joinClassModal.style.display = 'block';
-    });
-
-    // Create Class button
-    createClassBtn.addEventListener('click', () => {
-        createClassModal.style.display = 'block';
-    });
-
-    // Course Selection button
-    courseSelectionBtn.addEventListener('click', () => {
-        courseToolModal.style.display = 'block';
-    });
-
-    // Close modals when clicking outside
-    window.addEventListener('click', (e) => {
-        if (e.target === joinClassModal) {
-            joinClassModal.style.display = 'none';
-        }
-        if (e.target === createClassModal) {
-            createClassModal.style.display = 'none';
-        }
-        if (e.target === courseToolModal) {
-            courseToolModal.style.display = 'none';
-        }
-    });
-
-    // Close buttons
-    document.getElementById('cancelJoinModal').addEventListener('click', () => {
-        joinClassModal.style.display = 'none';
-    });
-
-    document.getElementById('cancelCreateModal').addEventListener('click', () => {
-        createClassModal.style.display = 'none';
-    });
-
-    document.getElementById('closeCourseToolModal').addEventListener('click', () => {
-        courseToolModal.style.display = 'none';
-    });
+        // Initialize the class page
+        await initializeClassPage();
+        
+    } catch (error) {
+        console.error('Error during initialization:', error);
+        showNotification('Error initializing page', 'error');
+    }
 });
 
 const pushList = [];
@@ -418,16 +490,6 @@ async function post_classes(data, update){
   console.log(response);
   location.reload();
   
-}
-
-// Show notification function
-function showNotification(message, type = 'info') {
-    const notification = document.getElementById('notification');
-    notification.textContent = message;
-    notification.className = `notification show ${type}`;
-    setTimeout(() => {
-        notification.className = 'notification';
-    }, 3000);
 }
 
 // Function to handle class recommendations
@@ -803,131 +865,6 @@ document.addEventListener('DOMContentLoaded', () => {
     loadClasses();
 });
 
-// Utility functions for class data management
-const ClassDataManager = {
-    // Fetch all classes
-    async fetchAllClasses() {
-        try {
-            const data = await fetchRequest('/data', { data: 'Classes' });
-            return data.Classes || [];
-        } catch (error) {
-            console.error('Error fetching classes:', error);
-            throw error;
-        }
-    },
-
-    // Fetch user's classes
-    async fetchUserClasses(userOsis) {
-        try {
-            const classes = await this.fetchAllClasses();
-            return classes.filter(cls => cls.OSIS.toString().includes(userOsis));
-        } catch (error) {
-            console.error('Error fetching user classes:', error);
-            throw error;
-        }
-    },
-
-    // Get unique subjects from classes
-    getUniqueSubjects(classes) {
-        const subjects = new Set();
-        classes.forEach(cls => {
-            if (cls.subject) {
-                subjects.add(cls.subject);
-            }
-        });
-        return Array.from(subjects);
-    },
-
-    // Populate a select element with class options
-    populateClassSelect(selectElement, classes, includeDefault = true) {
-        // Clear existing options
-        selectElement.innerHTML = '';
-        
-        // Add default option if requested
-        if (includeDefault) {
-            const defaultOption = document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.textContent = 'Select a class';
-            defaultOption.disabled = true;
-            defaultOption.selected = true;
-            selectElement.appendChild(defaultOption);
-        }
-
-        // Add class options
-        classes.forEach(cls => {
-            const option = document.createElement('option');
-            option.value = cls.id;
-            option.textContent = cls.name;
-            selectElement.appendChild(option);
-        });
-    },
-
-    // Populate a select element with subject options
-    populateSubjectSelect(selectElement, subjects, includeDefault = true) {
-        // Clear existing options
-        selectElement.innerHTML = '';
-        
-        // Add default option if requested
-        if (includeDefault) {
-            const defaultOption = document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.textContent = 'Select a subject';
-            defaultOption.disabled = true;
-            defaultOption.selected = true;
-            selectElement.appendChild(defaultOption);
-        }
-
-        // Add subject options
-        subjects.forEach(subject => {
-            const option = document.createElement('option');
-            option.value = subject.value;
-            option.textContent = subject.name;
-            selectElement.appendChild(option);
-        });
-    },
-
-    // Get class categories
-    getClassCategories(classData) {
-        try {
-            if (!classData.categories) return [];
-            const categories = typeof classData.categories === 'string' 
-                ? JSON.parse(classData.categories) 
-                : classData.categories;
-            return categories.filter((_, index) => index % 2 === 0); // Filter out weights
-        } catch (error) {
-            console.error('Error parsing categories:', error);
-            return [];
-        }
-    },
-
-    // Populate a select element with category options
-    populateCategorySelect(selectElement, categories, includeDefault = true) {
-        // Clear existing options
-        selectElement.innerHTML = '';
-        
-        // Add default option if requested
-        if (includeDefault) {
-            const defaultOption = document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.textContent = 'Select a category';
-            defaultOption.disabled = true;
-            defaultOption.selected = true;
-            selectElement.appendChild(defaultOption);
-        }
-
-        // Add category options
-        categories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category;
-            option.textContent = category;
-            selectElement.appendChild(option);
-        });
-    }
-};
-
-// Export the ClassDataManager for use in other files
-window.ClassDataManager = ClassDataManager;
-
 // Initialize filters and class display
 async function initializeFilters() {
     const periodFilter = document.getElementById('periodFilter');
@@ -1245,114 +1182,196 @@ async function initializeScheduleGrid() {
         // Get all schedule cells
         const cells = document.querySelectorAll('.schedule-cell');
         
+        if (!cells.length) {
+            console.warn('No schedule cells found');
+            return;
+        }
+
         cells.forEach(cell => {
             const period = cell.dataset.period;
             const day = cell.dataset.day;
             
-            // Create the select element
-            const select = document.createElement('select');
-            select.className = 'schedule-select';
+            // Create select2-like container
+            const selectContainer = document.createElement('div');
+            selectContainer.className = 'select-container';
             
-            // Add default option
-            const defaultOption = document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.textContent = '-- Select Class --';
-            select.appendChild(defaultOption);
+            // Create search input
+            const searchInput = document.createElement('input');
+            searchInput.type = 'text';
+            searchInput.className = 'class-search';
+            searchInput.placeholder = 'Search classes...';
+            
+            // Create select element
+            const select = document.createElement('select');
+            select.className = 'class-select';
+            select.innerHTML = '<option value="">Select Class</option>';
+            
+            // Create dropdown container for options
+            const dropdownContainer = document.createElement('div');
+            dropdownContainer.className = 'dropdown-options';
+            dropdownContainer.style.display = 'none';
             
             // Filter classes for this period
-            const periodClasses = allClasses.filter(cls => cls.period.toString() === period.toString());
+            const periodClasses = allClasses.filter(cls => 
+                cls.period.toString() === period.toString()
+            );
             
-            // Add options for each class in this period
-            periodClasses.forEach(cls => {
-                const option = document.createElement('option');
-                option.value = cls.id;
-                option.textContent = `${cls.name} (${cls.teacher})`;
+            // Function to update dropdown options based on search
+            function updateOptions(searchText = '') {
+                dropdownContainer.innerHTML = '';
+                const filteredClasses = periodClasses.filter(cls =>
+                    cls.name.toLowerCase().includes(searchText.toLowerCase()) ||
+                    cls.teacher.toLowerCase().includes(searchText.toLowerCase())
+                );
                 
-                // Check if user is enrolled in this class
-                const isEnrolled = userClasses.some(userClass => userClass.id === cls.id);
-                if (isEnrolled) {
-                    option.selected = true;
-                    cell.classList.add('has-class');
-                }
-                
-                select.appendChild(option);
-            });
-            
-            // Add change event listener
-            select.addEventListener('change', async (e) => {
-                const selectedClassId = e.target.value;
-                if (selectedClassId) {
-                    try {
-                        // Find the selected class
-                        const selectedClass = allClasses.find(cls => cls.id === selectedClassId);
-                        if (!selectedClass) return;
-
-                        // Update the class's OSIS list
-                        if (!selectedClass.OSIS) {
-                            selectedClass.OSIS = userOsis;
-                        } else if (!selectedClass.OSIS.toString().includes(userOsis)) {
-                            selectedClass.OSIS = selectedClass.OSIS + ',' + userOsis;
-                        }
-
-                        // Update the class in the database
-                        await fetchRequest('/update_data', {
-                            sheet: 'Classes',
-                            data: selectedClass,
-                            row_name: 'id',
-                            row_value: selectedClass.id
-                        });
-
-                        cell.classList.add('has-class');
-                        showNotification('Successfully enrolled in class', 'success');
-                    } catch (error) {
-                        console.error('Error enrolling in class:', error);
-                        showNotification('Error enrolling in class', 'error');
-                        e.target.value = ''; // Reset selection
+                filteredClasses.forEach(cls => {
+                    const option = document.createElement('div');
+                    option.className = 'dropdown-option';
+                    option.dataset.value = cls.id;
+                    option.innerHTML = `
+                        <div class="class-option-name">${cls.name}</div>
+                        <div class="class-option-teacher">${cls.teacher}</div>
+                    `;
+                    
+                    // Check if user is enrolled in this class
+                    const isEnrolled = userClasses.some(userClass => userClass.id === cls.id);
+                    if (isEnrolled) {
+                        option.classList.add('enrolled');
                     }
-                } else {
-                    cell.classList.remove('has-class');
+                    
+                    option.addEventListener('click', async () => {
+                        try {
+                            if (!cls.OSIS) {
+                                cls.OSIS = userOsis;
+                            } else if (!cls.OSIS.toString().includes(userOsis)) {
+                                cls.OSIS = cls.OSIS + ',' + userOsis;
+                            }
+
+                            await fetchRequest('/update_data', {
+                                sheet: 'Classes',
+                                data: cls,
+                                row_name: 'id',
+                                row_value: cls.id
+                            });
+
+                            cell.classList.add('has-class');
+                            searchInput.value = cls.name;
+                            dropdownContainer.style.display = 'none';
+                            showNotification('Successfully enrolled in class', 'success');
+                            
+                            // Update visual state
+                            cell.classList.add('has-class');
+                            option.classList.add('enrolled');
+                            
+                        } catch (error) {
+                            console.error('Error enrolling in class:', error);
+                            showNotification('Error enrolling in class', 'error');
+                        }
+                    });
+                    
+                    dropdownContainer.appendChild(option);
+                });
+            }
+            
+            // Add event listeners for search input
+            searchInput.addEventListener('focus', () => {
+                updateOptions(searchInput.value);
+                dropdownContainer.style.display = 'block';
+            });
+            
+            searchInput.addEventListener('input', () => {
+                updateOptions(searchInput.value);
+                dropdownContainer.style.display = 'block';
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!selectContainer.contains(e.target)) {
+                    dropdownContainer.style.display = 'none';
                 }
             });
             
-            // Clear existing content and add select
+            // Set initial value if user is enrolled in a class for this period
+            const enrolledClass = userClasses.find(cls => 
+                cls.period.toString() === period.toString()
+            );
+            if (enrolledClass) {
+                searchInput.value = enrolledClass.name;
+                cell.classList.add('has-class');
+            }
+            
+            // Assemble the select container
+            selectContainer.appendChild(searchInput);
+            selectContainer.appendChild(dropdownContainer);
+            
+            // Clear existing content and add new elements
             cell.innerHTML = '';
-            cell.appendChild(select);
+            cell.appendChild(selectContainer);
         });
-
-        // Add styles for the schedule grid
+        
+        // Add CSS styles for the new elements
         const style = document.createElement('style');
         style.textContent = `
-            .schedule-select {
+            .select-container {
+                position: relative;
+                width: 100%;
+            }
+            
+            .class-search {
                 width: 100%;
                 padding: 8px;
-                background-color: var(--background-light);
-                color: var(--text-color);
-                border: 1px solid var(--border-color);
+                border: 1px solid rgba(255, 255, 255, 0.2);
                 border-radius: 4px;
+                background: rgba(0, 0, 0, 0.3);
+                color: white;
+                font-size: 14px;
+            }
+            
+            .dropdown-options {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                max-height: 200px;
+                overflow-y: auto;
+                background: rgba(30, 30, 30, 0.95);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 4px;
+                z-index: 1000;
+            }
+            
+            .dropdown-option {
+                padding: 8px;
                 cursor: pointer;
-                font-size: 0.9rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             }
-
-            .schedule-select:hover {
-                border-color: var(--primary-color);
+            
+            .dropdown-option:hover {
+                background: rgba(255, 255, 255, 0.1);
             }
-
-            .schedule-select:focus {
-                outline: none;
-                border-color: var(--primary-color);
-                box-shadow: 0 0 0 2px rgba(124, 93, 250, 0.2);
+            
+            .dropdown-option.enrolled {
+                background: rgba(74, 144, 226, 0.2);
             }
-
-            .schedule-cell.has-class {
-                background-color: rgba(74, 144, 226, 0.2);
+            
+            .class-option-name {
+                font-weight: bold;
+                margin-bottom: 4px;
             }
-
-            .schedule-cell {
-                padding: 4px;
-                transition: all 0.3s ease;
+            
+            .class-option-teacher {
+                font-size: 12px;
+                opacity: 0.8;
+            }
+            
+            .has-class .class-search {
+                border-color: rgba(74, 144, 226, 0.5);
+                background: rgba(74, 144, 226, 0.1);
             }
         `;
         document.head.appendChild(style);
+        
+        showNotification('Schedule grid initialized successfully', 'success');
         
     } catch (error) {
         console.error('Error initializing schedule grid:', error);
@@ -1443,86 +1462,73 @@ async function showAvailableClasses(period) {
 
 async function initializeClassPage() {
     try {
-        // Initialize particles.js
-        particlesJS('particles-js', {
-            particles: {
-                number: {
-                    value: 80,
-                    density: {
-                        enable: true,
-                        value_area: 800
-                    }
-                },
-                color: {
-                    value: '#ffffff'
-                },
-                shape: {
-                    type: 'circle'
-                },
-                opacity: {
-                    value: 0.5,
-                    random: false,
-                    anim: {
-                        enable: false
-                    }
-                },
-                size: {
-                    value: 3,
-                    random: true
-                },
-                line_linked: {
-                    enable: true,
-                    distance: 150,
-                    color: '#ffffff',
-                    opacity: 0.4,
-                    width: 1
-                },
-                move: {
-                    enable: true,
-                    speed: 2,
-                    direction: 'none',
-                    random: false,
-                    straight: false,
-                    out_mode: 'out',
-                    bounce: false
-                }
-            },
-            interactivity: {
-                detect_on: 'canvas',
-                events: {
-                    onhover: {
-                        enable: true,
-                        mode: 'grab'
-                    },
-                    onclick: {
-                        enable: true,
-                        mode: 'push'
-                    },
-                    resize: true
-                },
-                modes: {
-                    grab: {
-                        distance: 140,
-                        line_linked: {
-                            opacity: 1
-                        }
-                    },
-                    push: {
-                        particles_nb: 4
-                    }
-                }
-            },
-            retina_detect: true
-        });
-
         // Initialize filters
         await initializeFilters();
         
         // Initialize schedule grid
         await initializeScheduleGrid();
         
-        // Setup event listeners
-        setupEventListeners();
+        // Setup event listeners for buttons
+        const joinClassBtn = document.getElementById('joinClassBtn');
+        const createClassBtn = document.getElementById('createClassBtn');
+        const courseSelectionBtn = document.getElementById('courseSelectionBtn');
+        const joinClassModal = document.getElementById('joinClassModal');
+        const createClassModal = document.getElementById('createClassModal');
+        const courseToolModal = document.getElementById('courseToolModal');
+
+        if (joinClassBtn && joinClassModal) {
+            joinClassBtn.addEventListener('click', () => {
+                joinClassModal.style.display = 'block';
+            });
+        }
+
+        if (createClassBtn && createClassModal) {
+            createClassBtn.addEventListener('click', () => {
+                createClassModal.style.display = 'block';
+            });
+        }
+
+        if (courseSelectionBtn && courseToolModal) {
+            courseSelectionBtn.addEventListener('click', () => {
+                courseToolModal.style.display = 'block';
+            });
+        }
+
+        // Close modal buttons
+        const cancelJoinModal = document.getElementById('cancelJoinModal');
+        const cancelCreateModal = document.getElementById('cancelCreateModal');
+        const closeCourseToolModal = document.getElementById('closeCourseToolModal');
+
+        if (cancelJoinModal) {
+            cancelJoinModal.addEventListener('click', () => {
+                joinClassModal.style.display = 'none';
+            });
+        }
+
+        if (cancelCreateModal) {
+            cancelCreateModal.addEventListener('click', () => {
+                createClassModal.style.display = 'none';
+            });
+        }
+
+        if (closeCourseToolModal) {
+            closeCourseToolModal.addEventListener('click', () => {
+                courseToolModal.style.display = 'none';
+            });
+        }
+
+        // Close modals when clicking outside
+        window.addEventListener('click', (e) => {
+            if (joinClassModal && e.target === joinClassModal) {
+                joinClassModal.style.display = 'none';
+            }
+            if (createClassModal && e.target === createClassModal) {
+                createClassModal.style.display = 'none';
+            }
+            if (courseToolModal && e.target === courseToolModal) {
+                courseToolModal.style.display = 'none';
+            }
+        });
         
         // Show success notification
         showNotification('Class page initialized successfully', 'success');
