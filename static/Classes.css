@@ -1675,29 +1675,17 @@ body {
 
 .schedule-cell {
     background: rgba(255, 255, 255, 0.05);
-    padding: 1rem;
+    padding: 0.5rem;
     border-radius: 8px;
     color: #ffffff;
-    min-height: 100px;
-    cursor: pointer;
+    min-height: 80px;
     transition: all 0.3s ease;
     position: relative;
-    overflow: visible;
-}
-
-.schedule-cell .class-selector {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
 }
 
 .schedule-cell:hover {
-    transform: translateY(-2px);
     background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
@@ -1706,61 +1694,34 @@ body {
     border: 1px solid rgba(74, 144, 226, 0.3);
 }
 
-.class-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    width: 200px;
-    background: rgba(28, 29, 38, 0.95);
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    z-index: 100;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(10px);
+.class-select {
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+    cursor: pointer;
     transition: all 0.3s ease;
 }
 
-.schedule-cell:hover .class-dropdown {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(5px);
+.class-select:hover {
+    background: rgba(0, 0, 0, 0.4);
+    border-color: rgba(74, 144, 226, 0.5);
 }
 
-.class-option {
-    padding: 0.75rem 1rem;
+.class-select:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.class-select option {
+    background: #1a1a1a;
     color: #ffffff;
-    transition: background 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.class-option:hover {
-    background: rgba(74, 144, 226, 0.2);
-}
-
-.class-option i {
-    width: 20px;
-    text-align: center;
-    color: #4a90e2;
-}
-
-.class-info {
-    font-size: 0.9rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.class-info .class-name {
-    font-weight: 500;
-    color: #ffffff;
-}
-
-.class-info .teacher-name {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.8rem;
+    padding: 0.5rem;
 }
 
 .schedule-legend {

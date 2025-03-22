@@ -70,6 +70,55 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         retina_detect: true
     });
+
+    // Add event listeners for top buttons
+    const joinClassBtn = document.getElementById('joinClassBtn');
+    const createClassBtn = document.getElementById('createClassBtn');
+    const courseSelectionBtn = document.getElementById('courseSelectionBtn');
+    const joinClassModal = document.getElementById('joinClassModal');
+    const createClassModal = document.getElementById('createClassModal');
+    const courseToolModal = document.getElementById('courseToolModal');
+
+    // Join Class button
+    joinClassBtn.addEventListener('click', () => {
+        joinClassModal.style.display = 'block';
+    });
+
+    // Create Class button
+    createClassBtn.addEventListener('click', () => {
+        createClassModal.style.display = 'block';
+    });
+
+    // Course Selection button
+    courseSelectionBtn.addEventListener('click', () => {
+        courseToolModal.style.display = 'block';
+    });
+
+    // Close modals when clicking outside
+    window.addEventListener('click', (e) => {
+        if (e.target === joinClassModal) {
+            joinClassModal.style.display = 'none';
+        }
+        if (e.target === createClassModal) {
+            createClassModal.style.display = 'none';
+        }
+        if (e.target === courseToolModal) {
+            courseToolModal.style.display = 'none';
+        }
+    });
+
+    // Close buttons
+    document.getElementById('cancelJoinModal').addEventListener('click', () => {
+        joinClassModal.style.display = 'none';
+    });
+
+    document.getElementById('cancelCreateModal').addEventListener('click', () => {
+        createClassModal.style.display = 'none';
+    });
+
+    document.getElementById('closeCourseToolModal').addEventListener('click', () => {
+        courseToolModal.style.display = 'none';
+    });
 });
 
 const pushList = [];
@@ -1183,64 +1232,128 @@ document.addEventListener('DOMContentLoaded', initializeClassPage);
 // Initialize schedule grid
 async function initializeScheduleGrid() {
     try {
-        const response = await fetchRequest('/data', { data: 'Classes' });
-        const classes = response.Classes || [];
-        const userClasses = classes.filter(cls => 
-            cls.OSIS && cls.OSIS.toString().includes(osis)
+        // Fetch all available classes and user data
+        const allClasses = await ClassDataManager.fetchAllClasses();
+        const userData = await fetchRequest('/data', { data: 'Name' });
+        const userOsis = userData.Name.osis.toString();
+
+        // Get user's enrolled classes
+        const userClasses = allClasses.filter(cls => 
+            cls.OSIS && cls.OSIS.toString().includes(userOsis)
         );
 
-        // Get all available classes for dropdowns
-        const allClasses = classes.filter(cls => !cls.OSIS || !cls.OSIS.toString().includes(osis));
-
-        document.querySelectorAll('.schedule-cell').forEach(cell => {
+        // Get all schedule cells
+        const cells = document.querySelectorAll('.schedule-cell');
+        
+        cells.forEach(cell => {
             const period = cell.dataset.period;
             const day = cell.dataset.day;
+            
+            // Create the select element
+            const select = document.createElement('select');
+            select.className = 'schedule-select';
+            
+            // Add default option
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = '-- Select Class --';
+            select.appendChild(defaultOption);
+            
+            // Filter classes for this period
+            const periodClasses = allClasses.filter(cls => cls.period.toString() === period.toString());
+            
+            // Add options for each class in this period
+            periodClasses.forEach(cls => {
+                const option = document.createElement('option');
+                option.value = cls.id;
+                option.textContent = `${cls.name} (${cls.teacher})`;
+                
+                // Check if user is enrolled in this class
+                const isEnrolled = userClasses.some(userClass => userClass.id === cls.id);
+                if (isEnrolled) {
+                    option.selected = true;
+                    cell.classList.add('has-class');
+                }
+                
+                select.appendChild(option);
+            });
+            
+            // Add change event listener
+            select.addEventListener('change', async (e) => {
+                const selectedClassId = e.target.value;
+                if (selectedClassId) {
+                    try {
+                        // Find the selected class
+                        const selectedClass = allClasses.find(cls => cls.id === selectedClassId);
+                        if (!selectedClass) return;
 
-            // Find class for this period and day
-            const classForCell = userClasses.find(cls => 
-                cls.period === period && cls.days && cls.days.includes(parseInt(day))
-            );
+                        // Update the class's OSIS list
+                        if (!selectedClass.OSIS) {
+                            selectedClass.OSIS = userOsis;
+                        } else if (!selectedClass.OSIS.toString().includes(userOsis)) {
+                            selectedClass.OSIS = selectedClass.OSIS + ',' + userOsis;
+                        }
 
-            if (classForCell) {
-                cell.classList.add('has-class');
-                cell.innerHTML = `
-                    <div class="class-info">
-                        <div class="class-name">${classForCell.name}</div>
-                        <div class="teacher-name">${classForCell.teacher || 'TBA'}</div>
-                    </div>
-                `;
+                        // Update the class in the database
+                        await fetchRequest('/update_data', {
+                            sheet: 'Classes',
+                            data: selectedClass,
+                            row_name: 'id',
+                            row_value: selectedClass.id
+                        });
+
+                        cell.classList.add('has-class');
+                        showNotification('Successfully enrolled in class', 'success');
+                    } catch (error) {
+                        console.error('Error enrolling in class:', error);
+                        showNotification('Error enrolling in class', 'error');
+                        e.target.value = ''; // Reset selection
+                    }
+                } else {
+                    cell.classList.remove('has-class');
+                }
+            });
+            
+            // Clear existing content and add select
+            cell.innerHTML = '';
+            cell.appendChild(select);
+        });
+
+        // Add styles for the schedule grid
+        const style = document.createElement('style');
+        style.textContent = `
+            .schedule-select {
+                width: 100%;
+                padding: 8px;
+                background-color: var(--background-light);
+                color: var(--text-color);
+                border: 1px solid var(--border-color);
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 0.9rem;
             }
 
-            // Create dropdown for class selection
-            const dropdown = document.createElement('div');
-            dropdown.className = 'class-dropdown';
-            
-            // Add available classes for this period
-            const availableClasses = allClasses.filter(cls => cls.period === period);
-            dropdown.innerHTML = `
-                ${availableClasses.map(cls => `
-                    <div class="class-option" data-class-id="${cls.id}">
-                        <i class="fas fa-${getSubjectIcon(cls.subject)}"></i>
-                        ${cls.name}
-                    </div>
-                `).join('')}
-                ${availableClasses.length === 0 ? '<div class="class-option">No classes available</div>' : ''}
-            `;
+            .schedule-select:hover {
+                border-color: var(--primary-color);
+            }
 
-            // Add click handlers for class options
-            dropdown.querySelectorAll('.class-option').forEach(option => {
-                option.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    const classId = option.dataset.classId;
-                    if (classId) {
-                        await handleClassAction('join', classId);
-                        initializeScheduleGrid(); // Refresh the grid
-                    }
-                });
-            });
+            .schedule-select:focus {
+                outline: none;
+                border-color: var(--primary-color);
+                box-shadow: 0 0 0 2px rgba(124, 93, 250, 0.2);
+            }
 
-            cell.appendChild(dropdown);
-        });
+            .schedule-cell.has-class {
+                background-color: rgba(74, 144, 226, 0.2);
+            }
+
+            .schedule-cell {
+                padding: 4px;
+                transition: all 0.3s ease;
+            }
+        `;
+        document.head.appendChild(style);
+        
     } catch (error) {
         console.error('Error initializing schedule grid:', error);
         showNotification('Error loading schedule', 'error');
@@ -1325,6 +1438,105 @@ async function showAvailableClasses(period) {
     } catch (error) {
         console.error('Error loading available classes:', error);
         showNotification('Error loading available classes', 'error');
+    }
+}
+
+async function initializeClassPage() {
+    try {
+        // Initialize particles.js
+        particlesJS('particles-js', {
+            particles: {
+                number: {
+                    value: 80,
+                    density: {
+                        enable: true,
+                        value_area: 800
+                    }
+                },
+                color: {
+                    value: '#ffffff'
+                },
+                shape: {
+                    type: 'circle'
+                },
+                opacity: {
+                    value: 0.5,
+                    random: false,
+                    anim: {
+                        enable: false
+                    }
+                },
+                size: {
+                    value: 3,
+                    random: true
+                },
+                line_linked: {
+                    enable: true,
+                    distance: 150,
+                    color: '#ffffff',
+                    opacity: 0.4,
+                    width: 1
+                },
+                move: {
+                    enable: true,
+                    speed: 2,
+                    direction: 'none',
+                    random: false,
+                    straight: false,
+                    out_mode: 'out',
+                    bounce: false
+                }
+            },
+            interactivity: {
+                detect_on: 'canvas',
+                events: {
+                    onhover: {
+                        enable: true,
+                        mode: 'grab'
+                    },
+                    onclick: {
+                        enable: true,
+                        mode: 'push'
+                    },
+                    resize: true
+                },
+                modes: {
+                    grab: {
+                        distance: 140,
+                        line_linked: {
+                            opacity: 1
+                        }
+                    },
+                    push: {
+                        particles_nb: 4
+                    }
+                }
+            },
+            retina_detect: true
+        });
+
+        // Initialize filters
+        await initializeFilters();
+        
+        // Initialize schedule grid
+        await initializeScheduleGrid();
+        
+        // Setup event listeners
+        setupEventListeners();
+        
+        // Show success notification
+        showNotification('Class page initialized successfully', 'success');
+    } catch (error) {
+        console.error('Error initializing class page:', error);
+        showNotification('Error initializing page', 'error');
+    }
+}
+
+// Remove the event listener from setupEventListeners since we're calling it directly
+function setupEventListeners() {
+    const courseSelectionBtn = document.getElementById('courseSelectionBtn');
+    if (courseSelectionBtn) {
+        courseSelectionBtn.addEventListener('click', showCourseSelectionTool);
     }
 }
 
