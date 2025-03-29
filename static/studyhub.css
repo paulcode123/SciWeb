@@ -1,19 +1,58 @@
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes gradientFlow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+    50% { box-shadow: 0 4px 15px -1px rgba(0, 0, 0, 0.2); }
+    100% { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+}
+
+@keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+}
+
 /* Main container styles */
 .studyhub-container {
     max-width: 1400px;
     margin: 0 auto;
     padding: 2rem;
+    position: relative;
 }
 
 .main-title {
     font-size: 3rem;
-    color: var(--text-color);
     margin-bottom: 0.5rem;
     text-align: center;
     font-weight: 700;
-    background: linear-gradient(45deg, var(--primary-color), #4CAF50);
+    background: linear-gradient(120deg, var(--primary-color), #4CAF50, #2196F3, #FF9800);
+    background-size: 300% 300%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    animation: gradientFlow 8s ease infinite;
+    opacity: 0;
+    animation: fadeInUp 0.8s ease forwards, gradientFlow 8s ease infinite;
 }
 
 .main-description {
@@ -22,6 +61,8 @@
     font-size: 1.2rem;
     margin-bottom: 4rem;
     font-weight: 300;
+    opacity: 0;
+    animation: fadeInUp 0.8s ease forwards 0.2s;
 }
 
 /* Learning Journey Layout */
@@ -39,10 +80,48 @@
     align-items: flex-start;
     position: relative;
     padding: 2rem;
-    background: var(--background-light);
+    background: rgba(30, 41, 59, 0.5);
     border-radius: 20px;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(148, 163, 184, 0.1);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: all 0.3s ease;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.journey-section::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        to right,
+        transparent,
+        rgba(255, 255, 255, 0.05),
+        transparent
+    );
+    transform: rotate(45deg);
+    animation: shimmer 6s linear infinite;
+    pointer-events: none;
+}
+
+.establish-section {
+    animation: fadeInUp 0.8s ease forwards 0.3s;
+}
+
+.derive-section {
+    animation: fadeInUp 0.8s ease forwards 0.6s;
+}
+
+.practice-section {
+    animation: fadeInUp 0.8s ease forwards 0.9s;
+}
+
+.evaluate-section {
+    animation: fadeInUp 0.8s ease forwards 1.2s;
 }
 
 .journey-section:hover {
@@ -50,11 +129,11 @@
     box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
 }
 
-/* Journey Number */
+/* Journey Number with floating animation */
 .journey-number {
     width: 40px;
     height: 40px;
-    background: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-color), rgba(255, 255, 255, 0.2));
     color: white;
     border-radius: 50%;
     display: flex;
@@ -64,16 +143,26 @@
     font-weight: bold;
     margin-right: 2rem;
     flex-shrink: 0;
+    animation: float 3s ease-in-out infinite;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
-/* Connection Lines */
+/* Connection Lines with gradient animation */
 .connection-line {
     position: absolute;
     left: 20px;
     top: 60px;
     bottom: -2rem;
     width: 2px;
-    background: linear-gradient(to bottom, var(--primary-color), transparent);
+    background: linear-gradient(to bottom, 
+        #9C27B0 0%,
+        #4CAF50 33%,
+        #2196F3 66%,
+        #FF9800 100%
+    );
+    opacity: 0.6;
+    background-size: 200% 200%;
+    animation: gradientFlow 4s ease infinite;
 }
 
 /* Section Content */
@@ -111,13 +200,31 @@
     align-items: center;
     gap: 0.8rem;
     padding: 1rem;
-    background: var(--background);
+    background: rgba(15, 23, 42, 0.6);
     border-radius: 12px;
-    transition: transform 0.2s ease;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
 
 .feature-item:hover {
     transform: translateY(-2px);
+    background: rgba(15, 23, 42, 0.8);
+}
+
+.feature-item::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--primary-color), transparent);
+    transition: width 0.3s ease;
+}
+
+.feature-item:hover::after {
+    width: 100%;
 }
 
 .feature-item i {
@@ -141,36 +248,76 @@
     color: white;
     text-decoration: none;
     font-weight: 500;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
 
-.map-button {
-    background: #4CAF50;
+.tool-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+    transition: all 0.5s ease;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
 }
 
-.derive-button {
-    background: var(--primary-color);
-}
-
-.practice-button {
-    background: #2196F3;
-}
-
-.evaluate-button {
-    background: #FF9800;
+.tool-button:hover::before {
+    width: 200%;
+    height: 200%;
 }
 
 .tool-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.map-button, .derive-button {
+    background: linear-gradient(135deg, #4CAF50, #A5D6A7);
+}
+
+.practice-button {
+    background: linear-gradient(135deg, #2196F3, #90CAF9);
+}
+
+.evaluate-button {
+    background: linear-gradient(135deg, #FF9800, #FFCC80);
 }
 
 /* Study Progress Section */
 .guides-container {
     margin-top: 4rem;
     padding: 2rem;
-    background: var(--background-light);
+    background: rgba(30, 41, 59, 0.5);
     border-radius: 20px;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    opacity: 0;
+    animation: fadeInUp 0.8s ease forwards 1.5s;
+    position: relative;
+    overflow: hidden;
+}
+
+.guides-container::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        to right,
+        transparent,
+        rgba(255, 255, 255, 0.05),
+        transparent
+    );
+    transform: rotate(45deg);
+    animation: shimmer 6s linear infinite;
+    pointer-events: none;
 }
 
 .guides-header {
@@ -223,17 +370,43 @@ td {
     border-bottom: 1px solid var(--border-color);
 }
 
-/* Section-specific colors */
+/* Table hover effects */
+tr:not(thead tr) {
+    transition: all 0.3s ease;
+}
+
+tr:not(thead tr):hover {
+    background: rgba(148, 163, 184, 0.1);
+    transform: scale(1.01);
+}
+
+/* Section-specific colors with gradients */
+.establish-section .section-header i {
+    background: linear-gradient(135deg, #9C27B0, #E1BEE7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
 .derive-section .section-header i {
-    color: #4CAF50;
+    background: linear-gradient(135deg, #4CAF50, #A5D6A7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .practice-section .section-header i {
-    color: #2196F3;
+    background: linear-gradient(135deg, #2196F3, #90CAF9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .evaluate-section .section-header i {
-    color: #FF9800;
+    background: linear-gradient(135deg, #FF9800, #FFCC80);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.establish-button {
+    background: linear-gradient(135deg, #9C27B0, #E1BEE7);
 }
 
 /* Responsive Design */

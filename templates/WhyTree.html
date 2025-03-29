@@ -1,7 +1,7 @@
 {% extends "darkThemeTemplate.html" %}
 
 {% block title %}
-<title>Why Tree - Understanding Through Questions</title>
+<title>WhyTree - Concept Breakdown</title>
 {% endblock %}
 
 {% block css %}
@@ -9,20 +9,75 @@
 {% endblock %}
 
 {% block content %}
-<div class="tree-container">
-    <div class="input-container">
-        <input type="text" id="concept-input" placeholder="Enter something you want to understand...">
-        <button id="submit-concept">Create Node</button>
+<div class="whytree-container">
+    <h1 class="main-title">Let's break down what it is that we're learning</h1>
+    <p class="subtitle">The goal here is to establish a baseline of concepts that you already understand. Then on the derive page, you'll build back up from these concepts to gain a complete understanding of the topic.</p>
+    
+    <div class="search-container">
+        <div class="custom-input main-input">
+            <label for="concept-input">Any phenomenon, theorem, equation, or concept you'd like to understand</label>
+            <input type="text" id="concept-input" placeholder="e.g., Pythagorean Theorem, Photosynthesis, Gravity...">
+        </div>
+        
+        <div class="divider">
+            <span>OR</span>
+        </div>
+        
+        <div class="preset-inputs">
+            <div class="custom-input half-width">
+                <label for="class-select">Select a class</label>
+                <div class="search-box">
+                    <input type="text" id="class-select" placeholder="Search for a class...">
+                    <div class="search-icon">
+                        <svg viewBox="0 0 24 24" width="24" height="24">
+                            <path fill="currentColor" d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="custom-input half-width">
+                <label for="unit-select">Select a unit</label>
+                <div class="search-box">
+                    <input type="text" id="unit-select" placeholder="Search for a unit..." disabled>
+                    <div class="search-icon">
+                        <svg viewBox="0 0 24 24" width="24" height="24">
+                            <path fill="currentColor" d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button id="start-button" class="start-button" disabled>
+            <span class="button-text">Next</span>
+            <div class="button-glow"></div>
+        </button>
     </div>
-    <div id="tree-visualization"></div>
-    <div class="zoom-controls">
-        <button class="zoom-button" id="zoom-in">+</button>
-        <button class="zoom-button" id="zoom-out">-</button>
-        <button class="zoom-button" id="reset-zoom">Reset</button>
+
+    <div id="explanation" class="explanation-container" style="display: none;">
+        <h2 class="explanation-title">Ready to map your knowledge? Here's how:</h2>
+        <div class="explanation-steps">
+            <div class="step">
+                <div class="step-icon check">✓</div>
+                <p>Click the checkmark when you fully understand a concept</p>
+            </div>
+            <div class="step">
+                <div class="step-icon expand">↓</div>
+                <p>Click the arrow to break down concepts you'd like to understand better</p>
+            </div>
+            <div class="step">
+                <p class="step-note">We'll keep breaking concepts down until we reach the basics you already know. Don't worry about the steps in between - we'll work through those together!</p>
+            </div>
+        </div>
+        <button id="lets-go-button" class="lets-go-button">
+            <span class="button-text">Let's Go!</span>
+            <div class="button-glow"></div>
+        </button>
     </div>
 </div>
 {% endblock %}
 
 {% block js %}
 <script src="/static/whytree.js"></script>
-{% endblock %} 
+{% endblock %}

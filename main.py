@@ -97,7 +97,7 @@ app.register_blueprint(ai_routes)
 
 
 def utility_function():
-    pass
+    print("Utility function called")
 
 
 

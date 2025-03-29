@@ -1,0 +1,29 @@
+{% extends "darkThemeTemplate.html" %}
+
+{% block title %}
+<title>SciWeb | Concept Breakdown</title>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="/static/setmap.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="setmap-container">
+    <h1 class="main-title">Concept Breakdown</h1>
+    <p class="main-description">Break down complex topics into simpler concepts</p>
+    
+    <div class="infinite-container" id="infiniteContainer">
+        <div class="infinite-content" id="infiniteContent">
+            <canvas id="connectionCanvas"></canvas>
+            <div id="conceptMap"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/interact.js/1.10.17/interact.min.js"></script>
+<script src="/static/setmap.js"></script>
+{% endblock %} 

@@ -208,48 +208,99 @@ function updateActivityDetails() {
     `;
 }
 
-function addCredit() {
-    const creditType = document.getElementById('creditType').value;
-    const activityCode = document.getElementById('activityCode').value;
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
-    const advisor = document.getElementById('advisor').value;
-    const advisorEmail = document.getElementById('advisorEmail').value;
-    const additionalFieldValue = document.getElementById('additionalField')?.value;
-    
-    const activity = activityCodes[creditType][activityCode];
-    let credits = activity.credits;
-    
-    if (credits === 'hours') {
-        const timeValue = parseFloat(document.getElementById('timeValue').value);
-        credits = timeValue;
+async function uploadVerificationFile(file) {
+    try {
+        // Convert file to base64
+        const reader = new FileReader();
+        return new Promise((resolve, reject) => {
+            reader.onload = async () => {
+                try {
+                    const base64Data = reader.result.split(',')[1];
+                    const fileId = `verification_${Date.now()}_${file.name}`;
+                    
+                    // Upload the file
+                    const response = await fetchRequest('/upload-file', {
+                        file: base64Data,
+                        name: fileId,
+                        type: file.type
+                    });
+
+                    if (response.message === "success") {
+                        resolve(fileId);
+                    } else {
+                        reject(new Error('Failed to upload file'));
+                    }
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsDataURL(file);
+        });
+    } catch (error) {
+        console.error('Error uploading file:', error);
+        throw error;
     }
+}
 
-    const newCredit = {
-        id: Date.now(),
-        type: creditType,
-        code: activityCode,
-        name: activityCode.split(' - ')[1],
-        credits: credits,
-        startDate: startDate,
-        endDate: endDate,
-        timeValue: activity.credits === 'hours' ? document.getElementById('timeValue').value : null,
-        advisor: advisor,
-        advisorEmail: advisorEmail,
-        additionalDetail: additionalFieldValue
-    };
+async function addCredit() {
+    startLoading();
+    try {
+        const creditType = document.getElementById('creditType').value;
+        const activityCode = document.getElementById('activityCode').value;
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        const advisor = document.getElementById('advisor').value;
+        const advisorEmail = document.getElementById('advisorEmail').value;
+        const additionalFieldValue = document.getElementById('additionalField')?.value;
+        const verificationFile = document.getElementById('verification-file')?.files[0];
+        
+        const activity = activityCodes[creditType][activityCode];
+        let credits = activity.credits;
+        
+        if (credits === 'hours') {
+            const timeValue = parseFloat(document.getElementById('timeValue').value);
+            credits = timeValue;
+        }
 
-    addedCredits.push(newCredit);
-    currentCredits[creditType] += credits;
+        // Handle file upload if required
+        let fileId = null;
+        if (activity.requiresVerification && verificationFile) {
+            fileId = await uploadVerificationFile(verificationFile);
+        }
 
-    updateCreditsList();
-    updateProgress();
-    
-    // Reset form
-    document.querySelectorAll('#activity-details input').forEach(input => input.value = '');
-    validateCreditForm();
+        const newCredit = {
+            id: Date.now(),
+            type: creditType,
+            code: activityCode,
+            name: activityCode.split(' - ')[1],
+            credits: credits,
+            startDate: startDate,
+            endDate: endDate,
+            timeValue: activity.credits === 'hours' ? document.getElementById('timeValue').value : null,
+            advisor: advisor,
+            advisorEmail: advisorEmail,
+            additionalDetail: additionalFieldValue,
+            verificationFile: fileId
+        };
 
-    debounceAutoSave(); // Add this at the end
+        addedCredits.push(newCredit);
+        currentCredits[creditType] += credits;
+
+        updateCreditsList();
+        updateProgress();
+        
+        // Reset form
+        document.querySelectorAll('#activity-details input').forEach(input => input.value = '');
+        validateCreditForm();
+
+        debounceAutoSave();
+    } catch (error) {
+        console.error('Error adding credit:', error);
+        showError('Failed to add credit. Please try again.');
+    } finally {
+        endLoading();
+    }
 }
 
 function calculateCredits(creditRule, timeValue) {
@@ -301,6 +352,10 @@ function updateCreditsList() {
             ? '<span class="completion-icon complete" title="All information complete">✓</span>'
             : `<span class="completion-icon incomplete" title="Missing: ${missingFields.join(', ')}">⚠</span>`;
 
+        const verificationStatus = activity.requiresVerification 
+            ? `<div>Verification: ${credit.verificationFile ? '✓ Uploaded' : '❌ Missing'}</div>`
+            : '';
+
         return `
             <div class="credit-item">
                 <div class="credit-info">
@@ -313,6 +368,7 @@ function updateCreditsList() {
                     <div>Dates: ${credit.startDate || '—'} to ${credit.endDate || '—'}</div>
                     ${timeLabel}
                     <div>Advisor: ${credit.advisor || '—'}</div>
+                    ${verificationStatus}
                 </div>
                 <div class="credit-actions">
                     <button onclick="editCredit(${credit.id})" class="edit-btn">Edit</button>
@@ -343,6 +399,17 @@ function editCredit(id) {
     document.getElementById('timeValue').value = creditToEdit.timeValue;
     document.getElementById('advisor').value = creditToEdit.advisor;
     document.getElementById('advisorEmail').value = creditToEdit.advisorEmail;
+    document.getElementById('additionalField').value = creditToEdit.additionalDetail;
+
+    // Note: We can't restore the file input value for security reasons
+    // But we can show a message if a file was previously uploaded
+    const verificationFileInput = document.getElementById('verification-file');
+    if (verificationFileInput && creditToEdit.verificationFile) {
+        const helpText = verificationFileInput.parentElement.querySelector('.help-text');
+        if (helpText) {
+            helpText.innerHTML = 'Previous file uploaded. Upload a new file to replace it.';
+        }
+    }
 
     // Update UI
     updateCreditsList();
@@ -352,7 +419,7 @@ function editCredit(id) {
     // Scroll to the form
     document.getElementById('add-credit-section').scrollIntoView({ behavior: 'smooth' });
 
-    debounceAutoSave(); // Add this at the end
+    debounceAutoSave();
 }
 
 function removeCredit(id) {

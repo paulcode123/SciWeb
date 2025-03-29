@@ -1,339 +1,340 @@
-class TreeNode {
-    constructor(content, level = 0, parent = null) {
-        this.content = content;
-        this.title = '';  // Will be set when node is created
-        this.level = level;
-        this.parent = parent;
-        this.children = [];
-        this.id = Math.random().toString(36).substr(2, 9);
-        this.x = 0;
-        this.y = 0;
-        this.isMinimized = false;
+// Particle system configuration
+const particleConfig = {
+    particleCount: 30,
+    color: '#6366f1',
+    minSize: 2,
+    maxSize: 4,
+    speed: 1,
+    connected: true,
+    lineColor: 'rgba(99, 102, 241, 0.1)'
+};
+
+class Particle {
+    constructor(canvas) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d');
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * (particleConfig.maxSize - particleConfig.minSize) + particleConfig.minSize;
+        this.speedX = (Math.random() - 0.5) * particleConfig.speed;
+        this.speedY = (Math.random() - 0.5) * particleConfig.speed;
+    }
+
+    update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+
+        if (this.x > this.canvas.width) this.x = 0;
+        if (this.x < 0) this.x = this.canvas.width;
+        if (this.y > this.canvas.height) this.y = 0;
+        if (this.y < 0) this.y = this.canvas.height;
+    }
+
+    draw() {
+        this.ctx.beginPath();
+        this.ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        this.ctx.fillStyle = particleConfig.color;
+        this.ctx.fill();
     }
 }
 
-class WhyTree {
-    constructor() {
-        this.root = null;
-        this.nodes = new Map();
-        this.nodeWidth = 250;
-        this.nodeHeight = 100;
-        this.levelHeight = 150;
-        this.horizontalSpacing = 50;
-        this.scale = 1;
-        this.containerSize = 25000; // Fixed size for container
-        this.init();
-    }
+// Initialize particle system
+function initParticles() {
+    const container = document.querySelector('.whytree-container');
+    const canvas = document.createElement('canvas');
+    canvas.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.5;
+    `;
+    container.insertBefore(canvas, container.firstChild);
 
-    init() {
-        // Set initial container size
-        const container = document.getElementById('tree-visualization');
-        const treeContainer = document.querySelector('.tree-container');
+    function resizeCanvas() {
+        canvas.width = container.offsetWidth;
+        canvas.height = container.offsetHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const particles = Array.from({ length: particleConfig.particleCount }, () => new Particle(canvas));
+    const ctx = canvas.getContext('2d');
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // Set sizes for both containers
-        container.style.width = `${this.containerSize}px`;
-        container.style.height = `${this.containerSize}px`;
-        container.style.minWidth = `${this.containerSize}px`;
-        container.style.minHeight = `${this.containerSize}px`;
-        
-        treeContainer.style.minWidth = `${this.containerSize}px`;
-        treeContainer.style.minHeight = `${this.containerSize}px`;
-        
-        // Initialize event listeners
-        document.getElementById('submit-concept').addEventListener('click', () => this.createRootNode());
-        document.getElementById('concept-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.createRootNode();
+        particles.forEach(particle => {
+            particle.update();
+            particle.draw();
         });
-        
-        // Initialize zoom controls
-        document.getElementById('zoom-in').addEventListener('click', () => this.zoom(1.2));
-        document.getElementById('zoom-out').addEventListener('click', () => this.zoom(0.8));
-        document.getElementById('reset-zoom').addEventListener('click', () => this.resetZoom());
-        
-        // Initialize pan functionality
-        this.initializePan();
+
+        if (particleConfig.connected) {
+            particles.forEach((p1, i) => {
+                particles.slice(i + 1).forEach(p2 => {
+                    const dx = p1.x - p2.x;
+                    const dy = p1.y - p2.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < 100) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = particleConfig.lineColor;
+                        ctx.lineWidth = 1;
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.stroke();
+                    }
+                });
+            });
+        }
+
+        requestAnimationFrame(animate);
     }
+    animate();
+}
 
-    initializePan() {
-        const container = document.querySelector('.tree-container');
-        let isDragging = false;
-        let startX, startY, scrollLeft, scrollTop;
+document.addEventListener('DOMContentLoaded', function() {
+    const conceptInput = document.getElementById('concept-input');
+    const classSelect = document.getElementById('class-select');
+    const unitSelect = document.getElementById('unit-select');
+    const startButton = document.getElementById('start-button');
+    const explanationContainer = document.getElementById('explanation');
+    const letsGoButton = document.getElementById('lets-go-button');
+    
+    // Initialize particle system
+    initParticles();
 
-        container.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            startX = e.pageX - container.offsetLeft;
-            startY = e.pageY - container.offsetTop;
-            scrollLeft = container.scrollLeft;
-            scrollTop = container.scrollTop;
+    // Add hover effect to input containers
+    document.querySelectorAll('.custom-input').forEach(container => {
+        container.addEventListener('mousemove', (e) => {
+            const rect = container.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            container.style.background = `radial-gradient(circle at ${x}px ${y}px, 
+                rgba(99, 102, 241, 0.1) 0%, 
+                rgba(15, 23, 42, 0) 50%)`;
         });
 
         container.addEventListener('mouseleave', () => {
-            isDragging = false;
+            container.style.background = 'none';
         });
+    });
 
-        container.addEventListener('mouseup', () => {
-            isDragging = false;
-        });
-
-        container.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            e.preventDefault();
-            const x = e.pageX - container.offsetLeft;
-            const y = e.pageY - container.offsetTop;
-            const walkX = (x - startX);
-            const walkY = (y - startY);
-            container.scrollLeft = scrollLeft - walkX;
-            container.scrollTop = scrollTop - walkY;
-        });
-    }
-
-    zoom(factor) {
-        this.scale *= factor;
-        const container = document.getElementById('tree-visualization');
-        container.style.transform = `scale(${this.scale})`;
-        this.render();
-    }
-
-    resetZoom() {
-        this.scale = 1;
-        const container = document.getElementById('tree-visualization');
-        container.style.transform = 'scale(1)';
-        this.render();
-    }
-
-    createRootNode() {
-        const input = document.getElementById('concept-input');
-        const content = input.value.trim();
-        if (!content) return;
-
-        // Create root node with title
-        fetch('/why', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                content,
-                generate_title: true,
-                is_root: true
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            this.root = new TreeNode(content);
-            this.root.title = data.title;
-            this.nodes.set(this.root.id, this.root);
-            input.value = '';
-            this.render();
-
-            // After rendering, scroll to position above the root node
-            const treeContainer = document.querySelector('.tree-container');
-            
-            // Calculate scroll position to center the root node
-            // The root node's x position already accounts for node width
-            const scrollX = Math.max(0, this.root.x - (treeContainer.clientWidth - this.nodeWidth) / 2);
-            const scrollY = Math.max(0, this.root.y - 200); // Fixed amount of space above
-            
-            treeContainer.scrollTo({
-                left: scrollX,
-                top: scrollY,
-                behavior: 'smooth'
-            });
-        })
-        .catch(error => {
-            console.error('Error creating root node:', error);
-        });
-    }
-
-    async expandWhy(nodeId) {
-        const node = this.nodes.get(nodeId);
-        if (!node) return;
-
-        try {
-            const response = await fetch('/why', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    content: node.content,
-                    generate_title: true
-                })
-            });
-
-            const data = await response.json();
-            
-            if (data.explanations) {
-                for (const explanation of data.explanations) {
-                    const childNode = new TreeNode(
-                        explanation.content,
-                        node.level + 1,
-                        node
-                    );
-                    childNode.title = explanation.title;
-                    node.children.push(childNode);
-                    this.nodes.set(childNode.id, childNode);
-                }
-                this.calculateNodePositions();
-                this.render();
+    // Typing effect for labels
+    document.querySelectorAll('.custom-input label').forEach(label => {
+        const text = label.textContent;
+        label.textContent = '';
+        let i = 0;
+        const interval = setInterval(() => {
+            if (i < text.length) {
+                label.textContent += text[i];
+                i++;
+            } else {
+                clearInterval(interval);
             }
-        } catch (error) {
-            console.error('Error expanding why:', error);
+        }, 50);
+    });
+
+    let selectedClass = null;
+    let selectedUnit = null;
+
+    function updateStartButton() {
+        const conceptFilled = conceptInput.value.trim().length > 0;
+        const presetFilled = selectedClass && selectedUnit;
+        
+        if (conceptFilled || presetFilled) {
+            startButton.disabled = false;
+            startButton.classList.add('illuminated');
+        } else {
+            startButton.disabled = true;
+            startButton.classList.remove('illuminated');
         }
     }
 
-    calculateNodePositions() {
-        if (!this.root) return;
+    // Handle concept input
+    conceptInput.addEventListener('input', () => {
+        if (conceptInput.value.trim().length > 0) {
+            classSelect.disabled = true;
+            unitSelect.disabled = true;
+        } else {
+            classSelect.disabled = false;
+            unitSelect.disabled = !selectedClass;
+        }
+        updateStartButton();
+        // Hide explanation if input changes
+        explanationContainer.style.display = 'none';
+        explanationContainer.classList.remove('visible');
+    });
 
-        // Start with root at exact center of the fixed container
-        this.root.x = (this.containerSize) / 2;
-        this.root.y = this.containerSize / 4; // Place root at 1/4 down to leave room for upward expansion
+    // Handle class select input
+    let classSearchTimeout;
+    classSelect.addEventListener('input', function() {
+        selectedClass = null;
+        selectedUnit = null;
+        unitSelect.value = '';
+        unitSelect.disabled = true;
+        updateStartButton();
 
-        const positionRelativeToParent = (node) => {
-            if (node.children.length === 0) return this.nodeWidth;
-            
-            let totalChildrenWidth = 0;
-            let childWidths = [];
-            
-            // Calculate widths for all children first
-            node.children.forEach(child => {
-                const childWidth = positionRelativeToParent(child);
-                childWidths.push(childWidth);
-                totalChildrenWidth += childWidth;
-            });
-            
-            // Add spacing between children
-            totalChildrenWidth += (node.children.length - 1) * (this.nodeWidth * 3);
-            
-            // Position children relative to parent's center
-            let currentX = -(totalChildrenWidth / 2);
-            node.children.forEach((child, index) => {
-                child.x = node.x + currentX + (childWidths[index] / 2);
-                child.y = node.y + this.levelHeight;
-                currentX += childWidths[index] + (this.nodeWidth * 3);
-            });
-            
-            return Math.max(this.nodeWidth, totalChildrenWidth);
-        };
-
-        // Position all nodes
-        positionRelativeToParent(this.root);
-    }
-
-    createNodeElement(node) {
-        const nodeDiv = document.createElement('div');
-        nodeDiv.className = `tree-node${node.isMinimized ? ' minimized' : ''}`;
-        nodeDiv.id = `node-${node.id}`;
-        nodeDiv.style.left = `${node.x}px`;
-        nodeDiv.style.top = `${node.y}px`;
-        
-        // Create header with title and minimize button
-        const header = document.createElement('div');
-        header.className = 'node-header';
-        
-        const title = document.createElement('div');
-        title.className = 'node-title';
-        title.textContent = node.title;
-        
-        const minimizeButton = document.createElement('button');
-        minimizeButton.className = 'minimize-button';
-        minimizeButton.innerHTML = node.isMinimized ? '⊕' : '⊖';
-        minimizeButton.onclick = (e) => {
-            e.stopPropagation();
-            this.toggleMinimize(node.id);
-        };
-        
-        header.appendChild(title);
-        header.appendChild(minimizeButton);
-        nodeDiv.appendChild(header);
-        
-        const content = document.createElement('div');
-        content.className = 'node-content';
-        content.textContent = node.content;
-        
-        const buttons = document.createElement('div');
-        buttons.className = 'node-buttons';
-        
-        const whyButton = document.createElement('button');
-        whyButton.className = 'why-button';
-        whyButton.innerHTML = '↓';
-        whyButton.onclick = () => this.expandWhy(node.id);
-        
-        const howButton = document.createElement('button');
-        howButton.className = 'how-button';
-        howButton.innerHTML = '↑';
-        howButton.onclick = () => console.log('How clicked - not implemented yet');
-        
-        buttons.appendChild(whyButton);
-        buttons.appendChild(howButton);
-        
-        nodeDiv.appendChild(content);
-        nodeDiv.appendChild(buttons);
-        
-        return nodeDiv;
-    }
-
-    drawConnections() {
-        this.nodes.forEach(node => {
-            if (node.parent) {
-                const connection = document.createElement('div');
-                connection.className = 'node-connection';
-                
-                // Calculate line position and dimensions
-                const startX = node.parent.x + this.nodeWidth / 2;
-                const startY = node.parent.y + this.nodeHeight;
-                const endX = node.x + this.nodeWidth / 2;
-                const endY = node.y;
-                
-                // Calculate line length and angle
-                const length = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-                const angle = Math.atan2(endY - startY, endX - startX);
-                
-                // Position and rotate line
-                connection.style.width = `${length}px`;
-                connection.style.height = '2px';
-                connection.style.left = `${startX}px`;
-                connection.style.top = `${startY}px`;
-                connection.style.transform = `rotate(${angle}rad)`;
-                connection.style.transformOrigin = '0 0';
-                
-                document.getElementById('tree-visualization').appendChild(connection);
+        clearTimeout(classSearchTimeout);
+        classSearchTimeout = setTimeout(async function() {
+            startLoading();
+            try {
+                const response = await fetchRequest('/data', {
+                    "data": "Classes",
+                    "search": classSelect.value
+                });
+                updateClassResults(response);
+            } catch (error) {
+                console.error('Error:', error);
+            } finally {
+                endLoading();
             }
-        });
-    }
+        }, 300);
+    });
 
-    render() {
-        const container = document.getElementById('tree-visualization');
-        container.innerHTML = '';
-        
-        if (!this.root) return;
-        
-        // Calculate positions
-        this.calculateNodePositions();
-        
-        // Draw connections first (so they're behind nodes)
-        this.drawConnections();
-        
-        // Create and position nodes
-        this.nodes.forEach(node => {
-            container.appendChild(this.createNodeElement(node));
-        });
-    }
+    // Handle unit select input
+    let unitSearchTimeout;
+    unitSelect.addEventListener('input', function() {
+        selectedUnit = null;
+        updateStartButton();
 
-    toggleMinimize(nodeId) {
-        const node = this.nodes.get(nodeId);
-        if (!node) return;
-        
-        node.isMinimized = !node.isMinimized;
-        const nodeElement = document.getElementById(`node-${nodeId}`);
-        if (nodeElement) {
-            nodeElement.classList.toggle('minimized');
-            const button = nodeElement.querySelector('.minimize-button');
-            button.innerHTML = node.isMinimized ? '⊕' : '⊖';
+        clearTimeout(unitSearchTimeout);
+        unitSearchTimeout = setTimeout(async function() {
+            startLoading();
+            try {
+                const response = await fetchRequest('/data', {
+                    "data": "Units",
+                    "class_id": selectedClass.id,
+                    "search": unitSelect.value
+                });
+                updateUnitResults(response);
+            } catch (error) {
+                console.error('Error:', error);
+            } finally {
+                endLoading();
+            }
+        }, 300);
+    });
+
+    function updateClassResults(data) {
+        removeExistingResults(classSelect);
+
+        if (data.Classes?.length > 0) {
+            const resultsContainer = createResultsContainer();
+            
+            data.Classes.forEach((item, index) => {
+                const resultItem = createResultItem(item, index);
+                resultItem.addEventListener('click', () => {
+                    selectedClass = item;
+                    classSelect.value = item.name;
+                    unitSelect.disabled = false;
+                    unitSelect.value = '';
+                    removeExistingResults(classSelect);
+                    updateStartButton();
+                });
+                resultsContainer.appendChild(resultItem);
+            });
+
+            classSelect.parentElement.appendChild(resultsContainer);
         }
     }
-}
 
-document.addEventListener('DOMContentLoaded', () => {
-    window.whyTree = new WhyTree();
-}); 
+    function updateUnitResults(data) {
+        removeExistingResults(unitSelect);
+
+        if (data.Units?.length > 0) {
+            const resultsContainer = createResultsContainer();
+            
+            data.Units.forEach((item, index) => {
+                const resultItem = createResultItem(item, index);
+                resultItem.addEventListener('click', () => {
+                    selectedUnit = item;
+                    unitSelect.value = item.name;
+                    removeExistingResults(unitSelect);
+                    updateStartButton();
+                });
+                resultsContainer.appendChild(resultItem);
+            });
+
+            unitSelect.parentElement.appendChild(resultsContainer);
+        }
+    }
+
+    function removeExistingResults(input) {
+        const existingResults = input.parentElement.querySelector('.search-results');
+        if (existingResults) {
+            existingResults.style.animation = 'fadeOut 0.2s ease forwards';
+            setTimeout(() => existingResults.remove(), 200);
+        }
+    }
+
+    function createResultsContainer() {
+        const container = document.createElement('div');
+        container.className = 'search-results';
+        return container;
+    }
+
+    function createResultItem(item, index) {
+        const resultItem = document.createElement('div');
+        resultItem.className = 'search-result-item';
+        resultItem.textContent = item.name;
+        resultItem.style.cssText = `
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #e2e8f0;
+            animation: slideIn 0.3s ease forwards ${index * 0.05}s;
+            opacity: 0;
+            transform: translateX(-20px);
+        `;
+        return resultItem;
+    }
+
+    // Handle start button click
+    startButton.addEventListener('click', () => {
+        // Show explanation with animation
+        explanationContainer.style.display = 'block';
+        // Trigger reflow
+        explanationContainer.offsetHeight;
+        explanationContainer.classList.add('visible');
+        
+        // Scroll to explanation
+        explanationContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    // Handle lets-go button click
+    letsGoButton.addEventListener('click', () => {
+        const container = document.querySelector('.whytree-container');
+        container.style.animation = 'fadeOut 0.5s ease forwards';
+        
+        setTimeout(() => {
+            if (conceptInput.value.trim().length > 0) {
+                // Handle concept path - direct redirect
+                window.location.href = `/SetMap?topic=${encodeURIComponent(conceptInput.value.trim())}`;
+            } else if (selectedClass && selectedUnit) {
+                // Handle class+unit path - direct redirect
+                const params = new URLSearchParams({
+                    class: selectedClass.name,
+                    unit: selectedUnit.name
+                });
+                window.location.href = `/SetMap?${params.toString()}`;
+            }
+        }, 500);
+    });
+
+    // Close search results when clicking outside
+    document.addEventListener('click', function(e) {
+        const searchBoxes = document.querySelectorAll('.search-box');
+        searchBoxes.forEach(searchBox => {
+            const searchResults = searchBox.querySelector('.search-results');
+            if (searchResults && !searchBox.contains(e.target)) {
+                searchResults.style.animation = 'fadeOut 0.2s ease forwards';
+                setTimeout(() => searchResults.remove(), 200);
+            }
+        });
+    });
+});

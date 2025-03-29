@@ -206,8 +206,15 @@ document.addEventListener('DOMContentLoaded', function() {
             // Set initial text length
             setNodeTextLength(circle);
             
+            // Remove existing listeners first to prevent duplicates
+            circle.removeEventListener('mousedown', startDragging);
+            circle.removeEventListener('touchstart', startDragging);
+            circle.removeEventListener('click', handleNodeClick);
+            circle.removeEventListener('contextmenu', showContextMenu);
+            
             // Add event listeners
             circle.addEventListener('mousedown', startDragging);
+            circle.addEventListener('touchstart', startDragging, { passive: false });
             circle.addEventListener('click', handleNodeClick);
             circle.addEventListener('contextmenu', showContextMenu);
         });
@@ -219,17 +226,30 @@ document.addEventListener('DOMContentLoaded', function() {
         dragBtn.classList.toggle('active');
         container.style.cursor = isDragMode ? 'move' : 'default';
         
-        // Update all circles' cursor style
+        // Update all circles' cursor style and touch behavior
+        circles = document.querySelectorAll('.circle'); // Refresh circles collection
         circles.forEach(circle => {
             circle.style.cursor = isDragMode ? 'move' : 'pointer';
+            if (isDragMode) {
+                circle.style.touchAction = 'none'; // Prevent scrolling on the node itself
+            } else {
+                circle.style.touchAction = ''; // Reset to default
+            }
         });
+
+        // Update container touch behavior
+        container.style.touchAction = isDragMode ? 'none' : '';
         
         console.log(`Drag mode ${isDragMode ? 'enabled' : 'disabled'}`);
     }
 
     function startDragging(e) {
         if (!isDragMode || isAddingEdge || isDeleteMode) return;
-        e.preventDefault();
+        
+        // Prevent default for touch events to prevent scrolling
+        if (e.type === 'touchstart') {
+            e.preventDefault();
+        }
         e.stopPropagation();
         
         activeCircle = this;
@@ -247,9 +267,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.type === 'mousedown') {
             window.addEventListener('mousemove', drag);
             window.addEventListener('mouseup', stopDragging);
-        } else {
+        } else if (e.type === 'touchstart') {
             window.addEventListener('touchmove', drag, { passive: false });
             window.addEventListener('touchend', stopDragging);
+            window.addEventListener('touchcancel', stopDragging);
         }
 
         activeCircle.classList.add('dragging');
@@ -257,46 +278,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function drag(e) {
         if (!activeCircle) return;
-        e.preventDefault();
+        
+        // Always prevent default for touch events to prevent scrolling
+        if (e.type === 'touchmove') {
+            e.preventDefault();
+        }
         e.stopPropagation();
 
         const event = e.type === 'mousemove' ? e : e.touches[0];
         const rect = container.getBoundingClientRect();
 
-        if (!isDragging) {
-            const moveThreshold = 5;
-            const deltaX = Math.abs(event.clientX - rect.left - parseFloat(activeCircle.style.left || 0));
-            const deltaY = Math.abs(event.clientY - rect.top - parseFloat(activeCircle.style.top || 0));
-            
-            if (deltaX > moveThreshold || deltaY > moveThreshold) {
-                isDragging = true;
-            }
-        }
+        // Calculate new position relative to container
+        const x = event.clientX - rect.left + container.scrollLeft - initialX;
+        const y = event.clientY - rect.top + container.scrollTop - initialY;
 
-        if (isDragging) {
-            // Calculate new position relative to container
-            const x = event.clientX - rect.left + container.scrollLeft - initialX;
-            const y = event.clientY - rect.top + container.scrollTop - initialY;
+        // Store the previous position
+        const prevX = parseFloat(activeCircle.style.left) || 0;
+        const prevY = parseFloat(activeCircle.style.top) || 0;
 
-            // Store the previous position
-            const prevX = parseFloat(activeCircle.style.left) || 0;
-            const prevY = parseFloat(activeCircle.style.top) || 0;
+        activeCircle.style.left = `${x}px`;
+        activeCircle.style.top = `${y}px`;
 
-            activeCircle.style.left = `${x}px`;
-            activeCircle.style.top = `${y}px`;
+        // Only check for expansion and redraw if position actually changed
+        if (x !== prevX || y !== prevY) {
+            checkAndExpandContainer();
 
-            // Only check for expansion and redraw if position actually changed
-            if (x !== prevX || y !== prevY) {
-                checkAndExpandContainer();
-
-                // Throttle edge redrawing for better performance
-                if (!drag.throttled) {
-                    drag.throttled = true;
-                    requestAnimationFrame(() => {
-                        drawEdges();
-                        drag.throttled = false;
-                    });
-                }
+            // Throttle edge redrawing for better performance
+            if (!drag.throttled) {
+                drag.throttled = true;
+                requestAnimationFrame(() => {
+                    drawEdges();
+                    drag.throttled = false;
+                });
             }
         }
     }
@@ -308,6 +321,10 @@ document.addEventListener('DOMContentLoaded', function() {
         window.removeEventListener('mouseup', stopDragging);
         window.removeEventListener('touchmove', drag);
         window.removeEventListener('touchend', stopDragging);
+        window.removeEventListener('touchcancel', stopDragging);
+
+        // Reset body overflow if it was set
+        document.body.style.overflow = '';
 
         activeCircle.classList.remove('dragging');
 
@@ -319,6 +336,7 @@ document.addEventListener('DOMContentLoaded', function() {
         isDragging = false;
         activeCircle = null;
         drawEdges();
+        updateNodeBrightness();
     }
 
     function drawEdges() {
@@ -402,6 +420,18 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Set initial text length
         setNodeTextLength(circle);
+
+        // Position in center of current viewport
+        const containerRect = container.getBoundingClientRect();
+        const scrollLeft = container.scrollLeft;
+        const scrollTop = container.scrollTop;
+        
+        // Calculate center position, accounting for node size
+        const x = scrollLeft + (containerRect.width / 2) - 60; // 60 is half of node width
+        const y = scrollTop + (containerRect.height / 2) - 60; // 60 is half of node height
+        
+        circle.style.left = `${x}px`;
+        circle.style.top = `${y}px`;
 
         content.appendChild(circle);
         initializeCircles();
@@ -1497,18 +1527,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (nodeData.type === 'Image') {
                     // Create and configure image element
                     const img = document.createElement('img');
-                    img.src = nodeData.imageUrl;
                     
-                    // Set size from saved data or default
-                    const size = nodeData.imageSize || { width: 200, height: 200 };
-                    img.style.width = size.width + 'px';
-                    img.style.height = size.height + 'px';
-                    
-                    circle.appendChild(img);
-                    
-                    // Store image data
-                    circle.dataset.imageUrl = nodeData.imageUrl;
-                    circle.dataset.imageSize = JSON.stringify(size);
+                    // Validate image URL
+                    if (!nodeData.imageUrl) {
+                        console.error('Image URL is undefined for node:', nodeData.id);
+                        circle.dataset.type = 'Task'; // Fallback to Task type
+                        const span = document.createElement('span');
+                        span.textContent = 'Invalid Image';
+                        circle.appendChild(span);
+                    } else {
+                        img.src = nodeData.imageUrl;
+                        img.onerror = () => {
+                            console.error('Failed to load image:', nodeData.imageUrl);
+                            // Replace with error message
+                            img.remove();
+                            const span = document.createElement('span');
+                            span.textContent = 'Image Load Error';
+                            circle.appendChild(span);
+                            circle.dataset.type = 'Task'; // Fallback to Task type
+                        };
+                        
+                        // Set size from saved data or default
+                        const size = nodeData.imageSize || { width: 200, height: 200 };
+                        img.style.width = size.width + 'px';
+                        img.style.height = size.height + 'px';
+                        
+                        circle.appendChild(img);
+                        
+                        // Store image data
+                        circle.dataset.imageUrl = nodeData.imageUrl;
+                        circle.dataset.imageSize = JSON.stringify(size);
+                    }
                 } else {
                     // Add name span for non-image nodes
                     const span = document.createElement('span');
@@ -2653,24 +2702,30 @@ document.addEventListener('DOMContentLoaded', function() {
         let maxY = -Infinity;
         
         circles.forEach(circle => {
-            const top = parseFloat(circle.style.top);
-            minY = Math.min(minY, top);
-            maxY = Math.max(maxY, top);
+            const top = parseFloat(circle.style.top) || 0;
+            if (!isNaN(top)) {  // Only consider valid numbers
+                minY = Math.min(minY, top);
+                maxY = Math.max(maxY, top);
+            }
         });
 
-        // Calculate brightness for each node based on its position relative to min/max
-        const range = maxY - minY;
-        if (range === 0) {
-            // If all nodes are at same height, make them all fully bright
-            circles.forEach(circle => circle.style.setProperty('--relative-y', 0));
+        // If we don't have valid min/max values, set default brightness
+        if (minY === Infinity || maxY === -Infinity || minY === maxY) {
+            circles.forEach(circle => circle.style.setProperty('--relative-y', '0'));
             return;
         }
 
+        // Calculate brightness for each node based on its position relative to min/max
+        const range = maxY - minY;
         circles.forEach(circle => {
-            const top = parseFloat(circle.style.top);
-            // Calculate relative position (0 = highest/brightest, 1 = lowest/dimmest)
-            const relativeY = (top - minY) / range;
-            circle.style.setProperty('--relative-y', relativeY);
+            const top = parseFloat(circle.style.top) || 0;
+            if (isNaN(top)) {
+                circle.style.setProperty('--relative-y', '0'); // Default brightness for invalid positions
+            } else {
+                // Calculate relative position (0 = highest/brightest, 1 = lowest/dimmest)
+                const relativeY = (top - minY) / range;
+                circle.style.setProperty('--relative-y', relativeY.toFixed(3)); // Limit decimal places
+            }
         });
     }
 

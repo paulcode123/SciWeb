@@ -1,0 +1,311 @@
+# Calculus BC: Polar, Parametric, and Vector-Valued Functions Concept Map
+
+## Nodes
+
+1. Complex Curves
+   Content: Standard functions y = f(x) cannot represent loops, self-intersections, or vertical paths; need a way to model particle motion and complicated trajectories
+
+2. Parametric Basics
+   Content: x = f(t) and y = g(t) where t is a parameter; points are traced as t varies through its domain
+
+3. Parameter Elimination
+   Content: To convert to Cartesian form, solve for t in one equation and substitute into the other, or directly relate x and y
+
+4. Circular Phenomena
+   Content: Many natural and physical systems exhibit circular, spiral, or radial symmetry; standard coordinates make these relationships complex
+
+5. Polar Coordinates
+   Content: Point (r,θ) where r is distance from origin and θ is angle from positive x-axis; r can be negative when opposite direction
+
+6. Polar to Cartesian
+   Content: x = r·cos(θ), y = r·sin(θ) for polar to Cartesian; r² = x² + y², θ = tan⁻¹(y/x) for Cartesian to polar
+
+7. Motion in Space
+   Content: Real-world objects move through 3D space along complex paths; need mathematical way to track position, velocity, and orientation
+
+8. Vector Functions
+   Content: r(t) = <f(t), g(t), h(t)> maps parameter t to position vectors; describes curves in space parametrically
+
+9. Parametric Derivatives
+   Content: dy/dx = (dy/dt)/(dx/dt) when dx/dt ≠ 0; finds slope of tangent line at any point on parametric curve
+
+10. Polar Derivatives
+    Content: dy/dx = [dr/dθ·sin(θ) + r·cos(θ)]/[dr/dθ·cos(θ) - r·sin(θ)] derived using chain rule and coordinate conversion
+
+11. Vector Derivatives
+    Content: r'(t) = <f'(t), g'(t), h'(t)>; velocity vector tangent to curve with magnitude equal to speed
+
+12. Quotient Rule
+    Content: d(f/g)/dx = (g·df/dx - f·dg/dx)/g²; critical for finding derivatives of fractions; essential for chain rule applications on composite expressions
+
+13. Second Derivatives Parametric
+    Content: d²y/dx² = d/dx(dy/dx) = [d²y/dt² · dx/dt - dy/dt · d²x/dt²]/[(dx/dt)³] giving concavity information
+
+14. Second Derivatives Polar
+    Content: d²y/dx² derived from polar form using multiple applications of chain rule; determines concavity of polar curves
+
+15. Path Measurement
+    Content: Need to measure distance along curving paths for applications in physics, engineering, and navigation
+
+16. Differential Arc Length
+    Content: ds = √[(dx)² + (dy)²] represents infinitesimal arc length; approximates curve segments as tiny straight lines using Pythagorean theorem
+
+17. Arc Length Parametric
+    Content: L = ∫[a,b] √[(dx/dt)² + (dy/dt)²] dt; measures distance traveled along parametric curve from t=a to t=b
+
+18. Arc Length Polar
+    Content: L = ∫[α,β] √[r² + (dr/dθ)²] dθ; measures distance traveled along polar curve from θ=α to θ=β
+
+19. Bounded Regions
+    Content: Need to calculate areas of regions bounded by non-Cartesian curves in applications like astronomy and engineering
+
+20. Sector Area 
+    Content: Area of circular sector with radius r and angle θ is A = (1/2)r²θ; derived from proportion of circle area (πr²) that sector occupies (θ/2π)
+
+21. Differential Area Element
+    Content: dA = (1/2)r² dθ represents infinitesimal area element in polar coordinates; approximates region as tiny circular sector with area (1/2)r·(r·dθ)
+
+22. Area Polar
+    Content: A = (1/2)∫[α,β] r² dθ; calculates area bounded by polar curve and two rays from origin
+
+23. Motion Position
+    Content: r(t) gives position at time t; displacement vector from origin to current location of moving object
+
+24. Motion Velocity
+    Content: v(t) = r'(t) = <x'(t), y'(t), z'(t)>; velocity is the first derivative of position; tangent to path
+
+25. Motion Acceleration
+    Content: a(t) = v'(t) = r''(t) = <x''(t), y''(t), z''(t)>; acceleration is the second derivative of position
+
+26. Curve Orientation
+    Content: Moving objects need reference frame for orientation in space; pilots track "which way is up" during flight
+
+27. Vector Normalization
+    Content: For any vector v, unit vector v̂ = v/|v| has same direction but magnitude 1; used to extract direction information independent of magnitude
+
+28. Unit Tangent Vector
+    Content: T(t) = v(t)/|v(t)| gives direction of motion; first component of TNB frame; |T(t)| = 1
+
+29. Unit Normal Vector
+    Content: N(t) = T'(t)/|T'(t)| is perpendicular to T; points toward center of osculating circle; |N(t)| = 1
+
+30. Unit Binormal Vector
+    Content: B(t) = T(t) × N(t) is perpendicular to both T and N; |B(t)| = 1; B forms right-handed system with T and N
+
+31. Path Curvature
+    Content: Need to quantify how sharply roads, roller coasters, or orbits bend for engineering design and physics modeling
+
+32. Curvature
+    Content: κ = |T'(t)|/|v(t)| = |r'(t) × r''(t)|/|r'(t)|³ measures sharpness of curve; κ = 1/R where R is radius of osculating circle
+
+## Connections
+
+Complex Curves => Parametric Basics
+Need for modeling loops and complex trajectories leads to representing position as functions of parameter t
+
+Parametric Basics => Parameter Elimination
+Expressing position in terms of parameter t allows elimination to find direct relationship between x and y
+
+Parametric Basics => Parametric Derivatives
+Parameter-based equations require chain rule to find dx/dy via intermediate parameter t
+
+Circular Phenomena => Polar Coordinates
+Systems with circular or radial symmetry are more naturally described using distance and angle
+
+Polar Coordinates => Polar to Cartesian
+Defining points by distance and angle requires conversion formulas to standard coordinates
+
+Polar Coordinates => Polar Derivatives
+Polar form requires special derivative formulas derived from chain rule and implicit differentiation
+
+Motion in Space => Vector Functions
+Need to track position and motion in 3D space leads to using vector-valued functions of a parameter
+
+Vector Functions => Vector Derivatives
+Position vector leads directly to velocity vector through component-wise differentiation
+
+Vector Functions => Motion Position
+Vector-valued functions naturally model position of objects moving along paths in space
+
+Parametric Derivatives => Second Derivatives Parametric
+Finding first derivative with respect to x allows extension to second derivative using quotient rule
+
+Parametric Derivatives => Arc Length Parametric
+Rate of change in x and y directions determines infinitesimal length elements for integration
+
+Polar Derivatives => Second Derivatives Polar
+First derivative of polar curve extends to second derivative with additional applications of chain rule
+
+Polar Derivatives => Arc Length Polar
+Specialized formula for arc length in polar form depends on understanding polar derivatives
+
+Path Measurement => Arc Length Parametric
+Need to measure distance along curves leads to parametric arc length formula
+
+Path Measurement => Arc Length Polar
+Need to measure spiral or circular path lengths leads to polar arc length formula
+
+Path Measurement => Differential Arc Length
+Need to measure curved paths leads to breaking curves into infinitesimal segments
+
+Differential Arc Length => Arc Length Parametric
+Integrating infinitesimal arc lengths ds = √[(dx)² + (dy)²] along parametric curve yields total arc length formula
+
+Differential Arc Length => Arc Length Polar
+Substituting dx = dr·cos(θ) - r·sin(θ)·dθ and dy = dr·sin(θ) + r·cos(θ)·dθ into ds yields polar arc length formula
+
+Parametric Derivatives => Differential Arc Length
+Derivatives dx/dt and dy/dt determine how quickly curve changes in each direction, forming basis for arc length element
+
+Circular Phenomena => Area Polar
+Circular patterns lead to need for area calculations using polar coordinates
+
+Polar Coordinates => Area Polar
+Representing curves by r = f(θ) enables simplified area calculation using special polar formula
+
+Bounded Regions => Differential Area Element
+Need to calculate areas bounded by curved regions leads to developing polar area elements
+
+Circular Phenomena => Differential Area Element
+Circular symmetry suggests using sectors as natural area elements instead of rectangular elements
+
+Differential Area Element => Area Polar
+Integrating infinitesimal area elements dA = (1/2)r² dθ over interval [α,β] yields total polar area formula
+
+Polar Coordinates => Differential Area Element
+Representing points by distance and angle leads to sector-based area elements rather than rectangular elements
+
+Circular Phenomena => Sector Area
+Circular symmetry naturally relates to sectors, which provide building blocks for area calculations
+
+Polar Coordinates => Sector Area
+Distance-angle representation makes sector formula A = (1/2)r²θ a natural area measurement tool
+
+Sector Area => Differential Area Element
+For infinitesimal angle dθ, sector formula A = (1/2)r²θ becomes differential element dA = (1/2)r²dθ
+
+Bounded Regions => Sector Area
+Need to measure non-rectangular regions leads to using circular sectors as natural area elements
+
+Motion Position => Motion Velocity
+Position function determines velocity through differentiation; velocity shows direction and speed
+
+Motion Velocity => Motion Acceleration
+Differentiating velocity produces acceleration vector showing rate of change of velocity
+
+Curve Orientation => Unit Tangent Vector
+Need for describing orientation in space leads to developing tangent vector from velocity
+
+Motion Velocity => Unit Tangent Vector
+Velocity vector points in direction of motion, allowing normalization to create unit tangent
+
+Vector Normalization => Unit Tangent Vector
+Normalizing velocity vector v(t) creates unit tangent vector T(t) with direction of motion and unit length
+
+Vector Normalization => Unit Normal Vector
+Normalizing derivative of unit tangent vector creates unit normal vector pointing to center of curvature
+
+Unit Tangent Vector => Unit Normal Vector
+Differentiating unit tangent and normalizing yields normal vector pointing toward curve's center
+
+Curve Orientation => Unit Normal Vector
+Need for "which way is up" leads to normal vector perpendicular to direction of motion
+
+Unit Tangent Vector => Unit Binormal Vector
+Cross product of tangent and normal creates binormal vector completing the TNB frame
+
+Unit Normal Vector => Unit Binormal Vector
+Normal vector combines with tangent to determine binormal through cross product
+
+Path Curvature => Curvature
+Need to quantify curve bending leads to mathematical definition of curvature
+
+Vector Derivatives => Curvature
+Derivatives of position vector enable calculation of curvature through cross product formula
+
+Unit Tangent Vector => Curvature
+Rate of change of tangent direction determines how sharply curve turns, quantified by curvature
+
+Motion Acceleration => Curvature
+Component of acceleration perpendicular to velocity relates directly to curvature
+
+Parameter Elimination => Parametric Derivatives
+Understanding coordinate relationships helps verify derivative calculations and interpret results
+
+Arc Length Parametric => Arc Length Polar
+Parametric arc length formula generalizes to polar formula through coordinate substitution
+
+Second Derivatives Parametric => Curvature
+Second derivatives provide information about curve bending, formalized through curvature
+
+Parametric Basics => Polar Coordinates
+Parametric equations r(t) = (r(t)·cos(θ(t)), r(t)·sin(θ(t))) can represent polar curves, showing relationship between approaches
+
+Vector Functions => Parametric Basics
+Vector functions in 2D are equivalent to parametric equations, making parametric curves a special case of vector curves
+
+Polar Coordinates => Vector Functions
+Polar form (r,θ) can be expressed as vector r·(cos(θ), sin(θ)), connecting polar and vector representations
+
+Vector Derivatives => Parametric Derivatives
+Vector derivatives in 2D reduce to parametric derivatives, showing unified approach to rate of change
+
+Polar to Cartesian => Parametric Basics
+Polar-to-Cartesian conversion creates parametric equations with θ as parameter, bridging coordinate systems
+
+Arc Length Parametric => Curvature
+Arc length parameterization (where |r'(s)| = 1) simplifies curvature formula to κ = |T'(s)|, offering geometric insight
+
+Second Derivatives Parametric => Motion Acceleration
+Second derivatives in parametric form correspond to acceleration in physical motion, connecting pure and applied math
+
+Area Polar => Polar Derivatives
+Area calculation can be verified by converting to Cartesian and using Green's theorem, requiring polar derivatives
+
+Curvature => Second Derivatives Polar
+Curvature in polar form κ = |r² + 2(dr/dθ)² - r·d²r/dθ²|/[r² + (dr/dθ)²]^(3/2) directly uses second derivatives
+
+Motion Velocity => Arc Length Parametric
+Speed |v(t)| is precisely the integrand of arc length formula, giving physical meaning to the mathematical expression
+
+Unit Binormal Vector => Motion Acceleration
+Acceleration can be decomposed into tangential and normal components: a(t) = v'(t)T(t) + κv²N(t), connecting TNB frame to physics
+
+Parameter Elimination => Polar to Cartesian
+Both processes involve transforming between different representations of the same curve, using substitution techniques
+
+Complex Curves => Vector Functions
+Both concepts address the need to represent complicated trajectories, with vector functions extending to 3D what parametric does in 2D
+
+Vector Functions => Unit Tangent Vector
+Vector function derivative yields velocity, which directly determines tangent vector, highlighting geometric meaning
+
+Arc Length Polar => Vector Derivatives
+Arc length in polar form can be reinterpreted using vector calculus by treating polar curve as a vector function
+
+Circular Phenomena => Curvature
+Circular patterns have constant curvature (κ = 1/r for a circle of radius r), making curvature a natural extension of circular study
+
+Parametric Derivatives => Polar Derivatives
+Both apply chain rule to find dy/dx in different coordinate systems, showing unified differential calculus approach
+
+Unit Normal Vector => Path Curvature
+Normal vector points toward center of osculating circle, whose radius is 1/κ, giving geometric meaning to curvature
+
+Motion Position => Curvature
+Position function determines entire path geometry including its curvature, linking kinematics to differential geometry
+
+Complex Curves => Bounded Regions
+Complex curve shapes create intricate bounded regions that require specialized area calculations
+
+Parametric Derivatives => Quotient Rule
+First derivative dy/dx = (dy/dt)/(dx/dt) is a fraction that requires quotient rule for further differentiation
+
+Quotient Rule => Second Derivatives Parametric
+Quotient rule directly applied to dy/dx = (dy/dt)/(dx/dt) yields d²y/dx² formula with (dx/dt)³ denominator
+
+Vector Derivatives => Vector Normalization
+Derivatives of vector functions often need normalization to extract purely directional information
+
+Motion Velocity => Vector Normalization
+Velocity vector contains both speed and direction; normalization isolates direction component 

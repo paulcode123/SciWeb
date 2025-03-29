@@ -339,3 +339,8 @@ def nhs_page():
 def nhs_apply():
     return render_template('nhs_apply.html')
 
+@page_init.route('/SetMap')
+def setmap():
+    return render_template('SetMap.html')
+
+

@@ -413,18 +413,41 @@ Sheet name: Opportunities
 
     id(6 digit number)
     name(str: name of the opportunity)
-    date(YYYY-MM-DD)
-    start_time(HH:MM in 24hr format)
-    end_time(HH:MM in 24hr format)
+    description(str: detailed description of the opportunity)
     category(str: Tutoring/Service/Project)
-    credits(float: number of credits awarded)
-    members_needed(int: maximum number of members that can sign up)
-    signupOSIS(array of OSIS numbers who signed up)
-    showupOSIS(array of OSIS numbers who showed up)
     location(str: where the opportunity takes place)
     signup_deadline(YYYY-MM-DD)
     created_by(OSIS of admin who created it)
     status(str: upcoming/ongoing/completed/cancelled)
+    timeslots(array of objects containing:
+        {
+            date: str (YYYY-MM-DD),
+            start_time: str (HH:MM in 24hr format),
+            end_time: str (HH:MM in 24hr format)
+        }
+    )
+    roles(array of objects containing:
+        {
+            name: str (role title),
+            description: str (role responsibilities),
+            members_needed: int (number of spots for this role),
+            credits: float (credits awarded for this role),
+            signups: array of objects containing:
+                {
+                    OSIS: str (7 digit number),
+                    status: str (signed_up/attended/no_show),
+                    timestamp: str (ISO timestamp of signup)
+                }
+        }
+    )
+    // Legacy fields for backward compatibility
+    date(YYYY-MM-DD, points to first timeslot's date)
+    start_time(HH:MM in 24hr format, points to first timeslot's start time)
+    end_time(HH:MM in 24hr format, points to first timeslot's end time)
+    credits(float: total credits from all roles)
+    members_needed(int: total members needed across all roles)
+    signupOSIS(array of OSIS numbers who signed up, maintained for legacy support)
+    showupOSIS(array of OSIS numbers who showed up, maintained for legacy support)
 
 Sheet name: NHSMembers
 

@@ -3,7 +3,7 @@ let currentUser = null;
 let isAdmin = false;
 let verificationCode = null;
 let emailTest = true; // Set to true to allow any email domain for testing
-let ForceAcctType = 'student'; // Can be 'none', 'student', 'teacher', 'member', or 'admin'
+let ForceAcctType = 'member'; // Can be 'none', 'student', 'teacher', 'member', or 'admin'
 
 // Test email lists - replace these with actual email lists
 const memberEmails = emailTest ? ['pauln30@nycstudents.net'] : [
@@ -579,210 +579,604 @@ function updateProgressBar(elementId, currentCredits, requiredCredits, completed
 
 // Function to update member tables
 async function updateMemberTables() {
-    console.log('Updating member tables');
+    startLoading();
     try {
-        // Fetch member data
-        const memberData = await fetchRequest('/data', {
-            data: 'NHSMembers'
-        });
-
-        // Calculate credits from member data
-        const credits = {
-            tutoring: 0,
-            service: 0,
-            project: 0
-        };
-
-        // Calculate completed credits from member data
-        const completedCredits = {
-            tutoring: 0,
-            service: 0,
-            project: 0
-        };
-
-        // Fetch all opportunities to get their details
-        const opportunitiesData = await fetchRequest('/data', {
-            "data": "Opportunities"
-        });
-        const opportunitiesMap = {};
-        (opportunitiesData.Opportunities || []).forEach(opp => {
-            opportunitiesMap[opp.id] = opp;
-        });
-
-        let completedOpportunities = [];
-        if (memberData && memberData.NHSMembers && memberData.NHSMembers[0] && memberData.NHSMembers[0].credits) {
-            memberData.NHSMembers[0].credits.forEach(credit => {
-                // Add to total credits if attended
-                if (credit.status === 'attended') {
-                    credits[credit.category] += credit.credits;
-                    completedCredits[credit.category] += 1; // Count number of completed opportunities
+        console.log("Refreshing member tables...");
+        const data = await fetchRequest('/data', { data: 'Opportunities, NHSMembers' });
+        const opportunities = data.Opportunities || [];
+        const memberData = data.NHSMembers?.find(m => m.OSIS === getCurrentUserId());
+        
+        console.log("Fetched opportunities:", opportunities.length);
+        
+        // Process upcoming opportunities
+        if (opportunities && opportunities.length > 0) {
+            const upcomingOpps = opportunities.filter(opp => opp.status === 'upcoming');
+            console.log("Upcoming opportunities:", upcomingOpps.length);
+            
+            // Find the opportunities container or table
+            const tableSection = document.querySelector('.opportunities-section');
+            if (tableSection) {
+                // Remove existing table and create a card container
+                const existingTable = tableSection.querySelector('.opportunities-table');
+                const existingContainer = tableSection.querySelector('.opportunities-container');
+                
+                if (existingContainer) {
+                    existingContainer.innerHTML = ''; // Clear if container exists
+                } else if (existingTable) {
+                    // Create card container to replace table
+                    const opportunitiesContainer = document.createElement('div');
+                    opportunitiesContainer.className = 'opportunities-container';
+                    tableSection.appendChild(opportunitiesContainer);
+                    
+                    // Hide the table but keep it in DOM for reference
+                    existingTable.style.display = 'none';
                 }
                 
-                // Add to completed opportunities array with opportunity details
-                const opportunity = opportunitiesMap[credit.id];
-                if (opportunity && credit.status === 'attended') {
-                    completedOpportunities.push({
-                        date: opportunity.date,
-                        category: opportunity.category,
-                        name: opportunity.name,
-                        credits: credit.credits,
-                        status: credit.status
+                const opportunitiesContainer = tableSection.querySelector('.opportunities-container');
+                
+                if (upcomingOpps.length === 0) {
+                    opportunitiesContainer.innerHTML = '<div class="no-opportunities">No upcoming opportunities available</div>';
+                } else {
+                    opportunitiesContainer.innerHTML = ''; // Clear any existing content
+                    upcomingOpps.forEach(opp => {
+                        const opportunityCard = document.createElement('div');
+                        opportunityCard.innerHTML = displayOpportunityForMember(opp);
+                        opportunitiesContainer.appendChild(opportunityCard.firstElementChild);
                     });
                 }
-            });
+            }
         }
-
-        // Update credits display - simplified to just show the number
-        document.getElementById('tutoring-credits').textContent = credits.tutoring;
-        document.getElementById('service-credits').textContent = credits.service;
-        document.getElementById('project-credits').textContent = credits.project;
-
-        // Update progress bars with both credit progress and completion progress
-        updateProgressBar('tutoring-progress', credits.tutoring, 10, completedCredits.tutoring, 5);
-        updateProgressBar('service-progress', credits.service, 10, completedCredits.service, 5);
-        updateProgressBar('project-progress', credits.project, 2, completedCredits.project, 1);
+        
+        // Process completed credits if member data exists
+        if (memberData && memberData.credits) {
+            // Update credit progress bars
+            const tutoringCredits = memberData.credits.filter(c => c.category === 'Tutoring' && c.status === 'attended').reduce((sum, c) => sum + c.credits, 0);
+            const serviceCredits = memberData.credits.filter(c => c.category === 'Service' && c.status === 'attended').reduce((sum, c) => sum + c.credits, 0);
+            const projectCredits = memberData.credits.filter(c => c.category === 'Project' && c.status === 'attended').reduce((sum, c) => sum + c.credits, 0);
+            
+            // Update credit display
+            const tutoringElement = document.getElementById('tutoring-credits');
+            const serviceElement = document.getElementById('service-credits');
+            const projectElement = document.getElementById('project-credits');
+            
+            if (tutoringElement) tutoringElement.textContent = tutoringCredits;
+            if (serviceElement) serviceElement.textContent = serviceCredits;
+            if (projectElement) projectElement.textContent = projectCredits;
+            
+            // Update progress bars
+            updateProgressBar('tutoring-progress', tutoringCredits, 10);
+            updateProgressBar('service-progress', serviceCredits, 10);
+            updateProgressBar('project-progress', projectCredits, 2);
 
         // Update completed credits table
         const completedCreditsBody = document.getElementById('completed-credits-body');
-        completedOpportunities.sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date, newest first
-        completedCreditsBody.innerHTML = completedOpportunities.map(credit => `
-            <tr class="status-attended">
-                <td>${new Date(credit.date).toLocaleDateString()}</td>
-                <td>${credit.category}</td>
-                <td>${credit.name}</td>
+            if (completedCreditsBody) {
+                completedCreditsBody.innerHTML = '';
+                
+                // Sort credits by date (newest first)
+                const sortedCredits = [...memberData.credits].sort((a, b) => {
+                    const oppA = opportunities.find(o => o.id === a.id);
+                    const oppB = opportunities.find(o => o.id === b.id);
+                    if (!oppA || !oppB) return 0;
+                    return new Date(oppB.date) - new Date(oppA.date);
+                });
+                
+                sortedCredits.forEach(credit => {
+                    const opportunity = opportunities.find(o => o.id === credit.id);
+                    if (!opportunity) return;
+                    
+                    const row = document.createElement('tr');
+                    row.className = `status-${credit.status}`;
+                    row.innerHTML = `
+                        <td>${new Date(opportunity.date).toLocaleDateString()}</td>
+                        <td>${opportunity.category}</td>
+                        <td>${opportunity.name}</td>
                 <td>${credit.credits}</td>
-                <td><span class="status-badge attended">Attended</span></td>
-            </tr>
-        `).join('');
-
-        // Fetch and display opportunities
-        const opportunities = opportunitiesData.Opportunities || [];
-        const currentUserId = getCurrentUserId();
-        console.log('Current user ID:', currentUserId);
-        
-        // Populate opportunities table
-        const tbody = document.getElementById('opportunities-body');
-        tbody.innerHTML = opportunities.map(opp => {
-            // Initialize arrays if they don't exist
-            const signupOSIS = opp.signupOSIS || [];
-            const showupOSIS = opp.showupOSIS || [];
-            
-            const userSignedUp = signupOSIS.includes(currentUserId);
-            const userAttended = showupOSIS.includes(currentUserId);
-            let signUpButton;
-            
-            if (userAttended) {
-                signUpButton = '<span class="status-badge attended">Attended</span>';
-            } else if (userSignedUp) {
-                signUpButton = '<span class="status-badge signed-up">Signed Up</span>';
-            } else if (opp.status === 'upcoming' && signupOSIS.length < opp.members_needed) {
-                signUpButton = `<button onclick="signUpForOpportunity('${opp.id}')" class="action-btn">Sign Up</button>`;
-            } else {
-                signUpButton = '<span class="status-badge full">Full</span>';
+                        <td><span class="status-badge ${credit.status}">${credit.status.replace('_', ' ')}</span></td>
+                    `;
+                    completedCreditsBody.appendChild(row);
+                });
+                
+                if (completedCreditsBody.children.length === 0) {
+                    completedCreditsBody.innerHTML = '<tr><td colspan="5">No credits history available</td></tr>';
+                }
             }
-
-            return `
-                <tr>
-                    <td>${opp.category}</td>
-                    <td>${opp.name}</td>
-                    <td>${new Date(opp.date).toLocaleDateString()}<br>${formatTimeRange(opp.start_time, opp.end_time)}</td>
-                    <td>${opp.credits}</td>
-                    <td>${signUpButton}</td>
-                </tr>
-            `;
-        }).join('');
-
+        }
+        
     } catch (error) {
         console.error('Error updating member tables:', error);
-        showError('Failed to load member data');
+        showError('Failed to update member tables');
+    } finally {
+        endLoading();
     }
 }
 
-// Function to handle opportunity sign-up
-async function signUpForOpportunity(opportunityId) {
+function displayOpportunityForMember(opportunity) {
+    // Ensure we have valid data to work with
+    if (!opportunity) {
+        console.error("Invalid opportunity data");
+        return `<div class="opportunity-card">Error loading opportunity</div>`;
+    }
+    
+    // Safely parse timeslots
+    let timeslots = [];
     try {
-        const currentUserId = getCurrentUserId();
+        if (Array.isArray(opportunity.timeslots)) {
+            timeslots = opportunity.timeslots;
+        } else if (opportunity.date) {
+            const parsedTimeslots = JSON.parse(opportunity.date || '[]');
+            timeslots = Array.isArray(parsedTimeslots) ? parsedTimeslots : [];
+        }
+    } catch (e) {
+        console.error("Error parsing timeslots:", e);
+        // Create a fallback timeslot from the legacy fields
+        if (opportunity.date && opportunity.start_time && opportunity.end_time) {
+            timeslots = [{
+                date: opportunity.date,
+                start_time: opportunity.start_time,
+                end_time: opportunity.end_time
+            }];
+        }
+    }
+    
+    // Safely parse roles
+    let roles = [];
+    try {
+        if (Array.isArray(opportunity.roles)) {
+            roles = opportunity.roles;
+        } else if (opportunity.members_needed) {
+            // Try to parse as JSON if it's a string
+            if (typeof opportunity.members_needed === 'string') {
+                const parsedRoles = JSON.parse(opportunity.members_needed || '[]');
+                roles = Array.isArray(parsedRoles) ? parsedRoles : [];
+            } else if (typeof opportunity.members_needed === 'number') {
+                // Legacy format with just a number - create a default role
+                roles = [{
+                    name: "Default Role",
+                    members_needed: opportunity.members_needed,
+                    credits: opportunity.credits || 1,
+                    description: "Participate in this opportunity",
+                    signups: []
+                }];
+            }
+        }
+    } catch (e) {
+        console.error("Error parsing roles for opportunity " + opportunity.id + ":", e);
+        // Create a fallback role from the legacy fields
+        roles = [{
+            name: "Default Role",
+            members_needed: opportunity.members_needed || 1,
+            credits: opportunity.credits || 1,
+            description: "Participate in this opportunity",
+            signups: []
+        }];
+    }
+    
+    console.log(`Opportunity ${opportunity.id} - ${opportunity.name}: Processed roles:`, roles);
+    
+    // Find if user is signed up for any role
+    const userOSIS = getCurrentUserId();
+    let userSignup = null;
+    let userRole = null;
+    
+    // Check for signup in roles
+    if (Array.isArray(roles)) {
+        for (const role of roles) {
+            if (role && role.signups) {
+                for (const signup of role.signups) {
+                    if (signup && String(signup.OSIS) === String(userOSIS)) {
+                        userSignup = signup;
+                        userRole = role;
+                        break;
+                    }
+                }
+            }
+            if (userRole) break;
+        }
+    }
+
+    // Legacy support - check signupOSIS array
+    const isSignedUp = userRole !== null || 
+                      (opportunity.signupOSIS && opportunity.signupOSIS.some(osis => String(osis) === String(userOSIS)));
+
+    // Check if deadline has passed
+    const deadlinePassed = opportunity.signup_deadline ? new Date(opportunity.signup_deadline) < new Date() : false;
+
+    console.log(`Opportunity ${opportunity.id} - ${opportunity.name}: User ${userOSIS} signed up: ${isSignedUp}`);
+    console.log(`SignupOSIS:`, opportunity.signupOSIS);
+    if (isSignedUp) {
+        console.log(`Role: ${userRole ? userRole.name : 'Unknown'}`);
+    }
+
+    return `
+        <div class="opportunity-card" data-id="${opportunity.id}">
+            <div class="opportunity-header">
+                <div>
+                    <h3 class="opportunity-title">${opportunity.name}</h3>
+                    <span class="opportunity-category">${opportunity.category}</span>
+                </div>
+            </div>
+            
+            <p class="opportunity-description">${opportunity.description || 'No description available.'}</p>
+            
+            <div class="opportunity-details">
+                <div class="detail-group">
+                    <h4>Time Slots</h4>
+                    <ul class="timeslot-list">
+                        ${Array.isArray(timeslots) && timeslots.length > 0 ? timeslots.map((slot, index) => `
+                            <li class="timeslot-item">
+                                <span>${new Date(slot.date).toLocaleDateString()}</span>
+                                <span>${slot.start_time}-${slot.end_time}</span>
+                                ${userSignup && userSignup.timeslot === index ? 
+                                    '<span class="your-timeslot">(Your Time Slot)</span>' : ''}
+                            </li>
+                        `).join('') : `<li class="timeslot-item">No specific time slots available</li>`}
+                    </ul>
+                </div>
+
+                <div class="detail-group">
+                    <h4>Available Roles</h4>
+                    <ul class="role-list">
+                        ${Array.isArray(roles) && roles.length > 0 ? roles.map(role => {
+                            if (!role) return ''; // Skip invalid roles
+                            
+                            const signedUpCount = role.signups ? role.signups.length : 0;
+                            const isFull = signedUpCount >= role.members_needed;
+                            const isUserRole = userRole && userRole.name === role.name;
+                            
+                            return `
+                                <li class="role-item ${isFull ? 'fully-booked' : ''} ${isUserRole ? 'your-role' : ''}">
+                                    <div class="role-header">
+                                        <span class="role-name">${role.name}</span>
+                                        <span class="role-spots">
+                                            ${signedUpCount}/${role.members_needed} spots
+                                            ${isUserRole ? ' (Your Role)' : ''}
+                                        </span>
+                                    </div>
+                                    <p class="role-description">${role.description || 'No description available.'}</p>
+                                    <div class="role-status ${isFull ? 'full' : signedUpCount >= role.members_needed * 0.7 ? 'limited' : 'available'}">
+                                        ${isFull ? 'Full' : `${role.members_needed - signedUpCount} spots left`}
+                                        • ${role.credits} credits
+                                    </div>
+                                </li>
+                            `;
+                        }).join('') : `<li class="role-item">No specific roles available</li>`}
+                    </ul>
+                </div>
+
+                <div class="detail-group">
+                    <h4>Registration Details</h4>
+                    <p><strong>Location:</strong> ${opportunity.location || 'Not specified'}</p>
+                    <p><strong>Signup Deadline:</strong> ${opportunity.signup_deadline ? new Date(opportunity.signup_deadline).toLocaleDateString() : 'Not specified'}</p>
+                    ${deadlinePassed ? '<p class="deadline-passed">Registration deadline has passed</p>' : ''}
+                </div>
+            </div>
+
+            <div class="opportunity-actions">
+                ${opportunity.status === 'upcoming' ? 
+                    isSignedUp ? `
+                        <div class="signup-status">
+                            <button class="signed-up-btn" disabled>
+                                <i class="fas fa-check"></i> 
+                                Signed Up${userRole ? ` as ${userRole.name}` : ''}
+                            </button>
+                            ${!deadlinePassed ? `
+                                <button class="cancel-signup-btn" onclick="cancelSignup('${opportunity.id}')">
+                                    <i class="fas fa-times"></i> Cancel Signup
+                                </button>
+                            ` : ''}
+                        </div>
+                    ` : `
+                        <button class="signup-btn" onclick="openSignupModal('${opportunity.id}')">
+                            <i class="fas fa-user-plus"></i> Sign Up
+                        </button>
+                    `
+                : ''}
+            </div>
+        </div>
+    `;
+}
+
+async function cancelSignup(opportunityId) {
+    if (!confirm('Are you sure you want to cancel your signup for this opportunity?')) {
+        return;
+    }
+    
         startLoading();
+    try {
+        // Get the current opportunity data
+        const data = await fetchRequest('/data', { data: 'Opportunities' });
+        const opportunity = data.Opportunities.find(opp => opp.id === opportunityId);
         
-        // Get the opportunity data
-        const opportunityData = await fetchRequest('/data', {
-            sheet: 'Opportunities',
-            row_name: 'id',
-            row_value: opportunityId
-        });
-        
-        if (!opportunityData || !opportunityData.Opportunities || opportunityData.Opportunities.length === 0) {
-            throw new Error('Opportunity not found');
+        if (!opportunity) {
+            showError('Opportunity not found');
+            return;
         }
-
-        const opportunity = opportunityData.Opportunities[0];
         
-        // Check if already signed up
-        if (opportunity.signupOSIS && opportunity.signupOSIS.includes(currentUserId)) {
-            showError('You are already signed up for this opportunity');
+        // Check if deadline has passed
+        if (new Date(opportunity.signup_deadline) < new Date()) {
+            showError('Cannot cancel signup after the registration deadline has passed');
+            return;
+        }
+        
+        const userOSIS = getCurrentUserId();
+        let updatedRoles = [];
+        let roleFound = false;
+        
+        // Process roles array
+        if (Array.isArray(opportunity.roles)) {
+            updatedRoles = opportunity.roles.map(role => {
+                if (role.signups) {
+                    const userSignupIndex = role.signups.findIndex(signup => 
+                        String(signup.OSIS) === String(userOSIS)
+                    );
+                    
+                    if (userSignupIndex !== -1) {
+                        roleFound = true;
+                        // Remove user from this role's signups
+                        const updatedSignups = [...role.signups];
+                        updatedSignups.splice(userSignupIndex, 1);
+                        return { ...role, signups: updatedSignups };
+                    }
+                }
+                return role;
+            });
+        } else if (opportunity.members_needed) {
+            // Handle legacy format - parse JSON string
+            try {
+                updatedRoles = JSON.parse(opportunity.members_needed).map(role => {
+                    if (role.signups) {
+                        const userSignupIndex = role.signups.findIndex(signup => 
+                            String(signup.OSIS) === String(userOSIS)
+                        );
+                        
+                        if (userSignupIndex !== -1) {
+                            roleFound = true;
+                            // Remove user from this role's signups
+                            const updatedSignups = [...role.signups];
+                            updatedSignups.splice(userSignupIndex, 1);
+                            return { ...role, signups: updatedSignups };
+                        }
+                    }
+                    return role;
+                });
+            } catch (e) {
+                console.error('Error parsing members_needed:', e);
+            }
+        }
+        
+        // Update legacy signupOSIS array
+        let updatedSignupOSIS = opportunity.signupOSIS || [];
+        const userIndex = updatedSignupOSIS.findIndex(osis => String(osis) === String(userOSIS));
+        
+        if (userIndex !== -1) {
+            updatedSignupOSIS = [...updatedSignupOSIS];
+            updatedSignupOSIS.splice(userIndex, 1);
+        }
+        
+        if (!roleFound && userIndex === -1) {
+            showError('You are not signed up for this opportunity');
             return;
         }
 
-        // Check if opportunity is full
-        if (opportunity.signupOSIS && opportunity.signupOSIS.length >= opportunity.members_needed) {
-            showError('This opportunity is full');
-            return;
-        }
-
-        // Initialize arrays if they don't exist
-        const signupOSIS = opportunity.signupOSIS || [];
-        signupOSIS.push(currentUserId);
-
-        // Update the opportunity
+        // Save updated opportunity
         await fetchRequest('/update_data', {
             sheet: 'Opportunities',
-            data: { signupOSIS: signupOSIS },
+            data: {
+                roles: updatedRoles,
+                signupOSIS: updatedSignupOSIS
+            },
             row_name: 'id',
             row_value: opportunityId
         });
 
-        // Get member's current data
-        const memberData = await fetchRequest('/data', {
-            sheet: 'NHSMembers',
-            row_name: 'OSIS',
-            row_value: currentUserId
-        });
-
-        if (!memberData || !memberData.NHSMembers || memberData.NHSMembers.length === 0) {
-            throw new Error('Member data not found');
-        }
-
-        const member = memberData.NHSMembers[0];
-        const credits = member.credits || [];
-
-        // Add the new opportunity to member's credits
-        credits.push({
-            category: opportunity.category.toLowerCase(),
-            id: opportunityId,
-            credits: opportunity.credits,
-            status: 'signed_up'
-        });
-
-        // Update member's credits
-        await fetchRequest('/update_data', {
-            sheet: 'NHSMembers',
-            data: { credits: credits },
-            row_name: 'OSIS',
-            row_value: currentUserId
-        });
-
-        showSuccess('Successfully signed up for opportunity');
+        showSuccess('Your signup has been canceled successfully');
         
-        // Refresh the tables to show updated data
-        if (document.getElementById('member-content').style.display === 'block') {
-            await updateMemberTables();
-        }
-        if (document.getElementById('admin-content').style.display === 'block') {
-            await updateAdminTables();
-        }
+        // Refresh the display
+        await updateMemberTables();
     } catch (error) {
-        console.error('Error signing up for opportunity:', error);
-        showError('Failed to sign up for opportunity: ' + error.message);
+        console.error('Error canceling signup:', error);
+        showError('Failed to cancel signup');
+    } finally {
+        endLoading();
+    }
+}
+
+function openSignupModal(opportunityId) {
+    startLoading();
+    fetchRequest('/data', {
+        data: 'Opportunities'
+    }).then(opportunities => {
+        const opportunity = opportunities.Opportunities.find(opp => opp.id === opportunityId);
+        if (!opportunity) {
+            showError('Opportunity not found');
+            return;
+        }
+
+        const timeslots = Array.isArray(opportunity.timeslots) ? opportunity.timeslots : JSON.parse(opportunity.date || '[]');
+        const roles = Array.isArray(opportunity.roles) ? opportunity.roles : JSON.parse(opportunity.members_needed || '[]');
+
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h3>Sign Up for ${opportunity.name}</h3>
+                
+                <form id="signup-form" onsubmit="submitSignup(event, '${opportunityId}')">
+                    ${timeslots.length > 0 ? `
+                        <div class="form-group">
+                            <label>Select Time Slot:</label>
+                            <select name="timeslot" required>
+                                ${timeslots.map((slot, index) => `
+                                    <option value="${index}">
+                                        ${new Date(slot.date).toLocaleDateString()} ${slot.start_time}-${slot.end_time}
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="form-group">
+                        <label>Select Role:</label>
+                        <select name="role" required>
+                            ${roles.map((role, index) => {
+                                const signedUpCount = role.signups ? role.signups.length : 0;
+                                const isFull = signedUpCount >= role.members_needed;
+                                return `
+                                    <option value="${index}" ${isFull ? 'disabled' : ''}>
+                                        ${role.name} (${signedUpCount}/${role.members_needed} spots) - ${role.credits} credits
+                                        ${isFull ? ' (FULL)' : ''}
+                                    </option>
+                                `;
+                            }).join('')}
+                        </select>
+                    </div>
+
+                    <div class="selected-role-info"></div>
+                    
+                    <button type="submit" class="submit-btn">Sign Up</button>
+                </form>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        modal.style.display = 'block';
+
+        // Add role description update on selection change
+        const roleSelect = modal.querySelector('select[name="role"]');
+        const roleInfoDiv = modal.querySelector('.selected-role-info');
+        
+        if (roleSelect && roleInfoDiv) {
+            roleSelect.addEventListener('change', () => {
+                const selectedRole = roles[roleSelect.value];
+                if (selectedRole) {
+                    roleInfoDiv.innerHTML = `
+                        <div class="role-description">
+                            <h4>Role Details:</h4>
+                            <p>${selectedRole.description || 'No description available.'}</p>
+                            <p><strong>Credits:</strong> ${selectedRole.credits}</p>
+                        </div>
+                    `;
+                }
+            });
+            // Trigger initial description
+            roleSelect.dispatchEvent(new Event('change'));
+        }
+
+        // Close button functionality
+        const closeBtn = modal.querySelector('.close');
+        closeBtn.onclick = () => {
+            modal.remove();
+        };
+
+        // Click outside to close
+        window.onclick = (event) => {
+            if (event.target === modal) {
+                modal.remove();
+            }
+        };
+
+        endLoading();
+    }).catch(error => {
+        showError('Error loading opportunity details');
+        endLoading();
+    });
+}
+
+async function submitSignup(event, opportunityId) {
+    event.preventDefault();
+    startLoading();
+
+    try {
+        const form = event.target;
+        const timeslotSelect = form.querySelector('select[name="timeslot"]');
+        const roleSelect = form.querySelector('select[name="role"]');
+        
+        const selectedTimeslotIndex = timeslotSelect ? parseInt(timeslotSelect.value) : 0;
+        const selectedRoleIndex = parseInt(roleSelect.value);
+
+        const opportunities = await fetchRequest('/data', { data: 'Opportunities' });
+        const opportunity = opportunities.Opportunities.find(opp => opp.id === opportunityId);
+        
+        if (!opportunity) {
+            showError('Opportunity not found');
+            return;
+        }
+
+        const timeslots = Array.isArray(opportunity.timeslots) ? opportunity.timeslots : JSON.parse(opportunity.date || '[]');
+        const roles = Array.isArray(opportunity.roles) ? opportunity.roles : JSON.parse(opportunity.members_needed || '[]');
+        
+        const selectedRole = roles[selectedRoleIndex];
+        const selectedTimeslot = timeslots[selectedTimeslotIndex];
+
+        if (!selectedRole) {
+            showError('Selected role not found');
+            return;
+        }
+
+        // Check if role is full
+        const signedUpCount = selectedRole.signups ? selectedRole.signups.length : 0;
+        if (signedUpCount >= selectedRole.members_needed) {
+            showError('This role is already full');
+            return;
+        }
+
+        // Check if user is already signed up for this role
+        const userOSIS = await getCurrentUserId();
+        if (selectedRole.signups && selectedRole.signups.some(signup => String(signup.OSIS) === String(userOSIS))) {
+            showError('You are already signed up for this role');
+            return;
+        }
+
+        // Add the signup
+        const signup = {
+            OSIS: userOSIS,
+            status: 'signed_up',
+            timestamp: new Date().toISOString(),
+            timeslot: selectedTimeslotIndex
+        };
+
+        // Update both new and legacy signup structures
+        if (!selectedRole.signups) selectedRole.signups = [];
+        selectedRole.signups.push(signup);
+
+        // Legacy support
+        if (!opportunity.signupOSIS) opportunity.signupOSIS = [];
+        if (!opportunity.signupOSIS.includes(userOSIS)) {
+            opportunity.signupOSIS.push(userOSIS);
+        }
+
+        // Save the updated opportunity using the correct route and format
+        await fetchRequest('/update_data', {
+            sheet: 'Opportunities',
+            data: {
+                roles: roles,
+                signupOSIS: opportunity.signupOSIS
+            },
+            row_name: 'id',
+            row_value: opportunityId
+        });
+
+        showSuccess('Successfully signed up for the opportunity!');
+        
+        // Close the modal and refresh the display
+        const modal = form.closest('.modal');
+        if (modal) modal.remove();
+        
+        // Immediately update this specific opportunity card
+        const opportunityCard = document.querySelector(`.opportunity-card[data-id="${opportunityId}"]`);
+        if (opportunityCard) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = displayOpportunityForMember(opportunity);
+            opportunityCard.replaceWith(tempDiv.firstElementChild);
+        }
+        
+        // Then do a full refresh to update everything else
+        await updateMemberTables();
+    } catch (error) {
+        showError('Error signing up for opportunity');
+        console.error('Signup error:', error);
     } finally {
         endLoading();
     }
@@ -793,37 +1187,121 @@ function generateId() {
     return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// Function to handle opportunity creation
+// Opportunity Form Functions
+function addTimeSlot() {
+    const container = document.getElementById('timeslots-container');
+    const template = `
+        <div class="timeslot-entry">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Date:</label>
+                    <input type="date" class="timeslot-date" required>
+                </div>
+                <div class="form-group">
+                    <label>Start Time:</label>
+                    <input type="time" class="timeslot-start" required>
+                </div>
+                <div class="form-group">
+                    <label>End Time:</label>
+                    <input type="time" class="timeslot-end" required>
+                </div>
+                <button type="button" onclick="removeTimeSlot(this)" class="remove-btn"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', template);
+}
+
+function removeTimeSlot(button) {
+    button.closest('.timeslot-entry').remove();
+}
+
+function addRole() {
+    const container = document.getElementById('roles-container');
+    const template = `
+        <div class="role-entry">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Role Name:</label>
+                    <input type="text" class="role-name" placeholder="e.g., Tutor, Helper" required>
+                </div>
+                <div class="form-group">
+                    <label>Members Needed:</label>
+                    <input type="number" class="role-members" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label>Credits:</label>
+                    <input type="number" class="role-credits" min="0.5" step="0.5" required>
+                </div>
+                <button type="button" onclick="removeRole(this)" class="remove-btn"><i class="fas fa-trash"></i></button>
+            </div>
+            <div class="form-group">
+                <label>Role Description:</label>
+                <textarea class="role-description" rows="2" placeholder="Describe the responsibilities for this role"></textarea>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', template);
+}
+
+function removeRole(button) {
+    button.closest('.role-entry').remove();
+}
+
+// Modified opportunity creation function
 async function createOpportunity(event) {
     event.preventDefault();
     startLoading();
 
     try {
-        const formData = new FormData(event.target);
-        const startTime = formData.get('start_time');
-        const endTime = formData.get('end_time');
+        const form = event.target;
+        
+        // Collect timeslots
+        const timeslots = [];
+        form.querySelectorAll('.timeslot-entry').forEach(entry => {
+            timeslots.push({
+                date: entry.querySelector('.timeslot-date').value,
+                start_time: entry.querySelector('.timeslot-start').value,
+                end_time: entry.querySelector('.timeslot-end').value
+            });
+        });
 
-        // Validate that end time is after start time
-        if (endTime <= startTime) {
-            showError('End time must be after start time');
-            return;
-        }
+        // Collect roles
+        const roles = [];
+        form.querySelectorAll('.role-entry').forEach(entry => {
+            roles.push({
+                name: entry.querySelector('.role-name').value,
+                description: entry.querySelector('.role-description').value,
+                members_needed: parseInt(entry.querySelector('.role-members').value),
+                credits: parseFloat(entry.querySelector('.role-credits').value),
+                signups: []
+            });
+        });
+
+        // Calculate legacy fields
+        const totalMembersNeeded = roles.reduce((sum, role) => sum + role.members_needed, 0);
+        const totalCredits = roles.reduce((sum, role) => sum + role.credits, 0);
 
         const opportunityData = {
             id: generateId(),
-            name: formData.get('name'),
-            date: formData.get('date'),
-            start_time: startTime,
-            end_time: endTime,
-            category: formData.get('category'),
-            credits: parseFloat(formData.get('credits')),
-            members_needed: parseInt(formData.get('members_needed')),
-            signupOSIS: [],  // Initialize empty array for signups
-            showupOSIS: [],  // Initialize empty array for showups
-            location: formData.get('location'),
-            signup_deadline: formData.get('signup_deadline'),
+            name: form.querySelector('#opp-name').value,
+            description: form.querySelector('#opp-description').value,
+            category: form.querySelector('#opp-category').value,
+            location: form.querySelector('#opp-location').value,
+            signup_deadline: form.querySelector('#opp-deadline').value,
             created_by: getCurrentUserId(),
-            status: 'upcoming'
+            status: 'upcoming',
+            // New fields
+            timeslots: timeslots,
+            roles: roles,
+            // Legacy fields
+            date: timeslots[0].date,
+            start_time: timeslots[0].start_time,
+            end_time: timeslots[0].end_time,
+            members_needed: totalMembersNeeded,
+            credits: totalCredits,
+            signupOSIS: [],
+            showupOSIS: []
         };
 
         await fetchRequest('/post_data', {
@@ -832,7 +1310,7 @@ async function createOpportunity(event) {
         });
 
         showSuccess('Opportunity created successfully!');
-        event.target.reset();
+        form.reset();
         updateAdminTables();
     } catch (error) {
         console.error('Error creating opportunity:', error);
@@ -842,16 +1320,75 @@ async function createOpportunity(event) {
     }
 }
 
-// Function to format time range
-function formatTimeRange(startTime, endTime) {
-    const formatTime = (time) => {
-        const [hours, minutes] = time.split(':');
-        const date = new Date();
-        date.setHours(hours);
-        date.setMinutes(minutes);
-        return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    };
-    return `${formatTime(startTime)} - ${formatTime(endTime)}`;
+// Modified opportunity display function
+function displayOpportunity(opportunity) {
+    const timeslots = JSON.parse(opportunity.date || '[]');
+    const roles = JSON.parse(opportunity.members_needed || '[]');
+
+    return `
+        <div class="opportunity-card">
+            <div class="opportunity-header">
+                <div>
+                    <h3 class="opportunity-title">${opportunity.name}</h3>
+                    <span class="opportunity-category">${opportunity.category}</span>
+                </div>
+            </div>
+            
+            <p class="opportunity-description">${opportunity.description || ''}</p>
+            
+            <div class="opportunity-details">
+                <div class="detail-group">
+                    <h4>Time Slots</h4>
+                    <ul class="timeslot-list">
+                        ${timeslots.map(slot => `
+                            <li class="timeslot-item">
+                                <span>${new Date(slot.date).toLocaleDateString()}</span>
+                                <span>${slot.start_time} - ${slot.end_time}</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+                
+                <div class="detail-group">
+                    <h4>Roles Available</h4>
+                    <ul class="role-list">
+                        ${roles.map(role => `
+                            <li class="role-item">
+                                <div class="role-header">
+                                    <span class="role-name">${role.name}</span>
+                                    <span class="role-spots">${role.members_needed} spots • ${role.credits} credits</span>
+                                </div>
+                                ${role.description ? `<p class="role-description">${role.description}</p>` : ''}
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+                
+                <div class="detail-group">
+                    <h4>Location</h4>
+                    <p>${opportunity.location}</p>
+                    <h4>Signup Deadline</h4>
+                    <p>${new Date(opportunity.signup_deadline).toLocaleDateString()}</p>
+                </div>
+            </div>
+            
+            <div class="opportunity-actions">
+                ${opportunity.status === 'upcoming' ? `
+                    <button class="signup-btn" onclick="signUpForOpportunity('${opportunity.id}')">
+                        <i class="fas fa-user-plus"></i> Sign Up
+                    </button>
+                ` : ''}
+                ${isAdmin ? `
+                    <button class="edit-btn" onclick="editOpportunity('${opportunity.id}')">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="delete-btn" onclick="deleteOpportunity('${opportunity.id}')">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                ` : ''}
+            </div>
+        </div>
+    `;
 }
 
 // Function to update admin tables
@@ -921,77 +1458,48 @@ async function deleteOpportunity(id) {
 async function manageShowUps(opportunityId) {
     startLoading();
     try {
-        // Get opportunity data
-        const opportunityData = await fetchRequest('/data', {
-            data: 'Opportunities'
+        const opportunity = await fetchRequest('/data', {
+            sheet: 'Opportunities',
+            query: { id: opportunityId }
         });
 
-        if (!opportunityData || !opportunityData.Opportunities || opportunityData.Opportunities.length === 0) {
-            throw new Error('Opportunity not found');
-        }
-
-        const opportunity = opportunityData.Opportunities.find(opp => opp.id === opportunityId);
         if (!opportunity) {
-            throw new Error('Opportunity not found');
+            showError('Opportunity not found');
+            return;
         }
 
-        const signupOSIS = opportunity.signupOSIS || [];
-        const showupOSIS = opportunity.showupOSIS || [];
-
-        // Get all NHS members data using FULLNHSMembers
-        const FULLNHSMembers = await fetchRequest('/data', {
-            data: 'FULLNHSMembers'
-        });
-        // Get member data for all signed up users
-        const memberData = FULLNHSMembers.FULLNHSMembers.filter(member => signupOSIS.includes(member.OSIS));
-
-        // Create and show modal
+        // Create show-up management UI
         const modal = document.createElement('div');
         modal.className = 'modal';
-        modal.id = 'show-ups-modal';
         modal.innerHTML = `
             <div class="modal-content">
-                <span class="close">&times;</span>
-                <h2>Manage Show-ups</h2>
-                <p>Select members who attended "${opportunity.name}"</p>
+                <h3>Manage Show-ups for ${opportunity.name}</h3>
+                <div class="roles-container">
+                    ${opportunity.roles.map((role, roleIndex) => `
+                        <div class="role-section">
+                            <h4>${role.name} (${role.credits} credits)</h4>
                 <div class="member-bubbles">
-                    ${memberData.map(member => `
-                        <div class="member-bubble" onclick="this.querySelector('input[type=checkbox]').click()">
-                            <input type="checkbox" value="${member.OSIS}" 
-                                ${showupOSIS.includes(member.OSIS) ? 'checked' : ''}
-                                onclick="event.stopPropagation()">
-                            <span>${member.first_name} ${member.last_name}</span>
+                                ${role.signups.map((signup, signupIndex) => `
+                                    <div class="member-bubble">
+                                        <input type="checkbox" 
+                                            data-role-index="${roleIndex}"
+                                            data-signup-index="${signupIndex}"
+                                            ${signup.status === 'attended' ? 'checked' : ''}>
+                                        <span>${signup.OSIS}</span>
                         </div>
                     `).join('')}
                 </div>
-                <div class="progress-container" style="display: none;">
-                    <div class="progress-bar">
-                        <div class="progress-fill"></div>
                     </div>
-                    <div class="progress-text">Processing: <span class="progress-percentage">0</span>%</div>
+                    `).join('')}
                 </div>
-                <button onclick="submitShowUps('${opportunityId}')" class="submit-btn">Submit Attendance</button>
+                <button onclick="submitShowUps('${opportunityId}')" class="submit-btn">Save Attendance</button>
             </div>
         `;
 
         document.body.appendChild(modal);
-        modal.style.display = 'block';
-
-        // Add close button functionality
-        const closeBtn = modal.querySelector('.close');
-        closeBtn.onclick = () => {
-            modal.remove();
-        };
-
-        window.onclick = (event) => {
-            if (event.target === modal) {
-                modal.remove();
-            }
-        };
-
     } catch (error) {
         console.error('Error managing show-ups:', error);
-        showError('Failed to load show-ups data');
+        showError('Failed to load show-up management');
     } finally {
         endLoading();
     }
@@ -999,107 +1507,48 @@ async function manageShowUps(opportunityId) {
 
 // Function to submit show-ups
 async function submitShowUps(opportunityId) {
-    const modal = document.getElementById('show-ups-modal');
-    const progressContainer = modal.querySelector('.progress-container');
-    const progressFill = modal.querySelector('.progress-fill');
-    const progressText = modal.querySelector('.progress-percentage');
-    const submitBtn = modal.querySelector('.submit-btn');
-
-    submitBtn.disabled = true;
-    progressContainer.style.display = 'block';
-
+    startLoading();
     try {
-        // Get all checked members
-        const checkedMembers = Array.from(modal.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
-        const allMembers = Array.from(modal.querySelectorAll('input[type="checkbox"]')).map(cb => cb.value);
-
-        // Get opportunity data
-        const opportunityData = await fetchRequest('/data', {
-            data: 'Opportunities'
+        const opportunity = await fetchRequest('/data', {
+            sheet: 'Opportunities',
+            query: { id: opportunityId }
         });
-        
-        const opportunity = opportunityData.Opportunities.find(opp => opp.id === opportunityId);
-        if (!opportunity) {
-            throw new Error('Opportunity not found');
-        }
 
-        // Update progress bar - 10% for starting
-        updateProgress(10);
+        // Update role-specific attendance
+        const updatedRoles = opportunity.roles.map((role, roleIndex) => {
+            role.signups = role.signups.map((signup, signupIndex) => {
+                const checkbox = document.querySelector(`[data-role-index="${roleIndex}"][data-signup-index="${signupIndex}"]`);
+                signup.status = checkbox.checked ? 'attended' : 'no_show';
+                return signup;
+            });
+            return role;
+        });
 
-        // Update opportunity's showupOSIS
+        // Update legacy showupOSIS
+        const showupOSIS = updatedRoles.flatMap(role => 
+            role.signups
+                .filter(signup => signup.status === 'attended')
+                .map(signup => signup.OSIS)
+        );
+
         await fetchRequest('/update_data', {
             sheet: 'Opportunities',
-            data: { showupOSIS: checkedMembers },
+            data: {
+                roles: updatedRoles,
+                showupOSIS: showupOSIS
+            },
             row_name: 'id',
             row_value: opportunityId
         });
 
-        // Update progress bar - 30% for opportunity update
-        updateProgress(30);
-
-        // Get all NHS members data
-        const FULLNHSMembers = await fetchRequest('/data', {
-            data: 'FULLNHSMembers'
-        });
-
-        // Create a map of OSIS to member data for quick lookup
-        const memberMap = {};
-        FULLNHSMembers.FULLNHSMembers.forEach(member => {
-            memberMap[member.OSIS] = member;
-        });
-
-        // Calculate progress increment per member
-        const progressPerMember = 60 / allMembers.length;
-        let currentProgress = 30;
-
-        // Update each member's credits
-        for (let i = 0; i < allMembers.length; i++) {
-            const osis = allMembers[i];
-            const attended = checkedMembers.includes(osis);
-            const member = memberMap[osis];
-
-            if (member) {
-                const credits = member.credits || [];
-
-                // Find and update the credit entry for this opportunity
-                const creditIndex = credits.findIndex(c => c.id === opportunityId);
-                if (creditIndex !== -1) {
-                    credits[creditIndex].status = attended ? 'attended' : 'no_show';
-                }
-
-                // Update member's credits
-                await fetchRequest('/update_data', {
-                    sheet: 'NHSMembers',
-                    data: { credits: credits },
-                    row_name: 'OSIS',
-                    row_value: parseInt(osis)
-                });
-            }
-
-            // Update progress
-            currentProgress += progressPerMember;
-            updateProgress(Math.min(90, currentProgress));
-        }
-
-        // Update progress bar - 100% for completion
-        updateProgress(100);
-
-        // Close modal and refresh tables
-        setTimeout(() => {
-            modal.remove();
+        showSuccess('Attendance updated successfully!');
             updateAdminTables();
-            showSuccess('Attendance updated successfully');
-        }, 500);
-
+        document.querySelector('.modal').remove();
     } catch (error) {
         console.error('Error submitting show-ups:', error);
         showError('Failed to update attendance');
-        submitBtn.disabled = false;
-    }
-
-    function updateProgress(percentage) {
-        progressFill.style.width = `${percentage}%`;
-        progressText.textContent = Math.round(percentage);
+    } finally {
+        endLoading();
     }
 }
 
@@ -1585,6 +2034,38 @@ async function deleteCredit(opportunityId) {
     } finally {
         endLoading();
     }
+}
+
+// Function to format time range
+function formatTimeRange(startTime, endTime) {
+    const formatTime = (time) => {
+        if (!time) return '';
+        const [hours, minutes] = time.split(':');
+        const date = new Date();
+        date.setHours(hours);
+        date.setMinutes(minutes);
+        return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    };
+
+    // Handle case where startTime and endTime are direct time strings
+    if (typeof startTime === 'string' && typeof endTime === 'string') {
+        return `${formatTime(startTime)} - ${formatTime(endTime)}`;
+    }
+
+    // Handle case where we have a JSON string of timeslots
+    try {
+        const timeslots = JSON.parse(startTime); // In this case, startTime contains the JSON string of all timeslots
+        if (Array.isArray(timeslots) && timeslots.length > 0) {
+            return timeslots.map(slot => 
+                `${new Date(slot.date).toLocaleDateString()}: ${formatTime(slot.start_time)} - ${formatTime(slot.end_time)}`
+            ).join(', ');
+        }
+    } catch (e) {
+        // If parsing fails, try to format as single time range
+        return `${formatTime(startTime)} - ${formatTime(endTime)}`;
+    }
+
+    return 'Time not specified';
 }
 
 // Add event listeners when DOM is loaded

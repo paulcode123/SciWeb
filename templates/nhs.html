@@ -6,246 +6,327 @@
 
 {% block css %}
 <link rel="stylesheet" href="/static/nhs.css">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
-
-
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 {% endblock %}
 
 {% block content %}
 <div class="nhs-container">
-    <div class="nhs-header">
-        <div class="nhs-title">
-            <h1>National Honor Society</h1>
-            <div class="title-decoration"></div>
-        </div>
-        <p class="subtitle">Excellence in Character, Scholarship, Leadership, and Service</p>
-    </div>
-
-    <div id="status-message"></div>
-
-    <!-- Current Status Bubble -->
-    <div class="status-bubble">
-        <span class="status-label">Current Status:</span>
-        <span id="current-status-badge" class="status-badge">Loading...</span>
-    </div>
-
-    <!-- Student Content -->
-    <div id="student-content" style="display: none;">
-        <!-- Main Action Buttons -->
-        <div class="main-actions">
-            <button onclick="verifyStatus('applicant')" class="main-action-btn apply-btn">
-                <span class="btn-title">Apply to NHS</span>
-                <span class="btn-subtitle">Start your journey of excellence</span>
-            </button>
-            <button onclick="window.location.href='/Tutoring'" class="main-action-btn tutoring-btn">
-                <span class="btn-title">Request Tutoring</span>
-                <span class="btn-subtitle">Get help from NHS members</span>
-            </button>
+    <!-- New Introduction Section -->
+    <div class="nhs-intro">
+        <div class="intro-header">
+            <div class="intro-title">
+                <h1>National Honor Society</h1>
+                <div class="title-decoration"></div>
+                <p class="subtitle">Excellence in Character, Scholarship, Leadership, and Service</p>
+            </div>
+            <div class="floating-shapes">
+                <div class="shape shape1"></div>
+                <div class="shape shape2"></div>
+                <div class="shape shape3"></div>
+            </div>
         </div>
 
-        <!-- Verification Section -->
-        <div class="verification-section">
-            <h2>Account Verification</h2>
-            <p class="verification-intro">Select the appropriate option to verify your account status:</p>
-            
-            <div class="verification-cards">
-                <!-- Teacher Verification -->
-                <div class="verification-card" id="teacher-verification">
-                    <div class="card-icon teacher-icon">👩‍🏫</div>
-                    <h3>Teacher Verification</h3>
-                    <p>Verify your status to post SGI tutoring opportunities</p>
-                    <button onclick="verifyStatus('teacher')" class="verify-btn">Verify Status</button>
-                </div>
+        <div class="intro-content">
+            <div class="intro-section about-nhs">
+                <h2><i class="fas fa-star"></i> About NHS</h2>
+                <p>The National Honor Society (NHS) is the nation's premier organization recognizing outstanding high school students. More than just an honor roll, NHS serves to honor students who demonstrate excellence in scholarship, leadership, service, and character.</p>
+            </div>
 
-                <!-- NHS Member Verification -->
-                <div class="verification-card" id="member-verification">
-                    <div class="card-icon member-icon">🎓</div>
-                    <h3>Member Verification</h3>
-                    <p>Current NHS member? Verify your membership</p>
-                    <button onclick="verifyStatus('member')" class="verify-btn">Verify Status</button>
+            <div class="intro-section impact-benefits">
+                <div class="impact-card">
+                    <h3><i class="fas fa-chart-line"></i> Our Impact</h3>
+                    <ul>
+                        <li>Over 1000+ tutoring hours provided</li>
+                        <li>100+ community service projects</li>
+                        <li>Supporting student academic excellence</li>
+                        <li>Building future leaders</li>
+                    </ul>
                 </div>
-
-                <!-- NHS Admin Verification -->
-                <div class="verification-card" id="admin-verification">
-                    <div class="card-icon admin-icon">⚡</div>
-                    <h3>Admin Verification</h3>
-                    <p>NHS administrator? Verify your credentials</p>
-                    <button onclick="verifyStatus('admin')" class="verify-btn">Verify Status</button>
+                <div class="benefits-card">
+                    <h3><i class="fas fa-gift"></i> Member Benefits</h3>
+                    <ul>
+                        <li>Leadership development opportunities</li>
+                        <li>College application recognition</li>
+                        <li>Service project participation</li>
+                        <li>Networking with like-minded peers</li>
+                    </ul>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Member Content -->
-    <div id="member-content" style="display: none;">
-        <!-- Credits Table -->
-        <div class="credits-section">
-            <h2>NHS Credit Requirements</h2>
-            <div class="table-container">
-                <table class="credits-table">
-                    <thead>
-                        <tr>
-                            <th>Category</th>
-                            <th>Required Credits</th>
-                            <th>Fulfilled Credits</th>
-                            <th>Progress</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Tutoring</td>
-                            <td>10</td>
-                            <td id="tutoring-credits">0</td>
-                            <td><div class="progress-bar" id="tutoring-progress"></div></td>
-                        </tr>
-                        <tr>
-                            <td>Service</td>
-                            <td>10</td>
-                            <td id="service-credits">0</td>
-                            <td><div class="progress-bar" id="service-progress"></div></td>
-                        </tr>
-                        <tr>
-                            <td>Project</td>
-                            <td>2</td>
-                            <td id="project-credits">0</td>
-                            <td><div class="progress-bar" id="project-progress"></div></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Completed Credits Table -->
-        <div class="completed-credits-section">
-            <h2>Completed Credits History</h2>
-            <div class="table-container">
-                <table class="completed-credits-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Category</th>
-                            <th>Opportunity</th>
-                            <th>Credits</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="completed-credits-body">
-                        <!-- Will be populated by JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Opportunities Table -->
-        <div class="opportunities-section">
-            <h2>Upcoming Opportunities</h2>
-            <div class="table-container">
-                <table class="opportunities-table">
-                    <thead>
-                        <tr>
-                            <th>Category</th>
-                            <th>Name</th>
-                            <th>Date</th>
-                            <th>Credits</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="opportunities-body">
-                        <!-- Opportunities will be populated by JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Admin Content -->
-    <div id="admin-content" class="content-section" style="display: none;">
-        <h2>NHS Admin Dashboard</h2>
-        
-        <!-- Member Lookup Section -->
-        <div class="admin-section">
-            <h3>Member Lookup</h3>
-            <div class="search-container">
-                <input type="text" id="member-search" placeholder="Name">
-                <button onclick="searchMembers()" class="action-btn">Search</button>
-            </div>
-            <div id="member-details" style="display: none;">
-                <div class="member-info">
-                    <h4>Member Information</h4>
-                    <p>Name: <span id="member-name"></span></p>
-                    <p>OSIS: <span id="member-osis"></span></p>
-                    <p>Email: <span id="member-email"></span></p>
-                </div>
-                
-                <div class="member-credits">
-                    <h4>Credits</h4>
-                    <div class="credit-summary">
-                        <div>
-                            <p>Tutoring: <span id="member-tutoring-credits">0</span></p>
-                            <div class="progress-bar" id="member-tutoring-progress"></div>
+            <div class="intro-section board-members">
+                <h2><i class="fas fa-users"></i> Meet Our Board</h2>
+                <div class="board-grid">
+                    <div class="board-member">
+                        <div class="member-avatar">
+                            <i class="fas fa-user-tie"></i>
                         </div>
-                        <div>
-                            <p>Service: <span id="member-service-credits">0</span></p>
-                            <div class="progress-bar" id="member-service-progress"></div>
+                        <h4>Kayla Park</h4>
+                        <p class="member-role">President</p>
+                        <a href="mailto:kaylap246@nycstudents.net" class="member-contact">
+                            <i class="fas fa-envelope"></i> Contact
+                        </a>
+                    </div>
+                    <div class="board-member">
+                        <div class="member-avatar">
+                            <i class="fas fa-user-tie"></i>
                         </div>
-                        <div>
-                            <p>Project: <span id="member-project-credits">0</span></p>
-                            <div class="progress-bar" id="member-project-progress"></div>
+                        <h4>Jayden Lin</h4>
+                        <p class="member-role">VP of Organization</p>
+                        <a href="mailto:jaydenl123@nycstudents.net" class="member-contact">
+                            <i class="fas fa-envelope"></i> Contact
+                        </a>
+                    </div>
+                    <div class="board-member">
+                        <div class="member-avatar">
+                            <i class="fas fa-user-tie"></i>
                         </div>
+                        <h4>Darien Lu</h4>
+                        <p class="member-role">VP of Tutoring</p>
+                        <a href="mailto:darienl7@nycstudents.net" class="member-contact">
+                            <i class="fas fa-envelope"></i> Contact
+                        </a>
+                    </div>
+                    <div class="board-member">
+                        <div class="member-avatar">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <h4>Riccardo Sambataro</h4>
+                        <p class="member-role">VP of Technology</p>
+                        <a href="mailto:riccardos2@nycstudents.net" class="member-contact">
+                            <i class="fas fa-envelope"></i> Contact
+                        </a>
+                    </div>
+                    <div class="board-member advisor">
+                        <div class="member-avatar">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <h4>Mr. DeSilva</h4>
+                        <p class="member-role">Advisor</p>
+                        <a href="mailto:pdesilva@schools.nyc.gov" class="member-contact">
+                            <i class="fas fa-envelope"></i> Contact
+                        </a>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
 
-                <div class="member-probations">
-                    <h4>Probations</h4>
-                    <button onclick="addProbation()" class="action-btn">Add Probation</button>
-                    <div id="probations-list"></div>
+    <div class="role-specific-content">
+        <div id="status-message"></div>
+
+        <!-- Current Status Bubble -->
+        <div class="status-bubble">
+            <span class="status-label">Current Status:</span>
+            <span id="current-status-badge" class="status-badge">Loading...</span>
+        </div>
+
+        <!-- Student Content -->
+        <div id="student-content" style="display: none;">
+            <!-- Main Action Buttons -->
+            <div class="main-actions">
+                <button onclick="verifyStatus('applicant')" class="main-action-btn apply-btn">
+                    <span class="btn-title">Apply to NHS</span>
+                    <span class="btn-subtitle">Start your journey of excellence</span>
+                </button>
+                <button onclick="window.location.href='/Tutoring'" class="main-action-btn tutoring-btn">
+                    <span class="btn-title">Request Tutoring</span>
+                    <span class="btn-subtitle">Get help from NHS members</span>
+                </button>
+            </div>
+
+            <!-- Verification Section -->
+            <div class="verification-section">
+                <h2>Account Verification</h2>
+                <p class="verification-intro">Select the appropriate option to verify your account status:</p>
+                
+                <div class="verification-cards">
+                    <!-- Teacher Verification -->
+                    <div class="verification-card" id="teacher-verification">
+                        <div class="card-icon teacher-icon">👩‍🏫</div>
+                        <h3>Teacher Verification</h3>
+                        <p>Verify your status to post SGI tutoring opportunities</p>
+                        <button onclick="verifyStatus('teacher')" class="verify-btn">Verify Status</button>
+                    </div>
+
+                    <!-- NHS Member Verification -->
+                    <div class="verification-card" id="member-verification">
+                        <div class="card-icon member-icon">🎓</div>
+                        <h3>Member Verification</h3>
+                        <p>Current NHS member? Verify your membership</p>
+                        <button onclick="verifyStatus('member')" class="verify-btn">Verify Status</button>
+                    </div>
+
+                    <!-- NHS Admin Verification -->
+                    <div class="verification-card" id="admin-verification">
+                        <div class="card-icon admin-icon">⚡</div>
+                        <h3>Admin Verification</h3>
+                        <p>NHS administrator? Verify your credentials</p>
+                        <button onclick="verifyStatus('admin')" class="verify-btn">Verify Status</button>
+                    </div>
                 </div>
+            </div>
+        </div>
 
-                <div class="member-opportunities">
-                    <h4>Opportunities</h4>
-                    <table class="data-table">
+        <!-- Member Content -->
+        <div id="member-content" style="display: none;">
+            <!-- Credits Table -->
+            <div class="credits-section">
+                <h2>NHS Credit Requirements</h2>
+                <div class="table-container">
+                    <table class="credits-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Required Credits</th>
+                                <th>Fulfilled Credits</th>
+                                <th>Progress</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Tutoring</td>
+                                <td>10</td>
+                                <td id="tutoring-credits">0</td>
+                                <td><div class="progress-bar" id="tutoring-progress"></div></td>
+                            </tr>
+                            <tr>
+                                <td>Service</td>
+                                <td>10</td>
+                                <td id="service-credits">0</td>
+                                <td><div class="progress-bar" id="service-progress"></div></td>
+                            </tr>
+                            <tr>
+                                <td>Project</td>
+                                <td>2</td>
+                                <td id="project-credits">0</td>
+                                <td><div class="progress-bar" id="project-progress"></div></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Completed Credits Table -->
+            <div class="completed-credits-section">
+                <h2>Completed Credits History</h2>
+                <div class="table-container">
+                    <table class="completed-credits-table">
                         <thead>
                             <tr>
                                 <th>Date</th>
-                                <th>Name</th>
                                 <th>Category</th>
+                                <th>Opportunity</th>
                                 <th>Credits</th>
                                 <th>Status</th>
-                                <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="member-opportunities-body"></tbody>
+                        <tbody id="completed-credits-body">
+                            <!-- Will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Opportunities Table -->
+            <div class="opportunities-section">
+                <h2>Upcoming Opportunities</h2>
+                <div class="table-container">
+                    <table class="opportunities-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Name</th>
+                                <th>Date</th>
+                                <th>Credits</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="opportunities-body">
+                            <!-- Opportunities will be populated by JavaScript -->
+                        </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- Existing Opportunities Management Section -->
-        <div class="admin-section">
-            <h3>Manage Opportunities</h3>
-            <div class="form-container">
-                <form id="create-opportunity-form">
-                    <div class="form-group">
-                        <label for="opp-name">Name:</label>
-                        <input type="text" id="opp-name" name="name" required>
+        <!-- Admin Content -->
+        <div id="admin-content" class="content-section" style="display: none;">
+            <h2>NHS Admin Dashboard</h2>
+            
+            <!-- Member Lookup Section -->
+            <div class="admin-section">
+                <h3>Member Lookup</h3>
+                <div class="search-container">
+                    <input type="text" id="member-search" placeholder="Name">
+                    <button onclick="searchMembers()" class="action-btn">Search</button>
+                </div>
+                <div id="member-details" style="display: none;">
+                    <div class="member-info">
+                        <h4>Member Information</h4>
+                        <p>Name: <span id="member-name"></span></p>
+                        <p>OSIS: <span id="member-osis"></span></p>
+                        <p>Email: <span id="member-email"></span></p>
                     </div>
                     
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="opp-date">Date:</label>
-                            <input type="date" id="opp-date" name="date" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="opp-start-time">Start Time:</label>
-                            <input type="time" id="opp-start-time" name="start_time" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="opp-end-time">End Time:</label>
-                            <input type="time" id="opp-end-time" name="end_time" required>
+                    <div class="member-credits">
+                        <h4>Credits</h4>
+                        <div class="credit-summary">
+                            <div>
+                                <p>Tutoring: <span id="member-tutoring-credits">0</span></p>
+                                <div class="progress-bar" id="member-tutoring-progress"></div>
+                            </div>
+                            <div>
+                                <p>Service: <span id="member-service-credits">0</span></p>
+                                <div class="progress-bar" id="member-service-progress"></div>
+                            </div>
+                            <div>
+                                <p>Project: <span id="member-project-credits">0</span></p>
+                                <div class="progress-bar" id="member-project-progress"></div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="form-row">
+                    <div class="member-probations">
+                        <h4>Probations</h4>
+                        <button onclick="addProbation()" class="action-btn">Add Probation</button>
+                        <div id="probations-list"></div>
+                    </div>
+
+                    <div class="member-opportunities">
+                        <h4>Opportunities</h4>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Credits</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="member-opportunities-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Existing Opportunities Management Section -->
+            <div class="admin-section">
+                <h3>Manage Opportunities</h3>
+                <div class="form-container">
+                    <form id="create-opportunity-form">
+                        <div class="form-group">
+                            <label for="opp-name">Name:</label>
+                            <input type="text" id="opp-name" name="name" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="opp-description">Description:</label>
+                            <textarea id="opp-description" name="description" rows="4" placeholder="Provide details about the opportunity, requirements, what to bring, etc."></textarea>
+                        </div>
+
                         <div class="form-group">
                             <label for="opp-category">Category:</label>
                             <select id="opp-category" name="category" required>
@@ -254,52 +335,91 @@
                                 <option value="Project">Project</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label for="opp-credits">Credits:</label>
-                            <input type="number" id="opp-credits" name="credits" min="0.5" step="0.5" required>
-                        </div>
-                    </div>
 
-                    <div class="form-row">
                         <div class="form-group">
-                            <label for="opp-members">Members Needed:</label>
-                            <input type="number" id="opp-members" name="members_needed" min="1" required>
+                            <label for="opp-location">Location:</label>
+                            <input type="text" id="opp-location" name="location" required>
                         </div>
+
+                        <div class="timeslots-section">
+                            <h4>Time Slots <button type="button" onclick="addTimeSlot()" class="add-btn"><i class="fas fa-plus"></i> Add Time Slot</button></h4>
+                            <div id="timeslots-container">
+                                <div class="timeslot-entry">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>Date:</label>
+                                            <input type="date" class="timeslot-date" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Start Time:</label>
+                                            <input type="time" class="timeslot-start" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>End Time:</label>
+                                            <input type="time" class="timeslot-end" required>
+                                        </div>
+                                        <button type="button" onclick="removeTimeSlot(this)" class="remove-btn"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="roles-section">
+                            <h4>Roles <button type="button" onclick="addRole()" class="add-btn"><i class="fas fa-plus"></i> Add Role</button></h4>
+                            <div id="roles-container">
+                                <div class="role-entry">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>Role Name:</label>
+                                            <input type="text" class="role-name" placeholder="e.g., Tutor, Helper" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Members Needed:</label>
+                                            <input type="number" class="role-members" min="1" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Credits:</label>
+                                            <input type="number" class="role-credits" min="0.5" step="0.5" required>
+                                        </div>
+                                        <button type="button" onclick="removeRole(this)" class="remove-btn"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Role Description:</label>
+                                        <textarea class="role-description" rows="2" placeholder="Describe the responsibilities for this role"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="form-group">
                             <label for="opp-deadline">Signup Deadline:</label>
                             <input type="date" id="opp-deadline" name="signup_deadline" required>
                         </div>
-                    </div>
 
-                    <div class="form-group">
-                        <label for="opp-location">Location:</label>
-                        <input type="text" id="opp-location" name="location" required>
-                    </div>
-
-                    <button type="submit" class="submit-btn">Create Opportunity</button>
-                </form>
+                        <button type="submit" class="submit-btn">Create Opportunity</button>
+                    </form>
+                </div>
             </div>
-        </div>
 
-        <div class="admin-section">
-            <h2>Manage Opportunities</h2>
-            <div class="table-container">
-                <table class="opportunities-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Date</th>
-                            <th>Category</th>
-                            <th>Credits</th>
-                            <th>Signups</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="admin-opportunities-body">
-                        <!-- Will be populated by JavaScript -->
-                    </tbody>
-                </table>
+            <div class="admin-section">
+                <h2>Manage Opportunities</h2>
+                <div class="table-container">
+                    <table class="opportunities-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Time Slots</th>
+                                <th>Roles</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-opportunities-body">
+                            <!-- Will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
